@@ -44,8 +44,9 @@ function clip(text: string, max: number): string {
 }
 /** Bots whose comments never carry review content. */
 const NOISE_AUTHORS = new Set(['codecov', 'github-actions', 'dependabot', 'vercel', 'netlify'])
+/** Service failure notices only: a reviewer saying an endpoint lacks a rate limit is feedback. */
 const NOISE_TEXT_RE =
-  /usage limits|rate limit|review limit reached|review (?:summary|failed)[^.]*failed|review paused/iu
+  /hit your usage limits?|usage limits? (?:reached|exceeded)|rate[- ]limit(?:ed| (?:exceeded|reached|hit))\b|review limit reached|review (?:summary|failed)[^.]*failed|review paused/iu
 
 function isNoise(note: OtherNote): boolean {
   return NOISE_AUTHORS.has(note.author.replace(/\[bot\]$/u, '')) || NOISE_TEXT_RE.test(note.text)

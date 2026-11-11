@@ -244,12 +244,17 @@ describe('buildFollowUpContext', () => {
             { author: { login: 'codecov[bot]' }, body: 'coverage', createdAt: 't' },
             { author: { login: 'github-actions' }, body: 'ran', createdAt: 't' },
             { author: { login: 'dan' }, body: 'You hit your usage limits', createdAt: 't' },
+            { author: { login: 'bot' }, body: 'Rate limit exceeded, retry later', createdAt: 't' },
             { author: { login: 'dan' }, body: 'real feedback', createdAt: 't' },
+            { author: { login: 'eve' }, body: 'Reset has no rate limit', createdAt: 't' },
           ],
         },
       }),
     )
-    expect(ctx.others).toEqual([{ author: 'dan', where: 'comment', text: 'real feedback' }])
+    expect(ctx.others).toEqual([
+      { author: 'dan', where: 'comment', text: 'real feedback' },
+      { author: 'eve', where: 'comment', text: 'Reset has no rate limit' },
+    ])
   })
 
   it('keeps only the last 40 notes', () => {
