@@ -62,7 +62,11 @@ export type ReviewStatus = {
   approved: boolean
 }
 
-const MARKER_RE = /<!-- final-review sha=([0-9a-f]{40}) verdict=([A-Za-z-]+) effort=([a-z]+) -->/u
+export const MARKER_RE =
+  /<!-- final-review sha=([0-9a-f]{40}) verdict=([A-Za-z-]+) effort=([a-z]+) -->/u
+
+/** Marker on the continuation parts of a review split over several posts. */
+export const PART_MARKER_RE = /<!-- final-review-part sha=([0-9a-f]{40}) part=(\d+) -->/u
 
 /** Reports whether the latest final review covers the current head, for merging agents. */
 export async function finalReviewStatus(io: FinalReviewIo): Promise<ReviewStatus> {
