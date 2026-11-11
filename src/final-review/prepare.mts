@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
 import { diffFileName, renderDiffIndex, splitDiff } from './diff-files.mts'
-import type { Effort } from './finding.mts'
+import { FinalReviewError, type Effort } from './finding.mts'
 import { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
@@ -58,6 +58,14 @@ export async function prepareReview(
     io.conversation(),
     io.trusted(),
   ])
+  if (options.tree !== undefined) {
+    const treeHead = await io.treeHead(options.tree)
+    if (treeHead !== headSha) {
+      throw new FinalReviewError(
+        `--tree ${options.tree} is at ${treeHead}, not the pull request head ${headSha}; check out the head and run prepare again.`,
+      )
+    }
+  }
   const context = buildFollowUpContext(conversation, trusted)
   const written = writeDiff(options.out, 'diff', patch, write)
   write(join(options.out, 'context.md'), renderFollowUpContext(context))

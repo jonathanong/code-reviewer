@@ -30,8 +30,12 @@ export type ReviewThread = {
 
 export type PageInfo = { hasPreviousPage: boolean }
 
+export type ClosingIssue = { number: number; title: string; body: string }
+
 export type PrConversation = {
   title: string
+  body: string
+  closingIssuesReferences: { nodes: ClosingIssue[] }
   headRefOid: string
   baseRefOid: string
   additions: number
@@ -45,7 +49,8 @@ export type PrConversation = {
 const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $pr) {
-      title headRefOid baseRefOid additions deletions
+      title body headRefOid baseRefOid additions deletions
+      closingIssuesReferences(first: 20) { nodes { number title body } }
       reviews(last: 60) {
         pageInfo { hasPreviousPage }
         nodes { id state body submittedAt author { login } commit { oid } }

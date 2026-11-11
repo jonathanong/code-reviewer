@@ -25,6 +25,16 @@ describe('fetchConversation', () => {
     expect(query.match(/pageInfo \{ hasPreviousPage \}/gu)).toHaveLength(2)
   })
 
+  it('asks for the description and closing issues', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify({ data: { repository: { pullRequest: {} } } }),
+    )
+    await fetchConversation(target, run)
+    const query = (run.mock.calls[0]![0] as string[])[3] as string
+    expect(query).toContain('title body headRefOid')
+    expect(query).toContain('closingIssuesReferences(first: 20) { nodes { number title body } }')
+  })
+
   it('throws when the pull request is missing', async () => {
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: null } } }),

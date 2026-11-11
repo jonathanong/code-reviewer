@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { PrConversation, PrReview, ReviewThread, ThreadComment } from './context-query.mts'
 import { buildFollowUpContext, squash } from './context.mts'
-import { reviewMarker } from './render.mts'
+import { renderBodyFinding, reviewMarker } from './render.mts'
 
 const TRUSTED = new Set(['bot'])
 const build = (p: PrConversation, trusted: ReadonlySet<string> = TRUSTED) =>
@@ -61,6 +61,8 @@ function thread(first: ThreadComment | undefined, overrides: Partial<ReviewThrea
 function pull(overrides: Partial<PrConversation> = {}): PrConversation {
   return {
     title: 'Title',
+    body: 'Does a thing.',
+    closingIssuesReferences: { nodes: [] },
     headRefOid: C,
     baseRefOid: B,
     additions: 5,
@@ -81,6 +83,7 @@ describe('buildFollowUpContext', () => {
   it('handles a pull request without a final review', () => {
     expect(build(pull())).toEqual({
       title: 'Title',
+      intent: { body: 'Does a thing.', issues: [] },
       headSha: C,
       baseSha: B,
       lines: 7,
@@ -147,6 +150,49 @@ describe('buildFollowUpContext', () => {
     expect(ctx.others).toEqual([
       { author: 'alice', where: 'a.ts:3', text: expect.stringContaining('Title here') },
     ])
+  })
+
+  it('carries body findings of the latest final review without a thread', () => {
+    const offDiff = renderBodyFinding({
+      pillar: 'design',
+      severity: 'medium',
+      title: 'Off diff',
+      body: 'x',
+      path: 'src/z.ts',
+      line: 9,
+    })
+    const reviews = [
+      review({
+        id: 'R1',
+        body: `${reviewMarker(A, 'Comment', 'low')}\n\n${renderBodyFinding({ pillar: 'rules', severity: 'low', title: 'Old', body: 'x' })}`,
+      }),
+      review({ id: 'R2', body: `${reviewMarker(B, 'Comment', 'low')}\n\n${offDiff}` }),
+      review({
+        id: 'R3',
+        body: `<!-- final-review-part sha=${B} part=2 -->\n\n${renderBodyFinding({ pillar: 'rules', severity: 'low', title: 'Part', body: 'x' })}`,
+      }),
+      review({
+        id: 'R4',
+        author: { login: 'eve' },
+        body: `${reviewMarker(B, 'Comment', 'low')}\n\n${offDiff}`,
+      }),
+    ]
+    const ctx = build(pull({ reviews: { nodes: reviews } }))
+    expect(ctx.unresolved.map((u) => [u.threadId, u.title, u.path, u.line])).toEqual([
+      [null, 'Off diff', 'src/z.ts', 9],
+      [null, 'Part', null, null],
+    ])
+  })
+
+  it('truncates the description and closing issue bodies', () => {
+    const ctx = build(
+      pull({
+        body: 'x'.repeat(5000),
+        closingIssuesReferences: { nodes: [{ number: 4, title: 'I', body: 'y'.repeat(2000) }] },
+      }),
+    )
+    expect(ctx.intent.body).toHaveLength(4000)
+    expect(ctx.intent.issues).toEqual([{ number: 4, title: 'I', body: `${'y'.repeat(1499)}…` }])
   })
 
   it('collects other notes from threads, reviews, and comments', () => {

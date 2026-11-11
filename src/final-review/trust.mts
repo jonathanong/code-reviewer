@@ -11,11 +11,21 @@ export function parseTrustedAuthors(value: string | undefined): string[] {
     .filter((login) => login.length > 0)
 }
 
+/**
+ * REST reports an App as `<slug>[bot]` while GraphQL reports the bare `<slug>`, so logins are
+ * compared case-insensitively with a trailing `[bot]` stripped from both sides.
+ */
+function normalizeLogin(login: string): string {
+  return login.toLowerCase().replace(/\[bot\]$/u, '')
+}
+
 export function isTrustedAuthor(
   login: string | null | undefined,
   trusted: TrustedAuthors,
 ): boolean {
-  return login !== null && login !== undefined && trusted.has(login.toLowerCase())
+  if (login === null || login === undefined) return false
+  const wanted = normalizeLogin(login)
+  return [...trusted].some((entry) => normalizeLogin(entry) === wanted)
 }
 
 /**

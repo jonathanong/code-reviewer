@@ -9,6 +9,7 @@ const OLD = 'b'.repeat(40)
 function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
   return {
     title: 'T',
+    intent: { body: '', issues: [] },
     headSha: HEAD,
     baseSha: 'c'.repeat(40),
     lines: 1000,

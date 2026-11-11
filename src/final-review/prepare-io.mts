@@ -14,6 +14,8 @@ export type PrepareIo = {
   conversation(): Promise<PrConversation>
   compare(base: string, head: string): Promise<SinceDiff>
   compareDiff(base: string, head: string): Promise<string>
+  /** The commit checked out at `tree`. */
+  treeHead(tree: string): Promise<string>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
   history(tree: string, base: string, paths: readonly string[]): Promise<string[] | undefined>
 }
@@ -60,6 +62,9 @@ export function createGhPrepareIo(
     },
     compareDiff: (base, head) =>
       run(['api', compareUrl(base, head), '-H', 'Accept: application/vnd.github.diff']),
+    async treeHead(tree) {
+      return (await git(['-C', tree, 'rev-parse', 'HEAD'])).trim()
+    },
     async history(tree, base, paths) {
       try {
         const out = await git([

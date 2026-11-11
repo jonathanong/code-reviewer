@@ -10,6 +10,12 @@ describe('parseTrustedAuthors', () => {
 })
 
 describe('isTrustedAuthor', () => {
+  it('ignores a trailing [bot] on either side', () => {
+    expect(isTrustedAuthor('my-app', new Set(['my-app[bot]']))).toBe(true)
+    expect(isTrustedAuthor('My-App[bot]', new Set(['my-app']))).toBe(true)
+    expect(isTrustedAuthor('other', new Set(['my-app[bot]']))).toBe(false)
+  })
+
   it('matches case-insensitively and rejects missing authors', () => {
     const trusted = new Set(['bot'])
     expect(isTrustedAuthor('Bot', trusted)).toBe(true)

@@ -92,6 +92,13 @@ describe('createGhPrepareIo', () => {
     ])
   })
 
+  it('reads the tree head with git', async () => {
+    const { io, git } = setup()
+    git.mockResolvedValue('abc123\n')
+    expect(await io.treeHead('/tree')).toBe('abc123')
+    expect(git).toHaveBeenCalledWith(['-C', '/tree', 'rev-parse', 'HEAD'])
+  })
+
   it('returns undefined history when git cannot read the base', async () => {
     const { io, git } = setup()
     git.mockRejectedValue(new Error('bad object'))

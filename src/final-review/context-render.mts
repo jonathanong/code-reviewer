@@ -4,6 +4,10 @@ function short(sha: string): string {
   return sha.slice(0, 12)
 }
 
+function quote(text: string): string[] {
+  return text.trim().length === 0 ? ['> (empty)'] : text.split(/\r?\n/u).map((line) => `> ${line}`)
+}
+
 /**
  * Renders the follow-up digest pillars and the verifier read instead of the whole conversation.
  * Everything quoted from the pull request is untrusted, and the header says so.
@@ -31,12 +35,20 @@ export function renderFollowUpContext(context: FollowUpContext): string {
   if (context.truncated) {
     lines.push('- The conversation is longer than the newest 60 reviews or 100 threads read here.')
   }
+  lines.push('', '## Intent (untrusted)', '', `Title: ${context.title}`, '', 'Description:')
+  lines.push(...quote(context.intent.body))
+  for (const issue of context.intent.issues) {
+    lines.push('', `Closing issue #${issue.number}: ${issue.title}`, ...quote(issue.body))
+  }
   lines.push('', `## Unresolved final-review findings (${context.unresolved.length})`, '')
   for (const finding of context.unresolved) {
-    const where = `${finding.path}:${finding.line ?? 'file'}${finding.outdated ? ', outdated' : ''}`
-    lines.push(
-      `- [${finding.severity}] ${finding.title} (${finding.pillar}; ${where}; thread \`${finding.threadId}\`)`,
-    )
+    const where =
+      finding.path === null
+        ? 'PR-level'
+        : `${finding.path}:${finding.line ?? 'file'}${finding.outdated ? ', outdated' : ''}`
+    const thread =
+      finding.threadId === null ? 'no thread (review body)' : `thread \`${finding.threadId}\``
+    lines.push(`- [${finding.severity}] ${finding.title} (${finding.pillar}; ${where}; ${thread})`)
   }
   lines.push('', `## Other reviewers and comments (${context.others.length})`, '')
   for (const note of context.others) lines.push(`- **${note.author}** ${note.where}: ${note.text}`)

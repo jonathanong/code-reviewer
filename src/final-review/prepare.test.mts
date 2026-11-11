@@ -19,6 +19,8 @@ const PATCH =
 function conversation(reviewedSha: string | null): PrConversation {
   return {
     title: 'T',
+    body: '',
+    closingIssuesReferences: { nodes: [] },
     headRefOid: HEAD,
     baseRefOid: BASE,
     additions: 10,
@@ -55,6 +57,7 @@ function fakeIo({ reviewed = null, since, history = [] }: Overrides = {}) {
     conversation: vi.fn(async () => conversation(reviewed)),
     compare: vi.fn(async () => since ?? { status: 'ahead', paths: ['src/a.ts'], lines: 4 }),
     compareDiff: vi.fn(async () => PATCH),
+    treeHead: vi.fn(async () => HEAD),
     history: vi.fn(async () => history),
   } satisfies PrepareIo
 }
@@ -128,6 +131,15 @@ describe('prepareReview', () => {
     const summary = await prepareReview(io, { out, tree: '/tree' })
     expect(io.history).toHaveBeenCalledWith('/tree', BASE, ['src/a.ts'])
     expect(summary.plan.pillars.map((p) => p.pillar)).toContain('history')
+  })
+
+  it('rejects a tree that is not at the head', async () => {
+    const io = fakeIo()
+    io.treeHead.mockResolvedValue(OLD)
+    await expect(prepareReview(io, { out, tree: '/tree' })).rejects.toThrow(
+      `--tree /tree is at ${OLD}, not the pull request head ${HEAD}`,
+    )
+    expect(io.history).not.toHaveBeenCalled()
   })
 
   it('passes the requested effort through', async () => {

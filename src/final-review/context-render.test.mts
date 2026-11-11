@@ -9,6 +9,7 @@ const BASE = 'b'.repeat(40)
 function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
   return {
     title: 'T',
+    intent: { body: '', issues: [] },
     headSha: HEAD,
     baseSha: BASE,
     lines: 12,
@@ -32,6 +33,8 @@ describe('renderFollowUpContext', () => {
     )
     expect(out).toContain('- No earlier final review.')
     expect(out).toContain('## Unresolved final-review findings (0)')
+    expect(out).toContain('## Intent (untrusted)')
+    expect(out).toContain('Title: T')
     expect(out).toContain('## Other reviewers and comments (0)')
     expect(out.endsWith('\n')).toBe(true)
   })
@@ -62,6 +65,10 @@ describe('renderFollowUpContext', () => {
     expect(out).not.toContain('Commits since')
   })
 
+  it('marks an empty description', () => {
+    expect(renderFollowUpContext(context())).toContain('Description:\n> (empty)')
+  })
+
   it('renders unresolved findings and other notes', () => {
     const out = renderFollowUpContext(
       context({
@@ -76,6 +83,15 @@ describe('renderFollowUpContext', () => {
             outdated: false,
           },
           {
+            threadId: null,
+            severity: 'medium',
+            pillar: 'design',
+            title: 'Global',
+            path: null,
+            line: null,
+            outdated: false,
+          },
+          {
             threadId: 'T2',
             severity: 'low',
             pillar: 'style',
@@ -85,11 +101,17 @@ describe('renderFollowUpContext', () => {
             outdated: true,
           },
         ],
+        intent: { body: 'Line1\nLine2', issues: [{ number: 3, title: 'Bug', body: 'it breaks' }] },
         others: [{ author: 'bob', where: 'comment', text: 'hello' }],
       }),
     )
     expect(out).toContain('- [high] Bug (correctness; a.ts:4; thread `T1`)')
     expect(out).toContain('- [low] Nit (style; b.ts:file, outdated; thread `T2`)')
+    expect(out).toContain('- [medium] Global (design; PR-level; no thread (review body))')
+    expect(out).toContain('## Intent (untrusted)')
+    expect(out).toContain('Title: T')
+    expect(out).toContain('> Line1\n> Line2')
+    expect(out).toContain('Closing issue #3: Bug\n> it breaks')
     expect(out).toContain('## Other reviewers and comments (1)')
     expect(out).toContain('- **bob** comment: hello')
   })

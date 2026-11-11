@@ -1,13 +1,15 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
+import { parseBodyFindings } from './body-findings.mts'
 import { MARKER_RE, PART_MARKER_RE } from './post.mts'
 import { isTrustedAuthor } from './trust.mts'
 
 export type PriorFinding = {
-  threadId: string
+  /** Null for a finding posted in the review body, which has no thread to resolve. */
+  threadId: string | null
   severity: string
   pillar: string
   title: string
-  path: string
+  path: string | null
   line: number | null
   outdated: boolean
 }
@@ -16,6 +18,8 @@ export type OtherNote = { author: string; where: string; text: string }
 
 export type FollowUpContext = {
   title: string
+  /** The pull request description and closing issues: untrusted, truncated. */
+  intent: { body: string; issues: { number: number; title: string; body: string }[] }
   headSha: string
   baseSha: string
   lines: number
@@ -32,6 +36,12 @@ export type FollowUpContext = {
 
 const FINDING_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* (.+)\n\n<sub>([a-z-]+)<\/sub>/u
 const NOTE_CHARS = 360
+const BODY_CHARS = 4000
+const ISSUE_BODY_CHARS = 1500
+
+function clip(text: string, max: number): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1)}…`
+}
 /** Bots whose comments never carry review content. */
 const NOISE_AUTHORS = new Set(['codecov', 'github-actions', 'dependabot', 'vercel', 'netlify'])
 const NOISE_TEXT_RE =
@@ -137,8 +147,22 @@ export function buildFollowUpContext(
     if (!finalIds.has(first.pullRequestReview?.id ?? '')) return []
     return priorFinding(thread, first.body) ?? []
   })
+  const latestSha = latest?.[1]
+  const bodyFindings = own
+    .filter((review) =>
+      [MARKER_RE, PART_MARKER_RE].some((re) => re.exec(review.body)?.[1] === latestSha),
+    )
+    .flatMap((review) => parseBodyFindings(review.body))
   return {
     title: pull.title,
+    intent: {
+      body: clip(pull.body, BODY_CHARS),
+      issues: pull.closingIssuesReferences.nodes.map((issue) => ({
+        number: issue.number,
+        title: issue.title,
+        body: clip(issue.body, ISSUE_BODY_CHARS),
+      })),
+    },
     headSha: pull.headRefOid,
     baseSha: pull.baseRefOid,
     lines: pull.additions + pull.deletions,
@@ -152,7 +176,7 @@ export function buildFollowUpContext(
     truncated:
       pull.reviews.pageInfo?.hasPreviousPage === true ||
       pull.reviewThreads.pageInfo?.hasPreviousPage === true,
-    unresolved,
+    unresolved: [...unresolved, ...bodyFindings],
     others: othersFrom(pull, finalIds),
   }
 }

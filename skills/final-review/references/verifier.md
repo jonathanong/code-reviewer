@@ -6,13 +6,14 @@ only step that writes the review.
 ## Inputs
 
 The run directory from `vouchington-reviewer prepare`: `plan.json` (effort and `skipped`),
-`context.md` (the earlier final review, unresolved findings with thread ids, and other reviewers'
-notes), `diff/INDEX.md` (and `since/INDEX.md` at low effort), `pillars/*.json`, and the worktree at
+`context.md` (the pull request title, description, and closing issues under "Intent"; the earlier
+final review; unresolved findings, with thread ids or marked as review-body findings with no
+thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` at low effort), `pillars/*.json`, and the worktree at
 `tree/`. Read files by path with offsets; do not load the whole diff.
 
 ## Steps
 
-1. **Congruence.** Perform the [congruence pillar](pillars/congruence.md) yourself.
+1. **Congruence.** Perform the [congruence pillar](pillars/congruence.md) yourself, reading the title, description, and closing issues from `context.md`, not from GitHub.
 2. **Verify each finding** against the code at the reviewed head: open the cited lines and their
    callers. Mark it confirmed, re-rated (wrong severity for the pillar's blocking bar, in either
    direction: raise an under-rated finding as readily as you lower an over-rated one), or
