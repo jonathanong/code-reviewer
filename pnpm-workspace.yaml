@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - eslint-plugin-no-mistakes@0.109.38

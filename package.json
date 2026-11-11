@@ -1,0 +1,40 @@
+{
+  "name": "vouchington-reviewer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standing multi-pillar final reviewer for Vouchington pull requests: CLI, Claude Code skills, and evals.",
+  "license": "MIT",
+  "author": "Jonathan Ong",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vouchington/vouchington-reviewer.git"
+  },
+  "bin": {
+    "vouchington-reviewer": "bin/vouchington-reviewer.mts"
+  },
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "pnpm run oxlint && pnpm run oxfmt:check",
+    "oxlint": "oxlint --type-aware --deny-warnings",
+    "oxfmt": "oxfmt",
+    "oxfmt:check": "oxfmt --check",
+    "actionlint": "github-actionlint"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.1.0",
+    "eslint-plugin-no-mistakes": "^0.109.38",
+    "github-actionlint": "^1.7.12",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2006",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
