@@ -10,7 +10,7 @@ vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
-import type { FinalReviewIo } from '../final-review/index.mts'
+import type { FinalReviewIo, LabelIo, PrepareIo } from '../final-review/index.mts'
 import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
 import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
 import { runFinalReviewCommand, type FinalReviewDeps } from './command.mts'
@@ -35,9 +35,21 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
 
 type MockDeps = { [K in keyof FinalReviewDeps]: Mock<FinalReviewDeps[K]> }
 
+function fakeLabelIo(): LabelIo {
+  return {
+    labels: vi.fn(async () => ['final-review:in-progress']),
+    add: vi.fn(async () => undefined),
+    remove: vi.fn(async () => undefined),
+  }
+}
+
 function deps(io: FinalReviewIo, input = '{}'): MockDeps {
   return {
+    authMode: vi.fn(() => 'gh' as const),
     createIo: vi.fn(() => io),
+    createLabelIo: vi.fn(fakeLabelIo),
+    createPrepareIo: vi.fn(() => ({}) as PrepareIo),
+    runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
     runBench: vi.fn(async () => 7),
     runVerifierBench: vi.fn(async () => 8),
@@ -74,6 +86,14 @@ describe('runFinalReviewCommand', () => {
     expect(d.createIo).not.toHaveBeenCalled()
   })
 
+  it('resolves the pull request target for loop subcommands that need one', async () => {
+    const { out } = capture()
+    const d = deps(fakeIo())
+    await expect(runFinalReviewCommand(['claim', ...PR, '--force'], d)).resolves.toBe(0)
+    expect(d.createLabelIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
+    expect(JSON.parse(out.join(''))).toMatchObject({ claimed: true })
+  })
+
   it('posts a dry run and prints the full outcome', async () => {
     const { out } = capture()
     const d = deps(fakeIo(), JSON.stringify({ findings: [] }))
@@ -90,7 +110,7 @@ describe('runFinalReviewCommand', () => {
     expect(Array.isArray(printed.reviews)).toBe(true)
   })
 
-  it('posts for real and prints only the review count', async () => {
+  it('posts for real, completes the lifecycle, and prints the review count', async () => {
     const { out } = capture()
     const io = fakeIo()
     const d = deps(io, JSON.stringify({ findings: [] }))
@@ -103,7 +123,17 @@ describe('runFinalReviewCommand', () => {
       reviews: 1,
       urls: ['https://example.test/r'],
       label: 'added',
+      lifecycle: { added: ['final-review:complete'], removed: ['final-review:in-progress'] },
     })
+    expect(d.createLabelIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
+  })
+
+  it('runs loop subcommands without a pull request target', async () => {
+    const { out } = capture()
+    const d = deps(fakeIo())
+    await expect(runFinalReviewCommand(['auth'], d)).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toEqual({ mode: 'gh' })
+    expect(d.createIo).not.toHaveBeenCalled()
   })
 
   it('requires --head-sha and --input for post', async () => {
@@ -153,7 +183,7 @@ describe('runFinalReviewCommand', () => {
     await expect(runFinalReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('final-review: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, bench, or bench-verifier.',
+      'final-review: final-review needs post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, bench, or bench-verifier.',
     )
   })
 
