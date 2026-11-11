@@ -2,6 +2,7 @@ import {
   EFFORTS,
   abortReview,
   claimReview,
+  finalReviewStatus,
   listQueue,
   prepareReview,
   resolveThreads,
@@ -45,8 +46,15 @@ export async function runLoopCommand(
       if (owner === '') throw new Error('queue needs --owner or --repo.')
       return listQueue(deps.runner(owner), owner, repos)
     }
-    case 'claim':
-      return claimReview(deps.createLabelIo(target()), { force: values.force === true })
+    case 'claim': {
+      const force = values.force === true
+      const status = force ? undefined : await finalReviewStatus(deps.createIo(target()))
+      const outcome = await claimReview(deps.createLabelIo(target()), {
+        force,
+        headReviewed: status?.current === true,
+      })
+      return status === undefined || outcome.claimed ? outcome : { ...outcome, status }
+    }
     case 'abort':
       return abortReview(deps.createLabelIo(target()), { requeue: values.requeue === true })
     case 'prepare': {

@@ -34,7 +34,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
 1. `vouchington-reviewer claim --repo <repo> --pr <n>` (add `--force` when the request came by
    message rather than label). It adds `final-review:in-progress`, then removes
    `final-review:requested`, `final-review:complete`, and a stale `final approval`. `claimed:
-false` means another run owns it or the request was withdrawn: stop.
+   false` means another run owns it or the request was withdrawn: stop.
 2. Create a private run directory: `run=$(mktemp -d "${TMPDIR:-/tmp}/final-review-<name>-<n>-XXXXXX")`.
 3. Check out the head as a detached worktree at `"$run/tree"` from a local clone when one exists
    (`git -C <clone> fetch origin <head> && git -C <clone> worktree add --detach "$run/tree" <head>`),
@@ -54,7 +54,7 @@ false` means another run owns it or the request was withdrawn: stop.
    touching `final approval`: reply with that verdict and stop. Use `--force` to review the same
    head again (for example at a higher effort).
 6. Clean up when the review is posted or fails: `git -C <clone> worktree remove --force
-"$run/tree"`, then `rm -rf "$run"`. On failure also run `vouchington-reviewer abort` (add
+   "$run/tree"`, then `rm -rf "$run"`. On failure also run `vouchington-reviewer abort` (add
    `--requeue` only once, for a transient error).
 
 ## Step 2 - Dispatch pillars

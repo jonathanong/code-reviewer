@@ -163,3 +163,28 @@ describe('abortReview', () => {
     expect(io.calls).toEqual([`add:${REQUESTED_LABEL}`, `remove:${IN_PROGRESS_LABEL}`])
   })
 })
+
+describe('claimReview when the head is already reviewed', () => {
+  it('answers the request with complete and keeps final approval', async () => {
+    const io = fakeIo([REQUESTED_LABEL, 'final approval'])
+    await expect(claimReview(io, { headReviewed: true })).resolves.toMatchObject({
+      claimed: false,
+      reason: 'head already reviewed',
+    })
+    expect([...io.set].sort()).toEqual(['final approval', COMPLETE_LABEL])
+  })
+
+  it('adds nothing when no request is pending', async () => {
+    const io = fakeIo(['final approval'])
+    await claimReview(io, { headReviewed: true })
+    expect(io.calls).toEqual([])
+  })
+
+  it('reviews again with force', async () => {
+    const io = fakeIo(['final approval'])
+    await expect(claimReview(io, { force: true, headReviewed: true })).resolves.toMatchObject({
+      claimed: true,
+    })
+    expect([...io.set]).toEqual([IN_PROGRESS_LABEL])
+  })
+})

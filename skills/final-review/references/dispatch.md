@@ -6,10 +6,10 @@ page documents the rules so a human can audit or change them (change the code wi
 
 ## Effort
 
-| Effort           | When                                                  | Diff reviewed               | Pillars                                                                          |
-| ---------------- | ----------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------- |
-| `high` (default) | First review of a pull request, or the requester asks | Full pull request           | Every pillar the rules below select                                              |
-| `medium`         | Requester asks                                        | Full pull request           | Same selection as high                                                           |
+| Effort           | When                                                  | Diff reviewed               | Pillars                                                                           |
+| ---------------- | ----------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------- |
+| `high` (default) | First review of a pull request, or the requester asks | Full pull request           | Every pillar the rules below select                                               |
+| `medium`         | Requester asks                                        | Full pull request           | Same selection as high                                                            |
 | `low`            | Default for a follow-up after a final review          | Since the last reviewed SHA | correctness, plus each pillar that has an unresolved finding from the last review |
 
 `low` falls back to `high` when there is no earlier final review, when the last reviewed SHA is
@@ -35,11 +35,11 @@ last review, and the verifier rechecks every unresolved finding listed in `conte
 
 The verifier also performs congruence.
 
-| Work                                   | Model  |
-| -------------------------------------- | ------ |
-| Pillars (default)                      | sonnet |
-| Pillars on a docs-only change; history | haiku  |
-| Verifier                               | opus   |
+| Work                                                             | Model  |
+| ---------------------------------------------------------------- | ------ |
+| Pillars (default)                                                | sonnet |
+| Pillars on a docs-only change; history                           | haiku  |
+| Verifier                                                         | opus   |
 | Verifier for a low-effort follow-up of at most 300 changed lines | sonnet |
 
 The correctness pillar invokes the host's built-in code review at low effort when one exists.

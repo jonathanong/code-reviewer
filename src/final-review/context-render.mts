@@ -1,7 +1,7 @@
 import type { FollowUpContext } from './context.mts'
 
-function short(sha: string | null): string {
-  return sha === null ? 'none' : sha.slice(0, 12)
+function short(sha: string): string {
+  return sha.slice(0, 12)
 }
 
 /**

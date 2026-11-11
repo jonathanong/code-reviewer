@@ -7,11 +7,13 @@ vi.mock('../final-review/index.mts', async (importOriginal) => ({
   abortReview: vi.fn(async () => ({ added: [] })),
   prepareReview: vi.fn(async () => ({ headSha: 'h' })),
   resolveThreads: vi.fn(async (_run: unknown, ids: string[]) => ids),
+  finalReviewStatus: vi.fn(async () => ({ current: false })),
 }))
 
 import {
   abortReview,
   claimReview,
+  finalReviewStatus,
   listQueue,
   prepareReview,
   resolveThreads,
@@ -31,6 +33,7 @@ function fakeDeps() {
   const deps = {
     authMode: vi.fn(() => 'app' as const),
     createLabelIo,
+    createIo: vi.fn(() => ({})),
     createPrepareIo: vi.fn(() => prepareIo),
     runner,
   } as unknown as FinalReviewDeps
@@ -73,9 +76,29 @@ describe('runLoopCommand', () => {
     const { deps, labelIo, createLabelIo } = fakeDeps()
     await expect(runLoopCommand('claim', {}, target, deps)).resolves.toEqual({ claimed: true })
     expect(createLabelIo).toHaveBeenCalledWith(TARGET)
-    expect(claimReview).toHaveBeenLastCalledWith(labelIo, { force: false })
+    expect(claimReview).toHaveBeenLastCalledWith(labelIo, { force: false, headReviewed: false })
+    vi.mocked(finalReviewStatus).mockClear()
     await runLoopCommand('claim', { force: true }, target, deps)
-    expect(claimReview).toHaveBeenLastCalledWith(labelIo, { force: true })
+    expect(claimReview).toHaveBeenLastCalledWith(labelIo, { force: true, headReviewed: false })
+    expect(finalReviewStatus).not.toHaveBeenCalled()
+  })
+
+  it('declines a head the newest final review covers and reports its status', async () => {
+    const { deps, labelIo } = fakeDeps()
+    const status = { current: true, verdict: 'Approve' }
+    vi.mocked(finalReviewStatus).mockResolvedValueOnce(status as never)
+    vi.mocked(claimReview).mockResolvedValueOnce({
+      claimed: false,
+      reason: 'head already reviewed',
+      labels: [],
+    })
+    await expect(runLoopCommand('claim', {}, target, deps)).resolves.toEqual({
+      claimed: false,
+      reason: 'head already reviewed',
+      labels: [],
+      status,
+    })
+    expect(claimReview).toHaveBeenLastCalledWith(labelIo, { force: false, headReviewed: true })
   })
 
   it('aborts with and without requeue', async () => {

@@ -29,8 +29,6 @@ export type PrepareSummary = {
 
 type Write = (path: string, text: string) => void
 
-const defaultWrite: Write = (path, text) => writeFileSync(path, text)
-
 function writeDiff(out: string, name: string, patch: string, write: Write): string[] {
   const numbered = numberDiff(patch)
   write(join(out, `${name}.patch`), `${numbered}`)
@@ -50,7 +48,7 @@ function writeDiff(out: string, name: string, patch: string, write: Write): stri
 export async function prepareReview(
   io: PrepareIo,
   options: PrepareOptions,
-  write: Write = defaultWrite,
+  write: Write = (path, text) => writeFileSync(path, text),
 ): Promise<PrepareSummary> {
   mkdirSync(options.out, { recursive: true })
   const [headSha, patch, paths, conversation] = await Promise.all([

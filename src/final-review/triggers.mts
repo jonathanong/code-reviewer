@@ -4,6 +4,9 @@ const DOC_RE = /(?:\.(?:md|mdx|markdown|txt|rst|adoc)$)|(?:^|\/)docs\//iu
 const TEST_RE =
   /(?:\.(?:test|spec)\.[cm]?[jt]sx?$)|(?:(?:^|\/)(?:__tests__|tests?|fixtures|__snapshots__)\/)|(?:_test\.(?:go|rs|py)$)|(?:Tests?\.(?:swift|cs|kt)$)/u
 
+/** Dependency manifests that look like docs (requirements.txt) are code, not docs. */
+const MANIFEST_RE = /(?:^|\/)requirements[^/]*\.txt$/u
+
 const SECURITY_RES: readonly RegExp[] = [
   /auth|session|token|permission|crypto|secret|password|credential|oauth|jwt/iu,
   /^\.github\/workflows\//u,
@@ -16,7 +19,7 @@ const SECURITY_RES: readonly RegExp[] = [
 ]
 
 export function isDocPath(path: string): boolean {
-  return DOC_RE.test(path)
+  return DOC_RE.test(path) && !MANIFEST_RE.test(path)
 }
 
 export function isTestPath(path: string): boolean {

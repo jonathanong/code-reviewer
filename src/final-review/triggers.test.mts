@@ -76,8 +76,11 @@ describe('securityTriggers', () => {
   })
   it('ignores ordinary files and docs, even when named like triggers', () => {
     expect(securityTriggers(['src/a.ts', 'docs/auth.md', 'auth.md'])).toEqual([])
-    // Suspected source bug: .txt counts as a doc, so requirements.txt never triggers.
-    expect(securityTriggers(['requirements.txt'])).toEqual([])
+    expect(securityTriggers(['requirements.txt', 'py/requirements-dev.txt'])).toEqual([
+      'requirements.txt',
+      'py/requirements-dev.txt',
+    ])
+    expect(isDocsOnly(['requirements.txt'])).toBe(false)
   })
 })
 

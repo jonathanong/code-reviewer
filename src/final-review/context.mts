@@ -31,7 +31,8 @@ const FINDING_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* (.+)\n\n<sub>([a-z-]
 const NOTE_CHARS = 360
 /** Bots whose comments never carry review content. */
 const NOISE_AUTHORS = new Set(['codecov', 'github-actions', 'dependabot', 'vercel', 'netlify'])
-const NOISE_TEXT_RE = /usage limits|rate limit|review limit reached|review (?:summary|failed)[^.]*failed|review paused/iu
+const NOISE_TEXT_RE =
+  /usage limits|rate limit|review limit reached|review (?:summary|failed)[^.]*failed|review paused/iu
 
 function isNoise(note: OtherNote): boolean {
   return NOISE_AUTHORS.has(note.author.replace(/\[bot\]$/u, '')) || NOISE_TEXT_RE.test(note.text)
@@ -53,8 +54,8 @@ function login(author: { login: string } | null): string {
   return author?.login ?? 'ghost'
 }
 
-function priorFinding(thread: ReviewThread): PriorFinding | undefined {
-  const match = FINDING_RE.exec(thread.comments.nodes[0]?.body ?? '')
+function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefined {
+  const match = FINDING_RE.exec(body)
   if (match === null) return undefined
   return {
     threadId: thread.id,
@@ -103,12 +104,12 @@ export function buildFollowUpContext(pull: PrConversation): FollowUpContext {
   const oids = pull.commits.nodes.map((node) => node.commit.oid)
   const index = reviewedSha === null ? -1 : oids.indexOf(reviewedSha)
   const finalIds = new Set(finalReviews.map((review) => review.id))
-  const unresolved = pull.reviewThreads.nodes
-    .filter(
-      (thread) =>
-        !thread.isResolved && finalIds.has(thread.comments.nodes[0]?.pullRequestReview?.id ?? ''),
-    )
-    .flatMap((thread) => priorFinding(thread) ?? [])
+  const unresolved = pull.reviewThreads.nodes.flatMap((thread) => {
+    const first = thread.comments.nodes[0]
+    if (thread.isResolved || first === undefined) return []
+    if (!finalIds.has(first.pullRequestReview?.id ?? '')) return []
+    return priorFinding(thread, first.body) ?? []
+  })
   return {
     title: pull.title,
     headSha: pull.headRefOid,

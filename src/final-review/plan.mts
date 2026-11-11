@@ -109,12 +109,13 @@ export function planReview(input: PlanInput): ReviewPlan {
     pillar,
     model: (docsOnly || pillar === 'history' ? 'haiku' : 'sonnet') satisfies Model as Model,
   }))
-  const changed = effort === 'low' ? (input.since?.lines ?? 0) : context.lines
+  // A low plan always has `since`: chooseEffort escalates to high without it.
+  const changed = effort === 'low' ? (input.since as SinceDiff).lines : context.lines
   const verifierModel: Model =
     effort === 'low' && changed <= SMALL_FOLLOW_UP_LINES ? 'sonnet' : 'opus'
   const skipped = DISPATCHED.filter((pillar) => !run.has(pillar)).map((pillar) => ({
     pillar,
-    reason: why.get(pillar) ?? 'Not selected.',
+    reason: why.get(pillar) as string,
   }))
   return { upToDate, effort, sinceSha, pillars, verifierModel, skipped, reasons }
 }
