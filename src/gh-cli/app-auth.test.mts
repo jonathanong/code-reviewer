@@ -131,6 +131,34 @@ describe('createInstallationTokenProvider', () => {
     ])
   })
 
+  it('falls back to the user installation when the org endpoint 404s', async () => {
+    const fetchJson = fakeFetch((url) => {
+      if (url.includes('/orgs/')) return { ok: false, status: 404 }
+      return url.endsWith('/installation')
+        ? { body: { id: 9 } }
+        : { body: { token: 'usr', expires_at: expiry(T0 + 3_600_000) } }
+    })
+    const provider = createInstallationTokenProvider(CONFIG, fetchJson, () => T0)
+    await expect(provider('jane')).resolves.toBe('usr')
+    expect(fetchJson.mock.calls.map(([url]) => url)).toEqual([
+      'https://api.test/orgs/jane/installation',
+      'https://api.test/users/jane/installation',
+      'https://api.test/app/installations/9/access_tokens',
+    ])
+  })
+
+  it('does not fall back on other org lookup failures or a second 404', async () => {
+    const denied = fakeFetch(() => ({ ok: false, status: 403 }))
+    await expect(createInstallationTokenProvider(CONFIG, denied, () => T0)('acme')).rejects.toThrow(
+      'failed with 403',
+    )
+    expect(denied).toHaveBeenCalledOnce()
+    const missing = fakeFetch(() => ({ ok: false, status: 404 }))
+    await expect(
+      createInstallationTokenProvider(CONFIG, missing, () => T0)('nobody'),
+    ).rejects.toThrow('GET /users/nobody/installation failed with 404')
+  })
+
   it('uses a pinned installation without a lookup', async () => {
     const fetchJson = fakeFetch(() => ({
       body: { token: 'pin', expires_at: expiry(T0 + 3_600_000) },

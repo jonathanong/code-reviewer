@@ -19,7 +19,7 @@ last review, and the verifier rechecks every unresolved finding listed in `conte
 
 ## Path rules
 
-- **Docs-only** (every changed file is Markdown, text, or under `docs/`): rules only (the verifier
+- **Docs-only** (every changed file has a doc extension: md, mdx, markdown, txt, rst, adoc; `requirements*.txt` and `CMakeLists.txt` are code): rules only (the verifier
   still performs congruence).
 - **Test- or docs-only**: blast-radius is skipped.
 - **Security trigger**, any changed non-doc path that matches:

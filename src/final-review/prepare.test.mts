@@ -49,6 +49,7 @@ type Overrides = { reviewed?: string | null; since?: SinceDiff; history?: string
 function fakeIo({ reviewed = null, since, history = [] }: Overrides = {}) {
   return {
     headSha: vi.fn(async () => HEAD),
+    trusted: vi.fn(async () => new Set(['bot'])),
     diff: vi.fn(async () => PATCH),
     paths: vi.fn(async () => ['src/a.ts']),
     conversation: vi.fn(async () => conversation(reviewed)),
@@ -132,5 +133,15 @@ describe('prepareReview', () => {
   it('passes the requested effort through', async () => {
     const summary = await prepareReview(fakeIo(), { out, requested: 'medium' })
     expect(summary.plan.effort).toBe('medium')
+  })
+
+  it('plans without history when the base is missing from the tree', async () => {
+    const io = fakeIo()
+    io.history.mockResolvedValue(undefined as never)
+    const summary = await prepareReview(io, { out, tree: '/tree' })
+    expect(summary.plan.skipped).toContainEqual({
+      pillar: 'history',
+      reason: 'History not checked.',
+    })
   })
 })

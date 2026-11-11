@@ -56,6 +56,17 @@ describe('createDefaultDeps', () => {
     expect(getAuth).toHaveBeenCalledOnce()
   })
 
+  it('passes the trusted-author allowlist to the gh ios', async () => {
+    const { getAuth } = fakeAuth()
+    const deps = createDefaultDeps(getAuth, { FINAL_REVIEWER_TRUSTED_AUTHORS: 'App[bot], Me' })
+    await expect(deps.createIo(TARGET).trustedAuthors()).resolves.toEqual(
+      new Set(['app[bot]', 'me']),
+    )
+    await expect(deps.createPrepareIo(TARGET).trusted()).resolves.toEqual(
+      new Set(['app[bot]', 'me']),
+    )
+  })
+
   it('passes the runner through', () => {
     const { fakeRun, runner, getAuth } = fakeAuth()
     const deps = createDefaultDeps(getAuth)

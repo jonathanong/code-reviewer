@@ -24,7 +24,8 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
     headSha: vi.fn(async () => SHA),
     diff: vi.fn(async () => ''),
     listFiles: vi.fn(async () => []),
-    listReviewBodies: vi.fn(async () => []),
+    listReviews: vi.fn(async () => []),
+    trustedAuthors: vi.fn(async () => new Set(['bot'])),
     hasApprovalLabel: vi.fn(async () => true),
     postReview: vi.fn(async () => 'https://example.test/r'),
     addApprovalLabel: vi.fn(async () => undefined),
@@ -164,8 +165,8 @@ describe('runFinalReviewCommand', () => {
   it('exits 0 for an approved status and 1 otherwise', async () => {
     const { out } = capture()
     const approved = fakeIo({
-      listReviewBodies: vi.fn(async () => [
-        `<!-- final-review sha=${SHA} verdict=Approve effort=high -->`,
+      listReviews: vi.fn(async () => [
+        { body: `<!-- final-review sha=${SHA} verdict=Approve effort=high -->`, author: 'bot' },
       ]),
     })
     await expect(runFinalReviewCommand(['status', ...PR], deps(approved))).resolves.toBe(0)

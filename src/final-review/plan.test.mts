@@ -16,6 +16,7 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     verdict: null,
     effort: null,
     commitsSince: null,
+    truncated: false,
     unresolved: [],
     others: [],
     ...overrides,
@@ -160,6 +161,22 @@ describe('planReview follow-ups', () => {
     expect(result.effort).toBe('high')
     expect(result.reasons).toEqual([
       'New commits change more than half the pull request: high effort.',
+    ])
+  })
+
+  it('escalates when the conversation was truncated', () => {
+    const result = plan({ context: reviewed({ truncated: true }), since })
+    expect(result.effort).toBe('high')
+    expect(result.reasons).toEqual([
+      'The review conversation is longer than the digest reads: high effort.',
+    ])
+  })
+
+  it('escalates when the compare API truncated the since diff', () => {
+    const result = plan({ context: reviewed(), since: { ...since, truncated: true } })
+    expect(result.effort).toBe('high')
+    expect(result.reasons).toEqual([
+      'The diff since the reviewed SHA is too large to list: high effort.',
     ])
   })
 })

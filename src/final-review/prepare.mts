@@ -51,13 +51,14 @@ export async function prepareReview(
   write: Write = (path, text) => writeFileSync(path, text),
 ): Promise<PrepareSummary> {
   mkdirSync(options.out, { recursive: true })
-  const [headSha, patch, paths, conversation] = await Promise.all([
+  const [headSha, patch, paths, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(),
     io.paths(),
     io.conversation(),
+    io.trusted(),
   ])
-  const context = buildFollowUpContext(conversation)
+  const context = buildFollowUpContext(conversation, trusted)
   const written = writeDiff(options.out, 'diff', patch, write)
   write(join(options.out, 'context.md'), renderFollowUpContext(context))
   write(join(options.out, 'context.json'), `${JSON.stringify(context, null, 2)}\n`)
@@ -70,10 +71,9 @@ export async function prepareReview(
       written.push(...writeDiff(options.out, 'since', sincePatch, write))
     }
   }
-  const history =
-    options.tree === undefined
-      ? undefined
-      : historyHits(await io.history(options.tree, context.baseSha, paths))
+  const subjects =
+    options.tree === undefined ? undefined : await io.history(options.tree, context.baseSha, paths)
+  const history = subjects === undefined ? undefined : historyHits(subjects)
   const plan = planReview({
     paths,
     context,

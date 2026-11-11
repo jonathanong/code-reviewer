@@ -91,4 +91,27 @@ describe('createGhPrepareIo', () => {
       ...paths.slice(0, 50),
     ])
   })
+
+  it('returns undefined history when git cannot read the base', async () => {
+    const { io, git } = setup()
+    git.mockRejectedValue(new Error('bad object'))
+    expect(await io.history('/tree', 'base', ['a.ts'])).toBeUndefined()
+  })
+
+  it('marks a compare at the 300 file cap as truncated', async () => {
+    const files = Array.from({ length: 300 }, (_, i) => ({ filename: `f${i}`, additions: 1 }))
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify({ status: 'ahead', files }),
+    )
+    const { io } = setup(run)
+    expect(await io.compare('x', 'y')).toMatchObject({ truncated: true, lines: 300 })
+  })
+
+  it('shares the trusted allowlist with the gh io', async () => {
+    const run = vi.fn(async (_args: readonly string[]) => {
+      throw new Error('no viewer')
+    })
+    const io = createGhPrepareIo(target, run, vi.fn(), ['App[bot]'])
+    expect(await io.trusted()).toEqual(new Set(['app[bot]']))
+  })
 })

@@ -16,6 +16,7 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     verdict: null,
     effort: null,
     commitsSince: null,
+    truncated: false,
     unresolved: [],
     others: [],
     ...overrides,
@@ -46,6 +47,11 @@ describe('renderFollowUpContext', () => {
     )
     expect(out).toContain(`- Last final review: \`${'c'.repeat(12)}\` (Approve, high effort)`)
     expect(out).toContain('- Commits since: 2\n  - fix one\n  - fix two')
+  })
+
+  it('notes a truncated conversation', () => {
+    expect(renderFollowUpContext(context({ truncated: true }))).toContain('longer than the newest')
+    expect(renderFollowUpContext(context())).not.toContain('longer than the newest')
   })
 
   it('notes a reviewed sha missing from history', () => {

@@ -34,8 +34,9 @@ Requests reach the reviewer in two ways. Both end up as the same label, so GitHu
   follow-up after pushing fixes adds it again.
 - **Message**: another session sends `final-reviewer` (for example with SendMessage)
   `owner/name#number` and optionally an effort. Add the label yourself with
-  `gh pr edit <n> -R <repo> --add-label final-review:requested`, and remember the requester so you
-  can reply.
+  `gh api --method POST repos/<repo>/issues/<n>/labels -f 'labels[]=final-review:requested'` (not
+  `gh pr edit --add-label`, which rejects a label the repository has not defined yet), and
+  remember the requester so you can reply.
 
 The queue is keyed by `repo#pr`. A newer request for a queued pull request replaces the queued
 one, and a request for a pull request already being reviewed is noted for after it finishes.

@@ -29,6 +29,8 @@ export type { FinalReviewIo, PullTarget } from './github.mts'
 export { finalReviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 export type { PostOutcome, ReviewStatus } from './post.mts'
 export { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
+export { parseTrustedAuthors } from './trust.mts'
+export type { TrustedAuthors } from './trust.mts'
 export { MARKER_RE, PART_MARKER_RE } from './post.mts'
 export {
   COMPLETE_LABEL,

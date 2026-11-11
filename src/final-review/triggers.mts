@@ -1,11 +1,11 @@
 /** Path classification behind pillar dispatch; see skills/final-review/references/dispatch.md. */
 
-const DOC_RE = /(?:\.(?:md|mdx|markdown|txt|rst|adoc)$)|(?:^|\/)docs\//iu
+const DOC_RE = /\.(?:md|mdx|markdown|txt|rst|adoc)$/iu
 const TEST_RE =
   /(?:\.(?:test|spec)\.[cm]?[jt]sx?$)|(?:(?:^|\/)(?:__tests__|tests?|fixtures|__snapshots__)\/)|(?:_test\.(?:go|rs|py)$)|(?:Tests?\.(?:swift|cs|kt)$)/u
 
-/** Dependency manifests that look like docs (requirements.txt) are code, not docs. */
-const MANIFEST_RE = /(?:^|\/)requirements[^/]*\.txt$/u
+/** Build and dependency manifests that look like docs (requirements.txt) are code, not docs. */
+const MANIFEST_RE = /(?:^|\/)(?:requirements[^/]*|CMakeLists)\.txt$/iu
 
 const SECURITY_RES: readonly RegExp[] = [
   /auth|session|token|permission|crypto|secret|password|credential|oauth|jwt/iu,

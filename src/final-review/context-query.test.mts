@@ -16,6 +16,15 @@ describe('fetchConversation', () => {
     expect(args.slice(4)).toEqual(['-f', 'owner=o', '-f', 'name=r', '-F', 'pr=9'])
   })
 
+  it('asks for page info so truncation is detectable', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify({ data: { repository: { pullRequest: {} } } }),
+    )
+    await fetchConversation(target, run)
+    const query = (run.mock.calls[0]![0] as string[])[3] as string
+    expect(query.match(/pageInfo \{ hasPreviousPage \}/gu)).toHaveLength(2)
+  })
+
   it('throws when the pull request is missing', async () => {
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: null } } }),

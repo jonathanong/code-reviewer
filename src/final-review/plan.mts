@@ -10,6 +10,8 @@ export type SinceDiff = {
   status: string
   paths: string[]
   lines: number
+  /** The compare API hit its file cap, so the real change is larger than `paths` shows. */
+  truncated?: boolean
 }
 
 export type PlanInput = {
@@ -51,8 +53,16 @@ function chooseEffort(input: PlanInput, reasons: string[]): Effort {
     reasons.push('No earlier final review: high effort.')
     return 'high'
   }
+  if (context.truncated) {
+    reasons.push('The review conversation is longer than the digest reads: high effort.')
+    return 'high'
+  }
   if (since === undefined || since.status !== 'ahead') {
     reasons.push('The reviewed SHA is not an ancestor of the head: high effort.')
+    return 'high'
+  }
+  if (since.truncated === true) {
+    reasons.push('The diff since the reviewed SHA is too large to list: high effort.')
     return 'high'
   }
   if (since.lines * 2 > context.lines) {

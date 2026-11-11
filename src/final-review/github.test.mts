@@ -61,10 +61,21 @@ describe('createGhFinalReviewIo', () => {
     expect(calls[0]).toEqual(['api', '--paginate', 'repos/acme/widgets/pulls/7/files?per_page=100'])
   })
 
-  it('lists review bodies decoded from json lines', async () => {
-    const { io, calls } = setup(['"one\\ntwo"\n\n  "three"  \n'])
-    await expect(io.listReviewBodies()).resolves.toEqual(['one\ntwo', 'three'])
-    expect(calls[0]?.slice(-2)).toEqual(['-q', '.[].body | @json'])
+  it('lists reviews with authors decoded from json lines', async () => {
+    const { io, calls } = setup([
+      '{"body":"one\\ntwo","author":"bot"}\n\n  {"body":"three","author":null}  \n',
+    ])
+    await expect(io.listReviews()).resolves.toEqual([
+      { body: 'one\ntwo', author: 'bot' },
+      { body: 'three', author: null },
+    ])
+    expect(calls[0]?.slice(-2)).toEqual(['-q', '.[] | {body, author: .user.login} | @json'])
+  })
+
+  it('resolves trusted authors from the viewer and the allowlist', async () => {
+    const { io, calls } = setup(['{"data":{"viewer":{"login":"Me"}}}'])
+    await expect(io.trustedAuthors()).resolves.toEqual(new Set(['me']))
+    expect(calls[0]?.join(' ')).toContain('viewer')
   })
 
   it('detects the approval label', async () => {

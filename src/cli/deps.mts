@@ -4,6 +4,7 @@ import {
   createGhFinalReviewIo,
   createGhLabelIo,
   createGhPrepareIo,
+  parseTrustedAuthors,
   type FinalReviewIo,
   type LabelIo,
   type PrepareIo,
@@ -30,7 +31,11 @@ export type FinalReviewDeps = {
 }
 
 /** Default dependencies; App or `gh` auth is chosen once, on first use. */
-export function createDefaultDeps(getAuth: () => GhAuth = createGhAuth): FinalReviewDeps {
+export function createDefaultDeps(
+  getAuth: () => GhAuth = createGhAuth,
+  env: Record<string, string | undefined> = process.env,
+): FinalReviewDeps {
+  const trusted = parseTrustedAuthors(env.FINAL_REVIEWER_TRUSTED_AUTHORS)
   let auth: GhAuth | undefined
   const resolved = () => (auth ??= getAuth())
   const forTarget = (target: PullTarget) => {
@@ -39,9 +44,9 @@ export function createDefaultDeps(getAuth: () => GhAuth = createGhAuth): FinalRe
   }
   return {
     authMode: () => resolved().mode,
-    createIo: (target) => createGhFinalReviewIo(target, forTarget(target)),
+    createIo: (target) => createGhFinalReviewIo(target, forTarget(target), trusted),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
-    createPrepareIo: (target) => createGhPrepareIo(target, forTarget(target), runGit),
+    createPrepareIo: (target) => createGhPrepareIo(target, forTarget(target), runGit, trusted),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
     runBench: async (args) =>

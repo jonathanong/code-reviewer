@@ -53,17 +53,32 @@ describe('runLoopCommand', () => {
 
   it('lists the queue for --owner', async () => {
     const { deps, run, runner } = fakeDeps()
-    await expect(
-      runLoopCommand('queue', { owner: 'acme', repo: ['acme/a'] }, target, deps),
-    ).resolves.toEqual(['queued'])
+    await expect(runLoopCommand('queue', { owner: 'acme' }, target, deps)).resolves.toEqual([
+      'queued',
+    ])
     expect(runner).toHaveBeenCalledWith('acme')
+    expect(listQueue).toHaveBeenCalledWith(run, 'acme')
+  })
+
+  it('passes the repo name to the runner for a single repo', async () => {
+    const { deps, run, runner } = fakeDeps()
+    await runLoopCommand('queue', { repo: ['acme/a'] }, target, deps)
+    expect(runner).toHaveBeenCalledWith('acme', 'a')
     expect(listQueue).toHaveBeenCalledWith(run, 'acme', ['acme/a'])
   })
 
-  it('derives the owner from --repo', async () => {
-    const { deps, run } = fakeDeps()
-    await runLoopCommand('queue', { repo: ['acme/a', 'acme/b'] }, target, deps)
+  it('groups several repos per owner and concatenates results', async () => {
+    const { deps, run, runner } = fakeDeps()
+    vi.mocked(listQueue)
+      .mockResolvedValueOnce(['one'] as never)
+      .mockResolvedValueOnce(['two'] as never)
+    await expect(
+      runLoopCommand('queue', { repo: ['acme/a', 'bob/c', 'acme/b'] }, target, deps),
+    ).resolves.toEqual(['one', 'two'])
+    expect(runner).toHaveBeenCalledWith('acme', undefined)
+    expect(runner).toHaveBeenCalledWith('bob', 'c')
     expect(listQueue).toHaveBeenCalledWith(run, 'acme', ['acme/a', 'acme/b'])
+    expect(listQueue).toHaveBeenCalledWith(run, 'bob', ['bob/c'])
   })
 
   it('needs an owner or a repo for the queue', async () => {

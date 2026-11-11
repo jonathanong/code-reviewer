@@ -33,6 +33,7 @@ describe('final-review index', () => {
       'numberDiff',
       'packBodies',
       'parseFinalReviewInput',
+      'parseTrustedAuthors',
       'placeFindings',
       'planReview',
       'postFinalReview',

@@ -42,9 +42,25 @@ export async function runLoopCommand(
       return { mode: deps.authMode() }
     case 'queue': {
       const repos = values.repo ?? []
-      const owner = values.owner ?? splitRepo(repos[0] ?? '').owner
-      if (owner === '') throw new Error('queue needs --owner or --repo.')
-      return listQueue(deps.runner(owner), owner, repos)
+      if (repos.length === 0) {
+        if (values.owner === undefined || values.owner === '') {
+          throw new Error('queue needs --owner or --repo.')
+        }
+        return listQueue(deps.runner(values.owner), values.owner)
+      }
+      // Each owner has its own installation, so list per owner with that owner's token.
+      const byOwner = new Map<string, string[]>()
+      for (const repo of repos) {
+        const { owner } = splitRepo(repo)
+        byOwner.set(owner, [...(byOwner.get(owner) ?? []), repo])
+      }
+      const entries = await Promise.all(
+        [...byOwner].map(([owner, group]) => {
+          const only = group.length === 1 ? splitRepo(group[0] as string).name : undefined
+          return listQueue(deps.runner(owner, only), owner, group)
+        }),
+      )
+      return entries.flat()
     }
     case 'claim': {
       const force = values.force === true

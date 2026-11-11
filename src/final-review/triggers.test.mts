@@ -10,13 +10,19 @@ import {
 } from './triggers.mts'
 
 describe('isDocPath', () => {
-  it.each(['README.md', 'a/b.mdx', 'x.rst', 'notes.txt', 'docs/guide.png', 'pkg/docs/a.ts'])(
+  it.each(['README.md', 'a/b.mdx', 'x.rst', 'notes.txt', 'docs/guide.MD'])(
     'treats %s as a doc',
     (path) => expect(isDocPath(path)).toBe(true),
   )
-  it.each(['src/a.ts', 'mydocs/a.ts'])('treats %s as code', (path) =>
-    expect(isDocPath(path)).toBe(false),
-  )
+  it.each([
+    'src/a.ts',
+    'docs/guide.png',
+    'pkg/docs/a.ts',
+    'requirements.txt',
+    'py/requirements-dev.txt',
+    'CMakeLists.txt',
+    'lib/cmakelists.txt',
+  ])('treats %s as code', (path) => expect(isDocPath(path)).toBe(false))
 })
 
 describe('isTestPath', () => {
@@ -46,7 +52,8 @@ describe('isDocsOnly and isTestOrDocsOnly', () => {
     expect(isTestOrDocsOnly([])).toBe(false)
   })
   it('requires every path to match', () => {
-    expect(isDocsOnly(['a.md', 'docs/b.ts'])).toBe(true)
+    expect(isDocsOnly(['a.md', 'b.txt'])).toBe(true)
+    expect(isDocsOnly(['a.md', 'docs/b.ts'])).toBe(false)
     expect(isDocsOnly(['a.md', 'b.ts'])).toBe(false)
     expect(isTestOrDocsOnly(['a.md', 'b.test.ts'])).toBe(true)
     expect(isTestOrDocsOnly(['a.md', 'b.ts'])).toBe(false)

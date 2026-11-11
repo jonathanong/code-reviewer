@@ -19,9 +19,11 @@ export type FetchJson = (
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>
 
 export class AppAuthError extends Error {
-  constructor(message: string) {
+  readonly status: number | undefined
+  constructor(message: string, status?: number) {
     super(message)
     this.name = 'AppAuthError'
+    this.status = status
   }
 }
 
@@ -97,7 +99,10 @@ export function createInstallationTokenProvider(
       },
     })
     if (!response.ok) {
-      throw new AppAuthError(`GitHub App request ${method} ${path} failed with ${response.status}.`)
+      throw new AppAuthError(
+        `GitHub App request ${method} ${path} failed with ${response.status}.`,
+        response.status,
+      )
     }
     return (await response.json()) as Record<string, unknown>
   }
@@ -105,8 +110,16 @@ export function createInstallationTokenProvider(
     if (config.installationId !== undefined) return config.installationId
     const known = installations.get(owner)
     if (known !== undefined) return known
-    const path = repo === undefined ? `/orgs/${owner}` : `/repos/${owner}/${repo}`
-    const found = await call('GET', `${path}/installation`)
+    const found =
+      repo === undefined
+        ? await call('GET', `/orgs/${owner}/installation`).catch((error: unknown) => {
+            // A personal account has no organization endpoint.
+            if (error instanceof AppAuthError && error.status === 404) {
+              return call('GET', `/users/${owner}/installation`)
+            }
+            throw error
+          })
+        : await call('GET', `/repos/${owner}/${repo}/installation`)
     const id = String(found.id)
     installations.set(owner, id)
     return id

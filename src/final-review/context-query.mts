@@ -28,14 +28,16 @@ export type ReviewThread = {
   comments: { nodes: ThreadComment[] }
 }
 
+export type PageInfo = { hasPreviousPage: boolean }
+
 export type PrConversation = {
   title: string
   headRefOid: string
   baseRefOid: string
   additions: number
   deletions: number
-  reviews: { nodes: PrReview[] }
-  reviewThreads: { nodes: ReviewThread[] }
+  reviews: { nodes: PrReview[]; pageInfo?: PageInfo }
+  reviewThreads: { nodes: ReviewThread[]; pageInfo?: PageInfo }
   comments: { nodes: { author: Author; body: string; createdAt: string }[] }
   commits: { nodes: { commit: { oid: string; messageHeadline: string } }[] }
 }
@@ -45,9 +47,11 @@ const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
     pullRequest(number: $pr) {
       title headRefOid baseRefOid additions deletions
       reviews(last: 60) {
+        pageInfo { hasPreviousPage }
         nodes { id state body submittedAt author { login } commit { oid } }
       }
       reviewThreads(last: 100) {
+        pageInfo { hasPreviousPage }
         nodes {
           id isResolved isOutdated path line
           comments(first: 4) {

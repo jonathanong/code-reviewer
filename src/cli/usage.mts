@@ -18,6 +18,9 @@ vouchington-reviewer bench-verifier --cases cases.json --findings-from DIR --pro
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls. abort drops in-progress (--requeue asks again).
   resolve resolves review threads of fixed findings.
+  Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
+  plus the comma-separated logins in FINAL_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
+  under App auth, where viewer is unavailable).
   post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
   the header; inline comments where the diff allows, the rest in the body) and adds the "final
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request

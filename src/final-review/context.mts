@@ -1,5 +1,6 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
 import { MARKER_RE, PART_MARKER_RE } from './post.mts'
+import { isTrustedAuthor } from './trust.mts'
 
 export type PriorFinding = {
   threadId: string
@@ -23,6 +24,8 @@ export type FollowUpContext = {
   effort: string | null
   /** Headlines of commits after the reviewed SHA; null when it is not in the recent history. */
   commitsSince: string[] | null
+  /** The conversation exceeded one query page, so older reviews or threads may be missing. */
+  truncated: boolean
   unresolved: PriorFinding[]
   others: OtherNote[]
 }
@@ -68,35 +71,59 @@ function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefi
   }
 }
 
+type Dated = OtherNote & { at: string }
+
 function othersFrom(pull: PrConversation, finalIds: Set<string>): OtherNote[] {
-  const threads = pull.reviewThreads.nodes.flatMap((thread) => {
+  const threads = pull.reviewThreads.nodes.flatMap((thread): Dated[] => {
     const first = thread.comments.nodes[0]
     if (thread.isResolved || first === undefined) return []
     if (finalIds.has(first.pullRequestReview?.id ?? '')) return []
     const where = `${thread.path}:${thread.line ?? 'file'}${thread.isOutdated ? ' (outdated)' : ''}`
-    return [{ author: login(first.author), where, text: squash(first.body) }]
+    return [{ author: login(first.author), where, text: squash(first.body), at: first.createdAt }]
   })
-  const reviews = pull.reviews.nodes.flatMap((review) => {
+  const reviews = pull.reviews.nodes.flatMap((review): Dated[] => {
     if (finalIds.has(review.id) || review.body.trim().length === 0) return []
     const where = `review ${review.state.toLowerCase()} @${review.commit?.oid.slice(0, 7) ?? '?'}`
-    return [{ author: login(review.author), where, text: squash(review.body) }]
+    return [
+      {
+        author: login(review.author),
+        where,
+        text: squash(review.body),
+        at: review.submittedAt ?? '',
+      },
+    ]
   })
-  const comments = pull.comments.nodes.flatMap((comment) =>
+  const comments = pull.comments.nodes.flatMap((comment): Dated[] =>
     comment.body.trim().length === 0
       ? []
-      : [{ author: login(comment.author), where: 'comment', text: squash(comment.body) }],
+      : [
+          {
+            author: login(comment.author),
+            where: 'comment',
+            text: squash(comment.body),
+            at: comment.createdAt,
+          },
+        ],
   )
+  // Oldest first, so the cap keeps the newest notes whichever source they came from.
   return [...threads, ...reviews, ...comments]
     .filter((note) => !isNoise(note))
+    .sort((a, b) => a.at.localeCompare(b.at))
     .slice(-MAX_OTHER_NOTES)
+    .map(({ author, where, text }) => ({ author, where, text }))
 }
 
 /** Distills a pull request's review conversation into what a follow-up review needs. */
-export function buildFollowUpContext(pull: PrConversation): FollowUpContext {
-  const finalReviews = pull.reviews.nodes.filter(
+export function buildFollowUpContext(
+  pull: PrConversation,
+  trusted: ReadonlySet<string>,
+): FollowUpContext {
+  // Only the posting identity's markers count: anyone else could forge one.
+  const own = pull.reviews.nodes.filter((review) => isTrustedAuthor(review.author?.login, trusted))
+  const finalReviews = own.filter(
     (review) => MARKER_RE.test(review.body) || PART_MARKER_RE.test(review.body),
   )
-  const latest = pull.reviews.nodes
+  const latest = own
     .map((review) => MARKER_RE.exec(review.body))
     .filter((match) => match !== null)
     .at(-1)
@@ -122,6 +149,9 @@ export function buildFollowUpContext(pull: PrConversation): FollowUpContext {
       index === -1
         ? null
         : pull.commits.nodes.slice(index + 1).map((node) => node.commit.messageHeadline),
+    truncated:
+      pull.reviews.pageInfo?.hasPreviousPage === true ||
+      pull.reviewThreads.pageInfo?.hasPreviousPage === true,
     unresolved,
     others: othersFrom(pull, finalIds),
   }

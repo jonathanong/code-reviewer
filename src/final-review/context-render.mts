@@ -28,6 +28,9 @@ export function renderFollowUpContext(context: FollowUpContext): string {
       for (const headline of context.commitsSince) lines.push(`  - ${headline}`)
     }
   }
+  if (context.truncated) {
+    lines.push('- The conversation is longer than the newest 60 reviews or 100 threads read here.')
+  }
   lines.push('', `## Unresolved final-review findings (${context.unresolved.length})`, '')
   for (const finding of context.unresolved) {
     const where = `${finding.path}:${finding.line ?? 'file'}${finding.outdated ? ', outdated' : ''}`
