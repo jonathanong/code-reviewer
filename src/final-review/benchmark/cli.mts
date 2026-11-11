@@ -155,9 +155,10 @@ export async function runFinalReviewBenchCli(
   if (values['score-only'] !== true && values.prompts === undefined)
     throw new Error('bench needs --prompts.')
   const ids = new Set(values.case ?? [])
-  const cases = parseEvalCases(JSON.parse(deps.readFile(values.cases)) as unknown).filter(
-    (item) => ids.size === 0 || ids.has(item.id),
-  )
+  const cases = parseEvalCases(
+    JSON.parse(deps.readFile(values.cases)) as unknown,
+    dirname(values.cases),
+  ).filter((item) => ids.size === 0 || ids.has(item.id))
   const pillars = pickPillars(values.pillar ?? [], cases)
   const options: Options = {
     out: values.out,

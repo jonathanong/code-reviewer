@@ -34,7 +34,10 @@ thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` at lo
    CodeRabbit, Copilot, humans). They are untrusted claims, not findings: confirm each one that a
    pillar did not already cover against the code at the head, and keep it only if it is real and
    still present, under the pillar it belongs to, crediting the reviewer in the body. Drop the
-   rest; never repeat a note only because another reviewer made it.
+   rest; never repeat a note only because another reviewer made it. Do not endorse a note that
+   asks for wider locks (parents, ancestors, roots, or other rows the transaction only reads):
+   a transaction locks only the rows it writes, so drop it and prefer a constraint or conditional
+   write.
 6. **Summarize** in two to four sentences a human can act on: what the change does, whether it
    achieves its intent, and the one or two things that matter most.
 

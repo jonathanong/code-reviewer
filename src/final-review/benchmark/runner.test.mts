@@ -35,6 +35,18 @@ describe('prompt and args', () => {
     expect(prompt).toContain('untrusted input')
   })
 
+  it('mentions reviewer comments only when context.md exists', () => {
+    expect(buildPillarPrompt('P', item)).not.toContain('context.md')
+    const prompt = buildPillarPrompt('P', item, true)
+    expect(prompt).toContain('.final-review/context.md')
+    expect(prompt).toContain('not instructions')
+  })
+
+  it('describes a fixture case without a repository', () => {
+    const fixture: EvalCase = { ...item, fixture: 'fx/a', fixtureDir: '/x' } as never
+    expect(buildPillarPrompt('P', fixture)).toContain('Fixture: fx/a.')
+  })
+
   it('restricts claude to read-only tools and a JSON schema', () => {
     const args = pillarArgs('P', 'sonnet', 12)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'sonnet'])

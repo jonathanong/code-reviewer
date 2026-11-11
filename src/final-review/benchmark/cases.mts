@@ -1,3 +1,5 @@
+import { resolve } from 'node:path'
+
 import { FinalReviewError, PILLARS, SEVERITIES, type Pillar, type Severity } from '../finding.mts'
 
 export type ExpectedFinding = {
@@ -8,17 +10,32 @@ export type ExpectedFinding = {
   claim: string
 }
 
-export type EvalCase = {
+type CaseBase = {
   id: string
-  repo: string
-  pr: number
   title: string
-  baseSha: string
-  headSha: string
   kind: 'positive' | 'negative'
   reason: string
   expected: ExpectedFinding[]
 }
+
+/** A real pull request, cloned and exported with git. */
+export type RepoCase = CaseBase & {
+  repo: string
+  pr: number
+  baseSha: string
+  headSha: string
+}
+
+/** A synthetic case: a directory holding `base/`, `head/`, `pr.md`, and optional `context.md`. */
+export type FixtureCase = CaseBase & { fixture: string; fixtureDir: string }
+
+export type EvalCase = RepoCase | FixtureCase
+
+export function isFixtureCase(item: EvalCase): item is FixtureCase {
+  return 'fixture' in item
+}
+
+const REPO_FIELDS = ['repo', 'pr', 'baseSha', 'headSha'] as const
 
 type Json = Record<string, unknown>
 
@@ -63,19 +80,35 @@ function expected(raw: unknown, where: string): ExpectedFinding {
   return { pillar, severity, path, lines: lines(raw.lines, where), claim: str(raw, 'claim', where) }
 }
 
-function evalCase(raw: unknown, index: number): EvalCase {
-  const where = `cases[${index}]`
-  if (!isRecord(raw)) fail(where, 'must be an object')
+function source(
+  raw: Json,
+  where: string,
+  baseDir: string,
+): Omit<RepoCase, keyof CaseBase> | Pick<FixtureCase, 'fixture' | 'fixtureDir'> {
+  if (raw.fixture !== undefined) {
+    if (REPO_FIELDS.some((field) => raw[field] !== undefined))
+      fail(where, 'a fixture case must not set repo, pr, baseSha, or headSha')
+    const fixture = str(raw, 'fixture', where)
+    if (fixture.length === 0) fail(where, 'fixture must be a directory')
+    return { fixture, fixtureDir: resolve(baseDir, fixture) }
+  }
   const repo = str(raw, 'repo', where)
   if (!REPO_RE.test(repo)) fail(where, 'repo must be owner/name')
   const baseSha = str(raw, 'baseSha', where)
   const headSha = str(raw, 'headSha', where)
   if (!SHA_RE.test(baseSha) || !SHA_RE.test(headSha))
     fail(where, 'baseSha and headSha must be full SHAs')
-  if (raw.kind !== 'positive' && raw.kind !== 'negative')
-    fail(where, 'kind must be positive or negative')
   if (!Number.isInteger(raw.pr) || (raw.pr as number) <= 0)
     fail(where, 'pr must be a positive integer')
+  return { repo, pr: raw.pr as number, baseSha, headSha }
+}
+
+function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
+  const where = `cases[${index}]`
+  if (!isRecord(raw)) fail(where, 'must be an object')
+  const origin = source(raw, where, baseDir)
+  if (raw.kind !== 'positive' && raw.kind !== 'negative')
+    fail(where, 'kind must be positive or negative')
   const items = Array.isArray(raw.expected)
     ? raw.expected
     : fail(where, 'expected must be an array')
@@ -86,21 +119,18 @@ function evalCase(raw: unknown, index: number): EvalCase {
     fail(where, 'a negative case has no expected findings')
   return {
     id: str(raw, 'id', where),
-    repo,
-    pr: raw.pr as number,
+    ...origin,
     title: str(raw, 'title', where),
-    baseSha,
-    headSha,
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',
     expected: parsed,
   }
 }
 
-/** Parses labeled eval cases; ids must be unique. */
-export function parseEvalCases(raw: unknown): EvalCase[] {
+/** Parses labeled eval cases; ids must be unique. Fixture paths resolve against `baseDir`. */
+export function parseEvalCases(raw: unknown, baseDir = '.'): EvalCase[] {
   if (!Array.isArray(raw)) throw new FinalReviewError('Eval cases must be a JSON array.')
-  const cases = raw.map(evalCase)
+  const cases = raw.map((item, index) => evalCase(item, index, baseDir))
   const seen = new Set<string>()
   for (const item of cases) {
     if (seen.has(item.id)) throw new FinalReviewError(`Duplicate eval case id: ${item.id}`)

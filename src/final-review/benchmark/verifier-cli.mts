@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { PILLARS } from '../finding.mts'
@@ -143,9 +143,10 @@ export async function runFinalReviewVerifierBenchCli(
   const scoreOnly = values['score-only'] === true
   if (!scoreOnly && values.prompts === undefined) throw new Error('bench-verifier needs --prompts.')
   const ids = new Set(values.case ?? [])
-  const cases = parseEvalCases(JSON.parse(deps.readFile(casesPath)) as unknown).filter(
-    (item) => ids.size === 0 || ids.has(item.id),
-  )
+  const cases = parseEvalCases(
+    JSON.parse(deps.readFile(casesPath)) as unknown,
+    dirname(casesPath),
+  ).filter((item) => ids.size === 0 || ids.has(item.id))
   const options: Options = {
     findingsFrom,
     out,

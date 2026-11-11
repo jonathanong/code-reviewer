@@ -1,53 +1,14 @@
-import { execFile } from 'node:child_process'
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { promisify } from 'node:util'
 
-import { diffFileName, renderDiffIndex, splitDiff } from '../diff-files.mts'
-import { numberDiff } from '../numbered-diff.mts'
-import type { EvalCase } from './cases.mts'
+import { isFixtureCase, type EvalCase, type RepoCase } from './cases.mts'
+import { defaultExec, type Exec } from './exec.mts'
+import { writeContext, type Snapshot } from './snapshot-context.mts'
+import { prepareFixtureSnapshot } from './snapshot-fixture.mts'
 
-/** Runs a binary and resolves stdout; rejects on a non-zero exit. */
-export type Exec = (command: string, args: string[], options?: { cwd?: string }) => Promise<string>
-
-const execFileAsync = promisify(execFile)
-
-const TAIL = 600
-
-function tail(text: string): string {
-  return text.trim().slice(-TAIL)
-}
-
-/** Runs a binary; a failure reports the exit code and output tails, never the (long) arguments. */
-export const defaultExec: Exec = async (command, args, options = {}) => {
-  try {
-    const { stdout } = await execFileAsync(command, args, {
-      ...options,
-      encoding: 'utf8',
-      maxBuffer: 256 * 1024 * 1024,
-    })
-    return stdout
-  } catch (error) {
-    // execFile errors carry the captured output as strings (empty when the binary never ran).
-    const failure = error as { code?: unknown; stdout: string; stderr: string }
-    const parts = [
-      `${command} exited with ${String(failure.code)}`,
-      tail(failure.stdout),
-      tail(failure.stderr),
-    ]
-    throw new Error(parts.filter((part) => part.length > 0).join('\n'), { cause: error })
-  }
-}
-
-export type Snapshot = {
-  /** Git-free tree of the pull request head; the reviewer's working directory. */
-  dir: string
-  diff: string
-  body: string
-}
-
-/** Context files a pillar reads, kept inside the snapshot so read-only tools can reach them. */
-export const CONTEXT_DIR = '.final-review'
+export { defaultExec, ExecError, type Exec } from './exec.mts'
+export { CONTEXT_DIR, hasContextNotes, type Snapshot } from './snapshot-context.mts'
+export { normalizeFixtureDiff } from './snapshot-fixture.mts'
 
 const pendingClones = new Map<string, Promise<unknown>>()
 
@@ -78,8 +39,8 @@ async function ensureClone(repo: string, repoDir: string, exec: Exec): Promise<v
  * Exports the pre-merge head as a tree without `.git`, so the reviewer cannot read later history
  * (the revert, follow-up fixes) that would leak the answer.
  */
-export async function prepareSnapshot(
-  item: EvalCase,
+async function prepareRepoSnapshot(
+  item: RepoCase,
   cacheRoot: string,
   workRoot: string,
   exec: Exec = defaultExec,
@@ -114,17 +75,17 @@ export async function prepareSnapshot(
     '-q',
     '.body',
   ])
-  const context = join(dir, CONTEXT_DIR)
-  mkdirSync(context, { recursive: true })
-  const numbered = numberDiff(diff)
-  writeFileSync(join(context, 'diff.patch'), numbered)
-  // Per-file patches and an index let a reviewer of a large diff read one file at a time.
-  const files = splitDiff(numbered)
-  mkdirSync(join(context, 'diff'), { recursive: true })
-  files.forEach((file, index) => {
-    writeFileSync(join(context, 'diff', diffFileName(index)), file.text)
-  })
-  writeFileSync(join(context, 'files.md'), renderDiffIndex(files, `${CONTEXT_DIR}/diff`))
-  writeFileSync(join(context, 'pr.md'), `# ${item.title}\n\n${body.trim()}\n`)
+  writeContext(dir, item.title, diff, body)
   return { dir, diff, body }
+}
+
+/** Exports a case's pull request head (or fixture head) and its diff for the reviewer. */
+export async function prepareSnapshot(
+  item: EvalCase,
+  cacheRoot: string,
+  workRoot: string,
+  exec: Exec = defaultExec,
+): Promise<Snapshot> {
+  if (isFixtureCase(item)) return prepareFixtureSnapshot(item, workRoot, exec)
+  return prepareRepoSnapshot(item, cacheRoot, workRoot, exec)
 }

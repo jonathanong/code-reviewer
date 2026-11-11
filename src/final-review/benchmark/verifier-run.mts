@@ -9,6 +9,7 @@ import {
 } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
+import { caseRevision, describeCase } from './fixture.mts'
 import { READ_ONLY_TOOLS } from './runner.mts'
 import { CONTEXT_DIR, type Exec } from './snapshot.mts'
 import type { VerifierInput } from './verifier-input.mts'
@@ -57,7 +58,7 @@ export function buildVerifierPrompt(
     're-review, or post anything. Perform congruence, verify, deduplicate, and summarize, then',
     'return the review as JSON. Every output finding lists `sources`: the input indexes it',
     'confirms or merges (empty for a new congruence finding). Omit rejected findings entirely.',
-    `Repository: ${item.repo}. The working directory is the pull request head without git history.`,
+    describeCase(item),
     `Read \`${CONTEXT_DIR}/pr.md\` (title and description) and \`${CONTEXT_DIR}/files.md\`, an`,
     `index of per-file patches in \`${CONTEXT_DIR}/diff/\`. Read only the patches of files the`,
     `findings cite or that congruence needs; never read the combined \`${CONTEXT_DIR}/diff.patch\``,
@@ -120,8 +121,7 @@ export type VerifierRun = { verifierPrompt: string; model: string; maxTurns: num
 
 /** Identifies everything a verifier output depends on, so a changed run is not reused. */
 export function verifierRunInputs(item: EvalCase, input: VerifierInput, run: VerifierRun): string {
-  const { repo, baseSha, headSha } = item
-  const payload = JSON.stringify({ repo, baseSha, headSha, input, run })
+  const payload = JSON.stringify({ ...caseRevision(item), input, run })
   return createHash('sha256').update(payload).digest('hex')
 }
 

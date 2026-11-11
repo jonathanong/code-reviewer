@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { FinalReviewError } from '../finding.mts'
-import { casesForPillar, parseEvalCases } from './cases.mts'
+import { casesForPillar, isFixtureCase, parseEvalCases } from './cases.mts'
 
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
@@ -67,6 +67,27 @@ describe('parseEvalCases', () => {
       [null, null],
       [null, null],
     ])
+  })
+
+  it('parses a fixture case relative to the cases file', () => {
+    const fixture: Record<string, unknown> = { ...positive(), fixture: 'fixtures/a' }
+    for (const field of ['repo', 'pr', 'baseSha', 'headSha']) delete fixture[field]
+    const [item] = parseEvalCases([fixture], '/cases')
+    expect(item).toMatchObject({ id: 'p1', fixture: 'fixtures/a', fixtureDir: '/cases/fixtures/a' })
+    expect(item).not.toHaveProperty('repo')
+    expect(isFixtureCase(item as never)).toBe(true)
+    expect(isFixtureCase(parseEvalCases([positive()])[0] as never)).toBe(false)
+  })
+
+  it('requires exactly one of fixture or the repo shape', () => {
+    expect(message([positive({ fixture: 'f' })])).toBe(
+      'cases[0]: a fixture case must not set repo, pr, baseSha, or headSha',
+    )
+    const bare = positive()
+    for (const field of ['repo', 'pr', 'baseSha', 'headSha']) delete bare[field]
+    expect(message([bare])).toBe('cases[0]: repo must be a string')
+    expect(message([{ ...bare, fixture: '' }])).toBe('cases[0]: fixture must be a directory')
+    expect(message([{ ...bare, fixture: 3 }])).toBe('cases[0]: fixture must be a string')
   })
 
   it('rejects non-array input and duplicate ids', () => {
