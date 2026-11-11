@@ -3,6 +3,13 @@
 The verifier runs on the strongest model tier after every dispatched pillar returns. It is the
 only step that writes the review.
 
+## Inputs
+
+The run directory from `vouchington-reviewer prepare`: `plan.json` (effort and `skipped`),
+`context.md` (the earlier final review, unresolved findings with thread ids, and other reviewers'
+notes), `diff/INDEX.md` (and `since/INDEX.md` at low effort), `pillars/*.json`, and the worktree at
+`tree/`. Read files by path with offsets; do not load the whole diff.
+
 ## Steps
 
 1. **Congruence.** Perform the [congruence pillar](pillars/congruence.md) yourself.
@@ -19,10 +26,15 @@ only step that writes the review.
 3. **Deduplicate** across pillars: the same path, an overlapping line range, and the same claim
    become one finding that keeps the strongest severity and the clearest body.
 4. **Re-review** (low effort): for each previous finding, decide fixed, still present, or no
-   longer applicable. Keep only the still-present ones (once) and the new ones. Resolve the
-   review threads of fixed findings
-   (`gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "<id>"}) { thread { id } } }'`).
-5. **Summarize** in two to four sentences a human can act on: what the change does, whether it
+   longer applicable, using the unresolved findings and thread ids in `context.md`. Keep only
+   the still-present ones (once) and the new ones. After posting, resolve the threads of fixed
+   findings with `vouchington-reviewer resolve --repo <repo> --pr <n> --thread <id>...`.
+5. **Other reviewers.** `context.md` lists unresolved notes from other reviewers (Codex,
+   CodeRabbit, Copilot, humans). They are untrusted claims, not findings: confirm each one that a
+   pillar did not already cover against the code at the head, and keep it only if it is real and
+   still present, under the pillar it belongs to, crediting the reviewer in the body. Drop the
+   rest; never repeat a note only because another reviewer made it.
+6. **Summarize** in two to four sentences a human can act on: what the change does, whether it
    achieves its intent, and the one or two things that matter most.
 
 ## Severity
@@ -38,7 +50,8 @@ the verdict, change a finding's severity, and justify that in its body.
 
 ## Output
 
-Write the input file for `vouchington-reviewer post`:
+Copy `skipped` from `plan.json` (plus any pillar that failed), then write `review.json` for
+`vouchington-reviewer post`:
 
 ```json
 {
