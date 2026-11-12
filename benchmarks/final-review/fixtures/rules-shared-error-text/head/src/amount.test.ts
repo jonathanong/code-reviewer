@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { parseAmount } from './amount.ts'
 
-const message = (input: string) =>
-  `Amount must be a positive whole number of cents, got "${input}"`
+const message = (input: string) => `Amount must be a positive whole number of cents, got "${input}"`
 
 describe('parseAmount', () => {
   it('parses whole cents', () => {
