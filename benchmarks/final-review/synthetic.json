@@ -38,5 +38,69 @@
     "kind": "negative",
     "reason": "The conditional UPDATE touches only the written row; there is nothing about lock scope to flag.",
     "expected": []
+  },
+  {
+    "id": "rules-shared-error-text",
+    "fixture": "fixtures/rules-shared-error-text",
+    "title": "feat: parse amounts from user input",
+    "kind": "positive",
+    "reason": "The new tests match error message text. Only the shared no-mistakes testing-rules forbid it; the repository's AGENTS.md is silent.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/amount.test.ts",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes testing-rules skill (MUST NOT match error message text; assert type, code, or structured fields), the tests assert the InvalidAmountError message text instead of its type or its INVALID_AMOUNT code. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-tooling-sweep-until-empty",
+    "fixture": "fixtures/rules-tooling-sweep-until-empty",
+    "title": "feat: purge expired sessions every 15 minutes",
+    "kind": "positive",
+    "reason": "Each statement is bounded, but the run loops until a batch comes back short. The vouchington-tooling bounded-iteration skill requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/jobs/purge-sessions.ts",
+        "lines": null,
+        "claim": "Citing the vouchington-tooling bounded-iteration skill (cap every run, report whether work remains, never loop until empty), the purge job keeps deleting batches until one comes back short, so a single run has no cap on total rows or time. A finding that only praises the LIMIT or SKIP LOCKED, or does not tie the loop to that rule, does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-dependency-flag-key",
+    "fixture": "fixtures/rules-dependency-flag-key",
+    "title": "feat: one-page checkout behind a flag",
+    "kind": "positive",
+    "reason": "The @acme/flags dependency's AGENTS.md requires kebab-case keys declared in the app's flags.json and says undeclared keys are silently off. The change uses an undeclared camelCase key, so the new flow can never turn on.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/checkout.ts",
+        "lines": null,
+        "claim": "Citing the @acme/flags dependency's rules for callers (its AGENTS.md: keys are kebab-case and must be declared in the app's flags.json; isEnabled returns false without logging for an undeclared key), isEnabled('newCheckoutFlow') uses a camelCase key that flags.json does not declare, so the new checkout is silently off everywhere. A finding that only questions naming style, or does not rely on the dependency's rules, does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-local-override",
+    "fixture": "fixtures/rules-local-override",
+    "title": "feat: parse amounts from user input",
+    "kind": "negative",
+    "reason": "Same tests as rules-shared-error-text, but this repository's AGENTS.md requires exact message assertions and explicitly overrides the shared testing rule. Nothing should be flagged at high or above.",
+    "expected": []
+  },
+  {
+    "id": "rules-dependency-flag-ok",
+    "fixture": "fixtures/rules-dependency-flag-ok",
+    "title": "feat: one-page checkout behind a flag",
+    "kind": "negative",
+    "reason": "The flag key is kebab-case and declared in flags.json, as the @acme/flags rules require.",
+    "expected": []
   }
 ]

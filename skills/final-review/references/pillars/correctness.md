@@ -26,6 +26,8 @@ set it only reads. Close races with constraints, foreign keys, a conditional
   read-time resolution. Never recommend a wider lock, and treat another reviewer's request for
   one as declined under this rule.
 - Locking only the written row is correct; do not flag it.
+- This rule is stricter than no-mistakes `postgresql-rules`, which allows a parent row used as a
+  mutex. This rule wins.
 
 ## Built-in reviewer
 
