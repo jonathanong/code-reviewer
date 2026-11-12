@@ -9,6 +9,7 @@ import {
   type SanitizedReview,
 } from '../review-payload/index.mts'
 import { FINAL_APPROVAL_LABEL } from './render.mts'
+import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
 /** The GitHub reads and writes a final review needs, injectable for tests. */
 export type FinalReviewIo = {
@@ -16,7 +17,10 @@ export type FinalReviewIo = {
   /** The pull request's unified diff against its base. */
   diff(): Promise<string>
   listFiles(): Promise<ReviewFile[]>
-  listReviewBodies(): Promise<string[]>
+  /** Review bodies with their author logins, oldest first. */
+  listReviews(): Promise<{ body: string; author: string | null }[]>
+  /** Logins whose `final-review` markers count; see `resolveTrustedAuthors`. */
+  trustedAuthors(): Promise<TrustedAuthors>
   hasApprovalLabel(): Promise<boolean>
   postReview(review: SanitizedReview): Promise<string>
   addApprovalLabel(): Promise<void>
@@ -44,6 +48,7 @@ function lines(text: string): string[] {
 export function createGhFinalReviewIo(
   target: PullTarget,
   run: RunTextCommand = runGh,
+  trustedAllowlist: readonly string[] = [],
 ): FinalReviewIo {
   assertPullTarget(target)
   const { repo, pr } = target
@@ -70,16 +75,17 @@ export function createGhFinalReviewIo(
     async listFiles() {
       return parseReviewFilesJson(await run(['api', '--paginate', `${pull}/files?per_page=100`]))
     },
-    async listReviewBodies() {
+    async listReviews() {
       const out = await run([
         'api',
         '--paginate',
         `${pull}/reviews?per_page=100`,
         '-q',
-        '.[].body | @json',
+        '.[] | {body, author: .user.login} | @json',
       ])
-      return lines(out).map((line) => JSON.parse(line) as string)
+      return lines(out).map((line) => JSON.parse(line) as { body: string; author: string | null })
     },
+    trustedAuthors: () => resolveTrustedAuthors(run, trustedAllowlist),
     async hasApprovalLabel() {
       const out = await run([
         'pr',

@@ -1,0 +1,59 @@
+import { readFileSync } from 'node:fs'
+
+import {
+  createGhFinalReviewIo,
+  createGhLabelIo,
+  createGhPrepareIo,
+  parseTrustedAuthors,
+  type FinalReviewIo,
+  type LabelIo,
+  type PrepareIo,
+  type PullTarget,
+} from '../final-review/index.mts'
+import {
+  createGhAuth,
+  runGit,
+  splitRepo,
+  type GhAuth,
+  type RunTextCommand,
+} from '../gh-cli/index.mts'
+
+export type FinalReviewDeps = {
+  authMode(): GhAuth['mode']
+  createIo(target: PullTarget): FinalReviewIo
+  createLabelIo(target: PullTarget): LabelIo
+  createPrepareIo(target: PullTarget): PrepareIo
+  /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
+  runner(owner: string, repo?: string): RunTextCommand
+  readFile(path: string): string
+  runBench(args: string[]): Promise<number>
+  runVerifierBench(args: string[]): Promise<number>
+}
+
+/** Default dependencies; App or `gh` auth is chosen once, on first use. */
+export function createDefaultDeps(
+  getAuth: () => GhAuth = createGhAuth,
+  env: Record<string, string | undefined> = process.env,
+): FinalReviewDeps {
+  const trusted = parseTrustedAuthors(env.FINAL_REVIEWER_TRUSTED_AUTHORS)
+  let auth: GhAuth | undefined
+  const resolved = () => (auth ??= getAuth())
+  const forTarget = (target: PullTarget) => {
+    const { owner, name } = splitRepo(target.repo)
+    return resolved().runner(owner, name)
+  }
+  return {
+    authMode: () => resolved().mode,
+    createIo: (target) => createGhFinalReviewIo(target, forTarget(target), trusted),
+    createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
+    createPrepareIo: (target) => createGhPrepareIo(target, forTarget(target), runGit, trusted),
+    runner: (owner, repo) => resolved().runner(owner, repo),
+    readFile: (path) => readFileSync(path, 'utf8'),
+    runBench: async (args) =>
+      (await import('../final-review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
+    runVerifierBench: async (args) =>
+      (await import('../final-review/benchmark/verifier-cli.mts')).runFinalReviewVerifierBenchCli(
+        args,
+      ),
+  }
+}

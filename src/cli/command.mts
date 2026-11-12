@@ -1,44 +1,53 @@
-import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
 import {
-  createGhFinalReviewIo,
+  completeReview,
   finalReviewStatus,
-  parseFinalReviewInput,
   numberDiff,
+  parseFinalReviewInput,
   postFinalReview,
   revokeFinalApproval,
-  type FinalReviewIo,
   type PullTarget,
 } from '../final-review/index.mts'
+import { runLoopCommand } from './command-loop.mts'
+import { createDefaultDeps, type FinalReviewDeps } from './deps.mts'
 import { FINAL_REVIEW_USAGE } from './usage.mts'
 
-export type FinalReviewDeps = {
-  createIo(target: PullTarget): FinalReviewIo
-  readFile(path: string): string
-  runBench(args: string[]): Promise<number>
-  runVerifierBench(args: string[]): Promise<number>
-}
+export type { FinalReviewDeps } from './deps.mts'
 
-const defaultDeps: FinalReviewDeps = {
-  createIo: (target) => createGhFinalReviewIo(target),
-  readFile: (path) => readFileSync(path, 'utf8'),
-  runBench: async (args) =>
-    (await import('../final-review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
-  runVerifierBench: async (args) =>
-    (await import('../final-review/benchmark/verifier-cli.mts')).runFinalReviewVerifierBenchCli(
-      args,
-    ),
-}
+const SUBCOMMANDS =
+  'post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, bench, or bench-verifier'
 
-function target(values: { repo?: string; pr?: string }): PullTarget {
-  if (values.repo === undefined || values.pr === undefined)
+function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
+  const repo = values.repo?.[0]
+  if (repo === undefined || values.pr === undefined)
     throw new Error('--repo and --pr are required.')
-  return { repo: values.repo, pr: Number(values.pr) }
+  return { repo, pr: Number(values.pr) }
 }
 
 function print(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
+}
+
+function parse(args: string[]) {
+  return parseArgs({
+    args,
+    strict: true,
+    options: {
+      repo: { type: 'string', multiple: true },
+      pr: { type: 'string' },
+      'head-sha': { type: 'string' },
+      input: { type: 'string' },
+      'dry-run': { type: 'boolean' },
+      owner: { type: 'string' },
+      force: { type: 'boolean' },
+      requeue: { type: 'boolean' },
+      out: { type: 'string' },
+      effort: { type: 'string' },
+      tree: { type: 'string' },
+      thread: { type: 'string', multiple: true },
+    },
+  }).values
 }
 
 async function run(
@@ -52,28 +61,29 @@ async function run(
   }
   if (subcommand === 'bench') return deps.runBench(args)
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
-  const { values } = parseArgs({
-    args,
-    strict: true,
-    options: {
-      repo: { type: 'string' },
-      pr: { type: 'string' },
-      'head-sha': { type: 'string' },
-      input: { type: 'string' },
-      'dry-run': { type: 'boolean' },
-    },
-  })
-  const io = deps.createIo(target(values))
+  const values = parse(args)
+  if (subcommand === undefined) throw new Error(`final-review needs ${SUBCOMMANDS}.`)
+  const loop = await runLoopCommand(subcommand, values, () => target(values), deps)
+  if (loop !== undefined) {
+    print(loop)
+    return 0
+  }
+  const pull = target(values)
+  const io = deps.createIo(pull)
   switch (subcommand) {
     case 'post': {
       if (values['head-sha'] === undefined || values.input === undefined) {
         throw new Error('post needs --head-sha and --input.')
       }
       const input = parseFinalReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
-      const outcome = await postFinalReview(io, input, values['head-sha'], {
-        dryRun: values['dry-run'] === true,
-      })
-      print(values['dry-run'] === true ? outcome : { ...outcome, reviews: outcome.reviews.length })
+      const dryRun = values['dry-run'] === true
+      const outcome = await postFinalReview(io, input, values['head-sha'], { dryRun })
+      if (dryRun) {
+        print(outcome)
+        return 0
+      }
+      const labels = await completeReview(deps.createLabelIo(pull))
+      print({ ...outcome, reviews: outcome.reviews.length, lifecycle: labels })
       return 0
     }
     case 'diff':
@@ -88,13 +98,13 @@ async function run(
       return status.approved ? 0 : 1
     }
     default:
-      throw new Error('final-review needs post, diff, revoke, status, bench, or bench-verifier.')
+      throw new Error(`final-review needs ${SUBCOMMANDS}.`)
   }
 }
 
 export async function runFinalReviewCommand(
   args: string[],
-  deps: FinalReviewDeps = defaultDeps,
+  deps: FinalReviewDeps = createDefaultDeps(),
 ): Promise<number> {
   try {
     return await run(args[0], args.slice(1), deps)

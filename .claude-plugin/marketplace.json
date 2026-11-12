@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "vouchington-reviewer",
+  "description": "The Vouchington standing final reviewer.",
+  "owner": {
+    "name": "Vouchington",
+    "url": "https://github.com/vouchington"
+  },
+  "plugins": [
+    {
+      "name": "vouchington-reviewer",
+      "description": "Standing multi-pillar final reviewer with label intake and follow-up reviews.",
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/vouchington/vouchington-reviewer"
+    }
+  ]
+}

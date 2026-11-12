@@ -2,6 +2,7 @@ import { indexReviewFiles, type SanitizedReview } from '../review-payload/index.
 import { buildFinalReviews, DEFAULT_LIMITS, type BuildLimits } from './build.mts'
 import { FinalReviewError, type FinalReviewInput } from './finding.mts'
 import type { FinalReviewIo } from './github.mts'
+import { isTrustedAuthor } from './trust.mts'
 import { deriveVerdict, type Verdict } from './render.mts'
 
 export type PostOutcome = {
@@ -62,17 +63,23 @@ export type ReviewStatus = {
   approved: boolean
 }
 
-const MARKER_RE = /<!-- final-review sha=([0-9a-f]{40}) verdict=([A-Za-z-]+) effort=([a-z]+) -->/u
+export const MARKER_RE =
+  /<!-- final-review sha=([0-9a-f]{40}) verdict=([A-Za-z-]+) effort=([a-z]+) -->/u
+
+/** Marker on the continuation parts of a review split over several posts. */
+export const PART_MARKER_RE = /<!-- final-review-part sha=([0-9a-f]{40}) part=(\d+) -->/u
 
 /** Reports whether the latest final review covers the current head, for merging agents. */
 export async function finalReviewStatus(io: FinalReviewIo): Promise<ReviewStatus> {
-  const [headSha, bodies, labeled] = await Promise.all([
+  const [headSha, reviews, labeled, trusted] = await Promise.all([
     io.headSha(),
-    io.listReviewBodies(),
+    io.listReviews(),
     io.hasApprovalLabel(),
+    io.trustedAuthors(),
   ])
-  const latest = bodies
-    .map((body) => MARKER_RE.exec(body))
+  const latest = reviews
+    .filter((review) => isTrustedAuthor(review.author, trusted))
+    .map((review) => MARKER_RE.exec(review.body))
     .filter((match): match is RegExpExecArray => match !== null)
     .at(-1)
   const reviewedSha = latest?.[1] ?? null

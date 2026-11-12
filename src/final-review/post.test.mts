@@ -8,6 +8,8 @@ import { reviewMarker, type Verdict } from './render.mts'
 const SHA = 'c'.repeat(40)
 const OTHER = 'd'.repeat(40)
 
+const asReviews = (bodies: string[], author = 'bot') => bodies.map((body) => ({ body, author }))
+
 type MockIo = { [K in keyof FinalReviewIo]: Mock<FinalReviewIo[K]> }
 
 function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
@@ -15,7 +17,8 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
     headSha: vi.fn(async () => SHA),
     diff: vi.fn(async () => ''),
     listFiles: vi.fn(async () => [{ filename: 'a.ts', patch: '@@ -1 +1 @@\n+x\n' }]),
-    listReviewBodies: vi.fn(async () => []),
+    listReviews: vi.fn(async () => asReviews([])),
+    trustedAuthors: vi.fn(async () => new Set(['bot'])),
     hasApprovalLabel: vi.fn(async () => false),
     postReview: vi.fn(async () => 'https://example.test/review'),
     addApprovalLabel: vi.fn(async () => undefined),
@@ -92,7 +95,7 @@ describe('finalReviewStatus', () => {
   const body = (sha: string, verdict: Verdict) => reviewMarker(sha, verdict, 'high')
 
   it('reports no review when none carries a marker', async () => {
-    const io = fakeIo({ listReviewBodies: vi.fn(async () => ['LGTM', 'plain']) })
+    const io = fakeIo({ listReviews: vi.fn(async () => asReviews(['LGTM', 'plain'])) })
     await expect(finalReviewStatus(io)).resolves.toEqual({
       headSha: SHA,
       reviewedSha: null,
@@ -106,10 +109,9 @@ describe('finalReviewStatus', () => {
 
   it('approves only for the newest marker on the current head with the label', async () => {
     const approved = fakeIo({
-      listReviewBodies: vi.fn(async () => [
-        body(OTHER, 'Request Changes'),
-        `x\n${body(SHA, 'Approve')}`,
-      ]),
+      listReviews: vi.fn(async () =>
+        asReviews([body(OTHER, 'Request Changes'), `x\n${body(SHA, 'Approve')}`]),
+      ),
       hasApprovalLabel: vi.fn(async () => true),
     })
     await expect(finalReviewStatus(approved)).resolves.toMatchObject({
@@ -121,17 +123,29 @@ describe('finalReviewStatus', () => {
       approved: true,
     })
     const stale = fakeIo({
-      listReviewBodies: vi.fn(async () => [body(OTHER, 'Approve')]),
+      listReviews: vi.fn(async () => asReviews([body(OTHER, 'Approve')])),
       hasApprovalLabel: vi.fn(async () => true),
     })
     await expect(finalReviewStatus(stale)).resolves.toMatchObject({
       current: false,
       approved: false,
     })
-    const unlabeled = fakeIo({ listReviewBodies: vi.fn(async () => [body(SHA, 'Approve')]) })
+    const forged = fakeIo({
+      listReviews: vi.fn(async () => [
+        ...asReviews([body(OTHER, 'Request Changes')]),
+        ...asReviews([body(SHA, 'Approve')], 'mallory'),
+        { body: body(SHA, 'Approve'), author: null },
+      ]),
+      hasApprovalLabel: vi.fn(async () => true),
+    })
+    await expect(finalReviewStatus(forged)).resolves.toMatchObject({
+      reviewedSha: OTHER,
+      approved: false,
+    })
+    const unlabeled = fakeIo({ listReviews: vi.fn(async () => asReviews([body(SHA, 'Approve')])) })
     await expect(finalReviewStatus(unlabeled)).resolves.toMatchObject({ approved: false })
     const commented = fakeIo({
-      listReviewBodies: vi.fn(async () => [body(SHA, 'Comment')]),
+      listReviews: vi.fn(async () => asReviews([body(SHA, 'Comment')])),
       hasApprovalLabel: vi.fn(async () => true),
     })
     await expect(finalReviewStatus(commented)).resolves.toMatchObject({ approved: false })
