@@ -21,6 +21,25 @@ reviewer may rightly raise the same concern far from where a labeler guessed.
 This repository is public, so `cases.json` holds only cases from public repositories. Keep cases
 from private repositories in a private location and pass that file with `--cases`.
 
+### Fixture cases
+
+A case can instead use `"fixture": "<dir>"` (relative to the cases file) in place of `repo`, `pr`,
+`baseSha`, and `headSha`; set exactly one shape. A fixture is a synthetic, minimal pull request
+that needs no clone or `gh`:
+
+- `base/` and `head/`: the smallest trees that express the pattern. `head/` becomes the reviewer's
+  working tree, and the diff is `git diff --no-index base head` with paths shown as `a/<path>` and
+  `b/<path>`.
+- `pr.md`: the title on the first line (`# ...`), then the description.
+- `context.md` (optional): copied to `.final-review/context.md`, written like the "Other reviewers
+  and comments" section of the live run. The pillar prompt mentions that file only when present.
+
+Fixture cases are cached by a content hash of the fixture directory instead of a head SHA.
+`synthetic.json` holds the fixture cases (currently the `lock-scope-*` evals for the correctness
+pillar's lock-scope rule). It is separate from `cases.json` so that file keeps its mix of mined
+public pull requests and negatives at about a third; run it with `--cases
+benchmarks/final-review/synthetic.json`. A fixture must be synthetic: never copy private code.
+
 Labels are written by people or agents from the revert and fix history. Add cases by mining new
 reverts and regression fixes, and keep negatives at roughly a third of the set.
 

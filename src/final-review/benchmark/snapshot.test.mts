@@ -1,10 +1,18 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EvalCase } from './cases.mts'
-import { CONTEXT_DIR, defaultExec, prepareSnapshot, type Exec } from './snapshot.mts'
+import {
+  CONTEXT_DIR,
+  ExecError,
+  defaultExec,
+  hasContextNotes,
+  normalizeFixtureDiff,
+  prepareSnapshot,
+  type Exec,
+} from './snapshot.mts'
 
 const item: EvalCase = {
   id: 'case-1',
@@ -139,6 +147,101 @@ describe('prepareSnapshot', () => {
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+})
+
+const FIXTURES = resolve(import.meta.dirname, '../../../benchmarks/final-review/fixtures')
+
+function fixtureCase(name: string): EvalCase {
+  return {
+    id: name,
+    fixture: `fixtures/${name}`,
+    fixtureDir: join(FIXTURES, name),
+    title: 'Fallback',
+    kind: 'negative',
+    reason: '',
+    expected: [],
+  }
+}
+
+describe('prepareSnapshot for fixtures', () => {
+  it('copies head, diffs against base with plain paths, and carries context.md', async () => {
+    const snapshot = await prepareSnapshot(
+      fixtureCase('lock-scope-race-response'),
+      join(root, 'cache'),
+      join(root, 'work'),
+    )
+    expect(existsSync(join(snapshot.dir, 'replies.mts'))).toBe(true)
+    expect(existsSync(join(snapshot.dir, '.git'))).toBe(false)
+    expect(snapshot.diff).toContain('diff --git a/replies.mts b/replies.mts')
+    expect(snapshot.diff).toContain('--- a/replies.mts\n+++ b/replies.mts')
+    expect(snapshot.diff).not.toContain('base/')
+    expect(snapshot.diff).not.toContain('head/')
+    expect(snapshot.body).toContain('Archived comments are read-only')
+    expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'pr.md'), 'utf8')).toMatch(
+      /^# feat: reject replies to archived comments\n\nArchived/u,
+    )
+    expect(hasContextNotes(snapshot.dir)).toBe(true)
+    expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'context.md'), 'utf8')).toContain(
+      'Other reviewers and comments',
+    )
+  })
+
+  it('omits context.md when the fixture has none', async () => {
+    const snapshot = await prepareSnapshot(
+      fixtureCase('lock-scope-written-row-only'),
+      join(root, 'cache'),
+      join(root, 'work'),
+    )
+    expect(hasContextNotes(snapshot.dir)).toBe(false)
+  })
+
+  it('uses the case title when pr.md has no title line', async () => {
+    const dir = join(root, 'fx')
+    mkdirSync(join(dir, 'base'), { recursive: true })
+    mkdirSync(join(dir, 'head'), { recursive: true })
+    writeFileSync(join(dir, 'pr.md'), '')
+    const item = { ...fixtureCase('x'), fixtureDir: dir } as EvalCase
+    const snapshot = await prepareSnapshot(
+      item,
+      join(root, 'cache'),
+      join(root, 'work'),
+      async () => '',
+    )
+    expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'pr.md'), 'utf8')).toBe('# Fallback\n\n\n')
+  })
+
+  it('rethrows other git failures', async () => {
+    const item = fixtureCase('lock-scope-written-row-only')
+    const run = (error: unknown) =>
+      prepareSnapshot(item, join(root, 'cache'), join(root, 'work'), async () => {
+        throw error
+      })
+    await expect(run(new ExecError('boom', 128, '', null))).rejects.toThrow('boom')
+    await expect(run(new Error('plain'))).rejects.toThrow('plain')
+  })
+})
+
+describe('normalizeFixtureDiff', () => {
+  it('rewrites headers for added, deleted, and changed files only', () => {
+    const diff = [
+      'diff --git a/base/x.sql b/head/x.sql',
+      '--- a/base/x.sql',
+      '+++ b/head/x.sql',
+      '+ a/base/keep',
+      '--- /dev/null',
+      '+++ b/head/new.sql',
+    ].join('\n')
+    expect(normalizeFixtureDiff(diff)).toBe(
+      [
+        'diff --git a/x.sql b/x.sql',
+        '--- a/x.sql',
+        '+++ b/x.sql',
+        '+ a/base/keep',
+        '--- /dev/null',
+        '+++ b/new.sql',
+      ].join('\n'),
+    )
   })
 })
 

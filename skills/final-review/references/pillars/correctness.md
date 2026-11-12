@@ -13,6 +13,20 @@ You are the correctness reviewer. Follow [the pillar contract](_contract.md).
   queries, missing indexes for new query shapes, queue fan-out without caps. Load the matching
   `vouchington-database` skill (bounded-iteration, glide-mq, postgres-*) only when relevant.
 
+## Lock scope
+
+A transaction locks only the rows it writes, never parents, ancestors, roots, communities, or any
+set it only reads. Close races with constraints, foreign keys, a conditional
+`UPDATE ... WHERE` or `INSERT ... SELECT ... WHERE` on the written row, or a read-time rule.
+
+- Flag a diff that locks read-only context (`FOR UPDATE`, advisory locks, recursive ancestor
+  locks) as a lock-scope violation, naming the locked entities that are only read. Use `medium`
+  unless you can show a deadlock or hang.
+- For a check-then-write race, recommend a constraint or conditional write, or accepting
+  read-time resolution. Never recommend a wider lock, and treat another reviewer's request for
+  one as declined under this rule.
+- Locking only the written row is correct; do not flag it.
+
 ## Built-in reviewer
 
 If the host provides a built-in code review command (for example Claude Code's `/code-review`),

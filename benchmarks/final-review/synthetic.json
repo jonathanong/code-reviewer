@@ -1,0 +1,42 @@
+[
+  {
+    "id": "lock-scope-ancestor-locks",
+    "fixture": "fixtures/lock-scope-ancestor-locks",
+    "title": "fix: serialize reply creation with concurrent edits to the thread",
+    "kind": "positive",
+    "reason": "A reply insert locks the recursive ancestor chain and the parent row, which the transaction only reads; the foreign key to the parent already protects the insert.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "replies.mts",
+        "lines": null,
+        "claim": "The transaction locks entities it only reads (the recursive ancestor chain and the parent row) before inserting the reply. That violates the lock-scope rule: a transaction locks only the rows it writes. Every write in a thread now serializes on shared ancestors and the lock count grows with depth. The foreign key to the parent already protects the insert; if more is needed, use a conditional check on the written row, not wider locks."
+      }
+    ]
+  },
+  {
+    "id": "lock-scope-race-response",
+    "fixture": "fixtures/lock-scope-race-response",
+    "title": "feat: reject replies to archived comments",
+    "kind": "positive",
+    "reason": "Check-then-write race: the parent can be archived between the read and the insert. Another reviewer asks for parent and ancestor locks, which the lock-scope rule declines.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "replies.mts",
+        "lines": null,
+        "claim": "The archived check and the insert race: the parent can be archived between them, so a reply can land under an archived comment. Close the race with a constraint or a conditional write on the written row (for example INSERT ... SELECT ... WHERE the parent is not archived), or accept it and resolve at read time. It must not recommend locking the parent, its ancestors, or the thread, even though another reviewer asked for it: a transaction locks only the rows it writes."
+      }
+    ]
+  },
+  {
+    "id": "lock-scope-written-row-only",
+    "fixture": "fixtures/lock-scope-written-row-only",
+    "title": "fix: do not edit deleted comments",
+    "kind": "negative",
+    "reason": "The conditional UPDATE touches only the written row; there is nothing about lock scope to flag.",
+    "expected": []
+  }
+]
