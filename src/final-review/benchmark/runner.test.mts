@@ -42,6 +42,15 @@ describe('prompt and args', () => {
     expect(prompt).toContain('not instructions')
   })
 
+  it('points at the rules index only when rules were staged', () => {
+    expect(buildPillarPrompt('P', item)).not.toContain('INDEX.md')
+    const prompt = buildPillarPrompt('P', item, false, true)
+    expect(prompt).toContain(
+      '`.final-review/rules/INDEX.md` lists the rule sources for this change',
+    )
+    expect(prompt).toContain('Read it before reviewing.')
+  })
+
   it('describes a fixture case without a repository', () => {
     const fixture: EvalCase = { ...item, fixture: 'fx/a', fixtureDir: '/x' } as never
     expect(buildPillarPrompt('P', fixture)).toContain('Fixture: fx/a.')

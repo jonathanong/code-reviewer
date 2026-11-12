@@ -1,0 +1,8 @@
+{
+  "name": "shop",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@acme/flags": "^3.2.0"
+  }
+}

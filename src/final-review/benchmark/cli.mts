@@ -4,10 +4,11 @@ import { parseArgs } from 'node:util'
 
 import { PILLARS, type Pillar } from '../finding.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
-import { currentAssignment, judgeAll, pool, type RawResult } from './judge-all.mts'
+import { judgeAll, pool, type RawResult } from './judge-all.mts'
 import { runPillar } from './runner.mts'
-import { renderSummaryTable, scoreCase, summarizePillar, type CaseScore } from './score.mts'
-import { defaultExec, prepareSnapshot, type Exec } from './snapshot.mts'
+import { scoreAll, type Options } from './score-all.mts'
+import { NO_RULES, stageCaseRules } from './rules.mts'
+import { defaultExec, prepareSnapshot, type Exec, type Snapshot } from './snapshot.mts'
 
 export type BenchDeps = {
   exec: Exec
@@ -17,6 +18,9 @@ export type BenchDeps = {
   log(line: string): void
   prepare: typeof prepareSnapshot
 }
+
+/** The pillar bench also stages rule sources. */
+export type PillarBenchDeps = BenchDeps & { stageRules: typeof stageCaseRules }
 
 export const defaultBenchDeps: BenchDeps = {
   exec: defaultExec,
@@ -30,6 +34,8 @@ export const defaultBenchDeps: BenchDeps = {
   prepare: prepareSnapshot,
 }
 
+const defaultPillarDeps: PillarBenchDeps = { ...defaultBenchDeps, stageRules: stageCaseRules }
+
 function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] {
   if (requested.length > 0) {
     return requested.map((name) => {
@@ -42,31 +48,29 @@ function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] 
   return PILLARS.filter((pillar) => used.has(pillar))
 }
 
-type Options = {
-  out: string
-  prompts: string
-  model: string
-  maxTurns: number
-  jobs: number
-  scoreOnly: boolean
-  judge: string | undefined
-}
-
 async function runAll(
   cases: EvalCase[],
   pillars: Pillar[],
   options: Options,
-  deps: BenchDeps,
+  deps: PillarBenchDeps,
 ): Promise<void> {
   const rawPath = (pillar: Pillar, id: string) => join(options.out, 'raw', pillar, `${id}.json`)
   if (options.scoreOnly) return
-  const snapshots = new Map<string, string>()
+  const snapshots = new Map<string, Snapshot>()
+  const digests = new Map<string, string>()
   for (const item of new Set(pillars.flatMap((pillar) => casesForPillar(cases, pillar)))) {
     deps.log(`snapshot ${item.id}`)
-    snapshots.set(
+    const snapshot = await deps.prepare(
+      item,
+      join(options.out, 'cache'),
+      join(options.out, 'work'),
+      deps.exec,
+    )
+    snapshots.set(item.id, snapshot)
+    // The digest keys a saved raw result to the rules it saw; control runs record `none`.
+    digests.set(
       item.id,
-      (await deps.prepare(item, join(options.out, 'cache'), join(options.out, 'work'), deps.exec))
-        .dir,
+      options.noRules ? NO_RULES : await deps.stageRules(item, snapshot, options.clones),
     )
   }
   const contractPath = join(options.prompts, '_contract.md')
@@ -79,60 +83,23 @@ async function runAll(
   })
   await pool(tasks, options.jobs, async ({ pillar, pillarPrompt, item }) => {
     deps.log(`run ${pillar} ${item.id}`)
-    const dir = snapshots.get(item.id) as string
+    const dir = (snapshots.get(item.id) as Snapshot).dir
+    const rules = digests.get(item.id) as string
     let result: RawResult
     try {
       const run = { pillar, pillarPrompt, model: options.model, maxTurns: options.maxTurns }
-      result = { findings: await runPillar(item, dir, run, deps.exec) }
+      result = { findings: await runPillar(item, dir, run, deps.exec), rules }
     } catch (error) {
-      result = { error: error instanceof Error ? error.message : String(error) }
+      result = { error: error instanceof Error ? error.message : String(error), rules }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
   })
 }
 
-function scoreAll(cases: EvalCase[], pillars: Pillar[], options: Options, deps: BenchDeps): string {
-  const { out, judge } = options
-  const report = pillars.map((pillar) => {
-    const scores: CaseScore[] = []
-    const errors: string[] = []
-    for (const item of casesForPillar(cases, pillar)) {
-      const path = join(out, 'raw', pillar, `${item.id}.json`)
-      if (!deps.exists(path)) {
-        errors.push(`${item.id}: not run`)
-        continue
-      }
-      const raw = JSON.parse(deps.readFile(path)) as RawResult
-      if ('error' in raw) errors.push(`${item.id}: ${raw.error}`)
-      else if (judge === undefined) scores.push(scoreCase(item, pillar, raw.findings))
-      else {
-        const expected = item.expected.filter((entry) => entry.pillar === pillar)
-        const assignment = currentAssignment(raw, expected, judge)
-        // Unjudged cases stay out of judged metrics rather than falling back to locations.
-        if (assignment === undefined) errors.push(`${item.id}: not judged`)
-        else scores.push(scoreCase(item, pillar, raw.findings, assignment))
-      }
-    }
-    return { summary: summarizePillar(pillar, scores), scores, errors }
-  })
-  deps.writeFile(join(out, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`)
-  const errorLines = report.flatMap((entry) =>
-    entry.errors.map((line) => `- ${entry.summary.pillar} ${line}`),
-  )
-  const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
-  const markdown = [
-    `Matching: ${matching}.`,
-    renderSummaryTable(report.map((entry) => entry.summary)),
-    ...(errorLines.length > 0 ? ['Errors and skipped runs:', errorLines.join('\n')] : []),
-  ].join('\n\n')
-  deps.writeFile(join(out, 'summary.md'), `${markdown}\n`)
-  return markdown
-}
-
 /** `vouchington-reviewer bench`: run pillar prompts over labeled cases and score them. */
 export async function runFinalReviewBenchCli(
   args: string[],
-  deps: BenchDeps = defaultBenchDeps,
+  deps: PillarBenchDeps = defaultPillarDeps,
 ): Promise<number> {
   const { values } = parseArgs({
     args,
@@ -148,6 +115,8 @@ export async function runFinalReviewBenchCli(
       jobs: { type: 'string' },
       'score-only': { type: 'boolean' },
       judge: { type: 'string' },
+      clones: { type: 'string' },
+      'no-rules': { type: 'boolean' },
     },
   })
   if (values.cases === undefined || values.out === undefined)
@@ -168,6 +137,8 @@ export async function runFinalReviewBenchCli(
     jobs: Number(values.jobs ?? '3'),
     scoreOnly: values['score-only'] === true,
     judge: values.judge,
+    clones: values.clones ?? process.env.FINAL_REVIEWER_CLONE_ROOT,
+    noRules: values['no-rules'] === true,
   }
   await runAll(cases, pillars, options, deps)
   if (options.judge !== undefined) {

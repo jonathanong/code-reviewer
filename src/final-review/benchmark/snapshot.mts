@@ -7,7 +7,7 @@ import { writeContext, type Snapshot } from './snapshot-context.mts'
 import { prepareFixtureSnapshot } from './snapshot-fixture.mts'
 
 export { defaultExec, ExecError, type Exec } from './exec.mts'
-export { CONTEXT_DIR, hasContextNotes, type Snapshot } from './snapshot-context.mts'
+export { CONTEXT_DIR, hasContextNotes, hasRulesIndex, type Snapshot } from './snapshot-context.mts'
 export { normalizeFixtureDiff } from './snapshot-fixture.mts'
 
 const pendingClones = new Map<string, Promise<unknown>>()

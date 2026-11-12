@@ -45,6 +45,7 @@ function parse(args: string[]) {
       out: { type: 'string' },
       effort: { type: 'string' },
       tree: { type: 'string' },
+      clones: { type: 'string' },
       thread: { type: 'string', multiple: true },
     },
   }).values

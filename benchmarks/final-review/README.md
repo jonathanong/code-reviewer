@@ -34,6 +34,10 @@ that needs no clone or `gh`:
 - `context.md` (optional): copied to `.final-review/context.md`, written like the "Other reviewers
   and comments" section of the live run. The pillar prompt mentions that file only when present.
 
+- `repos/<name>/` (optional): dependency repositories, each with a `package.json` name, its own
+  `AGENTS.md` or skills, and code. A repository whose package the diff imports is staged as a
+  dependency, code included, as `prepare` stages a dependency clone.
+
 Fixture cases are cached by a content hash of the fixture directory instead of a head SHA.
 `synthetic.json` holds the fixture cases (currently the `lock-scope-*` evals for the correctness
 pillar's lock-scope rule). It is separate from `cases.json` so that file keeps its mix of mined
@@ -42,6 +46,22 @@ benchmarks/final-review/synthetic.json`. A fixture must be synthetic: never copy
 
 Labels are written by people or agents from the revert and fix history. Add cases by mining new
 reverts and regression fixes, and keep negatives at roughly a third of the set.
+
+### Rule sources
+
+Every run stages rule sources into `.final-review/rules/` with the same code `prepare` uses: the
+fixture's `base/` instructions and skills (a mined case's head, since its base is not exported),
+the shared rule skills from the clones under `--clones` (default `FINAL_REVIEWER_CLONE_ROOT`; it
+needs `no-mistakes` and `vouchington-tooling`), and fixture dependencies from `repos/`. The pillar
+prompt points at `rules/INDEX.md`. `--no-rules` stages nothing, for control runs that check a case
+needs its rule source to be caught. The rules digest is part of the cache key.
+
+The `rules-*` cases in `synthetic.json` test the rules pillar: a shared no-mistakes rule
+(`rules-shared-error-text`), a shared vouchington-tooling skill (`rules-tooling-sweep-until-empty`),
+a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides a
+shared one (`rules-local-override`, negative), and a compliant dependency call
+(`rules-dependency-flag-ok`, negative). Each positive's claim requires citing its rule source, so
+a generic finding does not match.
 
 ## Running
 

@@ -121,4 +121,15 @@ describe('createGhPrepareIo', () => {
     const io = createGhPrepareIo(target, run, vi.fn(), ['App[bot]'])
     expect(await io.trusted()).toEqual(new Set(['app[bot]']))
   })
+
+  it('builds rule sources from the explicit or default clone root', async () => {
+    const git = vi.fn(async (_args: readonly string[]) => '')
+    const run = vi.fn(async (_args: readonly string[]) => '')
+    const io = createGhPrepareIo(target, run, git, [], '/default')
+    const explicit = await io.ruleSources({ clones: '/nowhere', tree: '/t', baseSha: 'abcdef012' })
+    expect(explicit.repo?.refLabel).toBe('base abcdef0')
+    expect(explicit.missing[0]).toBe('no-mistakes-rules: no clone at /nowhere/no-mistakes')
+    const fallback = await io.ruleSources({ baseSha: 'abcdef012' })
+    expect(fallback.missing[0]).toBe('no-mistakes-rules: no clone at /default/no-mistakes')
+  })
 })

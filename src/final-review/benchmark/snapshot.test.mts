@@ -9,6 +9,7 @@ import {
   ExecError,
   defaultExec,
   hasContextNotes,
+  hasRulesIndex,
   normalizeFixtureDiff,
   prepareSnapshot,
   type Exec,
@@ -194,6 +195,10 @@ describe('prepareSnapshot for fixtures', () => {
       join(root, 'work'),
     )
     expect(hasContextNotes(snapshot.dir)).toBe(false)
+    expect(hasRulesIndex(snapshot.dir)).toBe(false)
+    mkdirSync(join(snapshot.dir, CONTEXT_DIR, 'rules'), { recursive: true })
+    writeFileSync(join(snapshot.dir, CONTEXT_DIR, 'rules', 'INDEX.md'), '#')
+    expect(hasRulesIndex(snapshot.dir)).toBe(true)
   })
 
   it('uses the case title when pr.md has no title line', async () => {

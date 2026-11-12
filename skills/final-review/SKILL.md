@@ -39,13 +39,19 @@ there. Each subagent replies with one line, and its full output stays in a file.
 3. Check out the head as a detached worktree at `"$run/tree"` from a local clone when one exists
    (`git -C <clone> fetch origin <head> && git -C <clone> worktree add --detach "$run/tree" <head>`),
    otherwise from a blobless clone under `"$run"`.
-4. `vouchington-reviewer prepare --repo <repo> --pr <n> --out "$run" --tree "$run/tree" [--effort <e>]`.
-   It writes, without any model calls:
+4. `vouchington-reviewer prepare --repo <repo> --pr <n> --out "$run" --tree "$run/tree" --clones <clone root> [--effort <e>]`
+   (`--clones` defaults to `FINAL_REVIEWER_CLONE_ROOT`). It writes, without any model calls:
    - `diff.patch` and `diff/INDEX.md` with one numbered patch per file (base and head line numbers
      on every line);
    - `context.md`: the last final review (SHA, verdict, effort), commits since, unresolved
      final-review findings with their thread ids, and other reviewers' notes (Codex, CodeRabbit,
      Copilot, humans), squashed and truncated;
+   - `rules/INDEX.md` and the files it lists: this repository's `AGENTS.md` files and skills at
+     the base ref; the shared rule skills (no-mistakes-rules, and the vouchington-tooling review
+     skills) from each clone's default branch, with the ones the changed paths suggest marked; and
+     the instructions and skills of each dependency repository under the clone root whose package
+     the diff imports. Its `Missing` section names any source that could not be staged: fix the
+     clone root rather than reviewing without it;
    - `since.patch` and `since/INDEX.md` for a follow-up whose last reviewed SHA is an ancestor;
    - `plan.json`: effort, pillars with their model tier, the verifier tier, and skipped pillars
      with reasons ([dispatch](references/dispatch.md) documents the rules).
@@ -63,7 +69,7 @@ For each entry in `plan.pillars`, start one background subagent on that entry's 
 only paths, never file contents:
 
 - its pillar file and [the contract](references/pillars/_contract.md);
-- `"$run/tree"`, `"$run/diff/INDEX.md"`, `"$run/context.md"`, and at `low` effort
+- `"$run/tree"`, `"$run/diff/INDEX.md"`, `"$run/context.md"`, `"$run/rules/INDEX.md"`, and at `low` effort
   `"$run/since/INDEX.md"` (review the new commits; read the full diff only for surrounding code);
 - the base and head SHAs, and the repositories to search for blast radius;
 - the instruction to write its JSON to `"$run/pillars/<pillar>.json"` and reply with one line:
@@ -116,5 +122,6 @@ Pillar prompts are benchmarked against labeled reverts and clean pull requests w
 are in `benchmarks/final-review/`. Change a pillar or verifier prompt only together with a
 benchmark run.
 
-Consumer wrapper owns: the repositories searched for blast radius and where their local clones
-live, extra rule sources, and model tier overrides.
+Consumer wrapper owns: the clone root (where local clones of the organization's repositories,
+including `vouchington-tooling` and `no-mistakes`, live), the repositories searched for blast
+radius, extra rule sources, and model tier overrides.

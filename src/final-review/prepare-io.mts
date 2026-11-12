@@ -1,5 +1,7 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { fetchConversation, type PrConversation } from './context-query.mts'
+import { splitRepo } from '../gh-cli/index.mts'
+import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhFinalReviewIo, type PullTarget } from './github.mts'
 import type { SinceDiff } from './plan.mts'
 import type { TrustedAuthors } from './trust.mts'
@@ -17,6 +19,8 @@ export type PrepareIo = {
   /** The commit checked out at `tree`. */
   treeHead(tree: string): Promise<string>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
+  /** Readers for the rule sources: the base of `tree` and the clones under `clones`. */
+  ruleSources(args: { clones?: string; tree?: string; baseSha: string }): Promise<Sources>
   history(tree: string, base: string, paths: readonly string[]): Promise<string[] | undefined>
 }
 
@@ -33,6 +37,7 @@ export function createGhPrepareIo(
   run: RunTextCommand,
   git: RunTextCommand,
   trustedAllowlist: readonly string[] = [],
+  cloneRoot?: string,
 ): PrepareIo {
   const io = createGhFinalReviewIo(target, run, trustedAllowlist)
   const compareUrl = (base: string, head: string) =>
@@ -65,6 +70,14 @@ export function createGhPrepareIo(
     async treeHead(tree) {
       return (await git(['-C', tree, 'rev-parse', 'HEAD'])).trim()
     },
+    ruleSources: ({ clones, tree, baseSha }) =>
+      productionSources({
+        git,
+        clones: clones ?? cloneRoot,
+        tree,
+        baseSha,
+        repoName: splitRepo(target.repo).name,
+      }),
     async history(tree, base, paths) {
       try {
         const out = await git([

@@ -20,6 +20,7 @@ export type LoopValues = {
   out?: string | undefined
   effort?: string | undefined
   tree?: string | undefined
+  clones?: string | undefined
   thread?: string[] | undefined
 }
 
@@ -80,6 +81,7 @@ export async function runLoopCommand(
         out: values.out,
         ...(requested === undefined ? {} : { requested }),
         ...(values.tree === undefined ? {} : { tree: values.tree }),
+        ...(values.clones === undefined ? {} : { clones: values.clones }),
       })
     }
     case 'resolve': {
