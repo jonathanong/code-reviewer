@@ -46,7 +46,8 @@ export function createDefaultDeps(
     authMode: () => resolved().mode,
     createIo: (target) => createGhFinalReviewIo(target, forTarget(target), trusted),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
-    createPrepareIo: (target) => createGhPrepareIo(target, forTarget(target), runGit, trusted),
+    createPrepareIo: (target) =>
+      createGhPrepareIo(target, forTarget(target), runGit, trusted, env.FINAL_REVIEWER_CLONE_ROOT),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
     runBench: async (args) =>

@@ -34,3 +34,8 @@ export function writeContext(dir: string, title: string, diff: string, body: str
 export function hasContextNotes(dir: string): boolean {
   return existsSync(join(dir, CONTEXT_DIR, 'context.md'))
 }
+
+/** True when `.final-review/rules/INDEX.md` lists rule sources for this snapshot. */
+export function hasRulesIndex(dir: string): boolean {
+  return existsSync(join(dir, CONTEXT_DIR, 'rules', 'INDEX.md'))
+}

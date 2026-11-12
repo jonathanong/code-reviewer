@@ -59,6 +59,7 @@ function fakeIo({ reviewed = null, since, history = [] }: Overrides = {}) {
     compareDiff: vi.fn(async () => PATCH),
     treeHead: vi.fn(async () => HEAD),
     history: vi.fn(async () => history),
+    ruleSources: vi.fn(async () => ({ shared: [], related: [], missing: ['x: none'] })),
   } satisfies PrepareIo
 }
 
@@ -82,6 +83,7 @@ describe('prepareReview', () => {
       'context.md',
       'context.json',
       'plan.json',
+      'rules/INDEX.md',
     ])
     expect(read('diff.patch').length).toBeGreaterThan(0)
     expect(read('diff/INDEX.md')).toContain('0001')
@@ -140,6 +142,21 @@ describe('prepareReview', () => {
       `--tree /tree is at ${OLD}, not the pull request head ${HEAD}`,
     )
     expect(io.history).not.toHaveBeenCalled()
+  })
+
+  it('stages rule sources and reports them in the summary', async () => {
+    const io = fakeIo()
+    const summary = await prepareReview(io, { out, tree: '/tree', clones: '/clones' })
+    expect(io.ruleSources).toHaveBeenCalledWith({ clones: '/clones', tree: '/tree', baseSha: BASE })
+    expect(summary.written).toContain('rules/INDEX.md')
+    expect(summary.rules).toMatchObject({
+      suggested: [],
+      related: [],
+      missing: ['This repository: not staged (no --tree)', 'x: none'],
+    })
+    expect(read('rules/INDEX.md')).toContain('- x: none')
+    await prepareReview(io, { out })
+    expect(io.ruleSources).toHaveBeenLastCalledWith({ baseSha: BASE })
   })
 
   it('passes the requested effort through', async () => {

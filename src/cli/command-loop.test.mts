@@ -137,11 +137,17 @@ describe('runLoopCommand', () => {
 
   it('passes effort and tree through to prepare', async () => {
     const { deps, prepareIo } = fakeDeps()
-    await runLoopCommand('prepare', { out: '/o', effort: 'high', tree: '/t' }, target, deps)
+    await runLoopCommand(
+      'prepare',
+      { out: '/o', effort: 'high', tree: '/t', clones: '/c' },
+      target,
+      deps,
+    )
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       requested: 'high',
       tree: '/t',
+      clones: '/c',
     })
     await expect(
       runLoopCommand('prepare', { out: '/o', effort: 'extreme' }, target, deps),

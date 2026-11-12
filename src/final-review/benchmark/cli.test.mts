@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { runFinalReviewBenchCli, type BenchDeps } from './cli.mts'
+import { runFinalReviewBenchCli, type PillarBenchDeps } from './cli.mts'
 
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
@@ -29,7 +29,8 @@ const claudeOutput = (findings: unknown[]) => JSON.stringify({ structured_output
 const HIT = claudeOutput([{ severity: 'high', title: 'T', body: 'B', path: 'src/a.ts', line: 5 }])
 
 type Harness = {
-  deps: BenchDeps
+  deps: PillarBenchDeps
+  staged: string[]
   files: Map<string, string>
   logs: string[]
   execCalls: Array<{ command: string; args: string[]; cwd?: string | undefined }>
@@ -44,7 +45,8 @@ function harness(
   const logs: string[] = []
   const execCalls: Harness['execCalls'] = []
   const prepared: string[] = []
-  const deps: BenchDeps = {
+  const staged: string[] = []
+  const deps: PillarBenchDeps = {
     exec: async (command, args, options) => {
       execCalls.push({ command, args, cwd: options?.cwd })
       return exec(options?.cwd)
@@ -61,8 +63,12 @@ function harness(
       prepared.push(item.id)
       return { dir: `/snap/${item.id}`, diff: '', body: '' }
     },
+    stageRules: async (item, _snapshot, clones) => {
+      staged.push(`${item.id}:${String(clones)}`)
+      return 'digest-1'
+    },
   }
-  return { deps, files: store, logs, execCalls, prepared }
+  return { deps, files: store, logs, execCalls, prepared, staged }
 }
 
 function stdoutSpy() {
@@ -122,6 +128,28 @@ describe('runFinalReviewBenchCli runs', () => {
     expect(out).toHaveBeenCalledWith(`${markdown.trimEnd()}\n`)
   })
 
+  it('stages rules, records their digest, and passes --clones or the env default', async () => {
+    stdoutSpy()
+    const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
+    const h = harness(files)
+    await runFinalReviewBenchCli([...BASE, '--clones', '/clones'], h.deps)
+    expect(h.staged.sort((a, b) => a.localeCompare(b))).toEqual(['n1:/clones', 'p1:/clones'])
+    expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).rules).toBe('digest-1')
+    vi.stubEnv('FINAL_REVIEWER_CLONE_ROOT', '/env-clones')
+    const again = harness(files)
+    await runFinalReviewBenchCli(BASE, again.deps)
+    expect(again.staged).toContain('p1:/env-clones')
+    vi.unstubAllEnvs()
+  })
+
+  it('stages nothing with --no-rules and records the digest as none', async () => {
+    stdoutSpy()
+    const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
+    await runFinalReviewBenchCli([...BASE, '--no-rules'], h.deps)
+    expect(h.staged).toEqual([])
+    expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).rules).toBe('none')
+  })
+
   it('prefixes each pillar prompt with the shared contract when present', async () => {
     stdoutSpy()
     const h = harness({
@@ -147,9 +175,11 @@ describe('runFinalReviewBenchCli runs', () => {
     await runFinalReviewBenchCli([...BASE, '--jobs', '0'], h.deps)
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string)).toEqual({
       error: 'claude exploded',
+      rules: 'digest-1',
     })
     expect(JSON.parse(h.files.get('out/raw/security/n1.json') as string)).toEqual({
       error: 'plain string',
+      rules: 'digest-1',
     })
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('Errors and skipped runs:')
