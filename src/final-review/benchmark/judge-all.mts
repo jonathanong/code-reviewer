@@ -6,7 +6,10 @@ import { casesForPillar, type EvalCase, type ExpectedFinding } from './cases.mts
 import { judgeFindings, type Assignment, type Judged } from './judge.mts'
 import type { Exec } from './snapshot.mts'
 
-export type RawResult = { findings: Finding[]; judged?: Judged } | { error: string }
+/** `rules` is the digest of the staged rule sources (or `none`) the run saw. */
+export type RawResult =
+  | { findings: Finding[]; judged?: Judged; rules?: string }
+  | { error: string; rules?: string }
 
 export type JudgeDeps = {
   exec: Exec

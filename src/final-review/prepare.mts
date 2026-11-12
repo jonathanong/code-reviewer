@@ -8,6 +8,7 @@ import { FinalReviewError, type Effort } from './finding.mts'
 import { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
+import { stageRuleSources } from './rules/stage.mts'
 import { historyHits } from './triggers.mts'
 
 export type PrepareOptions = {
@@ -15,6 +16,8 @@ export type PrepareOptions = {
   requested?: Effort
   /** A checkout with history at the base, for the history trigger. */
   tree?: string
+  /** A directory of local clones (vouchington-tooling, no-mistakes, dependency repositories). */
+  clones?: string
 }
 
 export type PrepareSummary = {
@@ -25,6 +28,8 @@ export type PrepareSummary = {
   plan: ReviewPlan
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
+  /** The rule sources staged under `out/rules`: suggested skills, related repos, unavailable sources. */
+  rules: { suggested: string[]; related: string[]; missing: string[] }
 }
 
 type Write = (path: string, text: string) => void
@@ -91,6 +96,17 @@ export async function prepareReview(
   })
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)
   written.push('plan.json')
+  const sources = await io.ruleSources({
+    ...(options.clones === undefined ? {} : { clones: options.clones }),
+    ...(options.tree === undefined ? {} : { tree: options.tree }),
+    baseSha: context.baseSha,
+  })
+  const staged = await stageRuleSources(options.out, {
+    changedPaths: paths,
+    diff: patch,
+    ...sources,
+  })
+  written.push('rules/INDEX.md')
   return {
     headSha,
     baseSha: context.baseSha,
@@ -98,5 +114,6 @@ export async function prepareReview(
     lines: context.lines,
     plan,
     written,
+    rules: { suggested: staged.suggested, related: staged.related, missing: staged.missing },
   }
 }

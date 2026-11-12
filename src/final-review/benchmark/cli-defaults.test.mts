@@ -68,6 +68,7 @@ describe('runFinalReviewBenchCli default dependencies', () => {
         prompts,
         '--pillar',
         'rules',
+        '--no-rules',
       ]),
     ).resolves.toBe(0)
     expect(stderr).toHaveBeenCalledWith('snapshot n1\n')
