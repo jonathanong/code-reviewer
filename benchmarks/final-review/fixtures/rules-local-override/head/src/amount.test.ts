@@ -1,17 +1,26 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseAmount } from './amount.ts'
+import { InvalidAmountError, parseAmount } from './amount.ts'
 
-const message = (input: string) => `Amount must be a positive whole number of cents, got "${input}"`
+// The exact message of the error parseAmount throws; toThrow(string) only matches a substring.
+function thrownMessage(input: string): string {
+  try {
+    parseAmount(input)
+  } catch (error) {
+    if (error instanceof InvalidAmountError) return error.message
+    throw error
+  }
+  throw new Error(`parseAmount(${JSON.stringify(input)}) did not throw`)
+}
 
 describe('parseAmount', () => {
   it('parses whole cents', () => {
     expect(parseAmount('250')).toBe(250)
   })
 
-  it('rejects fractions, zero, and text', () => {
-    expect(() => parseAmount('2.5')).toThrow(message('2.5'))
-    expect(() => parseAmount('0')).toThrow(message('0'))
-    expect(() => parseAmount('ten')).toThrow(message('ten'))
+  it('rejects fractions, zero, and text with the exact user-facing message', () => {
+    expect(thrownMessage('2.5')).toBe('Amount must be a positive whole number of cents, got "2.5"')
+    expect(thrownMessage('0')).toBe('Amount must be a positive whole number of cents, got "0"')
+    expect(thrownMessage('ten')).toBe('Amount must be a positive whole number of cents, got "ten"')
   })
 })
