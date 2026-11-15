@@ -4,6 +4,7 @@ import { FinalReviewError } from '../finding.mts'
 import type { EvalCase } from './cases.mts'
 import {
   PILLAR_OUTPUT_SCHEMA,
+  PILLAR_TOOLS,
   READ_ONLY_TOOLS,
   buildPillarPrompt,
   parsePillarOutput,
@@ -56,11 +57,14 @@ describe('prompt and args', () => {
     expect(buildPillarPrompt('P', fixture)).toContain('Fixture: fx/a.')
   })
 
-  it('restricts claude to read-only tools and a JSON schema', () => {
+  it('restricts claude to read-only tools, skills, and a JSON schema', () => {
     const args = pillarArgs('P', 'sonnet', 12)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'sonnet'])
-    expect(args[args.indexOf('--tools') + 1]).toBe(READ_ONLY_TOOLS)
-    expect(args[args.indexOf('--allowedTools') + 1]).toBe(READ_ONLY_TOOLS)
+    expect(PILLAR_TOOLS).toBe('Read,Grep,Glob,Skill')
+    expect(args[args.indexOf('--tools') + 1]).toBe(PILLAR_TOOLS)
+    expect(args[args.indexOf('--allowedTools') + 1]).toBe(PILLAR_TOOLS)
+    const control = pillarArgs('P', 'sonnet', 12, READ_ONLY_TOOLS)
+    expect(control[control.indexOf('--allowedTools') + 1]).toBe(READ_ONLY_TOOLS)
     expect(args[args.indexOf('--permission-mode') + 1]).toBe('dontAsk')
     expect(args[args.indexOf('--max-turns') + 1]).toBe('12')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string)).toEqual(
@@ -125,5 +129,17 @@ describe('runPillar', () => {
     expect(command).toBe('claude')
     expect(args).toEqual(pillarArgs(buildPillarPrompt('Prompt', item), 'opus', 5))
     expect(options).toEqual({ cwd: '/snap' })
+  })
+
+  it('drops the Skill tool for a control run', async () => {
+    const exec = vi.fn(async () => output([]))
+    await runPillar(
+      item,
+      '/snap',
+      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, skills: false },
+      exec,
+    )
+    const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
+    expect(args[args.indexOf('--tools') + 1]).toBe(READ_ONLY_TOOLS)
   })
 })

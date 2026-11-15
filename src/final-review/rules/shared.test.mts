@@ -5,7 +5,7 @@ import { SHARED_SOURCES, TOOLING_ALLOW, sharedPaths, type SharedSource } from '.
 const [noMistakes, tooling] = SHARED_SOURCES as [SharedSource, SharedSource]
 
 describe('sharedPaths', () => {
-  it('takes the no-mistakes-rules AGENTS.md and flat skills only', () => {
+  it('takes the no-mistakes-rules AGENTS.md, flat skills, and their references', () => {
     const all = [
       'plugins/no-mistakes-rules/AGENTS.md',
       'plugins/no-mistakes-rules/skills/typescript-rules/SKILL.md',
@@ -18,10 +18,11 @@ describe('sharedPaths', () => {
     expect(sharedPaths(noMistakes, all)).toEqual([
       'plugins/no-mistakes-rules/AGENTS.md',
       'plugins/no-mistakes-rules/skills/typescript-rules/SKILL.md',
+      'plugins/no-mistakes-rules/skills/typescript-rules/references/x.md',
     ])
   })
 
-  it('applies the vouchington-tooling allowlist and adds the review criteria', () => {
+  it('applies the vouchington-tooling allowlist and adds allowed skills’ references', () => {
     const review = 'plugins/vouchington-workflow/skills/agent-workflow/references/review.md'
     const all = [
       'plugins/vouchington-testing/skills/test-authoring/SKILL.md',
@@ -31,6 +32,7 @@ describe('sharedPaths', () => {
       'plugins/vouchington-workflow/skills/planning/SKILL.md',
       'plugins/unlisted/skills/x/SKILL.md',
       'plugins/vouchington-workflow/skills/agent-workflow/references/other.md',
+      'plugins/vouchington-workflow/skills/planning/references/skipped.md',
       'plugins/skills/x/SKILL.md',
       review,
     ]
@@ -38,6 +40,7 @@ describe('sharedPaths', () => {
       'plugins/vouchington-database/skills/glide-mq/SKILL.md',
       'plugins/vouchington-testing/skills/test-authoring/SKILL.md',
       'plugins/vouchington-workflow/skills/agent-workflow/SKILL.md',
+      'plugins/vouchington-workflow/skills/agent-workflow/references/other.md',
       review,
       'plugins/vouchington-workflow/skills/review-ci-logs/SKILL.md',
     ])

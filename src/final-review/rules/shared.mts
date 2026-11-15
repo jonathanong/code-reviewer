@@ -1,3 +1,5 @@
+import { referencePaths } from './collect.mts'
+
 /** A shared rule source read from a local clone's default branch. */
 export type SharedSource = {
   name: string
@@ -63,11 +65,10 @@ export function sharedPaths(source: SharedSource, all: readonly string[]): strin
     ...(source.instructions ?? []).map((path) => `${source.prefix}${path}`),
     ...(source.references ?? []),
   ])
-  return all
-    .filter(
-      (path) =>
-        wanted.has(path) ||
-        (path.startsWith(source.prefix) && skillAllowed(source, path.slice(source.prefix.length))),
-    )
-    .sort()
+  const skills = all.filter(
+    (path) =>
+      path.startsWith(source.prefix) && skillAllowed(source, path.slice(source.prefix.length)),
+  )
+  for (const path of [...skills, ...referencePaths(all, skills)]) wanted.add(path)
+  return all.filter((path) => wanted.has(path)).sort()
 }

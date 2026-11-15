@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { PILLARS, type Pillar } from '../finding.mts'
+import { parsePluginList, pluginLabels } from '../plugins.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
 import { judgeAll, pool, type RawResult } from './judge-all.mts'
 import { runPillar } from './runner.mts'
@@ -20,7 +21,7 @@ export type BenchDeps = {
 }
 
 /** The pillar bench also stages rule sources. */
-export type PillarBenchDeps = BenchDeps & { stageRules: typeof stageCaseRules }
+export type PillarBenchDeps = BenchDeps & { stageRules: typeof stageCaseRules; cwd(): string }
 
 export const defaultBenchDeps: BenchDeps = {
   exec: defaultExec,
@@ -34,7 +35,22 @@ export const defaultBenchDeps: BenchDeps = {
   prepare: prepareSnapshot,
 }
 
-const defaultPillarDeps: PillarBenchDeps = { ...defaultBenchDeps, stageRules: stageCaseRules }
+const defaultPillarDeps: PillarBenchDeps = {
+  ...defaultBenchDeps,
+  stageRules: stageCaseRules,
+  cwd: () => process.cwd(),
+}
+
+/** Enabled plugins and versions, so a score change can be traced to a rule change. */
+async function installedPlugins(deps: PillarBenchDeps): Promise<string[]> {
+  try {
+    const listed = await deps.exec('claude', ['plugin', 'list', '--json'])
+    return pluginLabels(parsePluginList(listed, deps.cwd()))
+  } catch (error) {
+    deps.log(`plugins: ${error instanceof Error ? error.message : String(error)}`)
+    return ['unknown']
+  }
+}
 
 function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] {
   if (requested.length > 0) {
@@ -56,6 +72,7 @@ async function runAll(
 ): Promise<void> {
   const rawPath = (pillar: Pillar, id: string) => join(options.out, 'raw', pillar, `${id}.json`)
   if (options.scoreOnly) return
+  const plugins = options.noRules ? [] : await installedPlugins(deps)
   const snapshots = new Map<string, Snapshot>()
   const digests = new Map<string, string>()
   for (const item of new Set(pillars.flatMap((pillar) => casesForPillar(cases, pillar)))) {
@@ -70,7 +87,9 @@ async function runAll(
     // The digest keys a saved raw result to the rules it saw; control runs record `none`.
     digests.set(
       item.id,
-      options.noRules ? NO_RULES : await deps.stageRules(item, snapshot, options.clones),
+      options.noRules
+        ? NO_RULES
+        : await deps.stageRules(item, snapshot, options.clones, undefined, !options.noShared),
     )
   }
   const contractPath = join(options.prompts, '_contract.md')
@@ -84,13 +103,14 @@ async function runAll(
   await pool(tasks, options.jobs, async ({ pillar, pillarPrompt, item }) => {
     deps.log(`run ${pillar} ${item.id}`)
     const dir = (snapshots.get(item.id) as Snapshot).dir
-    const rules = digests.get(item.id) as string
+    const seen = { rules: digests.get(item.id) as string, plugins }
     let result: RawResult
     try {
-      const run = { pillar, pillarPrompt, model: options.model, maxTurns: options.maxTurns }
-      result = { findings: await runPillar(item, dir, run, deps.exec), rules }
+      const { model, maxTurns } = options
+      const run = { pillar, pillarPrompt, model, maxTurns, skills: !options.noRules }
+      result = { findings: await runPillar(item, dir, run, deps.exec), ...seen }
     } catch (error) {
-      result = { error: error instanceof Error ? error.message : String(error), rules }
+      result = { error: error instanceof Error ? error.message : String(error), ...seen }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
   })
@@ -117,6 +137,7 @@ export async function runFinalReviewBenchCli(
       judge: { type: 'string' },
       clones: { type: 'string' },
       'no-rules': { type: 'boolean' },
+      'no-shared': { type: 'boolean' },
     },
   })
   if (values.cases === undefined || values.out === undefined)
@@ -139,6 +160,7 @@ export async function runFinalReviewBenchCli(
     judge: values.judge,
     clones: values.clones ?? process.env.FINAL_REVIEWER_CLONE_ROOT,
     noRules: values['no-rules'] === true,
+    noShared: values['no-shared'] === true,
   }
   await runAll(cases, pillars, options, deps)
   if (options.judge !== undefined) {

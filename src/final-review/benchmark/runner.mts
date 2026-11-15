@@ -37,6 +37,8 @@ export const PILLAR_OUTPUT_SCHEMA = {
 } as const
 
 export const READ_ONLY_TOOLS = 'Read,Grep,Glob'
+/** Pillars may also load installed rule skills, as they can in a review session. */
+export const PILLAR_TOOLS = `${READ_ONLY_TOOLS},Skill`
 
 /** Wraps a pillar prompt with the case's untrusted pull request context. */
 export function buildPillarPrompt(
@@ -65,7 +67,12 @@ export function buildPillarPrompt(
   ].join('\n\n')
 }
 
-export function pillarArgs(prompt: string, model: string, maxTurns: number): string[] {
+export function pillarArgs(
+  prompt: string,
+  model: string,
+  maxTurns: number,
+  tools = PILLAR_TOOLS,
+): string[] {
   return [
     '-p',
     prompt,
@@ -76,9 +83,9 @@ export function pillarArgs(prompt: string, model: string, maxTurns: number): str
     '--json-schema',
     JSON.stringify(PILLAR_OUTPUT_SCHEMA),
     '--tools',
-    READ_ONLY_TOOLS,
+    tools,
     '--allowedTools',
-    READ_ONLY_TOOLS,
+    tools,
     '--permission-mode',
     'dontAsk',
     '--max-turns',
@@ -105,9 +112,16 @@ export function parsePillarOutput(stdout: string, pillar: Pillar): Finding[] {
   return parseFinalReviewInput({ findings }).findings
 }
 
-export type PillarRun = { pillar: Pillar; pillarPrompt: string; model: string; maxTurns: number }
+export type PillarRun = {
+  pillar: Pillar
+  pillarPrompt: string
+  model: string
+  maxTurns: number
+  /** False for control runs: no Skill tool, so no installed rule skills. */
+  skills?: boolean
+}
 
-/** Runs one pillar in the snapshot directory with read-only tools only. */
+/** Runs one pillar in the snapshot directory with read-only tools and, by default, skills. */
 export async function runPillar(
   item: EvalCase,
   dir: string,
@@ -115,6 +129,9 @@ export async function runPillar(
   exec: Exec,
 ): Promise<Finding[]> {
   const prompt = buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir))
-  const stdout = await exec('claude', pillarArgs(prompt, run.model, run.maxTurns), { cwd: dir })
+  const tools = run.skills === false ? READ_ONLY_TOOLS : PILLAR_TOOLS
+  const stdout = await exec('claude', pillarArgs(prompt, run.model, run.maxTurns, tools), {
+    cwd: dir,
+  })
   return parsePillarOutput(stdout, run.pillar)
 }

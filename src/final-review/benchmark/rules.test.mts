@@ -81,6 +81,21 @@ describe('stageCaseRules', () => {
     expect(index).toContain('### app: consumes this repository; this change touches src/a.ts')
   })
 
+  it('leaves the shared clones out when asked', async () => {
+    const fixtureDir = temp()
+    put(fixtureDir, {
+      'base/AGENTS.md': 'base rules',
+      'base/skills/a/SKILL.md': '---\nname: a\n---',
+      'base/skills/a/references/more.md': 'more',
+    })
+    const dir = temp()
+    const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir }
+    await stageCaseRules(item, { dir, diff: DIFF, body: '' }, '/nowhere', git, false)
+    const index = readFileSync(join(dir, '.final-review/rules/INDEX.md'), 'utf8')
+    expect(index).toContain('repo/skills/a/references/more.md')
+    expect(index).not.toContain('no-mistakes-rules')
+  })
+
   it('stages the exported head for a repo case and has no related repositories', async () => {
     const dir = temp()
     put(dir, { 'AGENTS.md': 'head rules' })

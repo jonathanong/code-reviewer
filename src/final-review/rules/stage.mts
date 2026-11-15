@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { instructionPaths, skillPaths } from './collect.mts'
+import { instructionPaths, referencePaths, skillPaths } from './collect.mts'
 import { NO_CONFIGS, type RepoConfigs } from './config.mts'
 import { declaredLinks } from './declared.mts'
 import { renderIndex, type Staged } from './index-render.mts'
@@ -66,7 +66,8 @@ async function stageLinked(
 ): Promise<Dep> {
   const all = await listAll(item.reader, item.name, missing)
   const dest = `${kind}/${item.name}`
-  const own = [...instructionPaths(all, []), ...skillPaths(all)]
+  const skills = skillPaths(all)
+  const own = [...instructionPaths(all, []), ...skills, ...referencePaths(all, skills)]
   const staged = classify(await copy(files, item.reader, dest, own))
   // Benchmark fixtures carry the repository's code beside its rules.
   if (item.stageCode) await copy(files, item.reader, dest, all)
@@ -117,7 +118,12 @@ export async function stageRuleSources(out: string, input: StageInput): Promise<
   let repo: { label: string; staged: Staged } | undefined
   if (input.repo !== undefined) {
     const all = await listAll(input.repo.reader, 'This repository', missing)
-    const paths = [...instructionPaths(all, input.changedPaths), ...skillPaths(all)]
+    const skills = skillPaths(all)
+    const paths = [
+      ...instructionPaths(all, input.changedPaths),
+      ...skills,
+      ...referencePaths(all, skills),
+    ]
     repo = {
       label: input.repo.refLabel,
       staged: classify(await copy(files, input.repo.reader, 'repo', paths)),

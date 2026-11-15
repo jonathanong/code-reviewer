@@ -6,10 +6,13 @@ import { casesForPillar, type EvalCase, type ExpectedFinding } from './cases.mts
 import { judgeFindings, type Assignment, type Judged } from './judge.mts'
 import type { Exec } from './snapshot.mts'
 
-/** `rules` is the digest of the staged rule sources (or `none`) the run saw. */
+/**
+ * `rules` is the digest of the staged rule sources (or `none`) the run saw; `plugins` lists the
+ * enabled Claude Code plugins and versions whose skills it could load.
+ */
 export type RawResult =
-  | { findings: Finding[]; judged?: Judged; rules?: string }
-  | { error: string; rules?: string }
+  | { findings: Finding[]; judged?: Judged; rules?: string; plugins?: string[] }
+  | { error: string; rules?: string; plugins?: string[] }
 
 export type JudgeDeps = {
   exec: Exec

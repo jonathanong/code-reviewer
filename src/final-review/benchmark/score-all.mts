@@ -16,6 +16,7 @@ export type Options = {
   judge: string | undefined
   clones: string | undefined
   noRules: boolean
+  noShared: boolean
 }
 
 export function scoreAll(

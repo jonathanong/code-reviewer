@@ -28,6 +28,17 @@ export function skillPaths(all: readonly string[]): string[] {
   return all.filter((path) => SKILL_PATTERNS.some((pattern) => pattern.test(path))).sort()
 }
 
+/** `references/*.md` files beside each of the given SKILL.md paths. */
+export function referencePaths(all: readonly string[], skills: readonly string[]): string[] {
+  const dirs = skills.map((path) => `${path.slice(0, -'SKILL.md'.length)}references/`)
+  return all
+    .filter((path) => path.endsWith('.md'))
+    .filter((path) =>
+      dirs.some((dir) => path.startsWith(dir) && !path.slice(dir.length).includes('/')),
+    )
+    .sort()
+}
+
 function unquote(value: string): string {
   const text = value.trim()
   const quote = text[0]

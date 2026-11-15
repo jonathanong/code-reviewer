@@ -8,7 +8,8 @@ code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json
 code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--clones DIR] [--no-rules]
+code-reviewer plugins [--require NAME]...
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--clones DIR] [--no-rules] [--no-shared]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL]
   auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
   FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
@@ -39,6 +40,10 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   --prompts is the skill's references directory. bench stages the same rule sources under
   .final-review/rules (--clones DIR, default FINAL_REVIEWER_CLONE_ROOT; fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
-  the case's repoId); --no-rules stages none, for control runs.
+  the case's repoId); --no-rules stages none and withholds the Skill tool, for control
+  runs; --no-shared stages only the repository and dependency rules, so shared rules come from
+  installed plugin skills alone. Pillar runs may load installed skills, and each raw result
+  records the enabled plugins and versions. plugins prints the enabled Claude Code plugins and
+  exits 1 when a --require name is not among them.
 
 `

@@ -10,6 +10,7 @@ import {
   type PrepareIo,
   type PullTarget,
 } from '../final-review/index.mts'
+import { parsePluginList, type Plugin } from '../final-review/plugins.mts'
 import {
   createGhAuth,
   runGit,
@@ -26,6 +27,8 @@ export type FinalReviewDeps = {
   /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
   runner(owner: string, repo?: string): RunTextCommand
   readFile(path: string): string
+  /** The Claude Code plugins enabled for this session's user and project. */
+  listPlugins(): Promise<Plugin[]>
   runBench(args: string[]): Promise<number>
   runVerifierBench(args: string[]): Promise<number>
 }
@@ -50,6 +53,13 @@ export function createDefaultDeps(
       createGhPrepareIo(target, forTarget(target), runGit, trusted, env.FINAL_REVIEWER_CLONE_ROOT),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
+    listPlugins: async () => {
+      const { defaultExec } = await import('../final-review/benchmark/exec.mts')
+      return parsePluginList(
+        await defaultExec('claude', ['plugin', 'list', '--json']),
+        process.cwd(),
+      )
+    },
     runBench: async (args) =>
       (await import('../final-review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
     runVerifierBench: async (args) =>

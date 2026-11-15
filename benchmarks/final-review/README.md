@@ -62,6 +62,13 @@ needs `no-mistakes` and `vouchington-tooling`), and fixture dependencies from `r
 prompt points at `rules/INDEX.md`. `--no-rules` stages nothing, for control runs that check a case
 needs its rule source to be caught. The rules digest is part of the cache key.
 
+Pillar runs also get the `Skill` tool, so they can load installed plugin rule skills as a review
+session can; `--no-rules` withholds it. `--no-shared` stages the repository and dependency rules
+but not the shared clones, which measures whether installed skills are found by description
+alone. Each raw result records the enabled plugins and their versions (`plugins`) beside the rules
+digest, so a score change can be traced to a rule change. Every staged skill's `references/*.md`
+files are staged with it.
+
 The `rules-*` cases in `synthetic.json` test the rules pillar: a shared no-mistakes rule
 (`rules-shared-error-text`), a shared vouchington-tooling skill (`rules-tooling-sweep-until-empty`),
 a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides a
