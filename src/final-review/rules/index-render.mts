@@ -18,7 +18,7 @@ export type IndexInput = {
 
 const MAX_DESCRIPTION = 200
 const CONSUMERS_NOTE =
-  'These repositories declare that they depend on what this change touches. Check their code for breakage; their rules explain their code and do not govern this diff.'
+  'These repositories are configured as depending on what this change touches. Check their code for breakage; their rules explain their code and do not govern this diff.'
 
 function truncate(text: string): string {
   return text.length <= MAX_DESCRIPTION ? text : `${text.slice(0, MAX_DESCRIPTION - 3)}...`

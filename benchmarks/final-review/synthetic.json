@@ -109,14 +109,14 @@
     "repoId": "acme/api",
     "title": "refactor: camelCase order response and add currency",
     "kind": "positive",
-    "reason": "The mobile repository declares in its .code-reviewer.json that it consumes acme/api's src/routes over HTTP, and its fetchOrder reads body.total_cents. The change renames that response field, so released app versions get an undefined total.",
+    "reason": "The reviewer's config for acme/mobile says it consumes acme/api's src/routes over HTTP, and its fetchOrder reads body.total_cents. The change renames that response field, so released app versions get an undefined total.",
     "expected": [
       {
         "pillar": "blast-radius",
         "severity": "high",
         "path": "src/routes/orders.ts",
         "lines": null,
-        "claim": "Renaming the order response field total_cents to totalCents breaks the mobile app, a declared consumer: its fetchOrder (src/api/orders.ts) reads body.total_cents, so released versions get an undefined total. The finding must name the mobile consumer or its call site; a finding that only says some client might break does not match."
+        "claim": "Renaming the order response field total_cents to totalCents breaks the mobile app, a configured consumer: its fetchOrder (src/api/orders.ts) reads body.total_cents, so released versions get an undefined total. The finding must name the mobile consumer or its call site; a finding that only says some client might break does not match."
       }
     ]
   },
@@ -126,7 +126,7 @@
     "repoId": "acme/api",
     "title": "feat: return the order currency",
     "kind": "negative",
-    "reason": "Same declared mobile consumer, but the change only adds a response field. The consumer reads total_cents, which is unchanged. Nothing should be flagged at high or above.",
+    "reason": "Same configured mobile consumer, but the change only adds a response field. The consumer reads total_cents, which is unchanged. Nothing should be flagged at high or above.",
     "expected": []
   },
   {
@@ -135,7 +135,7 @@
     "repoId": "acme/mobile",
     "title": "feat: request a partial refund from the order screen",
     "kind": "positive",
-    "reason": "The mobile repository's .code-reviewer.json declares it consumes acme/api over HTTP; there is no package import to detect. The API's refund route accepts only { amount_cents: positive integer } and answers 400 otherwise. The change posts { amount: dollars }, so every refund request fails.",
+    "reason": "The reviewer's config for acme/mobile says it consumes acme/api over HTTP; there is no package import to detect. The API's refund route accepts only { amount_cents: positive integer } and answers 400 otherwise. The change posts { amount: dollars }, so every refund request fails.",
     "expected": [
       {
         "pillar": "correctness",

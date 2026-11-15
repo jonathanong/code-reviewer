@@ -36,11 +36,13 @@ that needs no clone or `gh`:
 
 - `repos/<name>/` (optional): dependency repositories, each with a `package.json` name, its own
   `AGENTS.md` or skills, and code. A repository whose package the diff imports is staged as a
-  dependency, code included, as `prepare` stages a dependency clone. So is one that `base/`'s
-  `.code-reviewer.json` declares as consumed (matched by directory name), and one whose own
-  `.code-reviewer.json` says it consumes the case's `repoId` is staged as a consumer.
-- `"repoId": "owner/name"` (optional, on the case): the fixture repository's name, which
-  consumer repositories under `repos/` refer to.
+  dependency, code included, as `prepare` stages a dependency clone. So is one that the
+  fixture's configs list as consumed by the case's `repoId` (matched by directory name), and one
+  configured as consuming that `repoId` is staged as a consumer.
+- `configs/<owner>/<name>.json` (optional): reviewer configs for the fixture, in the format of
+  this repository's `repos/` directory.
+- `"repoId": "owner/name"` (optional, on the case): the fixture repository's name, which the
+  configs refer to.
 
 Fixture cases are cached by a content hash of the fixture directory instead of a head SHA.
 `synthetic.json` holds the fixture cases (currently the `lock-scope-*` evals for the correctness
@@ -67,7 +69,7 @@ shared one (`rules-local-override`, negative), and a compliant dependency call
 (`rules-dependency-flag-ok`, negative). Each positive's claim requires citing its rule source, so
 a generic finding does not match.
 
-The `links-*` cases test `.code-reviewer.json`: a response field rename that breaks a declared
+The `links-*` cases test the per-repository configs: a response field rename that breaks a configured
 consumer (`links-consumer-field-rename`, blast radius), an additive change with the same consumer
 (`links-consumer-additive-field`, negative), and a call that does not match a declared
 dependency's route, with no package import to detect (`links-declared-api-payload`, correctness).

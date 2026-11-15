@@ -49,9 +49,9 @@ there. Each subagent replies with one line, and its full output stays in a file.
    - `rules/INDEX.md` and the files it lists: this repository's `AGENTS.md` files and skills at
      the base ref; the shared rule skills (no-mistakes-rules, and the vouchington-tooling review
      skills) from each clone's default branch, with the ones the changed paths suggest marked; and
-     the instructions and skills of each repository under the clone root that the base's
-     `.code-reviewer.json` declares as consumed, whose package the diff imports, or whose own
-     `.code-reviewer.json` says it consumes what this change touches (listed as Consumers). Its
+     the instructions and skills of each repository under the clone root that this
+     reviewer's `repos/<owner>/<name>.json` configs link to the change (as consumed, or as a
+     consumer of what it touches, listed as Consumers), or whose package the diff imports. Its
      `Missing` section names any source that could not be staged: fix the
      clone root rather than reviewing without it;
    - `since.patch` and `since/INDEX.md` for a follow-up whose last reviewed SHA is an ancestor;

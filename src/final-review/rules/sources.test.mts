@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -100,6 +100,7 @@ describe('productionSources', () => {
       tree: '/tree',
       baseSha: 'abcdef0123456789',
       repoId: 'acme/self',
+      configDir: '/nowhere/configs',
     })
     expect(sources.repo?.refLabel).toBe('base abcdef0')
     expect(sources.repoId).toBe('acme/self')
@@ -120,6 +121,7 @@ describe('productionSources', () => {
       tree: undefined,
       baseSha: 'a'.repeat(40),
       repoId: 'acme/self',
+      configDir: '/nowhere/configs',
     })
     expect(sources.repo).toBeUndefined()
     expect(sources.repoId).toBe('acme/self')
@@ -127,5 +129,20 @@ describe('productionSources', () => {
     expect(sources.related).toEqual([])
     expect(sources.missing).toHaveLength(3)
     expect(sources.missing.at(-1)).toContain('dependencies: skipped')
+  })
+
+  it('loads the configs and reports their problems as missing', async () => {
+    const dir = clones([], ['acme'])
+    writeFileSync(join(dir, 'acme/web.json'), '{"consumes":[{"repo":"acme/api"}],"x":1}')
+    const sources = await productionSources({
+      git,
+      clones: undefined,
+      tree: undefined,
+      baseSha: 'a'.repeat(40),
+      repoId: 'acme/self',
+      configDir: dir,
+    })
+    expect(sources.configs?.byRepo.get('acme/web')?.consumes).toHaveLength(1)
+    expect(sources.missing).toContain('acme/web.json: unknown key "x" ignored')
   })
 })

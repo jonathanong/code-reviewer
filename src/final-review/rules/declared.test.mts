@@ -1,29 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { CONFIG_FILE } from './config.mts'
+import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './config.mts'
 import { declaredLinks, type Linkable } from './declared.mts'
-import type { RuleReader } from './reader.mts'
 
-function reader(config?: unknown): RuleReader {
-  return {
-    label: 'mem',
-    list: async () => [],
-    read: async (path) =>
-      path === CONFIG_FILE && config !== undefined ? JSON.stringify(config) : undefined,
-  }
+function configs(files: Record<string, unknown>): RepoConfigs {
+  const byRepo = new Map(
+    Object.entries(files).map(([repo, config]) => [
+      repo,
+      parseRepoConfig(JSON.stringify(config), `${repo}.json`),
+    ]),
+  )
+  return { byRepo, problems: [] }
 }
 
-const candidate = (name: string, repo?: string, config?: unknown): Linkable => ({
+const candidate = (name: string, repo?: string): Linkable => ({
   name,
   ...(repo === undefined ? {} : { repo }),
-  reader: reader(config),
 })
 
 describe('declaredLinks dependencies', () => {
-  it('resolves consumed repositories by origin, or by directory name without one', async () => {
-    const links = await declaredLinks({
-      repo: {
-        reader: reader({
+  it('resolves consumed repositories by origin, or by directory name without one', () => {
+    const links = declaredLinks({
+      repoId: 'Acme/Web',
+      configs: configs({
+        'acme/web': {
           consumes: [
             { repo: 'acme/api', via: 'HTTP API', paths: ['routes/**', 'openapi.json'] },
             { repo: 'acme/schema' },
@@ -31,8 +31,8 @@ describe('declaredLinks dependencies', () => {
             { repo: 'acme/gone' },
             { repo: 'other/fork' },
           ],
-        }),
-      },
+        },
+      }),
       candidates: [
         candidate('api'),
         candidate('api-checkout', 'Acme/API'),
@@ -51,51 +51,47 @@ describe('declaredLinks dependencies', () => {
       ],
       consumers: [],
       missing: [
-        'acme/gone: declared as consumed, but no clone of it was found',
-        'other/fork: declared as consumed, but no clone of it was found',
+        'acme/gone: configured as consumed, but no clone of it was found',
+        'other/fork: configured as consumed, but no clone of it was found',
       ],
     })
   })
 
-  it('reports config problems and does nothing without a repository', async () => {
-    const bad: RuleReader = { ...reader(), read: async () => '{' }
+  it('links nothing for an unknown or unconfigured repository', () => {
+    const all = configs({ 'acme/web': { consumes: [{ repo: 'acme/api' }] } })
+    const none = { deps: [], consumers: [], missing: [] }
+    const candidates = [candidate('api'), candidate('web')]
+    expect(declaredLinks({ configs: all, candidates, changedPaths: ['a'] })).toEqual(none)
     expect(
-      await declaredLinks({ repo: { reader: bad }, candidates: [], changedPaths: [] }),
-    ).toEqual({
-      deps: [],
-      consumers: [],
-      missing: [`This repository: ${CONFIG_FILE}: not valid JSON; ignored`],
-    })
-    expect(
-      await declaredLinks({
-        candidates: [candidate('web', 'acme/web', { consumes: [{ repo: 'acme/api' }] })],
-        changedPaths: ['a'],
-      }),
-    ).toEqual({ deps: [], consumers: [], missing: [] })
+      declaredLinks({ repoId: 'acme/other', configs: NO_CONFIGS, candidates, changedPaths: ['a'] }),
+    ).toEqual(none)
   })
 })
 
 describe('declaredLinks consumers', () => {
-  const candidates = [
-    candidate('web', 'acme/web', {
+  const all = configs({
+    'acme/web': {
       consumes: [
         { repo: 'acme/api', via: 'HTTP API', paths: ['docs/**', 'src/routes/**'] },
         { repo: 'acme/api' },
       ],
-    }),
-    candidate('ios', 'acme/ios', { consumes: [{ repo: 'ACME/api' }] }),
-    candidate('cli', 'acme/cli', { consumes: [{ repo: 'acme/api', paths: ['proto/**'] }] }),
-    candidate('other', 'acme/other', { consumes: [{ repo: 'acme/elsewhere' }], extra: 1 }),
-    candidate('noted', 'acme/noted', {
-      consumes: [{ repo: 'acme/api', paths: ['x/**'] }],
-      extra: 1,
-    }),
-    { name: 'broken', reader: { ...reader(), read: async () => '[]' } },
+    },
+    'acme/ios': { consumes: [{ repo: 'acme/api' }] },
+    'acme/cli': { consumes: [{ repo: 'acme/api', paths: ['proto/**'] }] },
+    'acme/other': { consumes: [{ repo: 'acme/elsewhere' }] },
+    'acme/uncloned': { consumes: [{ repo: 'acme/api', paths: ['src/**'] }] },
+  })
+  const candidates = [
+    candidate('web-checkout', 'acme/web'),
+    candidate('ios'),
+    candidate('cli', 'acme/cli'),
+    candidate('other', 'acme/other'),
   ]
 
-  it('finds candidates that consume what the change touches', async () => {
-    const links = await declaredLinks({
+  it('finds the repositories that consume what the change touches', () => {
+    const links = declaredLinks({
       repoId: 'Acme/Api',
+      configs: all,
       candidates,
       changedPaths: ['README.md', 'src/routes/users.ts'],
     })
@@ -103,38 +99,37 @@ describe('declaredLinks consumers', () => {
       deps: [],
       consumers: [
         {
-          name: 'web',
+          name: 'web-checkout',
           heading:
-            'web: consumes this repository via HTTP API (docs/**, src/routes/**); this change touches src/routes/users.ts',
+            'web-checkout: consumes this repository via HTTP API (docs/**, src/routes/**); this change touches src/routes/users.ts',
         },
         { name: 'ios', heading: 'ios: consumes this repository; this change touches README.md' },
       ],
-      missing: [
-        `noted: ${CONFIG_FILE}: unknown key "extra" ignored`,
-        `broken: ${CONFIG_FILE}: must be a JSON object; ignored`,
-      ],
+      missing: ['acme/uncloned: configured as a consumer, but no clone of it was found'],
     })
   })
 
-  it('finds none when nothing changed', async () => {
-    const links = await declaredLinks({
+  it('finds none when nothing changed', () => {
+    const links = declaredLinks({
       repoId: 'acme/api',
+      configs: all,
       candidates,
       changedPaths: [],
     })
-    expect(links.consumers).toEqual([])
+    expect(links).toEqual({ deps: [], consumers: [], missing: [] })
   })
 
-  it('counts the path a rename moved a file away from', async () => {
-    const links = await declaredLinks({
+  it('counts the path a rename moved a file away from', () => {
+    const links = declaredLinks({
       repoId: 'acme/api',
+      configs: all,
       candidates,
-      changedPaths: ['src/v2/users.ts'],
-      diff: 'diff --git a/proto/a.proto b/src/v2/users.ts\nrename from proto/a.proto\nrename to src/v2/users.ts\n',
+      changedPaths: ['lib/users.ts'],
+      diff: 'diff --git a/proto/a.proto b/lib/users.ts\nrename from proto/a.proto\nrename to lib/users.ts\n',
     })
     expect(links.consumers.map((link) => link.heading)).toEqual([
-      'web: consumes this repository; this change touches src/v2/users.ts',
-      'ios: consumes this repository; this change touches src/v2/users.ts',
+      'web-checkout: consumes this repository; this change touches lib/users.ts',
+      'ios: consumes this repository; this change touches lib/users.ts',
       'cli: consumes this repository (proto/**); this change touches proto/a.proto',
     ])
   })

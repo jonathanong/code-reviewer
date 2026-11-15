@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { parseRepoConfig, type RepoConfigs } from './config.mts'
 import type { RuleReader } from './reader.mts'
 import { SHARED_SOURCES } from './shared.mts'
 import { stageRuleSources, type StageInput } from './stage.mts'
@@ -17,6 +18,16 @@ function reader(files: Record<string, string>, fail = false): RuleReader {
     },
     read: async (path) => files[path],
   }
+}
+
+function configs(files: Record<string, unknown>): RepoConfigs {
+  const byRepo = new Map(
+    Object.entries(files).map(([repo, config]) => [
+      repo,
+      parseRepoConfig(JSON.stringify(config), `${repo}.json`),
+    ]),
+  )
+  return { byRepo, problems: [] }
 }
 
 const skill = (name: string, description: string) =>
@@ -282,20 +293,15 @@ describe('stageRuleSources', () => {
     const result = await stageRuleSources(out, {
       ...base,
       repoId: 'acme/app',
-      repo: {
-        refLabel: 'base',
-        reader: reader({
-          '.code-reviewer.json': JSON.stringify({
-            consumes: [...many.map(({ repo }) => ({ repo })), { repo: 'acme/gone' }],
-          }),
-        }),
-      },
+      configs: configs({
+        'acme/app': { consumes: [...many.map(({ repo }) => ({ repo })), { repo: 'acme/gone' }] },
+        'acme/web': { consumes: [{ repo: 'acme/app', via: 'HTTP API' }] },
+      }),
       shared: [],
       related: [
         lib,
         ...many,
         linked('web', {
-          '.code-reviewer.json': '{"consumes":[{"repo":"acme/app","via":"HTTP API"}]}',
           'AGENTS.md': 'web rules',
           'src/client.ts': 'code',
         }),
@@ -305,7 +311,7 @@ describe('stageRuleSources', () => {
     expect(result.related).toEqual(['a', 'b', 'c', 'd', 'e'])
     expect(result.consumers).toEqual(['web'])
     expect(result.missing).toEqual([
-      'acme/gone: declared as consumed, but no clone of it was found',
+      'acme/gone: configured as consumed, but no clone of it was found',
     ])
     expect(result.written).toContain('rules/consumers/web/AGENTS.md')
     expect(result.written).not.toContain('rules/consumers/web/src/client.ts')
@@ -315,7 +321,7 @@ describe('stageRuleSources', () => {
       [
         '## Consumers',
         '',
-        'These repositories declare that they depend on what this change touches. Check their code for breakage; their rules explain their code and do not govern this diff.',
+        'These repositories are configured as depending on what this change touches. Check their code for breakage; their rules explain their code and do not govern this diff.',
         '',
         '### web: consumes this repository via HTTP API; this change touches src/a.test.ts (ref)',
         'Code: clone /c/web',
@@ -332,6 +338,7 @@ describe('stageRuleSources', () => {
       changedPaths: ['src/routes/a.ts'],
       diff: '',
       repoId: 'acme/app',
+      configs: configs({ 'acme/web': { consumes: [{ repo: 'acme/app' }] } }),
       shared: [],
       related: [
         {
@@ -339,7 +346,7 @@ describe('stageRuleSources', () => {
           refLabel: 'ref',
           codeHint: 'clone /c/web',
           stageCode: false,
-          reader: reader({ '.code-reviewer.json': '{"consumes":[{"repo":"acme/app"}]}' }),
+          reader: reader({}),
         },
       ],
       missing: [],

@@ -61,12 +61,12 @@ describe('stageCaseRules', () => {
     expect(index).toContain('no-mistakes-rules: no clone root')
   })
 
-  it('stages declared dependencies and the consumers that name the fixture repoId', async () => {
+  it('stages the dependencies and consumers that the fixture configs link to its repoId', async () => {
     const fixtureDir = temp()
     put(fixtureDir, {
-      'base/.code-reviewer.json': '{"consumes":[{"repo":"acme/api","via":"HTTP API"}]}',
+      'configs/acme/web.json': '{"consumes":[{"repo":"acme/api","via":"HTTP API"}]}',
+      'configs/acme/app.json': '{"consumes":[{"repo":"acme/web"}]}',
       'repos/api/routes.ts': 'export {}',
-      'repos/app/.code-reviewer.json': '{"consumes":[{"repo":"acme/web"}]}',
       'repos/app/src/client.ts': 'fetch()',
     })
     const dir = temp()

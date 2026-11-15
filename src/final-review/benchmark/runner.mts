@@ -55,7 +55,7 @@ export function buildPillarPrompt(
         : ''),
     ...(hasRules
       ? [
-          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources for this change: this repository's instructions and skills at the base, shared rule skills, the rules and code of the repositories the change depends on, and the repositories that declare they consume what it touches. Read it before reviewing.`,
+          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources for this change: this repository's instructions and skills at the base, shared rule skills, the rules and code of the repositories the change depends on, and the repositories configured as consuming what it touches. Read it before reviewing.`,
         ]
       : []),
     NUMBERED_DIFF_LEGEND,
