@@ -50,11 +50,12 @@ export async function findRelated(
   candidates: readonly Candidate[],
   diff: string,
   exclude = '',
+  max = MAX_RELATED,
 ): Promise<Related[]> {
   const lines = contentLines(diff)
   const related: Related[] = []
   for (const candidate of candidates) {
-    if (related.length >= MAX_RELATED) break
+    if (related.length >= max) break
     if (candidate.name === exclude) continue
     const packages: string[] = []
     let where: string | undefined

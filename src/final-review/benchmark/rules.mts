@@ -12,7 +12,7 @@ import { CONTEXT_DIR, type Snapshot } from './snapshot-context.mts'
 /** Rules digest recorded for control runs that stage nothing. */
 export const NO_RULES = 'none'
 
-/** Dependency repositories a fixture carries beside `base/` and `head/`, with their code. */
+/** Dependency and consumer repositories a fixture carries beside `base/` and `head/`, with their code. */
 function fixtureRelated(fixtureDir: string): StageInput['related'] {
   const root = join(fixtureDir, 'repos')
   if (!existsSync(root)) return []
@@ -48,6 +48,7 @@ export async function stageCaseRules(
     changedPaths: splitDiff(snapshot.diff).map((file) => file.path),
     diff: snapshot.diff,
     repo,
+    ...(fixture && item.repoId !== undefined ? { repoId: item.repoId } : {}),
     shared,
     related: fixture ? fixtureRelated(item.fixtureDir) : [],
     missing,

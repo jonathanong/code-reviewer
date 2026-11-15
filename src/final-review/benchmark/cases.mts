@@ -27,7 +27,12 @@ export type RepoCase = CaseBase & {
 }
 
 /** A synthetic case: a directory holding `base/`, `head/`, `pr.md`, and optional `context.md`. */
-export type FixtureCase = CaseBase & { fixture: string; fixtureDir: string }
+export type FixtureCase = CaseBase & {
+  fixture: string
+  fixtureDir: string
+  /** The fixture repository's `owner/name`, for config files in `repos/` that name it. */
+  repoId?: string
+}
 
 export type EvalCase = RepoCase | FixtureCase
 
@@ -84,13 +89,16 @@ function source(
   raw: Json,
   where: string,
   baseDir: string,
-): Omit<RepoCase, keyof CaseBase> | Pick<FixtureCase, 'fixture' | 'fixtureDir'> {
+): Omit<RepoCase, keyof CaseBase> | Pick<FixtureCase, 'fixture' | 'fixtureDir' | 'repoId'> {
   if (raw.fixture !== undefined) {
     if (REPO_FIELDS.some((field) => raw[field] !== undefined))
       fail(where, 'a fixture case must not set repo, pr, baseSha, or headSha')
     const fixture = str(raw, 'fixture', where)
     if (fixture.length === 0) fail(where, 'fixture must be a directory')
-    return { fixture, fixtureDir: resolve(baseDir, fixture) }
+    if (raw.repoId === undefined) return { fixture, fixtureDir: resolve(baseDir, fixture) }
+    const repoId = str(raw, 'repoId', where)
+    if (!REPO_RE.test(repoId)) fail(where, 'repoId must be owner/name')
+    return { fixture, fixtureDir: resolve(baseDir, fixture), repoId }
   }
   const repo = str(raw, 'repo', where)
   if (!REPO_RE.test(repo)) fail(where, 'repo must be owner/name')

@@ -1,6 +1,5 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { fetchConversation, type PrConversation } from './context-query.mts'
-import { splitRepo } from '../gh-cli/index.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhFinalReviewIo, type PullTarget } from './github.mts'
 import type { SinceDiff } from './plan.mts'
@@ -76,7 +75,7 @@ export function createGhPrepareIo(
         clones: clones ?? cloneRoot,
         tree,
         baseSha,
-        repoName: splitRepo(target.repo).name,
+        repoId: target.repo,
       }),
     async history(tree, base, paths) {
       try {

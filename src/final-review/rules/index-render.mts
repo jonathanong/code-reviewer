@@ -3,16 +3,22 @@ import type { SkillInfo } from './collect.mts'
 /** Staged files of one source; paths are relative to `rules/`. */
 export type Staged = { instructions: string[]; skills: SkillInfo[]; references: string[] }
 
+type Linked = { heading: string; label: string; code: string; staged: Staged }
+
 export type IndexInput = {
   repo?: { label: string; staged: Staged }
   shared: { name: string; label: string; staged: Staged }[]
-  deps: { heading: string; label: string; code: string; staged: Staged }[]
+  deps: Linked[]
+  /** Repositories that consume what this change touches; their rules do not govern this diff. */
+  consumers: Linked[]
   /** Suggested skill name to the first changed path that suggested it. */
   suggested: ReadonlyMap<string, string>
   missing: string[]
 }
 
 const MAX_DESCRIPTION = 200
+const CONSUMERS_NOTE =
+  'These repositories declare that they depend on what this change touches. Check their code for breakage; their rules explain their code and do not govern this diff.'
 
 function truncate(text: string): string {
   return text.length <= MAX_DESCRIPTION ? text : `${text.slice(0, MAX_DESCRIPTION - 3)}...`
@@ -66,13 +72,16 @@ export function renderIndex(input: IndexInput): string {
       ...body(source.staged, input.suggested),
     ]),
   )
-  const deps = section(
-    '## Dependencies',
-    input.deps.map((dep) => [
+  const linked = (items: Linked[]) =>
+    items.map((dep) => [
       `### ${dep.heading} (${dep.label})`,
       `Code: ${dep.code}`,
       ...body(dep.staged),
-    ]),
+    ])
+  const deps = section('## Dependencies', linked(input.deps))
+  const consumers = section(
+    '## Consumers',
+    input.consumers.length === 0 ? [] : [[CONSUMERS_NOTE], ...linked(input.consumers)],
   )
   const missing = section('## Missing', input.missing.length === 0 ? [] : [bullets(input.missing)])
   return [
@@ -83,6 +92,7 @@ export function renderIndex(input: IndexInput): string {
     ...repo,
     ...shared,
     ...deps,
+    ...consumers,
     ...missing,
   ]
     .join('\n')

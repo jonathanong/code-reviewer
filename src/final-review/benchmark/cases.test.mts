@@ -79,6 +79,14 @@ describe('parseEvalCases', () => {
     expect(isFixtureCase(parseEvalCases([positive()])[0] as never)).toBe(false)
   })
 
+  it('accepts an owner/name repoId on a fixture case', () => {
+    const fixture: Record<string, unknown> = { ...positive(), fixture: 'f', repoId: 'acme/api' }
+    for (const field of ['repo', 'pr', 'baseSha', 'headSha']) delete fixture[field]
+    expect(parseEvalCases([fixture], '/cases')[0]).toMatchObject({ repoId: 'acme/api' })
+    expect(message([{ ...fixture, repoId: 'api' }])).toBe('cases[0]: repoId must be owner/name')
+    expect(message([{ ...fixture, repoId: 3 }])).toBe('cases[0]: repoId must be a string')
+  })
+
   it('requires exactly one of fixture or the repo shape', () => {
     expect(message([positive({ fixture: 'f' })])).toBe(
       'cases[0]: a fixture case must not set repo, pr, baseSha, or headSha',
