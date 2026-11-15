@@ -52,6 +52,7 @@ function deps(io: FinalReviewIo, input = '{}'): MockDeps {
     createPrepareIo: vi.fn(() => ({}) as PrepareIo),
     runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
+    listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),
     runBench: vi.fn(async () => 7),
     runVerifierBench: vi.fn(async () => 8),
   }
@@ -162,6 +163,19 @@ describe('runFinalReviewCommand', () => {
     expect(JSON.parse(out.join(''))).toEqual({ removed: true })
   })
 
+  it('lists plugins and exits 1 when a required one is missing', async () => {
+    const { out } = capture()
+    const d = deps(fakeIo())
+    await expect(runFinalReviewCommand(['plugins'], d)).resolves.toBe(0)
+    await expect(runFinalReviewCommand(['plugins', '--require', 'rules'], d)).resolves.toBe(0)
+    out.length = 0
+    await expect(
+      runFinalReviewCommand(['plugins', '--require', 'rules', '--require', 'db'], d),
+    ).resolves.toBe(1)
+    expect(JSON.parse(out.join(''))).toEqual({ plugins: ['rules@m 1.0.0'], missing: ['db'] })
+    expect(d.createIo).not.toHaveBeenCalled()
+  })
+
   it('exits 0 for an approved status and 1 otherwise', async () => {
     const { out } = capture()
     const approved = fakeIo({
@@ -184,7 +198,7 @@ describe('runFinalReviewCommand', () => {
     await expect(runFinalReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('final-review: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, bench, or bench-verifier.',
+      'final-review: final-review needs post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, plugins, bench, or bench-verifier.',
     )
   })
 

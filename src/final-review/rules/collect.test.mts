@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { instructionPaths, parseFrontmatter, skillInfo, skillPaths } from './collect.mts'
+import {
+  instructionPaths,
+  parseFrontmatter,
+  referencePaths,
+  skillInfo,
+  skillPaths,
+} from './collect.mts'
 
 describe('instructionPaths', () => {
   it('takes AGENTS.md and CLAUDE.md at the root and in each ancestor of a changed path', () => {
@@ -75,5 +81,20 @@ describe('skillInfo', () => {
     expect(skillInfo('skills/dir/SKILL.md', 'nothing').description).toBe('')
     expect(skillInfo('skills/dir/SKILL.md', '---\nname: n\n---').name).toBe('n')
     expect(skillInfo('skills/dir/SKILL.md', '---\nname:\n---').name).toBe('dir')
+  })
+})
+
+describe('referencePaths', () => {
+  it('takes markdown directly under references/ of the given skills', () => {
+    const all = [
+      'skills/a/SKILL.md',
+      'skills/a/references/one.md',
+      'skills/a/references/deep/two.md',
+      'skills/a/references/data.json',
+      'skills/a/notes.md',
+      'skills/b/references/other.md',
+    ]
+    expect(referencePaths(all, ['skills/a/SKILL.md'])).toEqual(['skills/a/references/one.md'])
+    expect(referencePaths(all, [])).toEqual([])
   })
 })

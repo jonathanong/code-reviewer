@@ -26,6 +26,8 @@ const CASES = [caseJson('p1', 'positive'), caseJson('n1', 'negative')]
 
 const claudeOutput = (findings: unknown[]) => JSON.stringify({ structured_output: { findings } })
 
+const PLUGINS = JSON.stringify([{ id: 'rules@m', version: '1.2.3', enabled: true }])
+
 const HIT = claudeOutput([{ severity: 'high', title: 'T', body: 'B', path: 'src/a.ts', line: 5 }])
 
 type Harness = {
@@ -40,6 +42,7 @@ type Harness = {
 function harness(
   files: Record<string, string>,
   exec: (cwd: string | undefined) => Promise<string> = async () => HIT,
+  plugins: () => string = () => PLUGINS,
 ): Harness {
   const store = new Map(Object.entries(files))
   const logs: string[] = []
@@ -48,6 +51,7 @@ function harness(
   const staged: string[] = []
   const deps: PillarBenchDeps = {
     exec: async (command, args, options) => {
+      if (args[0] === 'plugin') return plugins()
       execCalls.push({ command, args, cwd: options?.cwd })
       return exec(options?.cwd)
     },
@@ -63,8 +67,9 @@ function harness(
       prepared.push(item.id)
       return { dir: `/snap/${item.id}`, diff: '', body: '' }
     },
-    stageRules: async (item, _snapshot, clones) => {
-      staged.push(`${item.id}:${String(clones)}`)
+    cwd: () => '/work',
+    stageRules: async (item, _snapshot, clones, _git, withShared) => {
+      staged.push(`${item.id}:${String(clones)}${withShared === false ? ':no-shared' : ''}`)
       return 'digest-1'
     },
   }
@@ -147,7 +152,48 @@ describe('runFinalReviewBenchCli runs', () => {
     const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
     await runFinalReviewBenchCli([...BASE, '--no-rules'], h.deps)
     expect(h.staged).toEqual([])
-    expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).rules).toBe('none')
+    const raw = JSON.parse(h.files.get('out/raw/security/p1.json') as string)
+    expect(raw.rules).toBe('none')
+    expect(raw.plugins).toEqual([])
+    const args = h.execCalls[0]?.args ?? []
+    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob')
+  })
+
+  it('records the enabled plugins and gives pillars the Skill tool', async () => {
+    stdoutSpy()
+    const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
+    await runFinalReviewBenchCli(BASE, h.deps)
+    expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).plugins).toEqual([
+      'rules@m 1.2.3',
+    ])
+    const args = h.execCalls[0]?.args ?? []
+    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Skill')
+    expect(h.staged).toEqual(['p1:undefined', 'n1:undefined'])
+  })
+
+  it('leaves out the shared clones with --no-shared', async () => {
+    stdoutSpy()
+    const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
+    await runFinalReviewBenchCli([...BASE, '--no-shared', '--clones', '/c'], h.deps)
+    expect(h.staged).toEqual(['p1:/c:no-shared', 'n1:/c:no-shared'])
+  })
+
+  it('records unknown plugins when they cannot be listed', async () => {
+    stdoutSpy()
+    for (const failure of [new Error('no claude'), 'plain']) {
+      const h = harness(
+        { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' },
+        undefined,
+        () => {
+          throw failure
+        },
+      )
+      await runFinalReviewBenchCli(BASE, h.deps)
+      expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).plugins).toEqual([
+        'unknown',
+      ])
+      expect(h.logs).toContain(`plugins: ${failure instanceof Error ? 'no claude' : 'plain'}`)
+    }
   })
 
   it('prefixes each pillar prompt with the shared contract when present', async () => {
@@ -176,10 +222,12 @@ describe('runFinalReviewBenchCli runs', () => {
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string)).toEqual({
       error: 'claude exploded',
       rules: 'digest-1',
+      plugins: ['rules@m 1.2.3'],
     })
     expect(JSON.parse(h.files.get('out/raw/security/n1.json') as string)).toEqual({
       error: 'plain string',
       rules: 'digest-1',
+      plugins: ['rules@m 1.2.3'],
     })
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('Errors and skipped runs:')
@@ -209,7 +257,7 @@ describe('runFinalReviewBenchCli runs', () => {
     const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'S' })
     const exec = h.deps.exec
     h.deps.exec = async (command, args, options) => {
-      seen.push(args)
+      if (args[0] !== 'plugin') seen.push(args)
       return exec(command, args, options)
     }
     await runFinalReviewBenchCli([...BASE, '--model', 'opus', '--max-turns', '7'], h.deps)

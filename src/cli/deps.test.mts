@@ -6,11 +6,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../final-review/benchmark/cli.mts', () => ({
   runFinalReviewBenchCli: vi.fn(async () => 5),
 }))
+vi.mock('../final-review/benchmark/exec.mts', () => ({
+  defaultExec: vi.fn(async () => '[{"id":"rules@m","version":"1.0.0","enabled":true}]'),
+}))
 vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
 import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
+import { defaultExec } from '../final-review/benchmark/exec.mts'
 import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
 import type { GhAuth } from '../gh-cli/index.mts'
 import { createDefaultDeps } from './deps.mts'
@@ -91,6 +95,12 @@ describe('createDefaultDeps', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('lists the enabled Claude Code plugins', async () => {
+    const deps = createDefaultDeps(fakeAuth().getAuth)
+    await expect(deps.listPlugins()).resolves.toEqual([{ id: 'rules@m', version: '1.0.0' }])
+    expect(defaultExec).toHaveBeenCalledWith('claude', ['plugin', 'list', '--json'])
   })
 
   it('delegates the benchmarks', async () => {

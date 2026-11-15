@@ -32,15 +32,19 @@ function fixtureRelated(fixtureDir: string): StageInput['related'] {
 
 /**
  * Stages the same rule sources `prepare` does into the snapshot's `.final-review/rules`, and
- * returns their digest.
+ * returns their digest. `withShared` false leaves out the shared clones.
  */
 export async function stageCaseRules(
   item: EvalCase,
   snapshot: Snapshot,
   clones: string | undefined,
   git: RunTextCommand = runGit,
+  withShared = true,
 ): Promise<string> {
-  const { shared, missing } = await sharedFromClones(clones, git)
+  // Without shared sources, a run measures installed plugin skills alone.
+  const { shared, missing } = withShared
+    ? await sharedFromClones(clones, git)
+    : { shared: [], missing: [] }
   const fixture = isFixtureCase(item)
   const repo = fixture
     ? { reader: dirReader(join(item.fixtureDir, 'base'), 'base'), refLabel: 'base' }

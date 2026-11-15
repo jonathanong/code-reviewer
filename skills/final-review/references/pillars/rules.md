@@ -4,8 +4,8 @@ You are the rules reviewer. Follow [the pillar contract](_contract.md).
 
 ## Scope
 
-Every rule source is staged in `rules/INDEX.md`; read rules from there, not from the pull
-request head or from skills you happen to have loaded.
+Every staged rule source is listed in `rules/INDEX.md`; read rules from there and from installed
+rule skills (see the contract), never from the pull request head.
 
 - **This repository**: every applicable `AGENTS.md` (and `CLAUDE.md` adapters) from the root down
   to each changed file, and its skills, all at the **base** ref. A pull request can edit its own

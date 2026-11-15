@@ -46,8 +46,14 @@ one, and a request for a pull request already being reviewed is noted for after 
 
 ## Step 1 - Start or restart
 
-1. `code-reviewer auth` (App or `gh`) and `code-reviewer queue --owner <owner>`.
-2. Entries in state `in-progress` were abandoned by an earlier session: review them with
+1. Check the rule plugins before any review:
+   `code-reviewer plugins --require no-mistakes-rules --require vouchington-database --require vouchington-testing --require vouchington-workflow`.
+   It prints the enabled plugins with versions and exits 1 naming any that are missing. Then
+   confirm your own skill list shows skills from each required plugin: a session started before a
+   plugin was installed or updated does not see it. On either failure, stop, review nothing, and
+   tell the human to install the plugin or restart the session.
+2. `code-reviewer auth` (App or `gh`) and `code-reviewer queue --owner <owner>`.
+3. Entries in state `in-progress` were abandoned by an earlier session: review them with
    `claim --force`. Entries in state `requested` are queued in the order listed.
 
 Keep nothing that a restart would lose. GitHub is the source of truth: the labels hold the queue,

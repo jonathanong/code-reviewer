@@ -9,6 +9,7 @@ import {
   revokeFinalApproval,
   type PullTarget,
 } from '../final-review/index.mts'
+import { checkPlugins } from '../final-review/plugins.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { createDefaultDeps, type FinalReviewDeps } from './deps.mts'
 import { FINAL_REVIEW_USAGE } from './usage.mts'
@@ -16,7 +17,7 @@ import { FINAL_REVIEW_USAGE } from './usage.mts'
 export type { FinalReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, bench, or bench-verifier'
+  'post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, plugins, bench, or bench-verifier'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -47,6 +48,7 @@ function parse(args: string[]) {
       tree: { type: 'string' },
       clones: { type: 'string' },
       thread: { type: 'string', multiple: true },
+      require: { type: 'string', multiple: true },
     },
   }).values
 }
@@ -64,6 +66,11 @@ async function run(
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
   const values = parse(args)
   if (subcommand === undefined) throw new Error(`final-review needs ${SUBCOMMANDS}.`)
+  if (subcommand === 'plugins') {
+    const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
+    print(result)
+    return result.missing.length === 0 ? 0 : 1
+  }
   const loop = await runLoopCommand(subcommand, values, () => target(values), deps)
   if (loop !== undefined) {
     print(loop)
