@@ -6,7 +6,7 @@ import { defaultRef, gitReader } from './reader.mts'
 import { SHARED_SOURCES } from './shared.mts'
 import type { StageInput } from './stage.mts'
 
-export type Sources = Pick<StageInput, 'repo' | 'shared' | 'related' | 'missing'>
+export type Sources = Pick<StageInput, 'repo' | 'repoId' | 'shared' | 'related' | 'missing'>
 
 const NO_CLONES = 'no clone root (pass --clones or set FINAL_REVIEWER_CLONE_ROOT)'
 
@@ -102,8 +102,7 @@ export async function productionSources(args: {
           repo: {
             reader: gitReader(tree, baseSha, git),
             refLabel: `base ${baseSha.slice(0, 7)}`,
-            id: repoId,
           },
         }
-  return { ...repo, shared, related, missing }
+  return { ...repo, repoId, shared, related, missing }
 }

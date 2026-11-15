@@ -32,8 +32,10 @@ function touched(entry: Consumes, changed: readonly string[]): string | undefine
  * says it consumes, and the candidates that say they consume what this change touches.
  */
 export async function declaredLinks(input: {
-  /** The reviewed repository at its base, with its `owner/name` when known. */
-  repo?: { id?: string; reader: RuleReader }
+  /** The reviewed repository at its base. */
+  repo?: { reader: RuleReader }
+  /** The reviewed repository's `owner/name`; consumers are found only when it is known. */
+  repoId?: string
   candidates: readonly Linkable[]
   changedPaths: readonly string[]
 }): Promise<Links> {
@@ -50,12 +52,17 @@ export async function declaredLinks(input: {
       }
     }
   }
-  const id = input.repo?.id?.toLowerCase()
+  const id = input.repoId?.toLowerCase()
   if (id === undefined) return links
   for (const candidate of input.candidates) {
     const config = await readRepoConfig(candidate.reader)
-    links.missing.push(...config.problems.map((problem) => `${candidate.name}: ${problem}`))
-    for (const entry of config.consumes.filter((item) => item.repo === id)) {
+    const entries = config.consumes.filter((item) => item.repo === id)
+    // Every clone is scanned, so only a file that cannot be read at all, or one that names this
+    // repository, is worth reporting; notes about unrelated clones would drown the rest.
+    if (config.unreadable === true || entries.length > 0) {
+      links.missing.push(...config.problems.map((problem) => `${candidate.name}: ${problem}`))
+    }
+    for (const entry of entries) {
       const path = touched(entry, input.changedPaths)
       if (path === undefined || links.consumers.some((link) => link.name === candidate.name)) {
         continue

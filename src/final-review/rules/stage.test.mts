@@ -281,8 +281,8 @@ describe('stageRuleSources', () => {
     const many = ['a', 'b', 'c', 'd', 'e'].map((name) => linked(name, {}))
     const result = await stageRuleSources(out, {
       ...base,
+      repoId: 'acme/app',
       repo: {
-        id: 'acme/app',
         refLabel: 'base',
         reader: reader({
           '.code-reviewer.json': JSON.stringify({
@@ -324,6 +324,29 @@ describe('stageRuleSources', () => {
         '',
         '## Missing',
       ].join('\n'),
+    )
+  })
+
+  it('stages consumers from the repository name alone, without a tree', async () => {
+    const result = await stageRuleSources(out, {
+      changedPaths: ['src/routes/a.ts'],
+      diff: '',
+      repoId: 'acme/app',
+      shared: [],
+      related: [
+        {
+          name: 'web',
+          refLabel: 'ref',
+          codeHint: 'clone /c/web',
+          stageCode: false,
+          reader: reader({ '.code-reviewer.json': '{"consumes":[{"repo":"acme/app"}]}' }),
+        },
+      ],
+      missing: [],
+    })
+    expect(result.consumers).toEqual(['web'])
+    expect(read('rules/INDEX.md')).toContain(
+      '### web: consumes this repository; this change touches src/routes/a.ts (ref)',
     )
   })
 })

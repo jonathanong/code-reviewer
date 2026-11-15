@@ -13,7 +13,8 @@ export type Consumes = {
   via: string
 }
 
-export type RepoConfig = { consumes: Consumes[]; problems: string[] }
+/** `unreadable` marks a file that could not be parsed at all, as opposed to one with bad parts. */
+export type RepoConfig = { consumes: Consumes[]; problems: string[]; unreadable?: true }
 
 const REPO_RE = /^[A-Za-z0-9-]+\/(?!\.+$)[\w.-]+$/u
 const KEYS = new Set(['consumes'])
@@ -60,10 +61,14 @@ export function parseRepoConfig(text: string | undefined): RepoConfig {
   try {
     raw = JSON.parse(text)
   } catch {
-    return { consumes: [], problems: [`${CONFIG_FILE}: not valid JSON; ignored`] }
+    return { consumes: [], problems: [`${CONFIG_FILE}: not valid JSON; ignored`], unreadable: true }
   }
   if (!isRecord(raw)) {
-    return { consumes: [], problems: [`${CONFIG_FILE}: must be a JSON object; ignored`] }
+    return {
+      consumes: [],
+      problems: [`${CONFIG_FILE}: must be a JSON object; ignored`],
+      unreadable: true,
+    }
   }
   const problems = unknownKeys(raw, KEYS, CONFIG_FILE)
   const list = raw.consumes ?? []

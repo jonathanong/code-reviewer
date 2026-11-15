@@ -13,8 +13,9 @@ import { suggestSkills } from './topics.mts'
 export type StageInput = {
   changedPaths: readonly string[]
   diff: string
-  /** The reviewed repository at its base; `id` is its `owner/name` when known. */
-  repo?: { reader: RuleReader; refLabel: string; id?: string }
+  repo?: { reader: RuleReader; refLabel: string }
+  /** The reviewed repository's `owner/name`, when known. */
+  repoId?: string
   shared: { source: SharedSource; reader: RuleReader; refLabel: string }[]
   /**
    * Candidate repositories; only those the diff uses, the config file declares, or that declare
@@ -118,6 +119,7 @@ async function stageLinks(
 ): Promise<{ deps: Dep[]; consumers: Dep[] }> {
   const links = await declaredLinks({
     ...(input.repo === undefined ? {} : { repo: input.repo }),
+    ...(input.repoId === undefined ? {} : { repoId: input.repoId }),
     candidates: input.related,
     changedPaths: input.changedPaths,
   })

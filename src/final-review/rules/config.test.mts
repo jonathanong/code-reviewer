@@ -25,10 +25,16 @@ describe('parseRepoConfig', () => {
   })
 
   it('reports invalid JSON and non-object files', () => {
-    expect(parseRepoConfig('{').problems).toEqual([`${CONFIG_FILE}: not valid JSON; ignored`])
-    expect(parseRepoConfig('[]').problems).toEqual([
-      `${CONFIG_FILE}: must be a JSON object; ignored`,
-    ])
+    expect(parseRepoConfig('{')).toEqual({
+      consumes: [],
+      problems: [`${CONFIG_FILE}: not valid JSON; ignored`],
+      unreadable: true,
+    })
+    expect(parseRepoConfig('[]')).toEqual({
+      consumes: [],
+      problems: [`${CONFIG_FILE}: must be a JSON object; ignored`],
+      unreadable: true,
+    })
   })
 
   it('reports unknown keys and a non-array consumes', () => {

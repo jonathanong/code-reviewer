@@ -85,11 +85,16 @@ describe('declaredLinks consumers', () => {
     candidate('ios', 'acme/ios', { consumes: [{ repo: 'ACME/api' }] }),
     candidate('cli', 'acme/cli', { consumes: [{ repo: 'acme/api', paths: ['proto/**'] }] }),
     candidate('other', 'acme/other', { consumes: [{ repo: 'acme/elsewhere' }], extra: 1 }),
+    candidate('noted', 'acme/noted', {
+      consumes: [{ repo: 'acme/api', paths: ['x/**'] }],
+      extra: 1,
+    }),
+    { name: 'broken', reader: { ...reader(), read: async () => '[]' } },
   ]
 
   it('finds candidates that consume what the change touches', async () => {
     const links = await declaredLinks({
-      repo: { id: 'Acme/Api', reader: reader() },
+      repoId: 'Acme/Api',
       candidates,
       changedPaths: ['README.md', 'src/routes/users.ts'],
     })
@@ -103,13 +108,16 @@ describe('declaredLinks consumers', () => {
         },
         { name: 'ios', heading: 'ios: consumes this repository; this change touches README.md' },
       ],
-      missing: [`other: ${CONFIG_FILE}: unknown key "extra" ignored`],
+      missing: [
+        `noted: ${CONFIG_FILE}: unknown key "extra" ignored`,
+        `broken: ${CONFIG_FILE}: must be a JSON object; ignored`,
+      ],
     })
   })
 
   it('finds none when nothing changed', async () => {
     const links = await declaredLinks({
-      repo: { id: 'acme/api', reader: reader() },
+      repoId: 'acme/api',
       candidates,
       changedPaths: [],
     })

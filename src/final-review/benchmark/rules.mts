@@ -42,16 +42,13 @@ export async function stageCaseRules(
   const { shared, missing } = await sharedFromClones(clones, git)
   const fixture = isFixtureCase(item)
   const repo = fixture
-    ? {
-        reader: dirReader(join(item.fixtureDir, 'base'), 'base'),
-        refLabel: 'base',
-        ...(item.repoId === undefined ? {} : { id: item.repoId }),
-      }
+    ? { reader: dirReader(join(item.fixtureDir, 'base'), 'base'), refLabel: 'base' }
     : { reader: dirReader(snapshot.dir, 'head'), refLabel: 'head (base not exported)' }
   const result = await stageRuleSources(join(snapshot.dir, CONTEXT_DIR), {
     changedPaths: splitDiff(snapshot.diff).map((file) => file.path),
     diff: snapshot.diff,
     repo,
+    ...(fixture && item.repoId !== undefined ? { repoId: item.repoId } : {}),
     shared,
     related: fixture ? fixtureRelated(item.fixtureDir) : [],
     missing,

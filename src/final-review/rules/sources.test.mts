@@ -102,7 +102,7 @@ describe('productionSources', () => {
       repoId: 'acme/self',
     })
     expect(sources.repo?.refLabel).toBe('base abcdef0')
-    expect(sources.repo?.id).toBe('acme/self')
+    expect(sources.repoId).toBe('acme/self')
     expect(sources.repo?.reader.label).toBe('abcdef0123456789')
     expect(sources.shared).toHaveLength(2)
     expect(sources.related.map((item) => item.name)).toEqual([
@@ -122,6 +122,7 @@ describe('productionSources', () => {
       repoId: 'acme/self',
     })
     expect(sources.repo).toBeUndefined()
+    expect(sources.repoId).toBe('acme/self')
     expect(sources.shared).toEqual([])
     expect(sources.related).toEqual([])
     expect(sources.missing).toHaveLength(3)
