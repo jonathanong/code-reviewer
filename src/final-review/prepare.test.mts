@@ -152,6 +152,7 @@ describe('prepareReview', () => {
     expect(summary.rules).toMatchObject({
       suggested: [],
       related: [],
+      consumers: [],
       missing: ['This repository: not staged (no --tree)', 'x: none'],
     })
     expect(read('rules/INDEX.md')).toContain('- x: none')

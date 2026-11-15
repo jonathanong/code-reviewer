@@ -28,8 +28,8 @@ export type PrepareSummary = {
   plan: ReviewPlan
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
-  /** The rule sources staged under `out/rules`: suggested skills, related repos, unavailable sources. */
-  rules: { suggested: string[]; related: string[]; missing: string[] }
+  /** The rule sources staged under `out/rules`: suggested skills, linked repos, unavailable sources. */
+  rules: { suggested: string[]; related: string[]; consumers: string[]; missing: string[] }
 }
 
 type Write = (path: string, text: string) => void
@@ -114,6 +114,11 @@ export async function prepareReview(
     lines: context.lines,
     plan,
     written,
-    rules: { suggested: staged.suggested, related: staged.related, missing: staged.missing },
+    rules: {
+      suggested: staged.suggested,
+      related: staged.related,
+      consumers: staged.consumers,
+      missing: staged.missing,
+    },
   }
 }

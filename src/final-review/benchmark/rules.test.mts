@@ -61,6 +61,26 @@ describe('stageCaseRules', () => {
     expect(index).toContain('no-mistakes-rules: no clone root')
   })
 
+  it('stages declared dependencies and the consumers that name the fixture repoId', async () => {
+    const fixtureDir = temp()
+    put(fixtureDir, {
+      'base/.code-reviewer.json': '{"consumes":[{"repo":"acme/api","via":"HTTP API"}]}',
+      'repos/api/routes.ts': 'export {}',
+      'repos/app/.code-reviewer.json': '{"consumes":[{"repo":"acme/web"}]}',
+      'repos/app/src/client.ts': 'fetch()',
+    })
+    const dir = temp()
+    const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir, repoId: 'acme/web' }
+    const snapshot = { dir, diff: 'diff --git a/src/a.ts b/src/a.ts\n+const a = 1\n', body: '' }
+    await stageCaseRules(item, snapshot, undefined, git)
+    const rules = (path: string) => readFileSync(join(dir, '.final-review/rules', path), 'utf8')
+    expect(rules('deps/api/routes.ts')).toBe('export {}')
+    expect(rules('consumers/app/src/client.ts')).toBe('fetch()')
+    const index = rules('INDEX.md')
+    expect(index).toContain('### api: consumed via HTTP API (fixture)')
+    expect(index).toContain('### app: consumes this repository; this change touches src/a.ts')
+  })
+
   it('stages the exported head for a repo case and has no related repositories', async () => {
     const dir = temp()
     put(dir, { 'AGENTS.md': 'head rules' })

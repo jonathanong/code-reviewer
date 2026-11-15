@@ -18,8 +18,9 @@ vouchington-reviewer bench-verifier --cases cases.json --findings-from DIR --pro
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; shared skills from the
-  vouchington-tooling and no-mistakes clones' default branches; the rules of cloned dependency
-  repositories the diff uses) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
+  vouchington-tooling and no-mistakes clones' default branches; the rules of cloned repositories
+  the diff imports, the base's .code-reviewer.json declares as consumed, or that declare they
+  consume what changed) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
   resolve resolves review threads of fixed findings.
   Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
   plus the comma-separated logins in FINAL_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
@@ -37,6 +38,7 @@ vouchington-reviewer bench-verifier --cases cases.json --findings-from DIR --pro
   agreement, duplicates merged, and other blocking and high findings confirmed by --checker;
   --prompts is the skill's references directory. bench stages the same rule sources under
   .final-review/rules (--clones DIR, default FINAL_REVIEWER_CLONE_ROOT; fixtures may hold
-  dependency repositories under repos/); --no-rules stages none, for control runs.
+  dependency and consumer repositories under repos/, and a case's repoId names the fixture
+  repository for their .code-reviewer.json); --no-rules stages none, for control runs.
 
 `

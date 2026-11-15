@@ -6,7 +6,9 @@ You are the blast-radius reviewer. Follow [the pillar contract](_contract.md).
 
 - **Consumers.** Who calls or depends on what changed? Public APIs, HTTP routes and payload
   shapes, events and queue messages, database columns, CLI flags, exported package symbols,
-  shared skills and workflow inputs, environment variables, and configuration keys. Look across
+  shared skills and workflow inputs, environment variables, and configuration keys. Start with
+  the Consumers section of `rules/INDEX.md`: those repositories declare that they depend on the
+  paths this change touches, so read their code at the listed location. Then look across
   every repository the review was given (local checkouts at their default branch, or
   `gh search code --owner <org>`), including web and native clients, which update on their own
   schedule and may run old versions for months.

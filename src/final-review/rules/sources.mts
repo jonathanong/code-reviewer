@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { RunTextCommand } from '../../gh-cli/index.mts'
+import { splitRepo, type RunTextCommand } from '../../gh-cli/index.mts'
 import { defaultRef, gitReader } from './reader.mts'
 import { SHARED_SOURCES } from './shared.mts'
 import type { StageInput } from './stage.mts'
@@ -33,7 +33,18 @@ export async function sharedFromClones(
   return { shared, missing }
 }
 
-/** Every clone under `clones` except the pull request's own, as dependency candidates. */
+/** `owner/name` from a clone's origin URL (https or ssh), or undefined without a usable origin. */
+export async function originRepo(dir: string, git: RunTextCommand): Promise<string | undefined> {
+  try {
+    const url = (await git(['-C', dir, 'remote', 'get-url', 'origin'])).trim()
+    const match = /[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/u.exec(url)
+    return match === null ? undefined : `${match[1]}/${match[2]}`
+  } catch {
+    return undefined
+  }
+}
+
+/** Every clone under `clones` except the pull request's own, as candidate linked repositories. */
 export async function cloneCandidates(
   clones: string,
   git: RunTextCommand,
@@ -47,16 +58,21 @@ export async function cloneCandidates(
     }
   })()
   const names = entries
-    .filter((entry) => entry.isDirectory() && entry.name !== exclude)
+    .filter((entry) => entry.isDirectory())
     .filter((entry) => existsSync(join(clones, entry.name, '.git')))
     .map((entry) => entry.name)
     .sort()
+  const self = exclude.toLowerCase()
   const candidates: Sources['related'] = []
   for (const name of names) {
     const dir = join(clones, name)
+    const repo = await originRepo(dir, git)
+    // The pull request's own clone: by origin when known, else by directory name.
+    if ((repo ?? `${splitRepo(self).owner}/${name}`).toLowerCase() === self) continue
     const ref = await defaultRef(dir, git)
     candidates.push({
       name,
+      ...(repo === undefined ? {} : { repo }),
       reader: gitReader(dir, ref, git),
       refLabel: `default branch ${ref}`,
       codeHint: `clone ${dir}; read code with git -C ${dir} show ${ref}:<path> (the working tree may be on another branch)`,
@@ -72,11 +88,12 @@ export async function productionSources(args: {
   clones: string | undefined
   tree: string | undefined
   baseSha: string
-  repoName: string
+  /** The reviewed repository as `owner/name`. */
+  repoId: string
 }): Promise<Sources> {
-  const { git, clones, tree, baseSha, repoName } = args
+  const { git, clones, tree, baseSha, repoId } = args
   const { shared, missing } = await sharedFromClones(clones, git)
-  const related = clones === undefined ? [] : await cloneCandidates(clones, git, repoName)
+  const related = clones === undefined ? [] : await cloneCandidates(clones, git, repoId)
   if (clones === undefined) missing.push(`dependencies: skipped (${NO_CLONES})`)
   const repo =
     tree === undefined
@@ -85,6 +102,7 @@ export async function productionSources(args: {
           repo: {
             reader: gitReader(tree, baseSha, git),
             refLabel: `base ${baseSha.slice(0, 7)}`,
+            id: repoId,
           },
         }
   return { ...repo, shared, related, missing }

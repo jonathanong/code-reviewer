@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { cloneCandidates, productionSources, sharedFromClones } from './sources.mts'
+import { cloneCandidates, originRepo, productionSources, sharedFromClones } from './sources.mts'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -44,13 +44,50 @@ describe('sharedFromClones', () => {
 describe('cloneCandidates', () => {
   it('returns git clones except the pull request repo, sorted, with a code hint', async () => {
     const root = clones(['b-lib', 'a-lib', 'self'], ['not-a-repo'])
-    const candidates = await cloneCandidates(root, git, 'self')
+    const candidates = await cloneCandidates(root, git, 'acme/self')
     expect(candidates.map((item) => item.name)).toEqual(['a-lib', 'b-lib'])
     expect(candidates[0]).toMatchObject({
       refLabel: 'default branch origin/trunk',
       stageCode: false,
       codeHint: `clone ${join(root, 'a-lib')}; read code with git -C ${join(root, 'a-lib')} show origin/trunk:<path> (the working tree may be on another branch)`,
     })
+  })
+})
+
+describe('clone identity', () => {
+  const origins = (urls: Record<string, string>) =>
+    vi.fn(async (args: string[]) => {
+      if (args.includes('get-url')) {
+        const url = urls[(args[1] as string).split('/').at(-1) as string]
+        if (url === undefined) throw new Error('no origin')
+        return `${url}\n`
+      }
+      return args.includes('--abbrev-ref') ? 'origin/main\n' : ''
+    })
+
+  it('parses https and ssh origins and gives up on anything else', async () => {
+    const run = origins({
+      a: 'https://github.com/Acme/a.git',
+      b: 'git@github.com:acme/b.x',
+      c: 'nonsense',
+    })
+    expect(await originRepo('/r/a', run)).toBe('Acme/a')
+    expect(await originRepo('/r/b', run)).toBe('acme/b.x')
+    expect(await originRepo('/r/c', run)).toBeUndefined()
+    expect(await originRepo('/r/d', run)).toBeUndefined()
+  })
+
+  it('excludes the pull request repo by origin, not by directory name', async () => {
+    const root = clones(['renamed', 'self', 'plain'])
+    const run = origins({
+      renamed: 'https://github.com/acme/Self',
+      self: 'https://github.com/other/self.git',
+    })
+    const candidates = await cloneCandidates(root, run, 'Acme/self')
+    expect(candidates.map((item) => [item.name, item.repo])).toEqual([
+      ['plain', undefined],
+      ['self', 'other/self'],
+    ])
   })
 })
 
@@ -62,9 +99,10 @@ describe('productionSources', () => {
       clones: root,
       tree: '/tree',
       baseSha: 'abcdef0123456789',
-      repoName: 'self',
+      repoId: 'acme/self',
     })
     expect(sources.repo?.refLabel).toBe('base abcdef0')
+    expect(sources.repo?.id).toBe('acme/self')
     expect(sources.repo?.reader.label).toBe('abcdef0123456789')
     expect(sources.shared).toHaveLength(2)
     expect(sources.related.map((item) => item.name)).toEqual([
@@ -81,7 +119,7 @@ describe('productionSources', () => {
       clones: undefined,
       tree: undefined,
       baseSha: 'a'.repeat(40),
-      repoName: 'self',
+      repoId: 'acme/self',
     })
     expect(sources.repo).toBeUndefined()
     expect(sources.shared).toEqual([])

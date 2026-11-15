@@ -8,6 +8,33 @@ A standing, multi-pillar final reviewer for pull requests, extracted from
 - `skills/`: the Claude Code skills (pillar prompts, verifier, and the standing loop).
 - `benchmarks/final-review/`: labeled eval cases and how to run them.
 
+## Repository config: `.code-reviewer.json`
+
+A reviewed repository can hold a `.code-reviewer.json` at its root with what the reviewer cannot
+work out from the diff. It is read at the pull request's base, so a pull request cannot change
+its own review scope.
+
+```json
+{
+  "consumes": [{ "repo": "acme/api", "via": "HTTP API", "paths": ["src/routes/**"] }]
+}
+```
+
+- `consumes`: repositories this one depends on without a package import. `repo` is `owner/name`.
+  `via` (optional) says how in a few words. `paths` (optional) are globs in the consumed
+  repository that this one depends on; without it, any change there counts.
+
+Only the consumer declares the link. `prepare` uses it in both directions, for repositories
+cloned under the clone root (matched by their `origin` URL, or by directory name without one):
+
+- A pull request in the consumer stages the consumed repository's instructions, skills, and code
+  location as a dependency, ahead of dependencies found by import.
+- A pull request in the consumed repository that touches `paths` stages the consumer under
+  "Consumers" in `rules/INDEX.md`, for the blast-radius pillar.
+
+A malformed file, an unknown key, or a declared repository with no clone is listed under
+"Missing" in `rules/INDEX.md` and in `prepare`'s output; none of them stops the review.
+
 ## Authentication and trust
 
 Calls use a GitHub App when `FINAL_REVIEWER_APP_ID` is set (with `FINAL_REVIEWER_APP_PRIVATE_KEY`

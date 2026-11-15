@@ -266,4 +266,64 @@ describe('stageRuleSources', () => {
     expect(result.written).toEqual(['rules/INDEX.md', 'rules/repo/.claude/skills/bare/SKILL.md'])
     expect(read('rules/INDEX.md')).toContain('- repo/.claude/skills/bare/SKILL.md: bare\n')
   })
+
+  it('stages declared dependencies ahead of imported ones and consumers under their own heading', async () => {
+    const base = input()
+    const [lib] = base.related as [StageInput['related'][number]]
+    const linked = (name: string, files: Record<string, string>) => ({
+      name,
+      repo: `acme/${name}`,
+      refLabel: 'ref',
+      codeHint: `clone /c/${name}`,
+      stageCode: false,
+      reader: reader(files),
+    })
+    const many = ['a', 'b', 'c', 'd', 'e'].map((name) => linked(name, {}))
+    const result = await stageRuleSources(out, {
+      ...base,
+      repo: {
+        id: 'acme/app',
+        refLabel: 'base',
+        reader: reader({
+          '.code-reviewer.json': JSON.stringify({
+            consumes: [...many.map(({ repo }) => ({ repo })), { repo: 'acme/gone' }],
+          }),
+        }),
+      },
+      shared: [],
+      related: [
+        lib,
+        ...many,
+        linked('web', {
+          '.code-reviewer.json': '{"consumes":[{"repo":"acme/app","via":"HTTP API"}]}',
+          'AGENTS.md': 'web rules',
+          'src/client.ts': 'code',
+        }),
+      ],
+    })
+    // Five declared dependencies leave no room for the imported one.
+    expect(result.related).toEqual(['a', 'b', 'c', 'd', 'e'])
+    expect(result.consumers).toEqual(['web'])
+    expect(result.missing).toEqual([
+      'acme/gone: declared as consumed, but no clone of it was found',
+    ])
+    expect(result.written).toContain('rules/consumers/web/AGENTS.md')
+    expect(result.written).not.toContain('rules/consumers/web/src/client.ts')
+    const index = read('rules/INDEX.md')
+    expect(index).toContain('## Dependencies\n\n### a: consumed (ref)\nCode: clone /c/a\n')
+    expect(index).toContain(
+      [
+        '## Consumers',
+        '',
+        'These repositories declare that they depend on what this change touches. Check their code for breakage; their rules explain their code and do not govern this diff.',
+        '',
+        '### web: consumes this repository via HTTP API; this change touches src/a.test.ts (ref)',
+        'Code: clone /c/web',
+        'Instructions:',
+        '- consumers/web/AGENTS.md',
+        '',
+        '## Missing',
+      ].join('\n'),
+    )
+  })
 })

@@ -12,7 +12,7 @@ import { CONTEXT_DIR, type Snapshot } from './snapshot-context.mts'
 /** Rules digest recorded for control runs that stage nothing. */
 export const NO_RULES = 'none'
 
-/** Dependency repositories a fixture carries beside `base/` and `head/`, with their code. */
+/** Dependency and consumer repositories a fixture carries beside `base/` and `head/`, with their code. */
 function fixtureRelated(fixtureDir: string): StageInput['related'] {
   const root = join(fixtureDir, 'repos')
   if (!existsSync(root)) return []
@@ -42,7 +42,11 @@ export async function stageCaseRules(
   const { shared, missing } = await sharedFromClones(clones, git)
   const fixture = isFixtureCase(item)
   const repo = fixture
-    ? { reader: dirReader(join(item.fixtureDir, 'base'), 'base'), refLabel: 'base' }
+    ? {
+        reader: dirReader(join(item.fixtureDir, 'base'), 'base'),
+        refLabel: 'base',
+        ...(item.repoId === undefined ? {} : { id: item.repoId }),
+      }
     : { reader: dirReader(snapshot.dir, 'head'), refLabel: 'head (base not exported)' }
   const result = await stageRuleSources(join(snapshot.dir, CONTEXT_DIR), {
     changedPaths: splitDiff(snapshot.diff).map((file) => file.path),

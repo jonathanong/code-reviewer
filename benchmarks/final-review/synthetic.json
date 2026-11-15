@@ -102,5 +102,48 @@
     "kind": "negative",
     "reason": "The flag key is kebab-case and declared in flags.json, as the @acme/flags rules require.",
     "expected": []
+  },
+  {
+    "id": "links-consumer-field-rename",
+    "fixture": "fixtures/links-consumer-field-rename",
+    "repoId": "acme/api",
+    "title": "refactor: camelCase order response and add currency",
+    "kind": "positive",
+    "reason": "The mobile repository declares in its .code-reviewer.json that it consumes acme/api's src/routes over HTTP, and its fetchOrder reads body.total_cents. The change renames that response field, so released app versions get an undefined total.",
+    "expected": [
+      {
+        "pillar": "blast-radius",
+        "severity": "high",
+        "path": "src/routes/orders.ts",
+        "lines": null,
+        "claim": "Renaming the order response field total_cents to totalCents breaks the mobile app, a declared consumer: its fetchOrder (src/api/orders.ts) reads body.total_cents, so released versions get an undefined total. The finding must name the mobile consumer or its call site; a finding that only says some client might break does not match."
+      }
+    ]
+  },
+  {
+    "id": "links-consumer-additive-field",
+    "fixture": "fixtures/links-consumer-additive-field",
+    "repoId": "acme/api",
+    "title": "feat: return the order currency",
+    "kind": "negative",
+    "reason": "Same declared mobile consumer, but the change only adds a response field. The consumer reads total_cents, which is unchanged. Nothing should be flagged at high or above.",
+    "expected": []
+  },
+  {
+    "id": "links-declared-api-payload",
+    "fixture": "fixtures/links-declared-api-payload",
+    "repoId": "acme/mobile",
+    "title": "feat: request a partial refund from the order screen",
+    "kind": "positive",
+    "reason": "The mobile repository's .code-reviewer.json declares it consumes acme/api over HTTP; there is no package import to detect. The API's refund route accepts only { amount_cents: positive integer } and answers 400 otherwise. The change posts { amount: dollars }, so every refund request fails.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/api/refunds.ts",
+        "lines": null,
+        "claim": "requestRefund posts { amount: amountCents / 100 }, but the API's refund route (acme/api src/routes/refunds.ts) accepts only a strict body with amount_cents as a positive integer and answers 400 otherwise, so every refund request fails. The finding must rely on the API's route code; a finding that only questions dividing by 100 without the API's contract does not match."
+      }
+    ]
   }
 ]
