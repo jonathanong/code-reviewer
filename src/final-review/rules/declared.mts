@@ -1,10 +1,9 @@
 import { posix } from 'node:path'
 
-import { readRepoConfig, type Consumes } from './config.mts'
-import type { RuleReader } from './reader.mts'
+import type { Consumes, RepoConfigs } from './config.mts'
 
 /** A repository available to the reviewer: `repo` is `owner/name` when its origin is known. */
-export type Linkable = { name: string; repo?: string; reader: RuleReader }
+export type Linkable = { name: string; repo?: string }
 
 /** A repository linked to the change by a declaration, with the heading the index shows. */
 export type Link = { name: string; heading: string }
@@ -39,51 +38,42 @@ function touched(entry: Consumes, changed: readonly string[]): string | undefine
 }
 
 /**
- * Resolves the declarations in each repository's config file: the repositories the reviewed one
- * says it consumes, and the candidates that say they consume what this change touches.
+ * Resolves the reviewer's own configs for a change: the repositories the reviewed one consumes,
+ * and the repositories that consume what this change touches.
  */
-export async function declaredLinks(input: {
-  /** The reviewed repository at its base. */
-  repo?: { reader: RuleReader }
-  /** The reviewed repository's `owner/name`; consumers are found only when it is known. */
+export function declaredLinks(input: {
+  /** The reviewed repository's `owner/name`; nothing is declared for an unknown repository. */
   repoId?: string
+  configs: RepoConfigs
   candidates: readonly Linkable[]
   changedPaths: readonly string[]
   /** The diff, for the paths its renames moved files away from. */
   diff?: string
-}): Promise<Links> {
+}): Links {
   const links: Links = { deps: [], consumers: [], missing: [] }
-  if (input.repo !== undefined) {
-    const config = await readRepoConfig(input.repo.reader)
-    links.missing.push(...config.problems.map((problem) => `This repository: ${problem}`))
-    for (const entry of config.consumes) {
-      const hit = resolve(input.candidates, entry.repo)
-      if (hit === undefined) {
-        links.missing.push(`${entry.repo}: declared as consumed, but no clone of it was found`)
-      } else if (!links.deps.some((dep) => dep.name === hit.name)) {
-        links.deps.push({ name: hit.name, heading: `${hit.name}: consumed${describe(entry)}` })
-      }
-    }
-  }
   const id = input.repoId?.toLowerCase()
   if (id === undefined) return links
+  for (const entry of input.configs.byRepo.get(id)?.consumes ?? []) {
+    const hit = resolve(input.candidates, entry.repo)
+    if (hit === undefined) {
+      links.missing.push(`${entry.repo}: configured as consumed, but no clone of it was found`)
+    } else if (!links.deps.some((dep) => dep.name === hit.name)) {
+      links.deps.push({ name: hit.name, heading: `${hit.name}: consumed${describe(entry)}` })
+    }
+  }
   const changed = [...input.changedPaths, ...renamedFrom(input.diff ?? '')]
-  for (const candidate of input.candidates) {
-    const config = await readRepoConfig(candidate.reader)
-    const entries = config.consumes.filter((item) => item.repo === id)
-    // Every clone is scanned, so only a file that cannot be read at all, or one that names this
-    // repository, is worth reporting; notes about unrelated clones would drown the rest.
-    if (config.unreadable === true || entries.length > 0) {
-      links.missing.push(...config.problems.map((problem) => `${candidate.name}: ${problem}`))
+  for (const [consumer, config] of input.configs.byRepo) {
+    const entry = config.consumes.find(
+      (item) => item.repo === id && touched(item, changed) !== undefined,
+    )
+    if (entry === undefined) continue
+    const hit = resolve(input.candidates, consumer)
+    if (hit === undefined) {
+      links.missing.push(`${consumer}: configured as a consumer, but no clone of it was found`)
+      continue
     }
-    for (const entry of entries) {
-      const path = touched(entry, changed)
-      if (path === undefined || links.consumers.some((link) => link.name === candidate.name)) {
-        continue
-      }
-      const heading = `${candidate.name}: consumes this repository${describe(entry)}; this change touches ${path}`
-      links.consumers.push({ name: candidate.name, heading })
-    }
+    const heading = `${hit.name}: consumes this repository${describe(entry)}; this change touches ${touched(entry, changed)}`
+    links.consumers.push({ name: hit.name, heading })
   }
   return links
 }

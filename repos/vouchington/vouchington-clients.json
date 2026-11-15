@@ -1,0 +1,9 @@
+{
+  "consumes": [
+    {
+      "repo": "vouchington/vouchington",
+      "via": "API contracts and fixtures pinned in contracts/vouchington.json",
+      "paths": ["api-contracts/**", "api-fixtures/**"]
+    }
+  ]
+}

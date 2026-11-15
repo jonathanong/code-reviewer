@@ -2,11 +2,15 @@ import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { splitRepo, type RunTextCommand } from '../../gh-cli/index.mts'
+import { loadRepoConfigs } from './config.mts'
 import { defaultRef, gitReader } from './reader.mts'
 import { SHARED_SOURCES } from './shared.mts'
 import type { StageInput } from './stage.mts'
 
-export type Sources = Pick<StageInput, 'repo' | 'repoId' | 'shared' | 'related' | 'missing'>
+export type Sources = Pick<
+  StageInput,
+  'repo' | 'repoId' | 'configs' | 'shared' | 'related' | 'missing'
+>
 
 const NO_CLONES = 'no clone root (pass --clones or set FINAL_REVIEWER_CLONE_ROOT)'
 
@@ -90,9 +94,13 @@ export async function productionSources(args: {
   baseSha: string
   /** The reviewed repository as `owner/name`. */
   repoId: string
+  /** The directory of per-repository configs. */
+  configDir: string
 }): Promise<Sources> {
   const { git, clones, tree, baseSha, repoId } = args
+  const configs = loadRepoConfigs(args.configDir)
   const { shared, missing } = await sharedFromClones(clones, git)
+  missing.push(...configs.problems)
   const related = clones === undefined ? [] : await cloneCandidates(clones, git, repoId)
   if (clones === undefined) missing.push(`dependencies: skipped (${NO_CLONES})`)
   const repo =
@@ -104,5 +112,5 @@ export async function productionSources(args: {
             refLabel: `base ${baseSha.slice(0, 7)}`,
           },
         }
-  return { ...repo, repoId, shared, related, missing }
+  return { ...repo, repoId, configs, shared, related, missing }
 }

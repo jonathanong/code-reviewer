@@ -1,7 +1,12 @@
-import type { RuleReader } from './reader.mts'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-/** The per-repository file, at the repository root, that holds what the reviewer must know. */
-export const CONFIG_FILE = '.code-reviewer.json'
+/**
+ * Where this repository keeps what the reviewer must know about each reviewed repository, as
+ * `<owner>/<name>.json`. Reviewed repositories carry no config of their own.
+ */
+export const DEFAULT_CONFIG_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../repos')
 
 /** Another repository this one depends on without a package import (an HTTP API, a schema). */
 export type Consumes = {
@@ -13,8 +18,7 @@ export type Consumes = {
   via: string
 }
 
-/** `unreadable` marks a file that could not be parsed at all, as opposed to one with bad parts. */
-export type RepoConfig = { consumes: Consumes[]; problems: string[]; unreadable?: true }
+export type RepoConfig = { consumes: Consumes[]; problems: string[] }
 
 const REPO_RE = /^[A-Za-z0-9-]+\/(?!\.+$)[\w.-]+$/u
 const KEYS = new Set(['consumes'])
@@ -54,34 +58,50 @@ function consumes(raw: unknown, where: string, problems: string[]): Consumes | u
   }
 }
 
-/** Parses the config file's text; a missing file is an empty config, and errors become problems. */
-export function parseRepoConfig(text: string | undefined): RepoConfig {
-  if (text === undefined) return { consumes: [], problems: [] }
+/** Parses one config file's text; errors become problems that name `file`. */
+export function parseRepoConfig(text: string, file: string): RepoConfig {
   let raw: unknown
   try {
     raw = JSON.parse(text)
   } catch {
-    return { consumes: [], problems: [`${CONFIG_FILE}: not valid JSON; ignored`], unreadable: true }
+    return { consumes: [], problems: [`${file}: not valid JSON; ignored`] }
   }
   if (!isRecord(raw)) {
-    return {
-      consumes: [],
-      problems: [`${CONFIG_FILE}: must be a JSON object; ignored`],
-      unreadable: true,
-    }
+    return { consumes: [], problems: [`${file}: must be a JSON object; ignored`] }
   }
-  const problems = unknownKeys(raw, KEYS, CONFIG_FILE)
+  const problems = unknownKeys(raw, KEYS, file)
   const list = raw.consumes ?? []
   if (!Array.isArray(list)) {
-    return { consumes: [], problems: [...problems, `${CONFIG_FILE}: "consumes" must be an array`] }
+    return { consumes: [], problems: [...problems, `${file}: "consumes" must be an array`] }
   }
   const entries = list
-    .map((item, index) => consumes(item, `${CONFIG_FILE} consumes[${index}]`, problems))
+    .map((item, index) => consumes(item, `${file} consumes[${index}]`, problems))
     .filter((item) => item !== undefined)
   return { consumes: entries, problems }
 }
 
-/** Reads and parses the config file from a rule source. */
-export async function readRepoConfig(reader: RuleReader): Promise<RepoConfig> {
-  return parseRepoConfig(await reader.read(CONFIG_FILE).catch(() => undefined))
+export type RepoConfigs = {
+  /** Lowercased `owner/name` to that repository's config. */
+  byRepo: ReadonlyMap<string, RepoConfig>
+  problems: string[]
+}
+
+export const NO_CONFIGS: RepoConfigs = { byRepo: new Map(), problems: [] }
+
+/** Reads every `<owner>/<name>.json` under `dir`; a missing directory holds no configs. */
+export function loadRepoConfigs(dir: string): RepoConfigs {
+  const byRepo = new Map<string, RepoConfig>()
+  const problems: string[] = []
+  if (!existsSync(dir)) return { byRepo, problems }
+  const owners = readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory())
+  for (const owner of owners.map((entry) => entry.name).sort()) {
+    const files = readdirSync(join(dir, owner)).filter((name) => name.endsWith('.json'))
+    for (const name of files.sort()) {
+      const file = `${owner}/${name}`
+      const config = parseRepoConfig(readFileSync(join(dir, owner, name), 'utf8'), file)
+      byRepo.set(file.slice(0, -'.json'.length).toLowerCase(), config)
+      problems.push(...config.problems)
+    }
+  }
+  return { byRepo, problems }
 }

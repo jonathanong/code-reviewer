@@ -2,12 +2,14 @@ import { createHash } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { instructionPaths, skillInfo, skillPaths } from './collect.mts'
+import { instructionPaths, skillPaths } from './collect.mts'
+import { NO_CONFIGS, type RepoConfigs } from './config.mts'
 import { declaredLinks } from './declared.mts'
 import { renderIndex, type Staged } from './index-render.mts'
 import type { RuleReader } from './reader.mts'
 import { findRelated, MAX_RELATED, type Related } from './related.mts'
 import { sharedPaths, type SharedSource } from './shared.mts'
+import { classify, copy, listAll, type Files } from './stage-files.mts'
 import { suggestSkills } from './topics.mts'
 
 export type StageInput = {
@@ -16,10 +18,12 @@ export type StageInput = {
   repo?: { reader: RuleReader; refLabel: string }
   /** The reviewed repository's `owner/name`, when known. */
   repoId?: string
+  /** The reviewer's per-repository configs; none when omitted. */
+  configs?: RepoConfigs
   shared: { source: SharedSource; reader: RuleReader; refLabel: string }[]
   /**
-   * Candidate repositories; only those the diff uses, the config file declares, or that declare
-   * they consume what changed are staged. `repo` is `owner/name` when the origin is known.
+   * Candidate repositories; only those the diff uses or the configs link to this change are
+   * staged. `repo` is `owner/name` when the origin is known.
    */
   related: {
     name: string
@@ -38,50 +42,9 @@ export type StageResult = {
   digest: string
   suggested: string[]
   related: string[]
-  /** Repositories that declare they consume what this change touches. */
+  /** Repositories configured as consuming what this change touches. */
   consumers: string[]
   missing: string[]
-}
-
-type Files = Map<string, string>
-
-/** Copies `paths` into `rules/<dest>/`, dropping `strip` from each; returns what was staged. */
-async function copy(
-  files: Files,
-  reader: RuleReader,
-  dest: string,
-  paths: readonly string[],
-  strip = '',
-): Promise<Map<string, string>> {
-  const staged = new Map<string, string>()
-  for (const path of paths) {
-    const text = await reader.read(path)
-    if (text === undefined) continue
-    const rel = `${dest}/${path.slice(strip.length)}`
-    files.set(`rules/${rel}`, text)
-    staged.set(rel, text)
-  }
-  return staged
-}
-
-function classify(staged: Map<string, string>): Staged {
-  const paths = [...staged.keys()]
-  const isSkill = (path: string) => path.endsWith('/SKILL.md')
-  const isInstruction = (path: string) => /(?:^|\/)(?:AGENTS|CLAUDE)\.md$/u.test(path)
-  return {
-    instructions: paths.filter((path) => isInstruction(path)),
-    skills: paths.filter(isSkill).map((path) => skillInfo(path, staged.get(path) as string)),
-    references: paths.filter((path) => !isSkill(path) && !isInstruction(path)),
-  }
-}
-
-async function listAll(reader: RuleReader, name: string, missing: string[]): Promise<string[]> {
-  try {
-    return await reader.list()
-  } catch {
-    missing.push(`${name}: could not list files at ${reader.label}`)
-    return []
-  }
 }
 
 type Dep = { name: string; heading: string; label: string; code: string; staged: Staged }
@@ -111,15 +74,15 @@ async function stageLinked(
   return { name: item.name, heading: title, label: item.refLabel, code, staged }
 }
 
-/** Declared dependencies first, then those the diff imports, then declared consumers. */
+/** Configured dependencies first, then those the diff imports, then configured consumers. */
 async function stageLinks(
   files: Files,
   input: StageInput,
   missing: string[],
 ): Promise<{ deps: Dep[]; consumers: Dep[] }> {
-  const links = await declaredLinks({
-    ...(input.repo === undefined ? {} : { repo: input.repo }),
+  const links = declaredLinks({
     ...(input.repoId === undefined ? {} : { repoId: input.repoId }),
+    configs: input.configs ?? NO_CONFIGS,
     candidates: input.related,
     changedPaths: input.changedPaths,
     diff: input.diff,

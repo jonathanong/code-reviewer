@@ -1,3 +1,0 @@
-{
-  "consumes": [{ "repo": "acme/api", "via": "HTTP API" }]
-}

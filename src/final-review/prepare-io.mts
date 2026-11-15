@@ -1,5 +1,6 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { fetchConversation, type PrConversation } from './context-query.mts'
+import { DEFAULT_CONFIG_DIR } from './rules/config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhFinalReviewIo, type PullTarget } from './github.mts'
 import type { SinceDiff } from './plan.mts'
@@ -76,6 +77,7 @@ export function createGhPrepareIo(
         tree,
         baseSha,
         repoId: target.repo,
+        configDir: process.env.FINAL_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR,
       }),
     async history(tree, base, paths) {
       try {

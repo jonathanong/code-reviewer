@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import { runGit, type RunTextCommand } from '../../gh-cli/index.mts'
 import { splitDiff } from '../diff-files.mts'
+import { loadRepoConfigs } from '../rules/config.mts'
 import { dirReader } from '../rules/reader.mts'
 import { sharedFromClones } from '../rules/sources.mts'
 import { stageRuleSources, type StageInput } from '../rules/stage.mts'
@@ -49,6 +50,7 @@ export async function stageCaseRules(
     diff: snapshot.diff,
     repo,
     ...(fixture && item.repoId !== undefined ? { repoId: item.repoId } : {}),
+    ...(fixture ? { configs: loadRepoConfigs(join(item.fixtureDir, 'configs')) } : {}),
     shared,
     related: fixture ? fixtureRelated(item.fixtureDir) : [],
     missing,
