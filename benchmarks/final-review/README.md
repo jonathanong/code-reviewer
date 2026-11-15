@@ -75,7 +75,7 @@ dependency's route, with no package import to detect (`links-declared-api-payloa
 ## Running
 
 ```bash
-pnpm exec vouchington-reviewer bench \
+pnpm exec code-reviewer bench \
   --cases benchmarks/final-review/cases.json \
   --prompts skills/final-review/references/pillars \
   --out "$TMPDIR/final-review-bench" \
@@ -104,7 +104,7 @@ credits unrelated findings at the right file and misses the right claim cited el
 The verifier is benchmarked on its own, without re-running pillars or dispatching subagents:
 
 ```bash
-pnpm exec vouchington-reviewer bench-verifier \
+pnpm exec code-reviewer bench-verifier \
   --cases benchmarks/final-review/cases.json \
   --findings-from "$TMPDIR/final-review-bench" \
   --prompts skills/final-review/references \

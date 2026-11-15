@@ -192,7 +192,7 @@ describe('runFinalReviewCommand', () => {
     const { out } = capture()
     await expect(runFinalReviewCommand(['help'], deps(fakeIo()))).resolves.toBe(0)
     await expect(runFinalReviewCommand(['--help'], deps(fakeIo()))).resolves.toBe(0)
-    expect(out.join('')).toContain('vouchington-reviewer post --repo')
+    expect(out.join('')).toContain('code-reviewer post --repo')
   })
 
   it('stringifies non-Error failures', async () => {

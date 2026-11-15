@@ -1,16 +1,17 @@
 {
-  "name": "vouchington-reviewer",
+  "name": "code-reviewer",
   "version": "0.1.0",
   "private": true,
-  "description": "Standing multi-pillar final reviewer for Vouchington pull requests: CLI, Claude Code skills, and evals.",
+  "description": "Standing multi-pillar code reviewer for pull requests: CLI, Claude Code skills, and evals.",
   "license": "MIT",
   "author": "Jonathan Ong",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vouchington/vouchington-reviewer.git"
+    "url": "git+https://github.com/jonathanong/code-reviewer.git"
   },
   "bin": {
-    "vouchington-reviewer": "bin/vouchington-reviewer.mts"
+    "code-reviewer": "bin/code-reviewer.mts",
+    "vouchington-reviewer": "bin/code-reviewer.mts"
   },
   "type": "module",
   "scripts": {
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
+    "code-reviewer": "link:.",
     "eslint-plugin-no-mistakes": "^0.109.38",
     "github-actionlint": "^1.7.12",
     "oxfmt": "^0.78.0",

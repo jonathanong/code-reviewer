@@ -112,7 +112,7 @@ function scoreAll(cases: EvalCase[], options: Options, deps: BenchDeps): string 
 }
 
 /**
- * `vouchington-reviewer bench-verifier`: run the verifier alone on saved pillar findings, one
+ * `code-reviewer bench-verifier`: run the verifier alone on saved pillar findings, one
  * model call per case and no subagents, and score what it keeps, merges, and drops.
  */
 export async function runFinalReviewVerifierBenchCli(

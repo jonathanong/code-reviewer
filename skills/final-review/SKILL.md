@@ -18,10 +18,10 @@ Arguments: `owner/name#number` (or a pull request URL) and an optional effort: `
 the standing reviewer that other sessions ask, use the [final-reviewer](../final-reviewer/SKILL.md)
 skill, which calls this one per pull request.
 
-The CLI is `vouchington-reviewer` (`pnpm exec vouchington-reviewer` in the vouchington-reviewer
+The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer
 checkout; `help` lists the flags). Every subcommand prints a short JSON result. It authenticates as
 the GitHub App when `FINAL_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login
-(`vouchington-reviewer auth` says which).
+(`code-reviewer auth` says which).
 
 ## Token budget
 
@@ -31,7 +31,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
 
 ## Step 1 - Claim and prepare
 
-1. `vouchington-reviewer claim --repo <repo> --pr <n>` (add `--force` when the request came by
+1. `code-reviewer claim --repo <repo> --pr <n>` (add `--force` when the request came by
    message rather than label). It adds `final-review:in-progress`, then removes
    `final-review:requested`, `final-review:complete`, and a stale `final approval`. `claimed:
    false` means another run owns it or the request was withdrawn: stop.
@@ -39,7 +39,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
 3. Check out the head as a detached worktree at `"$run/tree"` from a local clone when one exists
    (`git -C <clone> fetch origin <head> && git -C <clone> worktree add --detach "$run/tree" <head>`),
    otherwise from a blobless clone under `"$run"`.
-4. `vouchington-reviewer prepare --repo <repo> --pr <n> --out "$run" --tree "$run/tree" --clones <clone root> [--effort <e>]`
+4. `code-reviewer prepare --repo <repo> --pr <n> --out "$run" --tree "$run/tree" --clones <clone root> [--effort <e>]`
    (`--clones` defaults to `FINAL_REVIEWER_CLONE_ROOT`). It writes, without any model calls:
    - `diff.patch` and `diff/INDEX.md` with one numbered patch per file (base and head line numbers
      on every line);
@@ -62,7 +62,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
    touching `final approval`: reply with that verdict and stop. Use `--force` to review the same
    head again (for example at a higher effort).
 6. Clean up when the review is posted or fails: `git -C <clone> worktree remove --force
-   "$run/tree"`, then `rm -rf "$run"`. On failure also run `vouchington-reviewer abort` (add
+   "$run/tree"`, then `rm -rf "$run"`. On failure also run `code-reviewer abort` (add
    `--requeue` only once, for a transient error).
 
 ## Step 2 - Dispatch pillars
@@ -99,7 +99,7 @@ number, and the head SHA. It merges `"$run/pillars/*.json"` and `plan.skipped`, 
 `"$run/review.json"`, previews it with `post --dry-run`, posts it, resolves the threads of fixed
 findings, and replies with one line: the verdict and the review URLs.
 
-`vouchington-reviewer post` renders and posts the review:
+`code-reviewer post` renders and posts the review:
 
 - The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is always a COMMENT,
   because GitHub does not let an author approve their own pull request.
@@ -114,13 +114,13 @@ findings, and replies with one line: the verdict and the review URLs.
 ## Step 4 - Report
 
 Reply to the requester with the verdict and the review link. Merging agents check
-`vouchington-reviewer status`, which exits 0 only when the newest final review approved the
+`code-reviewer status`, which exits 0 only when the newest final review approved the
 current head and the `final approval` label is present.
 
 ## Benchmarks
 
 Pillar prompts are benchmarked against labeled reverts and clean pull requests with
-`vouchington-reviewer bench`; the verifier with `bench-verifier`. The cases and how to run them
+`code-reviewer bench`; the verifier with `bench-verifier`. The cases and how to run them
 are in `benchmarks/final-review/`. Change a pillar or verifier prompt only together with a
 benchmark run.
 
