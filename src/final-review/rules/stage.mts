@@ -122,6 +122,7 @@ async function stageLinks(
     ...(input.repoId === undefined ? {} : { repoId: input.repoId }),
     candidates: input.related,
     changedPaths: input.changedPaths,
+    diff: input.diff,
   })
   missing.push(...links.missing)
   const find = (name: string) => input.related.find((item) => item.name === name) as Item

@@ -34,6 +34,7 @@ describe('declaredLinks dependencies', () => {
         }),
       },
       candidates: [
+        candidate('api'),
         candidate('api-checkout', 'Acme/API'),
         candidate('schema'),
         candidate('fork', 'acme/fork'),
@@ -122,5 +123,19 @@ describe('declaredLinks consumers', () => {
       changedPaths: [],
     })
     expect(links.consumers).toEqual([])
+  })
+
+  it('counts the path a rename moved a file away from', async () => {
+    const links = await declaredLinks({
+      repoId: 'acme/api',
+      candidates,
+      changedPaths: ['src/v2/users.ts'],
+      diff: 'diff --git a/proto/a.proto b/src/v2/users.ts\nrename from proto/a.proto\nrename to src/v2/users.ts\n',
+    })
+    expect(links.consumers.map((link) => link.heading)).toEqual([
+      'web: consumes this repository; this change touches src/v2/users.ts',
+      'ios: consumes this repository; this change touches src/v2/users.ts',
+      'cli: consumes this repository (proto/**); this change touches proto/a.proto',
+    ])
   })
 })

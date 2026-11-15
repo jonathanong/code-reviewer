@@ -11,9 +11,20 @@ export type Link = { name: string; heading: string }
 
 export type Links = { deps: Link[]; consumers: Link[]; missing: string[] }
 
-function matches(candidate: Linkable, repo: string): boolean {
-  if (candidate.repo !== undefined) return candidate.repo.toLowerCase() === repo
-  return candidate.name.toLowerCase() === repo.split('/')[1]
+/** The clone whose origin is `repo`; else one with no origin whose directory has its name. */
+function resolve(candidates: readonly Linkable[], repo: string): Linkable | undefined {
+  const name = repo.split('/')[1]
+  return (
+    candidates.find((candidate) => candidate.repo?.toLowerCase() === repo) ??
+    candidates.find(
+      (candidate) => candidate.repo === undefined && candidate.name.toLowerCase() === name,
+    )
+  )
+}
+
+/** Paths that renames in the diff moved files away from. */
+function renamedFrom(diff: string): string[] {
+  return [...diff.matchAll(/^rename from (.+)$/gmu)].map((match) => match[1] as string)
 }
 
 function describe(entry: Consumes): string {
@@ -38,13 +49,15 @@ export async function declaredLinks(input: {
   repoId?: string
   candidates: readonly Linkable[]
   changedPaths: readonly string[]
+  /** The diff, for the paths its renames moved files away from. */
+  diff?: string
 }): Promise<Links> {
   const links: Links = { deps: [], consumers: [], missing: [] }
   if (input.repo !== undefined) {
     const config = await readRepoConfig(input.repo.reader)
     links.missing.push(...config.problems.map((problem) => `This repository: ${problem}`))
     for (const entry of config.consumes) {
-      const hit = input.candidates.find((candidate) => matches(candidate, entry.repo))
+      const hit = resolve(input.candidates, entry.repo)
       if (hit === undefined) {
         links.missing.push(`${entry.repo}: declared as consumed, but no clone of it was found`)
       } else if (!links.deps.some((dep) => dep.name === hit.name)) {
@@ -54,6 +67,7 @@ export async function declaredLinks(input: {
   }
   const id = input.repoId?.toLowerCase()
   if (id === undefined) return links
+  const changed = [...input.changedPaths, ...renamedFrom(input.diff ?? '')]
   for (const candidate of input.candidates) {
     const config = await readRepoConfig(candidate.reader)
     const entries = config.consumes.filter((item) => item.repo === id)
@@ -63,7 +77,7 @@ export async function declaredLinks(input: {
       links.missing.push(...config.problems.map((problem) => `${candidate.name}: ${problem}`))
     }
     for (const entry of entries) {
-      const path = touched(entry, input.changedPaths)
+      const path = touched(entry, changed)
       if (path === undefined || links.consumers.some((link) => link.name === candidate.name)) {
         continue
       }
