@@ -96,7 +96,7 @@ async function runAll(
   })
 }
 
-/** `vouchington-reviewer bench`: run pillar prompts over labeled cases and score them. */
+/** `code-reviewer bench`: run pillar prompts over labeled cases and score them. */
 export async function runFinalReviewBenchCli(
   args: string[],
   deps: PillarBenchDeps = defaultPillarDeps,

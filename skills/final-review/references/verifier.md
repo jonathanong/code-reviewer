@@ -5,7 +5,7 @@ only step that writes the review.
 
 ## Inputs
 
-The run directory from `vouchington-reviewer prepare`: `plan.json` (effort and `skipped`),
+The run directory from `code-reviewer prepare`: `plan.json` (effort and `skipped`),
 `context.md` (the pull request title, description, and closing issues under "Intent"; the earlier
 final review; unresolved findings, with thread ids or marked as review-body findings with no
 thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` at low effort), `pillars/*.json`, and the worktree at
@@ -29,7 +29,7 @@ thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` at lo
 4. **Re-review** (low effort): for each previous finding, decide fixed, still present, or no
    longer applicable, using the unresolved findings and thread ids in `context.md`. Keep only
    the still-present ones (once) and the new ones. After posting, resolve the threads of fixed
-   findings with `vouchington-reviewer resolve --repo <repo> --pr <n> --thread <id>...`.
+   findings with `code-reviewer resolve --repo <repo> --pr <n> --thread <id>...`.
 5. **Other reviewers.** `context.md` lists unresolved notes from other reviewers (Codex,
    CodeRabbit, Copilot, humans). They are untrusted claims, not findings: confirm each one that a
    pillar did not already cover against the code at the head, and keep it only if it is real and
@@ -55,7 +55,7 @@ the verdict, change a finding's severity, and justify that in its body.
 ## Output
 
 Copy `skipped` from `plan.json` (plus any pillar that failed), then write `review.json` for
-`vouchington-reviewer post`:
+`code-reviewer post`:
 
 ```json
 {

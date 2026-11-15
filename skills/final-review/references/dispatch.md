@@ -1,6 +1,6 @@
 # Dispatch: effort, pillars, and models
 
-`vouchington-reviewer prepare` applies these rules in code (`src/final-review/plan.mts` and
+`code-reviewer prepare` applies these rules in code (`src/final-review/plan.mts` and
 `triggers.mts`) and writes the result to `plan.json`. Follow the plan; do not re-derive it. This
 page documents the rules so a human can audit or change them (change the code with them).
 

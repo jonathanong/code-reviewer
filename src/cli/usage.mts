@@ -1,15 +1,15 @@
-export const FINAL_REVIEW_USAGE = `vouchington-reviewer auth
-vouchington-reviewer queue (--owner LOGIN | --repo owner/name...)
-vouchington-reviewer claim --repo owner/name --pr N [--force]
-vouchington-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
-vouchington-reviewer abort --repo owner/name --pr N [--requeue]
-vouchington-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
-vouchington-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run]
-vouchington-reviewer diff --repo owner/name --pr N
-vouchington-reviewer revoke --repo owner/name --pr N
-vouchington-reviewer status --repo owner/name --pr N
-vouchington-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--clones DIR] [--no-rules]
-vouchington-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL]
+export const FINAL_REVIEW_USAGE = `code-reviewer auth
+code-reviewer queue (--owner LOGIN | --repo owner/name...)
+code-reviewer claim --repo owner/name --pr N [--force]
+code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
+code-reviewer abort --repo owner/name --pr N [--requeue]
+code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
+code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run]
+code-reviewer diff --repo owner/name --pr N
+code-reviewer revoke --repo owner/name --pr N
+code-reviewer status --repo owner/name --pr N
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--clones DIR] [--no-rules]
+code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL]
   auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
   FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
   labeled final-review:requested or final-review:in-progress (GraphQL fallback for hook-harness).

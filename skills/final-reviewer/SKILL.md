@@ -9,7 +9,7 @@ Read applicable `AGENTS.md` and their declared adapter alias, otherwise
 `.agents/skills/final-reviewer/SKILL.md` from the launch directory if present.
 Local policy overrides these defaults; do not reload an already-read adapter or canonical skill.
 
-One long-running, attended session named `final-reviewer` runs in the vouchington-reviewer
+One long-running, attended session named `final-reviewer` runs in the code-reviewer
 checkout. It is the main checkout, not a worktree-isolated session, because it creates review
 worktrees for other repositories. It is local only, never CI, and it never merges.
 
@@ -46,7 +46,7 @@ one, and a request for a pull request already being reviewed is noted for after 
 
 ## Step 1 - Start or restart
 
-1. `vouchington-reviewer auth` (App or `gh`) and `vouchington-reviewer queue --owner <owner>`.
+1. `code-reviewer auth` (App or `gh`) and `code-reviewer queue --owner <owner>`.
 2. Entries in state `in-progress` were abandoned by an earlier session: review them with
    `claim --force`. Entries in state `requested` are queued in the order listed.
 
@@ -88,7 +88,7 @@ such as cloning or cleanup.
 
 Posting the review is the hand-back: the pull request's shepherd sees the review and its inline
 comments, and `final-review:complete` replaces `final-review:in-progress`. `complete` means the
-review was posted; approval is the `final approval` label, which `vouchington-reviewer status`
+review was posted; approval is the `final approval` label, which `code-reviewer status`
 checks. Reply to a requester that messaged with the verdict and the review link.
 
 Merge authority is separate: the human, or the triage loop within its grant, merges.

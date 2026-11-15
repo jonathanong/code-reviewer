@@ -1,10 +1,12 @@
-# vouchington-reviewer
+# code-reviewer
 
-A standing, multi-pillar final reviewer for pull requests, extracted from
-[vouchington-tooling](https://github.com/vouchington/vouchington-tooling) (`final-review`).
+A standing, multi-pillar reviewer for pull requests in any repository. It reads each
+repository's `AGENTS.md`, skills, and `.code-reviewer.json`, reviews the change, and posts a
+GitHub review.
 
-- `bin/vouchington-reviewer.mts`: the deterministic CLI (numbered diffs, posting, status, labels,
-  benchmarks). Run `pnpm exec vouchington-reviewer help`.
+- `bin/code-reviewer.mts`: the deterministic CLI (numbered diffs, posting, status, labels,
+  benchmarks). Run `pnpm exec code-reviewer help`. `vouchington-reviewer` remains as an alias
+  for callers that have not moved yet.
 - `skills/`: the Claude Code skills (pillar prompts, verifier, and the standing loop).
 - `benchmarks/final-review/`: labeled eval cases and how to run them.
 
