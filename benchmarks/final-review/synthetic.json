@@ -72,6 +72,54 @@
     ]
   },
   {
+    "id": "rules-test-only-per-item",
+    "fixture": "fixtures/rules-test-only-per-item",
+    "title": "test: cover overdueInvoices",
+    "kind": "positive",
+    "reason": "A test-only change. The first test asserts on every returned invoice in a loop without asserting the result is non-empty, so it passes if the function returns nothing. Only the shared no-mistakes testing-rules state this; the repository's AGENTS.md is silent.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/overdue.test.ts",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes testing-rules skill (MUST NOT assert something about every item in a collection without asserting it is non-empty), the first test loops over the result of overdueInvoices and asserts on each item but never asserts how many items came back, so it passes when the function returns an empty list. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-workflow-only-checkout-credentials",
+    "fixture": "fixtures/rules-workflow-only-checkout-credentials",
+    "title": "ci: add a lint workflow",
+    "kind": "positive",
+    "reason": "A workflow-only change. The new workflow's checkout keeps its credentials although no later step pushes; the existing ci.yml sets persist-credentials: false. Only the shared no-mistakes github-actions-rules state this.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": ".github/workflows/lint.yml",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes github-actions-rules skill (MUST NOT persist checkout credentials unless a later step pushes; set persist-credentials: false), the new lint workflow's actions/checkout step does not set persist-credentials: false although no step pushes. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-manifest-only-git-dependency",
+    "fixture": "fixtures/rules-manifest-only-git-dependency",
+    "title": "chore: add money-format",
+    "kind": "positive",
+    "reason": "A manifest-only change. The new dependency is a git URL on a branch. Only the shared no-mistakes dependency-rules state this.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "medium",
+        "path": "package.json",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes dependency-rules skill (SHOULD NOT depend on git URLs or unapproved registries), the new money-format dependency is a GitHub git URL pinned to a branch instead of a registry version. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
     "id": "rules-dependency-flag-key",
     "fixture": "fixtures/rules-dependency-flag-key",
     "title": "feat: one-page checkout behind a flag",
