@@ -120,12 +120,12 @@ describe('buildFollowUpContext', () => {
   })
 
   it('collects unresolved findings from final review threads only', () => {
-    const finalReview = review({ id: 'F', body: reviewMarker(A, 'Comment', 'low') })
+    const markedReview = review({ id: 'F', body: reviewMarker(A, 'Comment', 'low') })
     const fromFinal = (overrides: Partial<ReviewThread> = {}, body = FINDING) =>
       thread(comment({ body, pullRequestReview: { id: 'F' } }), overrides)
     const ctx = build(
       pull({
-        reviews: { nodes: [finalReview] },
+        reviews: { nodes: [markedReview] },
         reviewThreads: {
           nodes: [
             fromFinal({ id: 'T1', isOutdated: true, line: null }),

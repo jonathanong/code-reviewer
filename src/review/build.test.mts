@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { indexReviewFiles } from '../review-payload/index.mts'
-import { buildFinalReviews, DEFAULT_LIMITS, packBodies, placeFindings } from './build.mts'
-import type { FinalReviewInput, Finding } from './finding.mts'
+import { buildReviews, DEFAULT_LIMITS, packBodies, placeFindings } from './build.mts'
+import type { ReviewInput, Finding } from './finding.mts'
 
 const SHA = 'b'.repeat(40)
 const index = indexReviewFiles([
@@ -13,7 +13,7 @@ function f(overrides: Partial<Finding> = {}): Finding {
   return { pillar: 'rules', severity: 'low', title: 'T', body: 'B', ...overrides }
 }
 
-function input(findings: Finding[]): FinalReviewInput {
+function input(findings: Finding[]): ReviewInput {
   return { effort: 'high', summary: '', skipped: [], findings }
 }
 
@@ -59,9 +59,9 @@ describe('packBodies', () => {
   })
 })
 
-describe('buildFinalReviews', () => {
+describe('buildReviews', () => {
   it('builds a single COMMENT review', () => {
-    const reviews = buildFinalReviews(
+    const reviews = buildReviews(
       input([f({ path: 'src/a.ts', line: 2 }), f({ title: 'off' })]),
       SHA,
       index,
@@ -74,13 +74,13 @@ describe('buildFinalReviews', () => {
   })
 
   it('omits the off-diff section when everything is placed', () => {
-    const [review] = buildFinalReviews(input([f({ path: 'src/a.ts', line: 2 })]), SHA, index)
+    const [review] = buildReviews(input([f({ path: 'src/a.ts', line: 2 })]), SHA, index)
     expect(review?.body).not.toContain('Not on a diff line')
   })
 
   it('splits inline comments across parts', () => {
     const findings = [2, 3, 4].map((line) => f({ path: 'src/a.ts', line, title: `L${line}` }))
-    const reviews = buildFinalReviews(input(findings), SHA, index, {
+    const reviews = buildReviews(input(findings), SHA, index, {
       ...DEFAULT_LIMITS,
       maxComments: 2,
     })
@@ -92,7 +92,7 @@ describe('buildFinalReviews', () => {
 
   it('splits long bodies into parts with empty comment lists', () => {
     const findings = [1, 2, 3].map((n) => f({ title: `off${n}`, body: 'z'.repeat(300) }))
-    const reviews = buildFinalReviews(input(findings), SHA, index, {
+    const reviews = buildReviews(input(findings), SHA, index, {
       maxComments: 50,
       maxBodyChars: 900,
     })

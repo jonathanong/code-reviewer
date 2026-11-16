@@ -1,4 +1,4 @@
-import { FinalReviewError, parseFinalReviewInput, type Finding, type Pillar } from '../finding.mts'
+import { ReviewError, parseReviewInput, type Finding, type Pillar } from '../finding.mts'
 import { isObject, jsonEvents, jsonLines } from '../benchmark/stream-json.mts'
 import { parseUsage, type Usage } from '../benchmark/usage.mts'
 
@@ -48,7 +48,7 @@ export type RunStream = {
  * output and the usage is the last result event.
  */
 export function readStream(stdout: string, what: string): RunStream {
-  if (jsonLines(stdout).length === 0) throw new FinalReviewError(`${what} did not print JSON.`)
+  if (jsonLines(stdout).length === 0) throw new ReviewError(`${what} did not print JSON.`)
   const events = jsonEvents(stdout)
   const answer = events.findLast((event) => isObject(event.structured_output))
   const final = events.findLast((event) => event.type === 'result') ?? answer
@@ -66,10 +66,10 @@ export function parsePillarOutput(stdout: string, pillar: Pillar): PillarOutput 
   const { structured, skills, usage } = readStream(stdout, 'Pillar run')
   const found = (structured as { findings?: unknown } | undefined)?.findings
   if (!Array.isArray(found)) {
-    throw new FinalReviewError('Pillar run returned no structured findings.')
+    throw new ReviewError('Pillar run returned no structured findings.')
   }
   const findings = found.map((finding: unknown) =>
     isObject(finding) ? { ...finding, pillar } : finding,
   )
-  return { findings: parseFinalReviewInput({ findings }).findings, skills, usage }
+  return { findings: parseReviewInput({ findings }).findings, skills, usage }
 }

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { runFinalReviewBenchCli, type PillarBenchDeps } from './cli.mts'
+import { runReviewBenchCli, type PillarBenchDeps } from './cli.mts'
 import { ExecError } from './exec.mts'
 
 const SHA_A = 'a'.repeat(40)
@@ -87,37 +87,37 @@ afterEach(() => {
 
 const BASE = ['--cases', 'cases.json', '--out', 'out', '--prompts', 'prompts']
 
-describe('runFinalReviewBenchCli arguments', () => {
+describe('runReviewBenchCli arguments', () => {
   it('requires --cases, --out, and --prompts unless scoring only', async () => {
     const { deps } = harness({})
-    await expect(runFinalReviewBenchCli(['--out', 'o'], deps)).rejects.toThrow(
+    await expect(runReviewBenchCli(['--out', 'o'], deps)).rejects.toThrow(
       'bench needs --cases and --out.',
     )
-    await expect(runFinalReviewBenchCli(['--cases', 'c'], deps)).rejects.toThrow(
+    await expect(runReviewBenchCli(['--cases', 'c'], deps)).rejects.toThrow(
       'bench needs --cases and --out.',
     )
-    await expect(runFinalReviewBenchCli(['--cases', 'c', '--out', 'o'], deps)).rejects.toThrow(
+    await expect(runReviewBenchCli(['--cases', 'c', '--out', 'o'], deps)).rejects.toThrow(
       'bench needs --prompts.',
     )
   })
 
   it('rejects unknown flags and unknown pillars', async () => {
     const { deps } = harness({ 'cases.json': JSON.stringify(CASES) })
-    await expect(runFinalReviewBenchCli([...BASE, '--bogus'], deps)).rejects.toThrow()
-    await expect(runFinalReviewBenchCli([...BASE, '--pillar', 'nope'], deps)).rejects.toThrow(
+    await expect(runReviewBenchCli([...BASE, '--bogus'], deps)).rejects.toThrow()
+    await expect(runReviewBenchCli([...BASE, '--pillar', 'nope'], deps)).rejects.toThrow(
       'Unknown pillar: nope',
     )
   })
 })
 
-describe('runFinalReviewBenchCli runs', () => {
+describe('runReviewBenchCli runs', () => {
   it('snapshots, runs each pillar, and writes raw results and summaries', async () => {
     const out = stdoutSpy()
     const h = harness({
       'cases.json': JSON.stringify(CASES),
       'prompts/security.md': 'Security prompt',
     })
-    await expect(runFinalReviewBenchCli(BASE, h.deps)).resolves.toBe(0)
+    await expect(runReviewBenchCli(BASE, h.deps)).resolves.toBe(0)
     expect(h.prepared.sort((a, b) => a.localeCompare(b))).toEqual(['n1', 'p1'])
     expect(h.logs).toContain('snapshot p1')
     expect(h.logs).toContain('run security n1')
@@ -137,7 +137,7 @@ describe('runFinalReviewBenchCli runs', () => {
   it('stages rules and records their digest', async () => {
     stdoutSpy()
     const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
-    await runFinalReviewBenchCli(BASE, h.deps)
+    await runReviewBenchCli(BASE, h.deps)
     expect(h.staged.sort((a, b) => a.localeCompare(b))).toEqual(['n1', 'p1'])
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).rules).toBe('digest-1')
   })
@@ -145,7 +145,7 @@ describe('runFinalReviewBenchCli runs', () => {
   it('stages nothing with --no-rules and records the digest as none', async () => {
     stdoutSpy()
     const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
-    await runFinalReviewBenchCli([...BASE, '--no-rules'], h.deps)
+    await runReviewBenchCli([...BASE, '--no-rules'], h.deps)
     expect(h.staged).toEqual([])
     const raw = JSON.parse(h.files.get('out/raw/security/p1.json') as string)
     expect(raw.rules).toBe('none')
@@ -160,7 +160,7 @@ describe('runFinalReviewBenchCli runs', () => {
   it('records the enabled plugins and gives pillars the Skill tool', async () => {
     stdoutSpy()
     const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
-    await runFinalReviewBenchCli(BASE, h.deps)
+    await runReviewBenchCli(BASE, h.deps)
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).plugins).toEqual([
       'rules@m 1.2.3',
     ])
@@ -181,7 +181,7 @@ describe('runFinalReviewBenchCli runs', () => {
           throw failure
         },
       )
-      await runFinalReviewBenchCli(BASE, h.deps)
+      await runReviewBenchCli(BASE, h.deps)
       expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).plugins).toEqual([
         'unknown',
       ])
@@ -197,7 +197,7 @@ describe('runFinalReviewBenchCli runs', () => {
       'prompts/_contract.md': 'Shared contract\n',
       'prompts/security.md': 'Security prompt',
     })
-    await runFinalReviewBenchCli(BASE, h.deps)
+    await runReviewBenchCli(BASE, h.deps)
     const prompt = h.execCalls[0]?.args[1] ?? ''
     expect(prompt.startsWith('Shared contract\n\nSecurity prompt')).toBe(true)
   })
@@ -212,7 +212,7 @@ describe('runFinalReviewBenchCli runs', () => {
         throw 'plain string'
       },
     )
-    await runFinalReviewBenchCli([...BASE, '--jobs', '0'], h.deps)
+    await runReviewBenchCli([...BASE, '--jobs', '0'], h.deps)
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string)).toEqual({
       error: 'claude exploded',
       rules: 'digest-1',
@@ -245,7 +245,7 @@ describe('runFinalReviewBenchCli runs', () => {
         throw new ExecError('claude exited with 1', 1, stdout, null)
       },
     )
-    await runFinalReviewBenchCli(BASE, h.deps)
+    await runReviewBenchCli(BASE, h.deps)
     const raw = JSON.parse(h.files.get('out/raw/security/p1.json') as string)
     expect(raw.error).toBe('claude exited with 1 (error_max_turns)')
     expect(raw.usage.costUsd).toBe(3)
@@ -267,7 +267,7 @@ describe('runFinalReviewBenchCli runs', () => {
       'prompts/design.md': 'D',
       'prompts/security.md': 'S',
     })
-    await runFinalReviewBenchCli(
+    await runReviewBenchCli(
       [...BASE, '--case', 'n1', '--pillar', 'design', '--model', 'opus', '--max-turns', '7'],
       h.deps,
     )
@@ -285,7 +285,7 @@ describe('runFinalReviewBenchCli runs', () => {
       if (args[0] !== 'plugin') seen.push(args)
       return exec(command, args, options)
     }
-    await runFinalReviewBenchCli([...BASE, '--model', 'opus', '--max-turns', '7'], h.deps)
+    await runReviewBenchCli([...BASE, '--model', 'opus', '--max-turns', '7'], h.deps)
     expect(seen[0]?.[seen[0].indexOf('--model') + 1]).toBe('opus')
     expect(seen[0]?.[seen[0].indexOf('--max-turns') + 1]).toBe('7')
   })
@@ -309,11 +309,11 @@ describe('skill loads', () => {
     stdoutSpy()
     const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
     const h = harness(files, async () => stream('rules:testing-rules'))
-    await runFinalReviewBenchCli(BASE, h.deps)
+    await runReviewBenchCli(BASE, h.deps)
     const raw = JSON.parse(h.files.get('out/raw/security/p1.json') as string)
     expect(raw).toMatchObject({ skills: ['rules:testing-rules'], skillTool: true })
     const control = harness(files)
-    await runFinalReviewBenchCli([...BASE, '--no-rules'], control.deps)
+    await runReviewBenchCli([...BASE, '--no-rules'], control.deps)
     const saved = JSON.parse(control.files.get('out/raw/security/p1.json') as string)
     expect(saved).toMatchObject({ skills: [], skillTool: false })
     const summary = JSON.parse(control.files.get('out/summary.json') as string)
@@ -344,7 +344,7 @@ describe('skill loads', () => {
       'out/raw/security/p2.json': JSON.stringify({ findings: hit }),
       'out/raw/security/n1.json': JSON.stringify({ findings: [], skills: ['other'] }),
     })
-    await runFinalReviewBenchCli(['--cases', 'cases.json', '--out', 'out', '--score-only'], h.deps)
+    await runReviewBenchCli(['--cases', 'cases.json', '--out', 'out', '--score-only'], h.deps)
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('| security | 3 | 100% | 100% | 0% (1) | 0.7 | 33% | 50% |')
     // Raw results saved before usage was recorded count as missing, not zero.
@@ -357,7 +357,7 @@ describe('skill loads', () => {
   })
 })
 
-describe('runFinalReviewBenchCli --score-only', () => {
+describe('runReviewBenchCli --score-only', () => {
   const scoreOnly = ['--cases', 'cases.json', '--out', 'out', '--score-only']
 
   it('scores existing results and reports missing and failed runs', async () => {
@@ -378,7 +378,7 @@ describe('runFinalReviewBenchCli --score-only', () => {
       }),
       'out/raw/security/p2.json': JSON.stringify({ error: 'boom' }),
     })
-    await expect(runFinalReviewBenchCli(scoreOnly, h.deps)).resolves.toBe(0)
+    await expect(runReviewBenchCli(scoreOnly, h.deps)).resolves.toBe(0)
     expect(h.prepared).toEqual([])
     expect(h.execCalls).toEqual([])
     const markdown = h.files.get('out/summary.md') as string
@@ -404,9 +404,7 @@ describe('runFinalReviewBenchCli --score-only', () => {
         return judgeOut
       },
     )
-    await expect(runFinalReviewBenchCli([...scoreOnly, '--judge', 'haiku'], h.deps)).resolves.toBe(
-      0,
-    )
+    await expect(runReviewBenchCli([...scoreOnly, '--judge', 'haiku'], h.deps)).resolves.toBe(0)
     expect(h.execCalls).toHaveLength(2)
     expect(h.execCalls[0]?.args).toContain('haiku')
     const markdown = h.files.get('out/summary.md') as string
@@ -431,19 +429,19 @@ describe('runFinalReviewBenchCli --score-only', () => {
       }),
       'ctl/raw/security/p1.json': JSON.stringify({ findings: hit, skills: [], skillTool: false }),
     })
-    await runFinalReviewBenchCli([...scoreOnly, '--baseline', 'ctl'], h.deps)
+    await runReviewBenchCli([...scoreOnly, '--baseline', 'ctl'], h.deps)
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('Control recall')
     expect(markdown).toContain('- security: control caught p1: does not discriminate')
     await expect(
-      runFinalReviewBenchCli([...scoreOnly, '--baseline', 'nowhere'], h.deps),
+      runReviewBenchCli([...scoreOnly, '--baseline', 'nowhere'], h.deps),
     ).rejects.toThrow('--baseline nowhere has no raw results')
   })
 
   it('labels location matching without --judge', async () => {
     stdoutSpy()
     const h = harness({ 'cases.json': JSON.stringify(CASES) })
-    await runFinalReviewBenchCli(scoreOnly, h.deps)
+    await runReviewBenchCli(scoreOnly, h.deps)
     expect(h.files.get('out/summary.md')).toContain('Matching: file and line.')
   })
 })

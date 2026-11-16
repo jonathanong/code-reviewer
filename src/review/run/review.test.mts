@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
-import { parseFinalReviewInput } from '../finding.mts'
+import { parseReviewInput } from '../finding.mts'
 import type { ReviewPlan } from '../plan.mts'
 import { runReview, type ReviewSteps } from './review.mts'
 
@@ -174,7 +174,7 @@ describe('runReview', () => {
     const raw = readJson(out, 'review.json')
     expect(Object.keys(raw).sort()).toEqual(['effort', 'findings', 'skipped', 'summary'])
     expect(raw.effort).toBe('high')
-    const parsed = parseFinalReviewInput(raw)
+    const parsed = parseReviewInput(raw)
     expect(parsed.findings).toHaveLength(1)
     expect(parsed.skipped).toEqual(PLAN.skipped)
     expect(JSON.stringify(raw)).not.toContain('sources')

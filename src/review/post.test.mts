@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, type Mock } from 'vitest'
 
-import { FinalReviewError, type FinalReviewInput } from './finding.mts'
-import type { FinalReviewIo } from './github.mts'
-import { finalReviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
+import { ReviewError, type ReviewInput } from './finding.mts'
+import type { ReviewIo } from './github.mts'
+import { reviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 import { reviewMarker, type Verdict } from './render.mts'
 
 const SHA = 'c'.repeat(40)
@@ -10,7 +10,7 @@ const OTHER = 'd'.repeat(40)
 
 const asReviews = (bodies: string[], author = 'bot') => bodies.map((body) => ({ body, author }))
 
-type MockIo = { [K in keyof FinalReviewIo]: Mock<FinalReviewIo[K]> }
+type MockIo = { [K in keyof ReviewIo]: Mock<ReviewIo[K]> }
 
 function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
   return {
@@ -27,7 +27,7 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
   }
 }
 
-function input(severity?: 'blocking' | 'high' | 'low'): FinalReviewInput {
+function input(severity?: 'blocking' | 'high' | 'low'): ReviewInput {
   return {
     effort: 'high',
     summary: '',
@@ -52,7 +52,7 @@ describe('revokeFinalApproval', () => {
 
 describe('postFinalReview', () => {
   it('rejects malformed SHAs and a moved head', async () => {
-    await expect(postFinalReview(fakeIo(), input(), 'ABC')).rejects.toThrow(FinalReviewError)
+    await expect(postFinalReview(fakeIo(), input(), 'ABC')).rejects.toThrow(ReviewError)
     await expect(postFinalReview(fakeIo(), input(), OTHER)).rejects.toThrow(
       /re-review the new head/u,
     )
@@ -91,12 +91,12 @@ describe('postFinalReview', () => {
   })
 })
 
-describe('finalReviewStatus', () => {
+describe('reviewStatus', () => {
   const body = (sha: string, verdict: Verdict) => reviewMarker(sha, verdict, 'high')
 
   it('reports no review when none carries a marker', async () => {
     const io = fakeIo({ listReviews: vi.fn(async () => asReviews(['LGTM', 'plain'])) })
-    await expect(finalReviewStatus(io)).resolves.toEqual({
+    await expect(reviewStatus(io)).resolves.toEqual({
       headSha: SHA,
       reviewedSha: null,
       verdict: null,
@@ -114,7 +114,7 @@ describe('finalReviewStatus', () => {
       ),
       hasApprovalLabel: vi.fn(async () => true),
     })
-    await expect(finalReviewStatus(approved)).resolves.toMatchObject({
+    await expect(reviewStatus(approved)).resolves.toMatchObject({
       reviewedSha: SHA,
       verdict: 'Approve',
       effort: 'high',
@@ -126,7 +126,7 @@ describe('finalReviewStatus', () => {
       listReviews: vi.fn(async () => asReviews([body(OTHER, 'Approve')])),
       hasApprovalLabel: vi.fn(async () => true),
     })
-    await expect(finalReviewStatus(stale)).resolves.toMatchObject({
+    await expect(reviewStatus(stale)).resolves.toMatchObject({
       current: false,
       approved: false,
     })
@@ -138,16 +138,16 @@ describe('finalReviewStatus', () => {
       ]),
       hasApprovalLabel: vi.fn(async () => true),
     })
-    await expect(finalReviewStatus(forged)).resolves.toMatchObject({
+    await expect(reviewStatus(forged)).resolves.toMatchObject({
       reviewedSha: OTHER,
       approved: false,
     })
     const unlabeled = fakeIo({ listReviews: vi.fn(async () => asReviews([body(SHA, 'Approve')])) })
-    await expect(finalReviewStatus(unlabeled)).resolves.toMatchObject({ approved: false })
+    await expect(reviewStatus(unlabeled)).resolves.toMatchObject({ approved: false })
     const commented = fakeIo({
       listReviews: vi.fn(async () => asReviews([body(SHA, 'Comment')])),
       hasApprovalLabel: vi.fn(async () => true),
     })
-    await expect(finalReviewStatus(commented)).resolves.toMatchObject({ approved: false })
+    await expect(reviewStatus(commented)).resolves.toMatchObject({ approved: false })
   })
 })

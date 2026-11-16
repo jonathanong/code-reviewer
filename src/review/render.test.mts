@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FinalReviewInput, Finding } from './finding.mts'
+import type { ReviewInput, Finding } from './finding.mts'
 import {
   deriveVerdict,
   locationText,
@@ -75,7 +75,7 @@ describe('finding bodies', () => {
 })
 
 describe('renderHeader', () => {
-  const input = (overrides: Partial<FinalReviewInput> = {}): FinalReviewInput => ({
+  const input = (overrides: Partial<ReviewInput> = {}): ReviewInput => ({
     effort: 'medium',
     summary: '',
     skipped: [],

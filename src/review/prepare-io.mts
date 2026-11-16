@@ -2,7 +2,7 @@ import type { RunTextCommand } from '../gh-cli/index.mts'
 import { fetchConversation, type PrConversation } from './context-query.mts'
 import { DEFAULT_CONFIG_DIR } from './rules/config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
-import { createGhFinalReviewIo } from './github.mts'
+import { createGhReviewIo } from './github.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
@@ -42,7 +42,7 @@ export function createGhPrepareIo(
   trustedAllowlist: readonly string[] = [],
   cloneRoot?: string,
 ): PrepareIo {
-  const io = createGhFinalReviewIo(target, run, trustedAllowlist)
+  const io = createGhReviewIo(target, run, trustedAllowlist)
   const compareUrl = (base: string, head: string) =>
     `repos/${target.repo}/compare/${base}...${head}`
   return {

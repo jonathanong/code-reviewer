@@ -108,7 +108,7 @@ function scoreAll(cases: Selectable[], options: Options, deps: BenchDeps): strin
  * `code-reviewer bench-selection`: run the Haiku skill-selection step `--attempts` times on each
  * case that declares `expectedSkills`, and score how often it names every expected skill.
  */
-export async function runFinalReviewSelectionBenchCli(
+export async function runReviewSelectionBenchCli(
   args: string[],
   deps: SelectionBenchDeps = defaultSelectionDeps,
 ): Promise<number> {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FinalReviewError } from '../finding.mts'
+import { ReviewError } from '../finding.mts'
 import { casesForPillar, isFixtureCase, parseEvalCases } from './cases.mts'
 
 const SHA_A = 'a'.repeat(40)
@@ -29,7 +29,7 @@ function message(raw: unknown): string {
   try {
     parseEvalCases(raw)
   } catch (error) {
-    expect(error).toBeInstanceOf(FinalReviewError)
+    expect(error).toBeInstanceOf(ReviewError)
     return (error as Error).message
   }
   throw new Error('expected a failure')

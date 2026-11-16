@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import type { FinalReviewInput } from '../finding.mts'
+import type { ReviewInput } from '../finding.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
 import type { PluginInfo } from '../plugins.mts'
@@ -16,7 +16,7 @@ export type ReviewSteps = {
   /** Drops the in-progress label without requeueing. */
   abort(): Promise<unknown>
   /** Renders what `post` would send for `input`, without posting. */
-  preview(input: FinalReviewInput, headSha: string): Promise<PostOutcome>
+  preview(input: ReviewInput, headSha: string): Promise<PostOutcome>
   plugins(): Promise<PluginInfo>
   exec: Exec
   /** Directory holding `verifier.md` and `pillars/`. */

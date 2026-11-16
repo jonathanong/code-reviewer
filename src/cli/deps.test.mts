@@ -4,22 +4,22 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../review/benchmark/cli.mts', () => ({
-  runFinalReviewBenchCli: vi.fn(async () => 5),
+  runReviewBenchCli: vi.fn(async () => 5),
 }))
 vi.mock('../review/benchmark/exec.mts', () => ({
   defaultExec: vi.fn(async () => '[{"id":"rules@m","version":"1.0.0","enabled":true}]'),
 }))
 vi.mock('../review/benchmark/selection-cli.mts', () => ({
-  runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
+  runReviewSelectionBenchCli: vi.fn(async () => 4),
 }))
 vi.mock('../review/benchmark/verifier-cli.mts', () => ({
-  runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
+  runReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
-import { runFinalReviewBenchCli } from '../review/benchmark/cli.mts'
+import { runReviewBenchCli } from '../review/benchmark/cli.mts'
 import { defaultExec } from '../review/benchmark/exec.mts'
-import { runFinalReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
-import { runFinalReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
+import { runReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
+import { runReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
 import type { GhAuth } from '../gh-cli/index.mts'
 import { createDefaultDeps } from './deps.mts'
 
@@ -143,10 +143,10 @@ describe('createDefaultDeps', () => {
   it('delegates the benchmarks', async () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await expect(deps.runBench(['--x'])).resolves.toBe(5)
-    expect(runFinalReviewBenchCli).toHaveBeenCalledWith(['--x'])
+    expect(runReviewBenchCli).toHaveBeenCalledWith(['--x'])
     await expect(deps.runVerifierBench(['--y'])).resolves.toBe(6)
-    expect(runFinalReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
+    expect(runReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
     await expect(deps.runSelectionBench(['--z'])).resolves.toBe(4)
-    expect(runFinalReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
+    expect(runReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
   })
 })

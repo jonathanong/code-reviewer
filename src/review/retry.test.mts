@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FinalReviewInput } from './finding.mts'
-import type { FinalReviewIo } from './github.mts'
+import type { ReviewInput } from './finding.mts'
+import type { ReviewIo } from './github.mts'
 import { abortReview, claimReview, completeReview, type LabelIo } from './labels.mts'
-import { finalReviewStatus, postFinalReview } from './post.mts'
+import { reviewStatus, postFinalReview } from './post.mts'
 import { DEFAULT_LABELS } from './settings.mts'
 
 const { requested: REQUESTED_LABEL, completed: COMPLETE_LABEL } = DEFAULT_LABELS
@@ -23,7 +23,7 @@ function labelIo(initial: string[]): LabelIo {
   }
 }
 
-const input: FinalReviewInput = {
+const input: ReviewInput = {
   effort: 'high',
   summary: '',
   skipped: [],
@@ -41,7 +41,7 @@ describe('retry after a partial post', () => {
   it('claims the requeued retry and finishes publication', async () => {
     const reviews: string[] = []
     let failSecond = true
-    const io: FinalReviewIo = {
+    const io: ReviewIo = {
       headSha: async () => SHA,
       diff: async () => '',
       listFiles: async () => [{ filename: 'a.ts', patch: '@@ -0,0 +1,2 @@\n+x\n+y\n' }],
@@ -64,7 +64,7 @@ describe('retry after a partial post', () => {
     await abortReview(labels, DEFAULT_LABELS, { requeue: true })
 
     // The first part carries the marker, so the head already looks reviewed.
-    const status = await finalReviewStatus(io)
+    const status = await reviewStatus(io)
     expect(status.current).toBe(true)
 
     const retry = await claimReview(labels, DEFAULT_LABELS, { headReviewed: status.current })

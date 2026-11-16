@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 
-import { FinalReviewError, PILLARS, SEVERITIES, type Pillar, type Severity } from '../finding.mts'
+import { ReviewError, PILLARS, SEVERITIES, type Pillar, type Severity } from '../finding.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 
 export type ExpectedFinding = {
@@ -55,7 +55,7 @@ function isRecord(value: unknown): value is Json {
 }
 
 function fail(where: string, message: string): never {
-  throw new FinalReviewError(`${where}: ${message}`)
+  throw new ReviewError(`${where}: ${message}`)
 }
 
 function str(record: Json, field: string, where: string): string {
@@ -159,11 +159,11 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
 
 /** Parses labeled eval cases; ids must be unique. Fixture paths resolve against `baseDir`. */
 export function parseEvalCases(raw: unknown, baseDir = '.'): EvalCase[] {
-  if (!Array.isArray(raw)) throw new FinalReviewError('Eval cases must be a JSON array.')
+  if (!Array.isArray(raw)) throw new ReviewError('Eval cases must be a JSON array.')
   const cases = raw.map((item, index) => evalCase(item, index, baseDir))
   const seen = new Set<string>()
   for (const item of cases) {
-    if (seen.has(item.id)) throw new FinalReviewError(`Duplicate eval case id: ${item.id}`)
+    if (seen.has(item.id)) throw new ReviewError(`Duplicate eval case id: ${item.id}`)
     seen.add(item.id)
   }
   return cases

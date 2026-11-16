@@ -94,7 +94,7 @@ async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDe
  * `code-reviewer bench-verifier`: run the verifier alone on saved pillar findings, one
  * model call per case and no subagents, and score what it keeps, merges, and drops.
  */
-export async function runFinalReviewVerifierBenchCli(
+export async function runReviewVerifierBenchCli(
   args: string[],
   deps: VerifierBenchDeps = defaultVerifierDeps,
 ): Promise<number> {

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
 import { diffFileName, renderIndexFile, splitDiff } from './diff-files.mts'
-import { FinalReviewError, type Effort } from './finding.mts'
+import { ReviewError, type Effort } from './finding.mts'
 import { numberDiff } from './numbered-diff.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
@@ -67,7 +67,7 @@ export async function prepareReview(
   if (options.tree !== undefined) {
     const treeHead = await io.treeHead(options.tree)
     if (treeHead !== headSha) {
-      throw new FinalReviewError(
+      throw new ReviewError(
         `--tree ${options.tree} is at ${treeHead}, not the pull request head ${headSha}; check out the head and run prepare again.`,
       )
     }

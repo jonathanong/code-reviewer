@@ -14,7 +14,7 @@ import { assertPullTarget, type PullTarget } from './target.mts'
 import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
 /** The GitHub reads and writes a final review needs, injectable for tests. */
-export type FinalReviewIo = {
+export type ReviewIo = {
   headSha(): Promise<string>
   /** The pull request's unified diff against its base. */
   diff(): Promise<string>
@@ -36,13 +36,13 @@ function lines(text: string): string[] {
     .filter((line) => line.length > 0)
 }
 
-/** Builds `FinalReviewIo` on top of the authenticated `gh` CLI. */
-export function createGhFinalReviewIo(
+/** Builds `ReviewIo` on top of the authenticated `gh` CLI. */
+export function createGhReviewIo(
   target: PullTarget,
   run: RunTextCommand = runGh,
   trustedAllowlist: readonly string[] = [],
   approvalLabel: string = DEFAULT_LABELS.approval,
-): FinalReviewIo {
+): ReviewIo {
   assertPullTarget(target)
   const { repo, pr } = target
   const pull = `repos/${repo}/pulls/${pr}`

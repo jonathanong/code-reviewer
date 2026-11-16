@@ -1,4 +1,4 @@
-import type { Effort, FinalReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
+import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
 
 export type Verdict = 'Approve' | 'Request Changes' | 'Comment'
 
@@ -73,7 +73,7 @@ function skippedSection(skipped: readonly SkippedPillar[]): string[] {
 }
 
 /** Renders the review's top section: verdict, reviewed SHA, summary, and the finding index. */
-export function renderHeader(input: FinalReviewInput, headSha: string): string {
+export function renderHeader(input: ReviewInput, headSha: string): string {
   const verdict = deriveVerdict(input.findings)
   const index = sortFindings(input.findings).map((finding) => {
     const where = locationText(finding)

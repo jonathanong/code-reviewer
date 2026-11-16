@@ -2,17 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import * as api from './index.mts'
 
-describe('final-review index', () => {
+describe('review index', () => {
   it('exports the public surface', () => {
     expect(Object.keys(api).sort()).toEqual([
       'DEFAULT_LABELS',
       'DEFAULT_LIMITS',
       'EFFORTS',
-      'FinalReviewError',
       'MARKER_RE',
       'NUMBERED_DIFF_LEGEND',
       'PART_MARKER_RE',
       'PILLARS',
+      'ReviewError',
       'SEVERITIES',
       'STARTED',
       'abortReview',
@@ -20,20 +20,19 @@ describe('final-review index', () => {
       'assertOwner',
       'assertPullTarget',
       'assertRepo',
-      'buildFinalReviews',
       'buildFollowUpContext',
+      'buildReviews',
       'claimReview',
       'completeReview',
-      'createGhFinalReviewIo',
       'createGhLabelIo',
       'createGhPrepareIo',
+      'createGhReviewIo',
       'deriveVerdict',
       'fetchConversation',
-      'finalReviewStatus',
       'listQueue',
       'numberDiff',
       'packBodies',
-      'parseFinalReviewInput',
+      'parseReviewInput',
       'parseTrustedAuthors',
       'placeFindings',
       'planReview',
@@ -48,6 +47,7 @@ describe('final-review index', () => {
       'resolveThreads',
       'reviewMarker',
       'reviewSettings',
+      'reviewStatus',
       'revokeFinalApproval',
       'scopeQualifier',
       'settingsProblems',

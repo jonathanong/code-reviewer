@@ -1,18 +1,5 @@
-export {
-  EFFORTS,
-  FinalReviewError,
-  PILLARS,
-  SEVERITIES,
-  parseFinalReviewInput,
-} from './finding.mts'
-export type {
-  Effort,
-  FinalReviewInput,
-  Finding,
-  Pillar,
-  Severity,
-  SkippedPillar,
-} from './finding.mts'
+export { EFFORTS, ReviewError, PILLARS, SEVERITIES, parseReviewInput } from './finding.mts'
+export type { Effort, ReviewInput, Finding, Pillar, Severity, SkippedPillar } from './finding.mts'
 export {
   deriveVerdict,
   renderBodyFinding,
@@ -21,13 +8,13 @@ export {
   reviewMarker,
 } from './render.mts'
 export type { Verdict } from './render.mts'
-export { DEFAULT_LIMITS, buildFinalReviews, packBodies, placeFindings } from './build.mts'
+export { DEFAULT_LIMITS, buildReviews, packBodies, placeFindings } from './build.mts'
 export type { BuildLimits } from './build.mts'
-export { createGhFinalReviewIo } from './github.mts'
-export type { FinalReviewIo } from './github.mts'
+export { createGhReviewIo } from './github.mts'
+export type { ReviewIo } from './github.mts'
 export { assertPullTarget, assertRepo } from './target.mts'
 export type { PullTarget } from './target.mts'
-export { finalReviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
+export { reviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 export type { PostOutcome, ReviewStatus } from './post.mts'
 export { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 export { parseTrustedAuthors } from './trust.mts'

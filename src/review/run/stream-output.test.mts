@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FinalReviewError } from '../finding.mts'
+import { ReviewError } from '../finding.mts'
 import { parsePillarOutput, readStream } from './stream-output.mts'
 
 const NO_USAGE = {
@@ -138,10 +138,10 @@ describe('parsePillarOutput', () => {
   it('rejects non-JSON output and missing structured findings', () => {
     expect(() => parsePillarOutput('nope', 'rules')).toThrow('Pillar run did not print JSON.')
     for (const text of ['null', '{}', JSON.stringify({ structured_output: {} }), output('x')]) {
-      expect(() => parsePillarOutput(text, 'rules')).toThrow(FinalReviewError)
+      expect(() => parsePillarOutput(text, 'rules')).toThrow(ReviewError)
     }
     const empty = JSON.stringify({ structured_output: null })
-    expect(() => parsePillarOutput(empty, 'rules')).toThrow(FinalReviewError)
+    expect(() => parsePillarOutput(empty, 'rules')).toThrow(ReviewError)
     expect(() => parsePillarOutput('null', 'rules')).toThrow(
       'Pillar run returned no structured findings.',
     )

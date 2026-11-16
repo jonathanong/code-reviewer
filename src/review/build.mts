@@ -5,7 +5,7 @@ import {
   type ReviewComment,
   type SanitizedReview,
 } from '../review-payload/index.mts'
-import type { FinalReviewInput, Finding } from './finding.mts'
+import type { ReviewInput, Finding } from './finding.mts'
 import { renderBodyFinding, renderFindingBody, renderHeader, sortFindings } from './render.mts'
 
 export type BuildLimits = {
@@ -86,8 +86,8 @@ function partHeader(headSha: string, part: number, total: number): string {
  * Builds one or more COMMENT reviews for GitHub. Placeable findings become inline comments, the
  * rest go in the body, and anything over the limits continues in additional review parts.
  */
-export function buildFinalReviews(
-  input: FinalReviewInput,
+export function buildReviews(
+  input: ReviewInput,
   headSha: string,
   index: CommentableIndex,
   limits: BuildLimits = DEFAULT_LIMITS,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FinalReviewError, parseFinalReviewInput } from './finding.mts'
+import { ReviewError, parseReviewInput } from './finding.mts'
 
 const base = { pillar: 'rules', severity: 'high', title: ' T ', body: ' B ' }
 
@@ -9,23 +9,23 @@ function finding(extra: Record<string, unknown> = {}): Record<string, unknown> {
 }
 
 function parseOne(extra: Record<string, unknown>) {
-  return parseFinalReviewInput({ findings: [finding(extra)] }).findings[0]
+  return parseReviewInput({ findings: [finding(extra)] }).findings[0]
 }
 
 function failure(raw: unknown): string {
   try {
-    parseFinalReviewInput(raw)
+    parseReviewInput(raw)
   } catch (error) {
-    expect(error).toBeInstanceOf(FinalReviewError)
-    expect((error as Error).name).toBe('FinalReviewError')
+    expect(error).toBeInstanceOf(ReviewError)
+    expect((error as Error).name).toBe('ReviewError')
     return (error as Error).message
   }
   throw new Error('expected a failure')
 }
 
-describe('parseFinalReviewInput', () => {
+describe('parseReviewInput', () => {
   it('applies defaults for an empty object', () => {
-    expect(parseFinalReviewInput({})).toEqual({
+    expect(parseReviewInput({})).toEqual({
       effort: 'high',
       summary: '',
       skipped: [],
@@ -35,7 +35,7 @@ describe('parseFinalReviewInput', () => {
 
   it('parses effort, summary, skipped pillars, and trimmed findings', () => {
     expect(
-      parseFinalReviewInput({
+      parseReviewInput({
         effort: 'low',
         summary: '  hi  ',
         skipped: [{ pillar: 'history', reason: 'no history' }],
@@ -50,7 +50,7 @@ describe('parseFinalReviewInput', () => {
   })
 
   it('ignores a non-string summary', () => {
-    expect(parseFinalReviewInput({ summary: 4 }).summary).toBe('')
+    expect(parseReviewInput({ summary: 4 }).summary).toBe('')
   })
 
   it('rejects non-objects and bad lists', () => {

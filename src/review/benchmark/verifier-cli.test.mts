@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { judgeInputs } from './judge-all.mts'
-import { runFinalReviewVerifierBenchCli } from './verifier-cli.mts'
+import { runReviewVerifierBenchCli } from './verifier-cli.mts'
 import { gradeInputs } from './verifier-grade.mts'
 import type { VerifierBenchDeps } from './verifier-snapshot.mts'
 
@@ -97,13 +97,13 @@ const usage = (model: string, costUsd: number) => ({
   },
 })
 
-describe('runFinalReviewVerifierBenchCli', () => {
+describe('runReviewVerifierBenchCli', () => {
   it('validates arguments', async () => {
     const { deps } = harness(async () => '')
-    await expect(runFinalReviewVerifierBenchCli(['--out', 'o'], deps)).rejects.toThrow(
+    await expect(runReviewVerifierBenchCli(['--out', 'o'], deps)).rejects.toThrow(
       'bench-verifier needs --cases, --findings-from, and --out.',
     )
-    await expect(runFinalReviewVerifierBenchCli(BASE, deps)).rejects.toThrow(
+    await expect(runReviewVerifierBenchCli(BASE, deps)).rejects.toThrow(
       'bench-verifier needs --prompts.',
     )
   })
@@ -119,7 +119,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
       })
     })
     const args = [...BASE, '--prompts', 'refs', '--jobs', '1', '--model', 'opus']
-    await expect(runFinalReviewVerifierBenchCli(args, h.deps)).resolves.toBe(0)
+    await expect(runReviewVerifierBenchCli(args, h.deps)).resolves.toBe(0)
     expect(prompts[0]?.startsWith('VERIFIER\n\nCONTRACT\n\nCONGRUENCE\n\n## Benchmark run')).toBe(
       true,
     )
@@ -141,7 +141,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
       JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
     )
     const args = [...BASE, '--prompts', 'refs', '--case', 'p1']
-    await runFinalReviewVerifierBenchCli(args, h.deps)
+    await runReviewVerifierBenchCli(args, h.deps)
     expect(h.staged).toEqual([['p1', '/snap/p1']])
     const saved = JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string }
     expect(saved.inputs).toMatch(/^[0-9a-f]{64}$/u)
@@ -154,16 +154,16 @@ describe('runFinalReviewVerifierBenchCli', () => {
     )
     const h = harness(exec)
     const args = [...BASE, '--prompts', 'refs', '--case', 'p1']
-    await runFinalReviewVerifierBenchCli([...args, '--no-rules'], h.deps)
+    await runReviewVerifierBenchCli([...args, '--no-rules'], h.deps)
     expect(h.staged).toEqual([])
     const control = (JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string })
       .inputs
     const runs = () => exec.mock.calls.filter(([, a]) => String(a[1]).includes('VERIFIER')).length
     expect(runs()).toBe(1)
-    await runFinalReviewVerifierBenchCli([...args, '--no-rules'], h.deps)
+    await runReviewVerifierBenchCli([...args, '--no-rules'], h.deps)
     expect(runs()).toBe(1)
     // Staging rules changes the run's inputs, so the control output is not reused.
-    await runFinalReviewVerifierBenchCli(args, h.deps)
+    await runReviewVerifierBenchCli(args, h.deps)
     expect(runs()).toBe(2)
     expect(h.staged).toHaveLength(1)
     const staged = (JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string }).inputs
@@ -188,7 +188,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
     h.store.set('o/raw/n1.json', JSON.stringify({ input, output, graded, usage: usage('opus', 2) }))
     h.store.set('o/raw/p1.json', JSON.stringify({ input, output }))
     h.store.set('o/raw/x1.json', JSON.stringify({ input, output, usage: usage('opus', 1) }))
-    await runFinalReviewVerifierBenchCli([...BASE, '--score-only', '--judge', 'haiku'], h.deps)
+    await runReviewVerifierBenchCli([...BASE, '--score-only', '--judge', 'haiku'], h.deps)
     expect(exec).not.toHaveBeenCalled()
     const markdown = h.store.get('o/summary.md') as string
     expect(markdown).toContain('judged by haiku')
@@ -215,7 +215,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
     const h = harness(exec)
     const args = [...BASE, '--prompts', 'refs', '--case', 'p1']
     const callsAfter = async (extra: string[] = []) => {
-      await runFinalReviewVerifierBenchCli([...args, ...extra], h.deps)
+      await runReviewVerifierBenchCli([...args, ...extra], h.deps)
       return exec.mock.calls.length
     }
     expect(await callsAfter()).toBe(1)
@@ -238,7 +238,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
       'o/raw/p1.json',
       JSON.stringify({ input: { findings: [], real: [], planted: [] }, output }),
     )
-    await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
+    await runReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
     expect(exec).toHaveBeenCalled()
   })
 
@@ -253,7 +253,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
       if (args[0] === 'plugin') throw new Error('no claude')
       return listing(command, args, options)
     }
-    await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
+    await runReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
     expect(h.logs).toContain('plugins: no claude')
     const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
     expect(args).not.toContain('--settings')
@@ -266,7 +266,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
     })
     const h = harness(exec)
     h.store.set('f/raw/design/p1.json', JSON.stringify({ findings: [FINDING] }))
-    await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
+    await runReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
     expect(exec).toHaveBeenCalledTimes(1)
     expect(h.store.get('o/summary.md')).toContain('- p1: design findings are not judged by sonnet.')
   })
@@ -274,7 +274,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
   it('reports cases with no saved run', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness(async () => '')
-    await runFinalReviewVerifierBenchCli([...BASE, '--score-only'], h.deps)
+    await runReviewVerifierBenchCli([...BASE, '--score-only'], h.deps)
     const markdown = h.store.get('o/summary.md') as string
     for (const id of ['p1', 'n1', 'x1']) expect(markdown).toContain(`- ${id}: not run`)
   })
@@ -285,7 +285,7 @@ describe('runFinalReviewVerifierBenchCli', () => {
       throw new Error('bad')
     })
     h.deps.exists = (path) => path !== 'f/raw/design/n1.json' && h.store.has(path)
-    await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
+    await runReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
     expect(h.store.get('o/summary.md')).toContain('- p1: bad')
   })
 })

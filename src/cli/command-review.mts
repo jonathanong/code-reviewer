@@ -11,7 +11,7 @@ import {
   skipCommand,
   type LoopValues,
 } from './command-loop.mts'
-import type { FinalReviewDeps } from './deps.mts'
+import type { ReviewDeps } from './deps.mts'
 
 const DEFAULT_JOBS = 3
 
@@ -25,7 +25,7 @@ function jobs(value: string | undefined): number {
 export async function reviewCommand(
   values: LoopValues & { jobs?: string | undefined },
   target: PullTarget,
-  deps: FinalReviewDeps,
+  deps: ReviewDeps,
 ): Promise<ReviewResult> {
   if (values.out === undefined || values.tree === undefined) {
     throw new Error('review needs --out and --tree.')

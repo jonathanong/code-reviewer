@@ -9,7 +9,7 @@ vi.mock('./snapshot.mts', async (importOriginal) => ({
   prepareSnapshot: vi.fn(async () => ({ dir: '/snap', diff: '', body: '' })),
 }))
 
-import { runFinalReviewBenchCli } from './cli.mts'
+import { runReviewBenchCli } from './cli.mts'
 import { defaultExec, prepareSnapshot } from './snapshot.mts'
 
 const dirs: string[] = []
@@ -18,7 +18,7 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-describe('runFinalReviewBenchCli default dependencies', () => {
+describe('runReviewBenchCli default dependencies', () => {
   it('reads and writes the real filesystem and logs to stderr', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'bench-defaults-'))
     dirs.push(dir)
@@ -44,7 +44,7 @@ describe('runFinalReviewBenchCli default dependencies', () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
     await expect(
-      runFinalReviewBenchCli([
+      runReviewBenchCli([
         '--cases',
         cases,
         '--out',
@@ -59,7 +59,7 @@ describe('runFinalReviewBenchCli default dependencies', () => {
     writeFileSync(join(prompts, 'rules.md'), 'Rules prompt')
 
     await expect(
-      runFinalReviewBenchCli([
+      runReviewBenchCli([
         '--cases',
         cases,
         '--out',
@@ -79,7 +79,7 @@ describe('runFinalReviewBenchCli default dependencies', () => {
     expect(readFileSync(join(out, 'summary.md'), 'utf8')).toContain('| rules | 1 |')
 
     await expect(
-      runFinalReviewBenchCli(['--cases', cases, '--out', out, '--score-only', '--pillar', 'rules']),
+      runReviewBenchCli(['--cases', cases, '--out', out, '--score-only', '--pillar', 'rules']),
     ).resolves.toBe(0)
   })
 })

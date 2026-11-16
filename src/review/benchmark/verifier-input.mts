@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import { FinalReviewError, PILLARS, type Finding, type Pillar } from '../finding.mts'
+import { ReviewError, PILLARS, type Finding, type Pillar } from '../finding.mts'
 import type { EvalCase } from './cases.mts'
 import { currentAssignment, type RawResult } from './judge-all.mts'
 
@@ -51,7 +51,7 @@ export function collectVerifierInput(
       judgeModel,
     )
     if (assignment === undefined && targets.length > 0) {
-      throw new FinalReviewError(`${pillar} findings are not judged by ${judgeModel}.`)
+      throw new ReviewError(`${pillar} findings are not judged by ${judgeModel}.`)
     }
     assignment?.forEach((at, position) => {
       if (at !== null) real.push([offset + at, (targets[position] as { index: number }).index])

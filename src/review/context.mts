@@ -131,7 +131,7 @@ export function buildFollowUpContext(
 ): FollowUpContext {
   // Only the posting identity's markers count: anyone else could forge one.
   const own = pull.reviews.nodes.filter((review) => isTrustedAuthor(review.author?.login, trusted))
-  const finalReviews = own.filter(
+  const markedReviews = own.filter(
     (review) => MARKER_RE.test(review.body) || PART_MARKER_RE.test(review.body),
   )
   const latest = own
@@ -141,7 +141,7 @@ export function buildFollowUpContext(
   const reviewedSha = latest?.[1] ?? null
   const oids = pull.commits.nodes.map((node) => node.commit.oid)
   const index = reviewedSha === null ? -1 : oids.indexOf(reviewedSha)
-  const finalIds = new Set(finalReviews.map((review) => review.id))
+  const finalIds = new Set(markedReviews.map((review) => review.id))
   const unresolved = pull.reviewThreads.nodes.flatMap((thread) => {
     const first = thread.comments.nodes[0]
     if (thread.isResolved || first === undefined) return []

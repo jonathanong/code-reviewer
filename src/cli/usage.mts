@@ -1,4 +1,4 @@
-export const FINAL_REVIEW_USAGE = `code-reviewer auth
+export const REVIEW_USAGE = `code-reviewer auth
 code-reviewer settings (--repo owner/name | --owner LOGIN)
 code-reviewer queue (--owner LOGIN | --repo owner/name...)
 code-reviewer claim --repo owner/name --pr N [--force]

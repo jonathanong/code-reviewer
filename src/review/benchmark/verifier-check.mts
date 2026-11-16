@@ -1,4 +1,4 @@
-import { FinalReviewError, type Finding } from '../finding.mts'
+import { ReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
 import { parseUsage, resultEvent, type Usage } from './usage.mts'
@@ -102,7 +102,7 @@ function isVerdict(value: unknown): value is Verdict {
 export function parseChecks(stdout: string, indexes: readonly number[]): Map<number, Check> {
   const parsed = JSON.parse(stdout) as { structured_output?: { verdicts?: unknown } } | null
   const verdicts = parsed?.structured_output?.verdicts
-  if (!Array.isArray(verdicts)) throw new FinalReviewError('Check run returned no verdicts.')
+  if (!Array.isArray(verdicts)) throw new ReviewError('Check run returned no verdicts.')
   const checks = new Map<number, Check>()
   for (const verdict of (verdicts as unknown[]).filter(isVerdict)) {
     if (indexes.includes(verdict.index) && !checks.has(verdict.index)) {

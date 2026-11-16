@@ -1,12 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import {
-  FinalReviewError,
-  PILLARS,
-  SEVERITIES,
-  parseFinalReviewInput,
-  type Finding,
-} from '../finding.mts'
+import { ReviewError, PILLARS, SEVERITIES, parseReviewInput, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
 import { parseUsage, resultEvent, type Usage } from './usage.mts'
@@ -122,7 +116,7 @@ export function parseVerifierOutput(stdout: string, inputCount: number): Verifie
 export function validateVerifierOutput(value: unknown, inputCount: number): VerifierOutput {
   const structured = value as { summary?: unknown; findings?: unknown } | undefined | null
   if (structured === undefined || structured === null || !Array.isArray(structured.findings)) {
-    throw new FinalReviewError('Verifier run returned no structured findings.')
+    throw new ReviewError('Verifier run returned no structured findings.')
   }
   const raw = structured.findings as Array<{ sources?: unknown } | null>
   const sources = raw.map((entry, index) => {
@@ -130,10 +124,10 @@ export function validateVerifierOutput(value: unknown, inputCount: number): Veri
     const valid =
       Array.isArray(list) &&
       list.every((value) => Number.isInteger(value) && value >= 0 && value < inputCount)
-    if (!valid) throw new FinalReviewError(`findings[${index}].sources must list input indexes.`)
+    if (!valid) throw new ReviewError(`findings[${index}].sources must list input indexes.`)
     return list as number[]
   })
-  const review = parseFinalReviewInput({ summary: structured.summary, findings: raw })
+  const review = parseReviewInput({ summary: structured.summary, findings: raw })
   return { summary: review.summary, findings: review.findings, sources }
 }
 

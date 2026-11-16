@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { FinalReviewError } from '../finding.mts'
+import { ReviewError } from '../finding.mts'
 import type { ReportData } from './report.mts'
 import { renderReport } from './report-render.mts'
 
@@ -20,6 +20,6 @@ function writeReportMarkdown(out: string, data: ReportData): string {
 /** `code-reviewer report`: renders `report.md` again from `report.json`. */
 export function rerenderReport(out: string): string {
   const data = JSON.parse(readFileSync(join(out, 'report.json'), 'utf8')) as { version?: unknown }
-  if (data?.version !== 1) throw new FinalReviewError('report.json is not a version 1 report.')
+  if (data?.version !== 1) throw new ReviewError('report.json is not a version 1 report.')
   return writeReportMarkdown(out, data as ReportData)
 }

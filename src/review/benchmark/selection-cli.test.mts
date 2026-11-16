@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { SkillChoice } from '../run/types.mts'
-import { runFinalReviewSelectionBenchCli, type SelectionBenchDeps } from './selection-cli.mts'
+import { runReviewSelectionBenchCli, type SelectionBenchDeps } from './selection-cli.mts'
 
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
@@ -87,26 +87,26 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('runFinalReviewSelectionBenchCli', () => {
+describe('runReviewSelectionBenchCli', () => {
   it('validates arguments', async () => {
     const { deps } = harness(() => choice([]))
-    await expect(runFinalReviewSelectionBenchCli(['--out', 'o'], deps)).rejects.toThrow(
+    await expect(runReviewSelectionBenchCli(['--out', 'o'], deps)).rejects.toThrow(
       'bench-selection needs --cases and --out.',
     )
-    await expect(runFinalReviewSelectionBenchCli(['--cases', 'cases.json'], deps)).rejects.toThrow(
+    await expect(runReviewSelectionBenchCli(['--cases', 'cases.json'], deps)).rejects.toThrow(
       'bench-selection needs --cases and --out.',
     )
-    await expect(
-      runFinalReviewSelectionBenchCli([...BASE, '--attempts', '0'], deps),
-    ).rejects.toThrow('--attempts must be a positive integer.')
-    await expect(runFinalReviewSelectionBenchCli([...BASE, '--jobs', 'x'], deps)).rejects.toThrow(
+    await expect(runReviewSelectionBenchCli([...BASE, '--attempts', '0'], deps)).rejects.toThrow(
+      '--attempts must be a positive integer.',
+    )
+    await expect(runReviewSelectionBenchCli([...BASE, '--jobs', 'x'], deps)).rejects.toThrow(
       '--jobs must be a positive integer.',
     )
+    await expect(runReviewSelectionBenchCli([...BASE, '--case', 'plain'], deps)).rejects.toThrow(
+      'no cases with expectedSkills',
+    )
     await expect(
-      runFinalReviewSelectionBenchCli([...BASE, '--case', 'plain'], deps),
-    ).rejects.toThrow('no cases with expectedSkills')
-    await expect(
-      runFinalReviewSelectionBenchCli(
+      runReviewSelectionBenchCli(
         ['--cases', 'cases.json', '--cases', 'dupes.json', '--out', 'o'],
         deps,
       ),
@@ -121,7 +121,7 @@ describe('runFinalReviewSelectionBenchCli', () => {
         : choice(['skills:two', 'skills:three']),
     )
     const args = ['--cases', 'cases.json', '--cases', 'more.json', '--out', 'o', '--attempts', '2']
-    await expect(runFinalReviewSelectionBenchCli([...args, '--jobs', '1'], h.deps)).resolves.toBe(0)
+    await expect(runReviewSelectionBenchCli([...args, '--jobs', '1'], h.deps)).resolves.toBe(0)
     expect(h.prepared.map(([id]) => id)).toEqual(['s1', 's2', 's3'])
     expect(h.prepared[0]).toEqual(['s1', 'o/cache', 'o/work'])
     expect(h.selected).toHaveLength(6)
@@ -172,7 +172,7 @@ describe('runFinalReviewSelectionBenchCli', () => {
       byModel: {},
     }
     const h = harness(() => choice([], { error: 'No skills returned.', usage }))
-    await runFinalReviewSelectionBenchCli([...BASE, '--case', 's1', '--attempts', '1'], h.deps)
+    await runReviewSelectionBenchCli([...BASE, '--case', 's1', '--attempts', '1'], h.deps)
     const summary = JSON.parse(h.store.get('o/summary.json') as string) as {
       summary: { attempts: number; errors: number }
       costUsd: number
@@ -185,7 +185,7 @@ describe('runFinalReviewSelectionBenchCli', () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness(() => choice([]))
     h.store.set('o/raw/s1/1.json', JSON.stringify(choice(['skills:one'])))
-    await runFinalReviewSelectionBenchCli([...BASE, '--case', 's1', '--score-only'], h.deps)
+    await runReviewSelectionBenchCli([...BASE, '--case', 's1', '--score-only'], h.deps)
     expect(h.prepared).toEqual([])
     expect(h.selected).toEqual([])
     const summary = JSON.parse(h.store.get('o/summary.json') as string) as {
@@ -197,7 +197,7 @@ describe('runFinalReviewSelectionBenchCli', () => {
   it('reuses the cache directory from --cache', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness(() => choice(['skills:one']))
-    await runFinalReviewSelectionBenchCli(
+    await runReviewSelectionBenchCli(
       [...BASE, '--case', 's1', '--attempts', '1', '--cache', 'shared'],
       h.deps,
     )
@@ -214,7 +214,7 @@ describe('runFinalReviewSelectionBenchCli', () => {
       mkdirSync(join(out, 'raw', 's1'), { recursive: true })
       writeFileSync(join(out, 'raw', 's1', '1.json'), JSON.stringify(choice(['skills:one'])))
       await expect(
-        runFinalReviewSelectionBenchCli([
+        runReviewSelectionBenchCli([
           '--cases',
           cases,
           '--out',

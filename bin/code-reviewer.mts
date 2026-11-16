@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-import { runFinalReviewCommand } from '../src/cli/command.mts'
+import { runReviewCommand } from '../src/cli/command.mts'
 
-process.exitCode = await runFinalReviewCommand(process.argv.slice(2))
+process.exitCode = await runReviewCommand(process.argv.slice(2))

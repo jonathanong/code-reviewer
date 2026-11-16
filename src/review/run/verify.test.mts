@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { FinalReviewError, type Finding } from '../finding.mts'
+import { ReviewError, type Finding } from '../finding.mts'
 import {
   REVIEW_VERIFIER_SCHEMA,
   buildVerifierRunPrompt,
@@ -90,7 +90,7 @@ describe('parseReviewVerifier', () => {
     const parsed = parseReviewVerifier(stream({ summary: 's', findings: [], dropped: 'x' }), 0)
     expect(parsed.pullRequestSummary).toBe('')
     expect(parsed.dropped.size).toBe(0)
-    expect(() => parseReviewVerifier(stream(null), 0)).toThrow(FinalReviewError)
+    expect(() => parseReviewVerifier(stream(null), 0)).toThrow(ReviewError)
     expect(() => parseReviewVerifier('nope', 0)).toThrow('Verifier run did not print JSON.')
   })
 

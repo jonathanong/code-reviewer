@@ -117,7 +117,7 @@ async function runAll(
 }
 
 /** `code-reviewer bench`: run pillar prompts over labeled cases and score them. */
-export async function runFinalReviewBenchCli(
+export async function runReviewBenchCli(
   args: string[],
   deps: PillarBenchDeps = defaultPillarDeps,
 ): Promise<number> {

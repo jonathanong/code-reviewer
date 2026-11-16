@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { diffExcerpt, splitDiff } from '../diff-files.mts'
-import { FinalReviewError, type FinalReviewInput, type Pillar } from '../finding.mts'
+import { ReviewError, type ReviewInput, type Pillar } from '../finding.mts'
 import { pluginSettings } from '../plugins.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
@@ -96,7 +96,7 @@ async function review(
   })
   // A review with no pillar answer would approve unchecked code, so it fails instead.
   if (results.every((result) => result.error !== undefined)) {
-    throw new FinalReviewError(
+    throw new ReviewError(
       `Every pillar failed: ${results.map((result) => `${result.pillar} (${(result.error as string).split('\n')[0]})`).join('; ')}`,
     )
   }
@@ -113,7 +113,7 @@ async function review(
     { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
-  const input: FinalReviewInput = {
+  const input: ReviewInput = {
     effort: plan.effort,
     summary: output.summary,
     skipped,

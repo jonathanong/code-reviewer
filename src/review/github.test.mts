@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createGhFinalReviewIo } from './github.mts'
+import { createGhReviewIo } from './github.mts'
 import { assertPullTarget } from './target.mts'
 
 const target = { repo: 'acme/widgets', pr: 7 }
@@ -12,7 +12,7 @@ function setup(responses: string[] = []) {
     calls.push(args)
     return responses.shift() ?? ''
   })
-  return { calls, run, io: createGhFinalReviewIo(target, run) }
+  return { calls, run, io: createGhReviewIo(target, run) }
 }
 
 const review = { event: 'COMMENT' as const, commit_id: 'x', body: 'b', comments: [] }
@@ -27,11 +27,11 @@ describe('assertPullTarget', () => {
     expect(() => assertPullTarget({ repo: 'a/b', pr: 1.5 })).toThrow(
       '--pr must be a positive integer.',
     )
-    expect(() => createGhFinalReviewIo({ repo: 'x', pr: 1 }, vi.fn())).toThrow('--repo')
+    expect(() => createGhReviewIo({ repo: 'x', pr: 1 }, vi.fn())).toThrow('--repo')
   })
 })
 
-describe('createGhFinalReviewIo', () => {
+describe('createGhReviewIo', () => {
   it('reads the head sha', async () => {
     const { io, calls } = setup(['abc123\n'])
     await expect(io.headSha()).resolves.toBe('abc123')
@@ -90,7 +90,7 @@ describe('createGhFinalReviewIo', () => {
     const yes = setup(['final approval\n'])
     await expect(yes.io.hasApprovalLabel()).resolves.toBe(true)
     const calls: string[][] = []
-    const io = createGhFinalReviewIo(
+    const io = createGhReviewIo(
       target,
       async (args) => {
         calls.push(args)
@@ -114,7 +114,7 @@ describe('createGhFinalReviewIo', () => {
       content = readFileSync(file, 'utf8')
       return ' https://example.test/r \n'
     })
-    const io = createGhFinalReviewIo(target, run)
+    const io = createGhReviewIo(target, run)
     await expect(io.postReview(review)).resolves.toBe('https://example.test/r')
     expect(JSON.parse(content)).toEqual(review)
     expect(existsSync(file)).toBe(false)
@@ -128,7 +128,7 @@ describe('createGhFinalReviewIo', () => {
 
   it('cleans up the temp file when gh fails', async () => {
     let file = ''
-    const io = createGhFinalReviewIo(target, async (args) => {
+    const io = createGhReviewIo(target, async (args) => {
       file = args[args.indexOf('--input') + 1] as string
       throw new Error('gh failed')
     })
@@ -159,13 +159,13 @@ describe('createGhFinalReviewIo', () => {
 
   it('removes a label whose name has a comma as one label', async () => {
     const calls: string[][] = []
-    const io = createGhFinalReviewIo(target, async (args) => (calls.push(args), ''), [], 'ok, ship')
+    const io = createGhReviewIo(target, async (args) => (calls.push(args), ''), [], 'ok, ship')
     await io.removeApprovalLabel()
     expect(calls[0]?.[3]).toBe('repos/acme/widgets/issues/7/labels/ok%2C%20ship')
     expect(calls[0]).not.toContain('pr')
   })
 
   it('defaults to the gh runner', () => {
-    expect(createGhFinalReviewIo(target)).toHaveProperty('headSha')
+    expect(createGhReviewIo(target)).toHaveProperty('headSha')
   })
 })

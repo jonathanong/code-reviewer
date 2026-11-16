@@ -6,7 +6,7 @@ import {
   assertOwner,
   assertRepo,
   claimReview,
-  finalReviewStatus,
+  reviewStatus,
   prepareReview,
   resolveThreads,
   reviewSettings,
@@ -17,7 +17,7 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
-import type { FinalReviewDeps } from './deps.mts'
+import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
 
@@ -42,7 +42,7 @@ function effort(value: string | undefined): Effort | undefined {
 }
 
 /** The resolved labels and check run for one repository or owner, with problems in its files. */
-function settings(values: LoopValues, deps: FinalReviewDeps) {
+function settings(values: LoopValues, deps: ReviewDeps) {
   const repo = values.repo?.[0]
   if ((repo === undefined) === (values.owner === undefined)) {
     throw new Error('settings needs --repo or --owner.')
@@ -59,13 +59,9 @@ function settings(values: LoopValues, deps: FinalReviewDeps) {
 }
 
 /** Takes a requested review; the outcome says whether it was claimed. */
-export async function claimCommand(
-  values: LoopValues,
-  target: () => PullTarget,
-  deps: FinalReviewDeps,
-) {
+export async function claimCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
   const force = values.force === true
-  const status = force ? undefined : await finalReviewStatus(deps.createIo(target()))
+  const status = force ? undefined : await reviewStatus(deps.createIo(target()))
   const outcome = await claimReview(deps.createLabelIo(target()), labelsFor(deps, target().repo), {
     force,
     headReviewed: status?.current === true,
@@ -75,11 +71,7 @@ export async function claimCommand(
 }
 
 /** Drops the in-progress label; `--requeue` asks again. */
-export async function abortCommand(
-  values: LoopValues,
-  target: () => PullTarget,
-  deps: FinalReviewDeps,
-) {
+export async function abortCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
   const labels = await abortReview(deps.createLabelIo(target()), labelsFor(deps, target().repo), {
     requeue: values.requeue === true,
   })
@@ -87,11 +79,7 @@ export async function abortCommand(
 }
 
 /** Closes a pull request the plan will not review. */
-export async function skipCommand(
-  values: LoopValues,
-  target: () => PullTarget,
-  deps: FinalReviewDeps,
-) {
+export async function skipCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
   if (values.reason === undefined || values.reason.trim() === '') {
     throw new Error('skip needs --reason.')
   }
@@ -104,7 +92,7 @@ export async function skipCommand(
 export async function prepareCommand(
   values: LoopValues,
   target: () => PullTarget,
-  deps: FinalReviewDeps,
+  deps: ReviewDeps,
 ) {
   if (values.out === undefined) throw new Error('prepare needs --out.')
   const requested = effort(values.effort)
@@ -121,7 +109,7 @@ export async function runLoopCommand(
   subcommand: string,
   values: LoopValues,
   target: () => PullTarget,
-  deps: FinalReviewDeps,
+  deps: ReviewDeps,
 ): Promise<unknown> {
   switch (subcommand) {
     case 'auth':

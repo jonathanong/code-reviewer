@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import {
-  createGhFinalReviewIo,
+  createGhReviewIo,
   createGhLabelIo,
   createGhPrepareIo,
   parseTrustedAuthors,
   reviewSettings,
-  type FinalReviewIo,
+  type ReviewIo,
   type LabelIo,
   type PrepareIo,
   type PullTarget,
@@ -28,11 +28,11 @@ import {
   type RunTextCommand,
 } from '../gh-cli/index.mts'
 
-export type FinalReviewDeps = {
+export type ReviewDeps = {
   authMode(): GhAuth['mode']
   /** The per-owner and per-repository settings read from this repository's `repos/` directory. */
   configs(): RepoConfigs
-  createIo(target: PullTarget): FinalReviewIo
+  createIo(target: PullTarget): ReviewIo
   createLabelIo(target: PullTarget): LabelIo
   createPrepareIo(target: PullTarget): PrepareIo
   /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
@@ -55,7 +55,7 @@ export type FinalReviewDeps = {
 export function createDefaultDeps(
   getAuth: () => GhAuth = createGhAuth,
   env: Record<string, string | undefined> = process.env,
-): FinalReviewDeps {
+): ReviewDeps {
   const trusted = parseTrustedAuthors(env.FINAL_REVIEWER_TRUSTED_AUTHORS)
   let auth: GhAuth | undefined
   let loaded: RepoConfigs | undefined
@@ -70,7 +70,7 @@ export function createDefaultDeps(
     authMode: () => resolved().mode,
     configs,
     createIo: (target) =>
-      createGhFinalReviewIo(
+      createGhReviewIo(
         target,
         forTarget(target),
         trusted,
@@ -99,11 +99,10 @@ export function createDefaultDeps(
     exec: async (command, args, options) =>
       (await import('../review/benchmark/exec.mts')).defaultExec(command, args, options),
     references: () => fileURLToPath(new URL('../../skills/review/references', import.meta.url)),
-    runBench: async (args) =>
-      (await import('../review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
+    runBench: async (args) => (await import('../review/benchmark/cli.mts')).runReviewBenchCli(args),
     runVerifierBench: async (args) =>
-      (await import('../review/benchmark/verifier-cli.mts')).runFinalReviewVerifierBenchCli(args),
+      (await import('../review/benchmark/verifier-cli.mts')).runReviewVerifierBenchCli(args),
     runSelectionBench: async (args) =>
-      (await import('../review/benchmark/selection-cli.mts')).runFinalReviewSelectionBenchCli(args),
+      (await import('../review/benchmark/selection-cli.mts')).runReviewSelectionBenchCli(args),
   }
 }

@@ -30,17 +30,17 @@ export type Finding = {
 
 export type SkippedPillar = { pillar: Pillar; reason: string }
 
-export type FinalReviewInput = {
+export type ReviewInput = {
   effort: Effort
   summary: string
   skipped: SkippedPillar[]
   findings: Finding[]
 }
 
-export class FinalReviewError extends Error {
+export class ReviewError extends Error {
   constructor(message: string) {
     super(message)
-    this.name = 'FinalReviewError'
+    this.name = 'ReviewError'
   }
 }
 
@@ -53,7 +53,7 @@ function isRecord(value: unknown): value is Json {
 function oneOf<T extends string>(values: readonly T[], value: unknown, field: string): T {
   const found = values.find((candidate) => candidate === value)
   if (found === undefined) {
-    throw new FinalReviewError(`${field} must be one of ${values.join(', ')}.`)
+    throw new ReviewError(`${field} must be one of ${values.join(', ')}.`)
   }
   return found
 }
@@ -61,25 +61,25 @@ function oneOf<T extends string>(values: readonly T[], value: unknown, field: st
 function text(record: Json, field: string, where: string): string {
   const value = record[field]
   if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new FinalReviewError(`${where}.${field} must be a non-empty string.`)
+    throw new ReviewError(`${where}.${field} must be a non-empty string.`)
   }
   return value
 }
 
 function positiveInt(value: unknown, field: string): number {
   if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
-    throw new FinalReviewError(`${field} must be a positive integer.`)
+    throw new ReviewError(`${field} must be a positive integer.`)
   }
   return value
 }
 
 function parseLocation(record: Json, where: string): Partial<Finding> {
   if (record.path === undefined) {
-    if (record.line !== undefined) throw new FinalReviewError(`${where}.line needs a path.`)
+    if (record.line !== undefined) throw new ReviewError(`${where}.line needs a path.`)
     return {}
   }
   const path = text(record, 'path', where)
-  if (path.includes('\0')) throw new FinalReviewError(`${where}.path is invalid.`)
+  if (path.includes('\0')) throw new ReviewError(`${where}.path is invalid.`)
   if (record.line === undefined) return { path }
   const line = positiveInt(record.line, `${where}.line`)
   const side =
@@ -94,7 +94,7 @@ function parseLocation(record: Json, where: string): Partial<Finding> {
 
 function parseFinding(raw: unknown, index: number): Finding {
   const where = `findings[${index}]`
-  if (!isRecord(raw)) throw new FinalReviewError(`${where} must be an object.`)
+  if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
   return {
     pillar: oneOf(PILLARS, raw.pillar, `${where}.pillar`),
     severity: oneOf(SEVERITIES, raw.severity, `${where}.severity`),
@@ -106,7 +106,7 @@ function parseFinding(raw: unknown, index: number): Finding {
 
 function parseSkipped(raw: unknown, index: number): SkippedPillar {
   const where = `skipped[${index}]`
-  if (!isRecord(raw)) throw new FinalReviewError(`${where} must be an object.`)
+  if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
   return {
     pillar: oneOf(PILLARS, raw.pillar, `${where}.pillar`),
     reason: text(raw, 'reason', where),
@@ -115,13 +115,13 @@ function parseSkipped(raw: unknown, index: number): SkippedPillar {
 
 function list(record: Json, field: string): unknown[] {
   const value = record[field] ?? []
-  if (!Array.isArray(value)) throw new FinalReviewError(`${field} must be an array.`)
+  if (!Array.isArray(value)) throw new ReviewError(`${field} must be an array.`)
   return value
 }
 
 /** Validates the verifier's collected findings; malformed input fails closed. */
-export function parseFinalReviewInput(raw: unknown): FinalReviewInput {
-  if (!isRecord(raw)) throw new FinalReviewError('Input must be a JSON object.')
+export function parseReviewInput(raw: unknown): ReviewInput {
+  if (!isRecord(raw)) throw new ReviewError('Input must be a JSON object.')
   return {
     effort: raw.effort === undefined ? 'high' : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
