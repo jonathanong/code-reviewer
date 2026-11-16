@@ -32,8 +32,13 @@ export type PageInfo = { hasPreviousPage: boolean }
 
 export type ClosingIssue = { number: number; title: string; body: string }
 
+/** The pull request author; `__typename` is the GraphQL actor type (`User`, `Bot`, ...). */
+export type PrAuthor = { login: string; __typename: string }
+
 export type PrConversation = {
   title: string
+  /** Null for a deleted account. */
+  author: PrAuthor | null
   body: string
   closingIssuesReferences: { nodes: ClosingIssue[] }
   headRefOid: string
@@ -50,6 +55,7 @@ const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $pr) {
       title body headRefOid baseRefOid additions deletions
+      author { login __typename }
       closingIssuesReferences(first: 20) { nodes { number title body } }
       reviews(last: 60) {
         pageInfo { hasPreviousPage }

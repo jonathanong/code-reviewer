@@ -4,6 +4,7 @@ import {
   historyHits,
   isDocPath,
   isDocsOnly,
+  isLockfile,
   isTestOrDocsOnly,
   isTestPath,
   securityTriggers,
@@ -109,5 +110,37 @@ describe('historyHits', () => {
       'apply hotfix now',
       'it reverts a thing',
     ])
+  })
+})
+
+describe('isLockfile', () => {
+  it.each([
+    'pnpm-lock.yaml',
+    'package-lock.json',
+    'npm-shrinkwrap.json',
+    'yarn.lock',
+    'bun.lock',
+    'bun.lockb',
+    'Cargo.lock',
+    'Package.resolved',
+    'packages.lock.json',
+    'Gemfile.lock',
+    'poetry.lock',
+    'uv.lock',
+    'go.sum',
+    '.terraform.lock.hcl',
+    'apps/web/pnpm-lock.yaml',
+  ])('treats %s as a lockfile', (path) => {
+    expect(isLockfile(path)).toBe(true)
+  })
+
+  it.each([
+    'package.json',
+    'pnpm-lock.yaml.bak',
+    'src/lock.ts',
+    'docs/yarn.lock.md',
+    'a/Cargo.toml',
+  ])('does not treat %s as a lockfile', (path) => {
+    expect(isLockfile(path)).toBe(false)
   })
 })

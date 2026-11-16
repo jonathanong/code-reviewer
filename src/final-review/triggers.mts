@@ -18,6 +18,28 @@ const SECURITY_RES: readonly RegExp[] = [
   /(?:^|\/)(?:package\.json|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|Cargo\.(?:toml|lock)|go\.(?:mod|sum)|requirements[^/]*\.txt|poetry\.lock|Package\.resolved|Gemfile(?:\.lock)?)$|\.csproj$/u,
 ]
 
+const LOCKFILES: ReadonlySet<string> = new Set([
+  'pnpm-lock.yaml',
+  'package-lock.json',
+  'npm-shrinkwrap.json',
+  'yarn.lock',
+  'bun.lock',
+  'bun.lockb',
+  'Cargo.lock',
+  'Package.resolved',
+  'packages.lock.json',
+  'Gemfile.lock',
+  'poetry.lock',
+  'uv.lock',
+  'go.sum',
+  '.terraform.lock.hcl',
+])
+
+/** True when the file's basename is a dependency lockfile. */
+export function isLockfile(path: string): boolean {
+  return LOCKFILES.has(path.slice(path.lastIndexOf('/') + 1))
+}
+
 export function isDocPath(path: string): boolean {
   return DOC_RE.test(path) && !MANIFEST_RE.test(path)
 }

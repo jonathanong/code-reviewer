@@ -25,6 +25,7 @@ export type PrepareSummary = {
   baseSha: string
   files: number
   lines: number
+  mode: ReviewPlan['mode']
   plan: ReviewPlan
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
@@ -90,6 +91,8 @@ export async function prepareReview(
   const plan = planReview({
     paths,
     context,
+    authorLogin: conversation.author?.login ?? null,
+    authorIsBot: conversation.author?.__typename === 'Bot',
     ...(options.requested === undefined ? {} : { requested: options.requested }),
     ...(since === undefined ? {} : { since }),
     ...(history === undefined ? {} : { history }),
@@ -112,6 +115,7 @@ export async function prepareReview(
     baseSha: context.baseSha,
     files: paths.length,
     lines: context.lines,
+    mode: plan.mode,
     plan,
     written,
     rules: {

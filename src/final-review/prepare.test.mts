@@ -16,15 +16,20 @@ const OLD = 'b'.repeat(40)
 const PATCH =
   'diff --git a/src/a.ts b/src/a.ts\n--- a/src/a.ts\n+++ b/src/a.ts\n@@ -1 +1 @@\n-x\n+y\n'
 
-function conversation(reviewedSha: string | null): PrConversation {
+function conversation(
+  reviewedSha: string | null,
+  author: PrConversation['author'] = { login: 'dev', __typename: 'User' },
+  lines = 300,
+): PrConversation {
   return {
     title: 'T',
+    author,
     body: '',
     closingIssuesReferences: { nodes: [] },
     headRefOid: HEAD,
     baseRefOid: BASE,
-    additions: 10,
-    deletions: 10,
+    additions: lines,
+    deletions: 0,
     reviews: {
       nodes:
         reviewedSha === null
@@ -46,15 +51,22 @@ function conversation(reviewedSha: string | null): PrConversation {
   }
 }
 
-type Overrides = { reviewed?: string | null; since?: SinceDiff; history?: string[] }
+type Overrides = {
+  reviewed?: string | null
+  since?: SinceDiff
+  history?: string[]
+  author?: PrConversation['author']
+  lines?: number
+  paths?: string[]
+}
 
-function fakeIo({ reviewed = null, since, history = [] }: Overrides = {}) {
+function fakeIo({ reviewed = null, since, history = [], author, lines, paths }: Overrides = {}) {
   return {
     headSha: vi.fn(async () => HEAD),
     trusted: vi.fn(async () => new Set(['bot'])),
     diff: vi.fn(async () => PATCH),
-    paths: vi.fn(async () => ['src/a.ts']),
-    conversation: vi.fn(async () => conversation(reviewed)),
+    paths: vi.fn(async () => paths ?? ['src/a.ts']),
+    conversation: vi.fn(async () => conversation(reviewed, author, lines)),
     compare: vi.fn(async () => since ?? { status: 'ahead', paths: ['src/a.ts'], lines: 4 }),
     compareDiff: vi.fn(async () => PATCH),
     treeHead: vi.fn(async () => HEAD),
@@ -75,7 +87,8 @@ describe('prepareReview', () => {
   it('writes the first-review files with the default writer', async () => {
     const io = fakeIo()
     const summary = await prepareReview(io, { out })
-    expect(summary).toMatchObject({ headSha: HEAD, baseSha: BASE, files: 1, lines: 20 })
+    expect(summary).toMatchObject({ headSha: HEAD, baseSha: BASE, files: 1, lines: 300 })
+    expect(summary.mode).toBe('full')
     expect(summary.plan.effort).toBe('high')
     expect(summary.written).toEqual([
       'diff.patch',
@@ -89,7 +102,7 @@ describe('prepareReview', () => {
     expect(read('diff/INDEX.md')).toContain('0001')
     expect(existsSync(join(out, 'diff', '0001.patch'))).toBe(true)
     expect(JSON.parse(read('context.json')).headSha).toBe(HEAD)
-    expect(JSON.parse(read('plan.json')).effort).toBe('high')
+    expect(JSON.parse(read('plan.json'))).toMatchObject({ mode: 'full', effort: 'high' })
     expect(read('context.md').length).toBeGreaterThan(0)
     expect(io.compare).not.toHaveBeenCalled()
     expect(io.history).not.toHaveBeenCalled()
@@ -110,7 +123,7 @@ describe('prepareReview', () => {
     expect(summary.written).toContain('since/INDEX.md')
     expect(existsSync(join(out, 'since', 'INDEX.md'))).toBe(true)
     expect(existsSync(join(out, 'since.patch'))).toBe(true)
-    expect(summary.plan).toMatchObject({ effort: 'low', sinceSha: OLD })
+    expect(summary.plan).toMatchObject({ mode: 'light', effort: 'low', sinceSha: OLD })
   })
 
   it('skips the since diff when history was rewritten', async () => {
@@ -172,5 +185,33 @@ describe('prepareReview', () => {
       pillar: 'history',
       reason: 'History not checked.',
     })
+  })
+
+  it('plans a light review for a Dependabot pull request, reading the author from GitHub', async () => {
+    const io = fakeIo({
+      author: { login: 'dependabot', __typename: 'Bot' },
+      paths: ['package.json'],
+    })
+    const summary = await prepareReview(io, { out })
+    expect(summary.mode).toBe('light')
+    expect(JSON.parse(read('plan.json'))).toMatchObject({ mode: 'light', effort: 'low' })
+  })
+
+  it('plans a skip for a lockfile-only Dependabot pull request and a review when forced', async () => {
+    const author = { login: 'dependabot[bot]', __typename: 'Bot' }
+    const skipIo = fakeIo({ author, paths: ['pnpm-lock.yaml'] })
+    const skipped = await prepareReview(skipIo, { out })
+    expect(skipped.mode).toBe('skip')
+    expect(JSON.parse(read('plan.json'))).toMatchObject({ mode: 'skip', pillars: [] })
+    const forced = await prepareReview(fakeIo({ author, paths: ['pnpm-lock.yaml'] }), {
+      out,
+      requested: 'high',
+    })
+    expect(forced.mode).toBe('full')
+  })
+
+  it('plans a light review for a small pull request and treats a deleted author as unknown', async () => {
+    const summary = await prepareReview(fakeIo({ author: null, lines: 10 }), { out })
+    expect(summary.mode).toBe('light')
   })
 })
