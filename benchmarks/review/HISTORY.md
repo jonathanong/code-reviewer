@@ -62,7 +62,7 @@ Changes in this commit:
   69 both ways; mean selected 8.7 against 8.8. No gain, not kept. Those runs included a positive
   fixture dropped in this commit; re-scored without it the current wording is 66 of 66, mean 9.1.
 - `selectSkills` now tries a failed selection call once more, after the `vouchington-1146` run above
-  reviewed without skills. Not re-measured.
+  reviewed without skills, and counts both calls in the reported usage. Not re-measured.
 - `security.md` keeps its "Built-in reviewer" section: no saved run covers the security pillar.
 - First `bench-verifier` pilot: `lock-scope-race-response` and `lock-scope-written-row-only`, 1
   attempt, Opus, $0.51. Real kept 1 of 1, severity agreed, planted duplicate merged.

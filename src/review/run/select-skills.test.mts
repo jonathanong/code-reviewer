@@ -95,7 +95,7 @@ describe('selectSkills', () => {
     expect(choice.selected).toEqual([])
     expect(failing).toHaveBeenCalledTimes(2)
     expect(choice.error).toContain('error_max_turns')
-    expect(choice.usage?.costUsd).toBe(0.2)
+    expect(choice.usage?.costUsd).toBe(0.4)
   })
 
   it('tries a failed call once more and uses the second answer', async () => {

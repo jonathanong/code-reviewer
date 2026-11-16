@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import { describeFailure } from '../benchmark/usage.mts'
+import { addUsage, describeFailure } from '../benchmark/usage.mts'
 import { RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
 import { parseFrontmatter } from '../rules/collect.mts'
 import { isolationArgs } from './claude-flags.mts'
@@ -84,7 +84,9 @@ export async function selectSkills(input: SelectionInput): Promise<SkillChoice> 
     return { selected: [], available, error: 'No rule skills are installed.', usage: null }
   }
   const first = await selectOnce(input, available)
-  return first.error === undefined ? first : selectOnce(input, available)
+  if (first.error === undefined) return first
+  const second = await selectOnce(input, available)
+  return { ...second, usage: addUsage(first.usage, second.usage) }
 }
 
 /** One cheap Haiku call, with no tools. */
