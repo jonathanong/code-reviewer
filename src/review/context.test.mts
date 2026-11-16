@@ -112,6 +112,29 @@ describe('buildFollowUpContext', () => {
     expect(ctx.others).toEqual([])
   })
 
+  it('does not treat a skip notice as a prior review or as another reviewer', () => {
+    const notice = review({
+      id: 'S',
+      body: `**Code review skipped:** lockfile\n\n${reviewMarker(B, 'Skipped', 'low')}`,
+    })
+    const only = build(pull({ reviews: { nodes: [notice] } }))
+    expect(only).toMatchObject({
+      reviewedSha: null,
+      verdict: null,
+      effort: null,
+      commitsSince: null,
+      others: [],
+    })
+    const approve = review({ id: 'R1', body: reviewMarker(A, 'Approve', 'low') })
+    const after = build(pull({ reviews: { nodes: [approve, notice] } }))
+    expect(after).toMatchObject({
+      reviewedSha: A,
+      verdict: 'Approve',
+      commitsSince: ['commit 1', 'commit 2'],
+      others: [],
+    })
+  })
+
   it('returns null commitsSince when the reviewed sha is not in history', () => {
     const body = reviewMarker(sha('d'), 'Approve', 'low')
     const ctx = build(pull({ reviews: { nodes: [review({ body })] } }))

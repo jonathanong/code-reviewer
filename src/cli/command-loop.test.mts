@@ -5,7 +5,12 @@ vi.mock('../review/index.mts', async (importOriginal) => ({
   listQueue: vi.fn(async () => [{ repo: 'acme/a', pr: 1 }]),
   claimReview: vi.fn(async () => ({ claimed: true })),
   abortReview: vi.fn(async () => ({ added: [] })),
-  skipReview: vi.fn(async () => ({ added: ['done'], removed: ['busy'] })),
+  skipPullRequest: vi.fn(async () => ({
+    headSha: 'h'.repeat(40),
+    url: 'https://example.test/skip',
+    added: ['done'],
+    removed: ['busy'],
+  })),
   prepareReview: vi.fn(async () => ({ headSha: 'h' })),
   resolveThreads: vi.fn(async (_run: unknown, ids: string[]) => ids),
   reviewStatus: vi.fn(async () => ({ current: false })),
@@ -19,15 +24,16 @@ import {
   DEFAULT_LABELS,
   prepareReview,
   resolveThreads,
-  skipReview,
+  skipPullRequest,
   type LabelNames,
 } from '../review/index.mts'
 import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
-import { runLoopCommand } from './command-loop.mts'
+import { runLoopCommand, skipCommand } from './command-loop.mts'
 import type { ReviewDeps } from './deps.mts'
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
+const BOB = { repo: 'bob/c', pr: 4 }
 
 const BOB_LABELS: LabelNames = { ...DEFAULT_LABELS, requested: 'review me' }
 
@@ -200,10 +206,39 @@ describe('runLoopCommand', () => {
     await expect(runLoopCommand('skip', { reason: 'docs only' }, target, deps)).resolves.toEqual({
       skipped: true,
       reason: 'docs only',
+      review: 'https://example.test/skip',
       added: ['done'],
       removed: ['busy'],
     })
-    expect(skipReview).toHaveBeenLastCalledWith(labelIo, DEFAULT_LABELS)
+    expect(skipPullRequest).toHaveBeenLastCalledWith(
+      expect.objectContaining({ headSha: expect.any(Function) }),
+      labelIo,
+      DEFAULT_LABELS,
+      'docs only',
+      undefined,
+    )
+  })
+
+  it('passes the prepared head to skip and binds the check run to it', async () => {
+    const { deps, run } = fakeDeps()
+    await skipCommand({ reason: 'docs only' }, () => BOB, deps, 'p'.repeat(40))
+    expect(skipPullRequest).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'docs only',
+      'p'.repeat(40),
+    )
+    expect(run.mock.calls[0]?.[0]).toContain(`head_sha=${'h'.repeat(40)}`)
+  })
+
+  it('leaves the labels and check run alone when the skip review is refused', async () => {
+    const { deps, run } = fakeDeps()
+    vi.mocked(skipPullRequest).mockRejectedValueOnce(new Error('head moved'))
+    await expect(runLoopCommand('skip', { reason: 'x' }, () => BOB, deps)).rejects.toThrow(
+      'head moved',
+    )
+    expect(run).not.toHaveBeenCalled()
   })
 
   describe('settings', () => {
@@ -242,7 +277,6 @@ describe('runLoopCommand', () => {
   })
 
   describe('check run', () => {
-    const BOB = { repo: 'bob/c', pr: 4 }
     const posts = (run: { mock: { calls: unknown[][] } }) =>
       run.mock.calls.map(([args]) =>
         (args as string[]).filter((a) => /^(status|conclusion)=/u.test(a)),
@@ -253,7 +287,7 @@ describe('runLoopCommand', () => {
       const claimed = await runLoopCommand('claim', { force: true }, () => BOB, deps)
       expect(claimed).toEqual({
         claimed: true,
-        checkRun: { status: 'in_progress', url: 'https://example.test/check' },
+        checkRun: { status: 'in_progress', url: 'https://example.test/check', via: 'check-run' },
       })
       await runLoopCommand('abort', {}, () => BOB, deps)
       await runLoopCommand('skip', { reason: 'docs only' }, () => BOB, deps)
@@ -288,13 +322,15 @@ describe('runLoopCommand', () => {
       expect(run).not.toHaveBeenCalled()
     })
 
-    it('reports a skipped check run under the gh login and writes nothing', async () => {
+    it('writes a commit status instead of a check run under the gh login', async () => {
       const { deps, run } = fakeDeps('gh')
       const result = await runLoopCommand('abort', {}, () => BOB, deps)
       expect(result).toMatchObject({
-        checkRun: { status: 'skipped', reason: expect.stringContaining('App auth') },
+        checkRun: { status: 'completed', via: 'commit-status' },
       })
-      expect(run).not.toHaveBeenCalled()
+      const args = run.mock.calls[0]?.[0] as string[]
+      expect(args).toContain(`repos/bob/c/statuses/${'h'.repeat(40)}`)
+      expect(args).toContain('state=error')
     })
   })
 

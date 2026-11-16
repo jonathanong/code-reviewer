@@ -51,7 +51,7 @@ describe('review index', () => {
       'revokeFinalApproval',
       'scopeQualifier',
       'settingsProblems',
-      'skipReview',
+      'skipPullRequest',
       'skippedStep',
       'squash',
     ])

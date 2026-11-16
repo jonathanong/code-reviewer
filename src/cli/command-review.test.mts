@@ -77,8 +77,10 @@ describe('reviewCommand', () => {
     const targetOf = vi.mocked(claimCommand).mock.calls[0]?.[1] as () => unknown
     expect(targetOf()).toBe(TARGET)
     await wired.prepare()
-    await wired.skip('why')
+    await wired.skip('why', 'f'.repeat(40))
     await wired.abort()
+    expect(vi.mocked(skipCommand).mock.calls[0]?.[0]).toMatchObject({ reason: 'why' })
+    expect(vi.mocked(skipCommand).mock.calls[0]?.[3]).toBe('f'.repeat(40))
     expect(vi.mocked(claimCommand).mock.calls[0]?.[0]).toMatchObject({
       out: resolve('o'),
       force: true,

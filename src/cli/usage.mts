@@ -23,11 +23,13 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
   settings prints the resolved labels and optional check run for a repository or owner, so a
   session can read the requested label for hook-harness. skip closes a pull request the plan will
-  not review: it swaps processing and requested for completed, leaves the approval label alone,
-  posts nothing, and records --reason. With checkRun configured and GitHub App auth, claim opens a
-  check run, post completes it (success, failure, neutral for Approve, Request Changes, Comment),
-  and abort and skip complete it as cancelled and skipped; under the gh login the result says it
-  was skipped, and a check-run error is reported in the result without losing the review.
+  not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,
+  then swaps processing and requested for completed and leaves the approval label alone. With
+  checkRun configured and GitHub App auth, claim opens a check run, post completes it (success,
+  failure, neutral for Approve, Request Changes, Comment), and abort and skip complete it as
+  cancelled and skipped; under the gh login the same states are written as a commit status
+  (pending, success, failure, error) with the check run name as its context. A check-run or
+  status error is reported in the result without losing the review.
   claim swaps requested for processing (and clears completed and approval); it declines a head the
   newest review covers unless --force. prepare writes the
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
@@ -49,7 +51,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
   the label before a re-review. status exits 0 only when the newest review approved the current
-  head and the label is present. bench runs each pillar prompt against labeled cases from a git-free
+  head and the label is present, or skipped the current head. bench runs each pillar prompt against labeled cases from a git-free
   snapshot of the pre-merge head and scores recall and precision; --judge grades by claim
   with a model instead of by location. bench also records the skills each run loads and, for cases
   with expectedSkills (full plugin:skill names; an array entry is any-of), reports skills loaded and

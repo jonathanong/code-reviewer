@@ -35,6 +35,7 @@ describe('reportCheckRun', () => {
     await expect(result).resolves.toEqual({
       status: 'in_progress',
       url: 'https://example.test/check',
+      via: 'check-run',
     })
     expect(run.mock.calls[0]?.[0]).toContain('repos/acme/widgets/check-runs')
     expect(fields(run)).toEqual([
@@ -85,13 +86,83 @@ describe('reportCheckRun', () => {
     expect(headSha).not.toHaveBeenCalled()
   })
 
-  it('reports it skipped, without calling GitHub, under the gh login', async () => {
-    const { run, result } = report(STARTED, { mode: 'gh' })
-    await expect(result).resolves.toEqual({
-      status: 'skipped',
-      reason: 'check runs need GitHub App auth; this run uses the gh login',
+  describe('without an App', () => {
+    const statusFields = (run: { mock: { calls: unknown[][] } }) => {
+      const args = run.mock.calls[0]?.[0] as string[]
+      return { path: args[3], fields: args.filter((arg) => arg.includes('=')) }
+    }
+
+    it('writes a pending commit status for a started review', async () => {
+      const { run, result } = report(STARTED, { mode: 'gh' })
+      await expect(result).resolves.toEqual({
+        status: 'in_progress',
+        url: null,
+        via: 'commit-status',
+      })
+      expect(statusFields(run)).toEqual({
+        path: `repos/acme/widgets/statuses/${SHA}`,
+        fields: ['state=pending', 'context=Code review', `description=${STARTED.title}`],
+      })
     })
-    expect(run).not.toHaveBeenCalled()
+
+    it.each([
+      ['Approve', 'success'],
+      ['Request Changes', 'failure'],
+      ['Comment', 'success'],
+    ] as const)('maps a %s review to %s and links the first review', async (verdict, state) => {
+      const { run, result } = report(postedStep(verdict, ['https://r/1', 'https://r/2']), {
+        mode: 'gh',
+      })
+      await expect(result).resolves.toEqual({
+        status: 'completed',
+        url: 'https://r/1',
+        via: 'commit-status',
+      })
+      expect(statusFields(run).fields).toEqual([
+        `state=${state}`,
+        'context=Code review',
+        `description=${verdict}`,
+        'target_url=https://r/1',
+      ])
+    })
+
+    it('omits the target URL when no review was posted', async () => {
+      const { run, result } = report(postedStep('Approve', []), { mode: 'gh' })
+      await expect(result).resolves.toMatchObject({ url: null })
+      expect(statusFields(run).fields.some((field) => field.startsWith('target_url='))).toBe(false)
+    })
+
+    it('maps cancelled to error and skipped to success', async () => {
+      const aborted = report(abortedStep(), { mode: 'gh' })
+      await aborted.result
+      expect(statusFields(aborted.run).fields[0]).toBe('state=error')
+      const skipped = report(skippedStep('docs only', 'https://r/9'), { mode: 'gh' })
+      await skipped.result
+      expect(statusFields(skipped.run).fields).toContain('state=success')
+      expect(statusFields(skipped.run).fields).toContain('target_url=https://r/9')
+    })
+
+    it('truncates the description to 140 characters', async () => {
+      const { run, result } = report(
+        { conclusion: 'neutral', title: 'x'.repeat(200), summary: '' },
+        { mode: 'gh' },
+      )
+      await result
+      expect(statusFields(run).fields).toContain(`description=${'x'.repeat(140)}`)
+    })
+
+    it('reports a failure instead of throwing', async () => {
+      const failing = report(STARTED, {
+        mode: 'gh',
+        run: vi.fn(async () => {
+          throw new Error('403 Resource not accessible')
+        }),
+      })
+      await expect(failing.result).resolves.toEqual({
+        status: 'failed',
+        error: '403 Resource not accessible',
+      })
+    })
   })
 
   it('reports a GitHub failure instead of throwing', async () => {

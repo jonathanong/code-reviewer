@@ -12,7 +12,8 @@ import type { PillarResult } from './types.mts'
 export type ReviewSteps = {
   claim(): Promise<{ claimed: boolean }>
   prepare(): Promise<PrepareSummary>
-  skip(reason: string): Promise<unknown>
+  /** Posts the skip review on `headSha`, the head `prepare` saw, and closes the labels. */
+  skip(reason: string, headSha: string): Promise<unknown>
   /** Drops the in-progress label without requeueing. */
   abort(): Promise<unknown>
   /** Renders what `post` would send for `input`, without posting. */

@@ -90,7 +90,8 @@ then run `code-reviewer review` as a background command. Run at most three at on
 separate headless run, not a subagent, so the session keeps only the one JSON line each prints:
 never paste diffs, pillar output, or review bodies into the session.
 
-A skip (`mode: "skip"`) is finished when the command exits: record it in the document and move on.
+A skip (`mode: "skip"`) is finished when the command exits (it posted a skip review that makes
+`status` pass): record it in the document and move on.
 
 ## Step 4 - Record, then ask before posting
 
@@ -119,7 +120,7 @@ waits for an answer does not count toward the three.
 
 Posting the review is the hand-back: the pull request's shepherd sees the review and its inline
 comments, and the completed label replaces the processing one. Completed means the review was
-posted; approval is the `final approval` label, which `code-reviewer status` checks. Reply to a
+posted; approval is the `final approval` label, which `code-reviewer status` checks (a skipped head also passes). Reply to a
 requester that messaged with the verdict and the review link.
 
 Merge authority is separate: the human, or the triage loop within its grant, merges.

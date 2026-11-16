@@ -40,7 +40,7 @@ async function review(
   const mode = plan.mode
   if (mode === 'skip') {
     const skipReason = plan.skipReason as string
-    await steps.skip(skipReason)
+    await steps.skip(skipReason, headSha)
     closed.value = true
     const data = buildReport({
       ...base,

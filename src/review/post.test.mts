@@ -104,6 +104,7 @@ describe('reviewStatus', () => {
       current: false,
       labeled: false,
       approved: false,
+      skipped: false,
     })
   })
 
@@ -149,5 +150,32 @@ describe('reviewStatus', () => {
       hasApprovalLabel: vi.fn(async () => true),
     })
     await expect(reviewStatus(commented)).resolves.toMatchObject({ approved: false })
+  })
+
+  it('treats a skip notice on the current head as skipped, never approved', async () => {
+    const notice = `**Code review skipped:** lockfile\n\n${reviewMarker(SHA, 'Skipped', 'low')}`
+    const skipped = fakeIo({
+      listReviews: vi.fn(async () => asReviews([body(SHA, 'Approve'), notice])),
+      hasApprovalLabel: vi.fn(async () => true),
+    })
+    await expect(reviewStatus(skipped)).resolves.toMatchObject({
+      verdict: 'Skipped',
+      effort: 'low',
+      current: true,
+      approved: false,
+      skipped: true,
+    })
+    const stale = fakeIo({
+      listReviews: vi.fn(async () => asReviews([reviewMarker(OTHER, 'Skipped', 'low')])),
+    })
+    await expect(reviewStatus(stale)).resolves.toMatchObject({ skipped: false })
+    const forged = fakeIo({
+      listReviews: vi.fn(async () => asReviews([notice], 'mallory')),
+    })
+    await expect(reviewStatus(forged)).resolves.toMatchObject({ skipped: false })
+    const superseded = fakeIo({
+      listReviews: vi.fn(async () => asReviews([notice, body(SHA, 'Request Changes')])),
+    })
+    await expect(reviewStatus(superseded)).resolves.toMatchObject({ skipped: false })
   })
 })
