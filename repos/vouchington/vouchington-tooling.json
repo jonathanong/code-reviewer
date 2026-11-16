@@ -1,0 +1,9 @@
+{
+  "consumes": [
+    {
+      "repo": "vouchington/vouchington-platform",
+      "via": "@vouchington/postgres and @vouchington/worker-runtime in packages/vouchington-tooling/package.json",
+      "paths": ["packages/postgres/**", "packages/worker-runtime/**"]
+    }
+  ]
+}
