@@ -6,6 +6,7 @@ import {
   PILLAR_TOOLS_NO_SKILLS,
   pillarArgs,
 } from '../run/claude-flags.mts'
+import { skillInstruction } from '../run/pillar-prompt.mts'
 import { parsePillarOutput, type PillarOutput } from '../run/stream-output.mts'
 import type { EvalCase } from './cases.mts'
 import { describeCase } from './fixture.mts'
@@ -45,6 +46,8 @@ export type PillarRun = {
   maxTurns: number
   /** False for control runs: no Skill tool, so no installed rule skills. */
   skills?: boolean
+  /** Skills the selection step chose; the prompt then ends with review's instruction to load them. */
+  selected?: readonly string[]
   /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
   settings?: object
 }
@@ -56,7 +59,10 @@ export async function runPillar(
   run: PillarRun,
   exec: Exec,
 ): Promise<PillarOutput> {
-  const prompt = buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir))
+  const prompt = [
+    buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir)),
+    ...skillInstruction(run.selected ?? []),
+  ].join('\n\n')
   const args = pillarArgs({
     prompt,
     model: run.model,

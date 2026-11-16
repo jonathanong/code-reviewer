@@ -13,7 +13,7 @@ code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
 code-reviewer plugins [--require NAME]...
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--baseline DIR]
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
   auth reports whether gh calls use the GitHub App (CODE_REVIEWER_APP_ID with
@@ -57,7 +57,8 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   with expectedSkills (full plugin:skill names; an array entry is any-of), reports skills loaded and
   grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
   --no-rules run of the same cases: the summary adds control recall and lift (grounded minus control
-  recall over positives both runs scored) and lists cases the control caught. bench also records each
+  recall over positives both runs scored) and lists cases the control caught. --select runs review's
+  skill-selection step for each case first and tells each pillar which skills to load. bench also records each
   run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens) and a
   Tokens by model table (runs, input, output, cost per pillar and model, plus an all row).
   bench-verifier records and prints the same by model for its verifier and checker runs. review

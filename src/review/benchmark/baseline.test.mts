@@ -52,6 +52,7 @@ const options = (extra: Partial<Options> = {}): Options => ({
   scoreOnly: true,
   judge: undefined,
   noRules: false,
+  select: false,
   baseline: 'ctl',
   ...extra,
 })
