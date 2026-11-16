@@ -1,0 +1,39 @@
+import { describe, expect, it } from 'vitest'
+
+import { renderPreview } from './preview.mts'
+
+const SHA = 'c'.repeat(40)
+
+describe('renderPreview', () => {
+  it('shows each review body and its inline comments with their places', () => {
+    const text = renderPreview({
+      verdict: 'Comment',
+      reviews: [
+        {
+          event: 'COMMENT',
+          commit_id: SHA,
+          body: 'Header body.',
+          comments: [
+            { path: 'a.ts', line: 9, side: 'RIGHT', body: 'Single.' },
+            {
+              path: 'b.ts',
+              line: 4,
+              side: 'LEFT',
+              start_line: 2,
+              start_side: 'LEFT',
+              body: 'Range.',
+            },
+          ],
+        },
+        { event: 'COMMENT', commit_id: SHA, body: 'Part two.', comments: [] },
+      ],
+    })
+    expect(text.startsWith('# Preview: Comment\n')).toBe(true)
+    expect(text).toContain('## Review part 1 of 2\n\nHeader body.')
+    expect(text).toContain('### Inline comments (2)')
+    expect(text).toContain('#### `a.ts:9` (RIGHT)\n\nSingle.')
+    expect(text).toContain('#### `b.ts:2-4` (LEFT)\n\nRange.')
+    expect(text).toContain('## Review part 2 of 2\n\nPart two.')
+    expect(text.split('Inline comments').length).toBe(2)
+  })
+})

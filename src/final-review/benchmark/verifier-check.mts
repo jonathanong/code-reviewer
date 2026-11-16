@@ -1,6 +1,7 @@
 import { FinalReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import { PILLAR_TOOLS, READ_ONLY_TOOLS } from './runner.mts'
+import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
+import { parseUsage, resultEvent, type Usage } from './usage.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 
 /** Whether a finding's claim is true of the code at the reviewed head. */
@@ -62,8 +63,9 @@ export function checkArgs(
   model: string,
   maxTurns: number,
   skills = false,
+  settings?: object,
 ): string[] {
-  const tools = skills ? PILLAR_TOOLS : READ_ONLY_TOOLS
+  const tools = skills ? SKILL_TOOLS : READ_ONLY_TOOLS
   return [
     '-p',
     prompt,
@@ -81,6 +83,7 @@ export function checkArgs(
     'dontAsk',
     '--max-turns',
     String(maxTurns),
+    ...isolationArgs(settings),
   ]
 }
 
@@ -109,7 +112,7 @@ export function parseChecks(stdout: string, indexes: readonly number[]): Map<num
   return checks
 }
 
-export type CheckRun = { model: string; maxTurns: number }
+export type CheckRun = { model: string; maxTurns: number; settings?: object }
 
 /** Checks the listed findings in the snapshot; skips the call when nothing is listed. */
 export async function checkFindings(
@@ -118,9 +121,16 @@ export async function checkFindings(
   indexes: readonly number[],
   run: CheckRun,
   exec: Exec,
-): Promise<Map<number, Check>> {
-  if (indexes.length === 0) return new Map()
+): Promise<{ checks: Map<number, Check>; usage: Usage | null }> {
+  if (indexes.length === 0) return { checks: new Map(), usage: null }
   const rules = hasRulesIndex(dir)
-  const args = checkArgs(buildCheckPrompt(findings, indexes, rules), run.model, run.maxTurns, rules)
-  return parseChecks(await exec('claude', args, { cwd: dir }), indexes)
+  const args = checkArgs(
+    buildCheckPrompt(findings, indexes, rules),
+    run.model,
+    run.maxTurns,
+    rules,
+    run.settings,
+  )
+  const stdout = await exec('claude', args, { cwd: dir })
+  return { checks: parseChecks(stdout, indexes), usage: parseUsage(resultEvent(stdout)) }
 }

@@ -6,12 +6,16 @@ import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 vi.mock('../final-review/benchmark/cli.mts', () => ({
   runFinalReviewBenchCli: vi.fn(async () => 5),
 }))
+vi.mock('../final-review/run/review.mts', () => ({
+  runReview: vi.fn(async () => ({ ok: true, summary: { claimed: true } })),
+}))
 vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
 import type { FinalReviewIo, LabelIo, PrepareIo } from '../final-review/index.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../final-review/rules/config.mts'
+import { runReview } from '../final-review/run/review.mts'
 import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
 import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
 import { runFinalReviewCommand, type FinalReviewDeps } from './command.mts'
@@ -55,6 +59,9 @@ function deps(io: FinalReviewIo, input = '{}'): MockDeps {
     runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
     listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),
+    pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
+    exec: vi.fn(async () => ''),
+    references: vi.fn(() => '/references'),
     runBench: vi.fn(async () => 7),
     runVerifierBench: vi.fn(async () => 8),
   }
@@ -251,8 +258,54 @@ describe('runFinalReviewCommand', () => {
     await expect(runFinalReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('final-review: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, resolve, plugins, bench, or bench-verifier.',
+      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, or bench-verifier.',
     )
+  })
+
+  it('prints the review summary and exits 1 when the review failed', async () => {
+    const { out } = capture()
+    const args = ['review', ...PR, '--out', 'o', '--tree', 't']
+    await expect(runFinalReviewCommand(args, deps(fakeIo()))).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toEqual({ claimed: true })
+    vi.mocked(runReview).mockResolvedValueOnce({ ok: false, summary: { error: 'x' } })
+    await expect(runFinalReviewCommand(args, deps(fakeIo()))).resolves.toBe(1)
+  })
+
+  it('re-renders a report from report.json and exits 2 for a bad one', async () => {
+    const { out, err } = capture()
+    const dir = mkdtempSync(join(tmpdir(), 'cmd-report-'))
+    try {
+      writeFileSync(join(dir, 'report.json'), '{"version":2}')
+      await expect(runFinalReviewCommand(['report', '--out', dir], deps(fakeIo()))).resolves.toBe(2)
+      expect(err.join('')).toContain('not a version 1 report')
+      writeFileSync(
+        join(dir, 'report.json'),
+        JSON.stringify({
+          version: 1,
+          repo: 'a/b',
+          pr: 1,
+          title: 'T',
+          url: 'u',
+          headSha: 'abcdef0',
+          mode: 'skip',
+          effort: 'low',
+          reasons: [],
+          skipReason: 'Nope.',
+          verdict: null,
+          skipped: [],
+          skillSelection: { selected: [], available: 0, usage: null },
+          pillars: [],
+          verifier: null,
+          findings: [],
+          summary: '',
+          pullRequestSummary: '',
+        }),
+      )
+      await expect(runFinalReviewCommand(['report', '--out', dir], deps(fakeIo()))).resolves.toBe(0)
+      expect(JSON.parse(out.join('')).report).toBe(join(dir, 'report.md'))
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('prints usage for help', async () => {

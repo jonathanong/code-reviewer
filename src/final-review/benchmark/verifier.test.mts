@@ -129,7 +129,12 @@ describe('verifier run', () => {
   it('passes read-only tools and the schema', () => {
     const args = verifierArgs('P', 'opus', 9)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])
-    expect(args.at(-1)).toBe('9')
+    expect(args[args.indexOf('--max-turns') + 1]).toBe('9')
+    expect(args).toContain('--strict-mcp-config')
+    expect(args).not.toContain('--settings')
+    const settings = { enabledPlugins: { 'skills@m': true } }
+    const limited = verifierArgs('P', 'opus', 9, true, settings)
+    expect(JSON.parse(limited[limited.indexOf('--settings') + 1] as string)).toEqual(settings)
     expect(args).toContain('Read,Grep,Glob')
     expect(verifierArgs('P', 'opus', 9, true)).toContain('Read,Grep,Glob,Skill')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string).required).toEqual([
@@ -174,6 +179,7 @@ describe('verifier run', () => {
       },
     )
     expect(calls).toEqual(['claude /snap'])
-    expect(result).toEqual({ summary: 's', findings: [], sources: [] })
+    expect(result.output).toEqual({ summary: 's', findings: [], sources: [] })
+    expect(result.usage.byModel).toEqual({})
   })
 })

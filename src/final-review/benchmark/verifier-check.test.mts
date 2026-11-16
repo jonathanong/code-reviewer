@@ -10,7 +10,8 @@ const finding = (title: string): Finding => ({
   body: 'b',
 })
 
-const out = (verdicts: unknown) => JSON.stringify({ structured_output: { verdicts } })
+const out = (verdicts: unknown, costUsd?: number) =>
+  JSON.stringify({ type: 'result', total_cost_usd: costUsd, structured_output: { verdicts } })
 
 describe('verifier check', () => {
   it('lists only the requested findings with their output index', () => {
@@ -28,7 +29,12 @@ describe('verifier check', () => {
   it('passes read-only tools and the schema', () => {
     const args = checkArgs('P', 'opus', 7)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])
-    expect(args.at(-1)).toBe('7')
+    expect(args[args.indexOf('--max-turns') + 1]).toBe('7')
+    expect(args).toContain('--strict-mcp-config')
+    expect(args).not.toContain('--settings')
+    const settings = { enabledPlugins: { 'skills@m': true } }
+    const isolated = checkArgs('P', 'opus', 7, false, settings)
+    expect(JSON.parse(isolated[isolated.indexOf('--settings') + 1] as string)).toEqual(settings)
     expect(args).toContain('Read,Grep,Glob')
     expect(checkArgs('P', 'opus', 7, true)).toContain('Read,Grep,Glob,Skill')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string).required).toEqual([
@@ -69,13 +75,16 @@ describe('verifier check', () => {
     const cwds: Array<string | undefined> = []
     const exec = async (_command: string, _args: string[], options?: { cwd?: string }) => {
       cwds.push(options?.cwd)
-      return out([{ index: 0, holds: true, reason: 'yes' }])
+      return out([{ index: 0, holds: true, reason: 'yes' }], 0.25)
     }
     const run = { model: 'opus', maxTurns: 3 }
-    expect((await checkFindings('/snap', [finding('a')], [], run, exec)).size).toBe(0)
+    const none = await checkFindings('/snap', [finding('a')], [], run, exec)
+    expect(none.checks.size).toBe(0)
+    expect(none.usage).toBeNull()
     expect(cwds).toEqual([])
-    const checks = await checkFindings('/snap', [finding('a')], [0], run, exec)
+    const { checks, usage } = await checkFindings('/snap', [finding('a')], [0], run, exec)
     expect(checks.get(0)).toEqual({ holds: true, reason: 'yes' })
+    expect(usage?.costUsd).toBe(0.25)
     expect(cwds).toEqual(['/snap'])
   })
 })

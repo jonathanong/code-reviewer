@@ -26,6 +26,11 @@ const caseJson = (id: string, kind: 'positive' | 'negative') => ({
 const CASES = [caseJson('p1', 'positive'), caseJson('n1', 'negative'), caseJson('x1', 'negative')]
 const FINDING = { pillar: 'design', severity: 'high', title: 'T', body: 'B' }
 
+const PLUGINS = JSON.stringify([
+  { id: 'rules@m', version: '1.0.0', enabled: true },
+  { id: 'other@m', version: '1.0.0', enabled: true },
+])
+
 function harness(exec: VerifierBenchDeps['exec']) {
   const store = new Map<string, string>([
     ['cases.json', JSON.stringify(CASES)],
@@ -48,7 +53,8 @@ function harness(exec: VerifierBenchDeps['exec']) {
   const logs: string[] = []
   const staged: unknown[][] = []
   const deps: VerifierBenchDeps = {
-    exec,
+    exec: async (command, args, options) =>
+      args[0] === 'plugin' ? PLUGINS : exec(command, args, options),
     readFile: (path) => {
       const text = store.get(path)
       if (text === undefined) throw new Error(`ENOENT ${path}`)
@@ -70,6 +76,25 @@ const BASE = ['--cases', 'cases.json', '--findings-from', 'f', '--out', 'o']
 
 afterEach(() => {
   vi.restoreAllMocks()
+})
+
+const usage = (model: string, costUsd: number) => ({
+  costUsd,
+  turns: 1,
+  durationMs: 1,
+  inputTokens: 100,
+  outputTokens: 10,
+  cacheReadTokens: null,
+  cacheCreationTokens: null,
+  byModel: {
+    [model]: {
+      inputTokens: 100,
+      outputTokens: 10,
+      cacheReadTokens: null,
+      cacheCreationTokens: null,
+      costUsd,
+    },
+  },
 })
 
 describe('runFinalReviewVerifierBenchCli', () => {
@@ -158,15 +183,26 @@ describe('runFinalReviewVerifierBenchCli', () => {
       inputs: gradeInputs(n1, output, ['haiku', 'opus']),
       added: [],
       checks: [],
+      checkUsage: usage('opus', 3),
     }
-    h.store.set('o/raw/n1.json', JSON.stringify({ input, output, graded }))
-    h.store.set('o/raw/x1.json', JSON.stringify({ input, output }))
+    h.store.set('o/raw/n1.json', JSON.stringify({ input, output, graded, usage: usage('opus', 2) }))
+    h.store.set('o/raw/p1.json', JSON.stringify({ input, output }))
+    h.store.set('o/raw/x1.json', JSON.stringify({ input, output, usage: usage('opus', 1) }))
     await runFinalReviewVerifierBenchCli([...BASE, '--score-only', '--judge', 'haiku'], h.deps)
     expect(exec).not.toHaveBeenCalled()
     const markdown = h.store.get('o/summary.md') as string
     expect(markdown).toContain('judged by haiku')
     expect(markdown).toContain('| 1 | n/a | n/a → n/a | n/a | n/a (0) | n/a | 1.0 → 0.0 |')
     expect(markdown).toContain('- x1: not graded')
+    expect(markdown).toContain('| Run | Model | Runs | Input tokens | Output tokens | Cost |')
+    expect(markdown).toContain('| verifier | opus | 2 | 200 | 20 | $3.00 |')
+    expect(markdown).toContain('| checker | opus | 1 | 100 | 10 | $3.00 |')
+    expect(markdown).toContain('| all | opus | 3 | 300 | 30 | $6.00 |')
+    const saved = JSON.parse(h.store.get('o/summary.json') as string)
+    expect(saved.models.map((group: { name: string }) => group.name)).toEqual([
+      'verifier',
+      'checker',
+    ])
   })
 
   it('reuses a saved verifier output only while its run inputs match', async () => {
@@ -204,6 +240,23 @@ describe('runFinalReviewVerifierBenchCli', () => {
     )
     await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
     expect(exec).toHaveBeenCalled()
+  })
+
+  it('runs without plugin settings when plugins cannot be listed', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const exec = vi.fn(async () =>
+      JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
+    )
+    const h = harness(exec)
+    const listing = h.deps.exec
+    h.deps.exec = async (command, args, options) => {
+      if (args[0] === 'plugin') throw new Error('no claude')
+      return listing(command, args, options)
+    }
+    await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
+    expect(h.logs).toContain('plugins: no claude')
+    const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
+    expect(args).not.toContain('--settings')
   })
 
   it('records a case whose labeled pillar is not judged instead of verifying it', async () => {

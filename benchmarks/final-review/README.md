@@ -116,6 +116,15 @@ non-empty array of full names, meaning any one of them satisfies it:
   listed as `caught without <skill>`. `summary.json` holds the four counts (`grounded`,
   `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
 
+### Run flags
+
+Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
+`--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
+`skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
+every plugin false. Pillars may use the `Agent` tool to dispatch an `explorer` subagent (Haiku,
+read-only tools). Verifier runs get the same isolation flags and settings; checker runs get the same,
+and judge runs get them with every plugin false.
+
 ### Cost and turns
 
 The pillar prompt points the reviewer at `.final-review/files.md` (an index of per-file patches in
@@ -128,7 +137,20 @@ result event keeps its usage, and its error names the result subtype, for exampl
 runs with usage, total cost, cost per run, turns per run, and input tokens per run (input + cache
 read + cache creation); `summary.json` holds the same as `usage` on each pillar summary. Raw
 results saved before this change have no `usage`: `--score-only` leaves them out (`n/a`), not as
-zero. `bench-verifier` does not record usage.
+zero.
+
+`usage.byModel` holds the result event's `modelUsage` per model id (`inputTokens`, `outputTokens`,
+`cacheReadTokens`, `cacheCreationTokens`, `costUsd`), so a run that used subagents shows the main
+model and the `explorer`'s Haiku separately; it is `{}` when the event has none. Under the Cost
+table, a "Tokens by model" table lists per pillar and model the runs that used the model, total
+input (input + cache read + cache creation), total output, and total cost, then one `all` row per
+model summed over the pillars; `summary.json` holds the per-pillar rows as `usage.models`, and the
+`all` rows are their sum. The judge's calls are not counted.
+
+`bench-verifier` records `usage` for each verifier run, and `checkUsage` on the grade for the
+checker run (null when nothing was checked), and prints the same table with `verifier` and
+`checker` rows and an `all` row; `summary.json` holds them as `models`. Its judge calls are not
+counted either.
 
 ### Paired control
 

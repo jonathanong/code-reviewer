@@ -117,6 +117,25 @@ describe('createDefaultDeps', () => {
     expect(defaultExec).toHaveBeenCalledWith('claude', ['plugin', 'list', '--json'])
   })
 
+  it('lists enabled plugins with their install paths in one call', async () => {
+    vi.mocked(defaultExec).mockResolvedValueOnce(
+      '[{"id":"skills@m","version":"1.0.0","enabled":true,"scope":"user","installPath":"/p/skills"}]',
+    )
+    const deps = createDefaultDeps(fakeAuth().getAuth)
+    await expect(deps.pluginInfo()).resolves.toEqual({
+      enabled: [{ id: 'skills@m', version: '1.0.0' }],
+      installs: [{ name: 'skills', installPath: '/p/skills' }],
+    })
+    expect(defaultExec).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs a binary through the default exec and locates the references', async () => {
+    const deps = createDefaultDeps(fakeAuth().getAuth)
+    await deps.exec('claude', ['-p', 'x'], { cwd: '/tree', timeoutMs: 5 })
+    expect(defaultExec).toHaveBeenCalledWith('claude', ['-p', 'x'], { cwd: '/tree', timeoutMs: 5 })
+    expect(deps.references().endsWith('skills/final-review/references')).toBe(true)
+  })
+
   it('delegates the benchmarks', async () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await expect(deps.runBench(['--x'])).resolves.toBe(5)

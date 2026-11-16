@@ -2,7 +2,11 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 /** Runs a binary and resolves stdout; rejects on a non-zero exit. */
-export type Exec = (command: string, args: string[], options?: { cwd?: string }) => Promise<string>
+export type Exec = (
+  command: string,
+  args: string[],
+  options?: { cwd?: string; timeoutMs?: number },
+) => Promise<string>
 
 const execFileAsync = promisify(execFile)
 
@@ -28,7 +32,8 @@ export class ExecError extends Error {
 export const defaultExec: Exec = async (command, args, options = {}) => {
   try {
     const { stdout } = await execFileAsync(command, args, {
-      ...options,
+      ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
+      ...(options.timeoutMs === undefined ? {} : { timeout: options.timeoutMs }),
       encoding: 'utf8',
       maxBuffer: 256 * 1024 * 1024,
     })

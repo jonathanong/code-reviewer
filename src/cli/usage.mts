@@ -5,6 +5,8 @@ code-reviewer claim --repo owner/name --pr N [--force]
 code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
+code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run]
 code-reviewer diff --repo owner/name --pr N
@@ -32,6 +34,11 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
   the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
   change as consumed or as consumers) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
+  review runs claim, prepare, a Haiku skill selection, the planned pillars (--jobs at a time,
+  default 3, each retried once), and the verifier with headless claude runs, then writes
+  review.json, preview.md, report.md and report.json to --out and stops before posting. It fails
+  closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
+  from report.json.
   resolve resolves review threads of fixed findings.
   Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
   plus the comma-separated logins in FINAL_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
@@ -48,7 +55,10 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
   --no-rules run of the same cases: the summary adds control recall and lift (grounded minus control
   recall over positives both runs scored) and lists cases the control caught. bench also records each
-  run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens).
+  run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens) and a
+  Tokens by model table (runs, input, output, cost per pillar and model, plus an all row).
+  bench-verifier records and prints the same by model for its verifier and checker runs. review
+  shows cost and tokens by model for the whole review in report.json and report.md.
   bench-verifier runs only the verifier, one call per case
   and no subagents, on the pillar findings a bench --out DIR saved (each judged-real finding is
   also planted under a second pillar), and scores real findings kept, label recall, severity

@@ -38,3 +38,42 @@ export function checkPlugins(
     missing: required.filter((name) => !names.has(name)),
   }
 }
+
+/** The plugins whose skills hold the shared review rules; a headless run switches every other off. */
+export const RULE_PLUGINS = ['no-mistakes-rules', 'skills'] as const
+
+/** The `--settings` value for a headless run: only the rule plugins stay on, or none for a control. */
+export function pluginSettings(
+  plugins: readonly Plugin[],
+  rules = true,
+): { enabledPlugins: Record<string, boolean> } {
+  const enabled = plugins.map((plugin): [string, boolean] => [
+    plugin.id,
+    rules && RULE_PLUGINS.some((name) => name === plugin.id.split('@')[0]),
+  ])
+  return { enabledPlugins: Object.fromEntries(enabled) }
+}
+
+/** An enabled user-scope plugin and where Claude Code installed it. */
+export type PluginInstall = { name: string; installPath: string }
+
+/** What a review needs from one `claude plugin list --json`: what is enabled and where it lives. */
+export type PluginInfo = { enabled: Plugin[]; installs: PluginInstall[] }
+
+type Installed = { id?: unknown; scope?: unknown; enabled?: unknown; installPath?: unknown }
+
+/**
+ * Reads install directories from `claude plugin list --json`. Only user-scope entries count:
+ * headless runs read user settings only, so a project-scoped plugin is not loadable there.
+ */
+export function parsePluginInstalls(stdout: string): PluginInstall[] {
+  const listed = JSON.parse(stdout) as unknown
+  if (!Array.isArray(listed)) throw new Error('claude plugin list did not print an array.')
+  const found: PluginInstall[] = []
+  for (const entry of listed as Array<Installed | null>) {
+    if (typeof entry?.id !== 'string' || entry.enabled !== true || entry.scope !== 'user') continue
+    if (typeof entry.installPath !== 'string') continue
+    found.push({ name: entry.id.split('@')[0] as string, installPath: entry.installPath })
+  }
+  return found
+}

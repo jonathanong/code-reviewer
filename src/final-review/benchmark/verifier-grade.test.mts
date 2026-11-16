@@ -71,6 +71,7 @@ describe('gradeAll', () => {
     }
     const calls: string[] = []
     const h = harness({ p1: { input, inputs: 'run', output } }, async (_command, args, options) => {
+      if (args[0] === 'plugin') return '[]'
       const prompt = args[1] as string
       if (options?.cwd === undefined) {
         calls.push('judge')
@@ -78,6 +79,9 @@ describe('gradeAll', () => {
       }
       calls.push(`check ${prompt.includes('"index": 2')} ${prompt.includes('"index": 0')}`)
       return JSON.stringify({
+        type: 'result',
+        total_cost_usd: 0.3,
+        modelUsage: { opus: { outputTokens: 7, costUSD: 0.3 } },
         structured_output: { verdicts: [{ index: 2, holds: false, reason: 'wrong' }] },
       })
     })
@@ -90,6 +94,18 @@ describe('gradeAll', () => {
       inputs: gradeInputs(ITEM, output, ['sonnet', 'opus']),
       added: [0],
       checks: [null, null, { holds: false, reason: 'wrong' }],
+      checkUsage: expect.objectContaining({
+        costUsd: 0.3,
+        byModel: {
+          opus: {
+            inputTokens: null,
+            outputTokens: 7,
+            cacheReadTokens: null,
+            cacheCreationTokens: null,
+            costUsd: 0.3,
+          },
+        },
+      }),
     })
     // A current grade is reused.
     calls.length = 0

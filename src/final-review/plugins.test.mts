@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { checkPlugins, parsePluginList, pluginLabels } from './plugins.mts'
+import {
+  RULE_PLUGINS,
+  checkPlugins,
+  parsePluginInstalls,
+  parsePluginList,
+  pluginLabels,
+  pluginSettings,
+} from './plugins.mts'
 
 const LIST = JSON.stringify([
   { id: 'rules@m', version: '1.0.0', scope: 'user', enabled: true },
@@ -39,5 +46,54 @@ describe('checkPlugins', () => {
       plugins: ['bare@v unknown', 'db@v 0.11.0', 'rules@m 1.0.0'],
       missing: ['gone'],
     })
+  })
+})
+
+describe('pluginSettings', () => {
+  const plugins = [
+    { id: 'no-mistakes-rules@no-mistakes', version: '1' },
+    { id: 'skills@jonathanong-skills', version: '1' },
+    { id: 'skills-extra@m', version: '1' },
+    { id: 'superpowers@official', version: '1' },
+  ]
+
+  it('keeps only the rule plugins on', () => {
+    expect(RULE_PLUGINS).toEqual(['no-mistakes-rules', 'skills'])
+    expect(pluginSettings(plugins)).toEqual({
+      enabledPlugins: {
+        'no-mistakes-rules@no-mistakes': true,
+        'skills@jonathanong-skills': true,
+        'skills-extra@m': false,
+        'superpowers@official': false,
+      },
+    })
+  })
+
+  it('switches every plugin off for a control run', () => {
+    const { enabledPlugins } = pluginSettings(plugins, false)
+    expect(Object.keys(enabledPlugins)).toHaveLength(4)
+    expect(Object.values(enabledPlugins).every((on) => !on)).toBe(true)
+  })
+
+  it('is empty when no plugin is enabled', () => {
+    expect(pluginSettings([])).toEqual({ enabledPlugins: {} })
+  })
+})
+
+describe('parsePluginInstalls', () => {
+  it('keeps enabled user-scope plugins that have an install path', () => {
+    const listed = JSON.stringify([
+      { id: 'skills@m', scope: 'user', enabled: true, installPath: '/cache/skills' },
+      { id: 'off@m', scope: 'user', enabled: false, installPath: '/cache/off' },
+      { id: 'proj@m', scope: 'project', enabled: true, installPath: '/cache/proj' },
+      { id: 'bare@m', scope: 'user', enabled: true },
+      { scope: 'user', enabled: true, installPath: '/x' },
+      null,
+    ])
+    expect(parsePluginInstalls(listed)).toEqual([{ name: 'skills', installPath: '/cache/skills' }])
+  })
+
+  it('rejects output that is not a list', () => {
+    expect(() => parsePluginInstalls('{}')).toThrow('did not print an array')
   })
 })

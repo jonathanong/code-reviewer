@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import { ExecError } from './exec.mts'
 import { describeFailure, parseUsage, type Usage } from './usage.mts'
-import { renderCostTable, summarizeUsage } from './usage-summary.mts'
+import {
+  renderCostTable,
+  renderModelTable,
+  summarizeModels,
+  summarizeUsage,
+} from './usage-summary.mts'
 
 const EMPTY: Usage = {
   costUsd: null,
@@ -12,6 +17,7 @@ const EMPTY: Usage = {
   outputTokens: null,
   cacheReadTokens: null,
   cacheCreationTokens: null,
+  byModel: {},
 }
 
 const usage = (fields: Partial<Usage>): Usage => ({ ...EMPTY, ...fields })
@@ -20,6 +26,85 @@ describe('parseUsage', () => {
   it('returns nulls without an event, with non-numeric fields, or with a non-object usage', () => {
     expect(parseUsage(undefined)).toEqual(EMPTY)
     expect(parseUsage({ total_cost_usd: '3', num_turns: Number.NaN, usage: 'x' })).toEqual(EMPTY)
+  })
+})
+
+describe('parseUsage modelUsage', () => {
+  const model = {
+    inputTokens: 10,
+    outputTokens: 20,
+    cacheReadInputTokens: 300,
+    cacheCreationInputTokens: 40,
+    costUSD: 0.5,
+  }
+
+  it('reads each model with renamed token fields', () => {
+    expect(parseUsage({ modelUsage: { 'claude-opus': model } }).byModel).toEqual({
+      'claude-opus': {
+        inputTokens: 10,
+        outputTokens: 20,
+        cacheReadTokens: 300,
+        cacheCreationTokens: 40,
+        costUsd: 0.5,
+      },
+    })
+  })
+
+  it('gives {} for missing or malformed model usage and drops malformed entries', () => {
+    expect(parseUsage({}).byModel).toEqual({})
+    expect(parseUsage({ modelUsage: 'x' }).byModel).toEqual({})
+    expect(parseUsage({ modelUsage: [model] }).byModel).toEqual({})
+    const parsed = parseUsage({ modelUsage: { bad: 3, partial: { costUSD: 'free' } } }).byModel
+    expect(Object.keys(parsed)).toEqual(['partial'])
+    expect(parsed.partial).toEqual({
+      inputTokens: null,
+      outputTokens: null,
+      cacheReadTokens: null,
+      cacheCreationTokens: null,
+      costUsd: null,
+    })
+  })
+})
+
+describe('model totals', () => {
+  const full = {
+    inputTokens: 10,
+    outputTokens: 20,
+    cacheReadTokens: 300,
+    cacheCreationTokens: 40,
+    costUsd: 0.5,
+  }
+  const runs = [
+    usage({ byModel: { opus: full, haiku: { ...full, costUsd: null, outputTokens: null } } }),
+    usage({ byModel: { opus: full } }),
+    EMPTY,
+    // A result saved before models were recorded has no byModel at all.
+    { ...EMPTY, byModel: undefined } as unknown as Usage,
+  ]
+
+  it('sums input with cache tokens, counts runs per model, and sorts by id', () => {
+    expect(summarizeModels(runs)).toEqual([
+      { model: 'haiku', runs: 1, inputTokens: 350, outputTokens: 0, costUsd: 0 },
+      { model: 'opus', runs: 2, inputTokens: 700, outputTokens: 40, costUsd: 1 },
+    ])
+    expect(summarizeUsage(runs).models).toHaveLength(2)
+  })
+
+  it('renders per-group rows and an all row per model', () => {
+    const table = renderModelTable([
+      { name: 'rules', models: summarizeModels([runs[0] as Usage]) },
+      { name: 'design', models: summarizeModels([runs[1] as Usage]) },
+    ])
+    expect(table.split('\n')).toEqual([
+      '| Pillar | Model | Runs | Input tokens | Output tokens | Cost |',
+      '| --- | --- | --- | --- | --- | --- |',
+      '| rules | haiku | 1 | 350 | 0 | $0.00 |',
+      '| rules | opus | 1 | 350 | 20 | $0.50 |',
+      '| design | opus | 1 | 350 | 20 | $0.50 |',
+      '| all | haiku | 1 | 350 | 0 | $0.00 |',
+      '| all | opus | 2 | 700 | 40 | $1.00 |',
+    ])
+    expect(renderModelTable([], 'Run').startsWith('| Run |')).toBe(true)
   })
 })
 
@@ -74,6 +159,7 @@ describe('summarizeUsage', () => {
       meanCostUsd: 1.5,
       meanTurns: 15,
       meanInputTokens: 200,
+      models: [],
     })
   })
 
@@ -84,6 +170,7 @@ describe('summarizeUsage', () => {
       meanCostUsd: null,
       meanTurns: null,
       meanInputTokens: null,
+      models: [],
     })
   })
 })

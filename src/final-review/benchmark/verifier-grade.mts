@@ -3,8 +3,11 @@ import { join } from 'node:path'
 
 import type { Finding } from '../finding.mts'
 import type { EvalCase } from './cases.mts'
-import { pool } from './judge-all.mts'
+import { pool } from '../run/pool.mts'
+import { benchPlugins } from './plugin-settings.mts'
 import { judgeFindings, type Assignment } from './judge.mts'
+import type { Usage } from './usage.mts'
+import { summarizeModels } from './usage-summary.mts'
 import { checkFindings, type Check } from './verifier-check.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { VerifierOutput } from './verifier-run.mts'
@@ -21,10 +24,19 @@ export type Graded = {
   inputs: string
   added: Assignment
   checks: Array<Check | null>
+  /** Cost of the checker call; null when nothing was checked. Absent in results saved earlier. */
+  checkUsage?: Usage | null
 }
 
 export type VerifierRaw =
-  | { input: VerifierInput; output: VerifierOutput; inputs: string; graded?: Graded }
+  | {
+      input: VerifierInput
+      output: VerifierOutput
+      inputs: string
+      /** Absent in results saved before usage was recorded. */
+      usage?: Usage
+      graded?: Graded
+    }
   | { input?: VerifierInput; error: string }
 
 /** Output findings that cite any of `indexes` as a source. */
@@ -62,6 +74,24 @@ export function gradeInputs(item: EvalCase, output: VerifierOutput, models: stri
   return createHash('sha256').update(payload).digest('hex')
 }
 
+/** Adds a result's verifier and checker usage to the lists; results saved earlier have none. */
+export function collectUsage(
+  raw: Extract<VerifierRaw, { output: unknown }>,
+  verifier: Usage[],
+  checker: Usage[],
+): void {
+  if (raw.usage !== undefined) verifier.push(raw.usage)
+  if (raw.graded?.checkUsage) checker.push(raw.graded.checkUsage)
+}
+
+/** The model totals the summary prints: the verifier runs, then the checker runs. */
+export function usageGroups(verifier: readonly Usage[], checker: readonly Usage[]) {
+  return [
+    { name: 'verifier', models: summarizeModels(verifier) },
+    { name: 'checker', models: summarizeModels(checker) },
+  ]
+}
+
 export type GradeOptions = {
   findingsFrom: string
   out: string
@@ -78,9 +108,10 @@ async function gradeCase(
   output: VerifierOutput,
   options: GradeOptions,
   deps: VerifierBenchDeps,
+  settings: { checker?: object; judge?: object },
 ): Promise<Graded> {
   const fresh = addedIndexes(output).map((at) => output.findings[at] as Finding)
-  const added = await judgeFindings(item.expected, fresh, options.judge, deps.exec)
+  const added = await judgeFindings(item.expected, fresh, options.judge, deps.exec, settings.judge)
   const credited = new Set(creditedOutputs(item, input, output, added).flat())
   const strong = output.findings.flatMap((finding, at) =>
     (finding.severity === 'blocking' || finding.severity === 'high') && !credited.has(at)
@@ -88,10 +119,21 @@ async function gradeCase(
       : [],
   )
   let checks = new Map<number, Check>()
+  let checkUsage: Usage | null = null
   if (strong.length > 0) {
     const { dir } = await prepareVerifierSnapshot(item, options, deps)
-    const run = { model: options.checker, maxTurns: options.maxTurns }
-    checks = await checkFindings(dir, output.findings, strong, run, deps.exec)
+    const run = {
+      model: options.checker,
+      maxTurns: options.maxTurns,
+      ...(settings.checker === undefined ? {} : { settings: settings.checker }),
+    }
+    ;({ checks, usage: checkUsage } = await checkFindings(
+      dir,
+      output.findings,
+      strong,
+      run,
+      deps.exec,
+    ))
   }
   return {
     judge: options.judge,
@@ -99,6 +141,7 @@ async function gradeCase(
     inputs: gradeInputs(item, output, [options.judge, options.checker]),
     added,
     checks: output.findings.map((_, at) => checks.get(at) ?? null),
+    checkUsage,
   }
 }
 
@@ -108,6 +151,13 @@ export async function gradeAll(
   options: GradeOptions,
   deps: VerifierBenchDeps,
 ): Promise<void> {
+  const plugins = await benchPlugins(deps.exec, process.cwd(), !options.noRules, (line) =>
+    deps.log(line),
+  )
+  const settings = {
+    ...(plugins.settings === undefined ? {} : { checker: plugins.settings }),
+    ...(plugins.noPlugins === undefined ? {} : { judge: plugins.noPlugins }),
+  }
   await pool(cases, options.jobs, async (item) => {
     const path = join(options.out, 'raw', `${item.id}.json`)
     if (!deps.exists(path)) return
@@ -117,7 +167,7 @@ export async function gradeAll(
     if (raw.graded?.inputs === current) return
     deps.log(`grade ${item.id}`)
     try {
-      const graded = await gradeCase(item, raw.input, raw.output, options, deps)
+      const graded = await gradeCase(item, raw.input, raw.output, options, deps, settings)
       deps.writeFile(path, `${JSON.stringify({ ...raw, graded }, null, 2)}\n`)
     } catch (error) {
       deps.log(`grade ${item.id} failed: ${error instanceof Error ? error.message : String(error)}`)

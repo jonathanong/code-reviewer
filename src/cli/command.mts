@@ -11,6 +11,7 @@ import {
   type PullTarget,
 } from '../final-review/index.mts'
 import { checkPlugins } from '../final-review/plugins.mts'
+import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type FinalReviewDeps } from './deps.mts'
@@ -19,7 +20,7 @@ import { FINAL_REVIEW_USAGE } from './usage.mts'
 export type { FinalReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, resolve, plugins, bench, or bench-verifier'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, or bench-verifier'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -47,6 +48,7 @@ function parse(args: string[]) {
       requeue: { type: 'boolean' },
       reason: { type: 'string' },
       out: { type: 'string' },
+      jobs: { type: 'string' },
       effort: { type: 'string' },
       tree: { type: 'string' },
       clones: { type: 'string' },
@@ -73,6 +75,15 @@ async function run(
     const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
     print(result)
     return result.missing.length === 0 ? 0 : 1
+  }
+  if (subcommand === 'report') {
+    print(reportCommand(values))
+    return 0
+  }
+  if (subcommand === 'review') {
+    const result = await reviewCommand(values, target(values), deps)
+    print(result.summary)
+    return result.ok ? 0 : 1
   }
   const loop = await runLoopCommand(subcommand, values, () => target(values), deps)
   if (loop !== undefined) {

@@ -1,5 +1,6 @@
 import type { Finding } from '../finding.mts'
 import type { ExpectedFinding } from './cases.mts'
+import { isolationArgs } from '../run/claude-flags.mts'
 import type { Exec } from './snapshot.mts'
 
 /** For each expected finding (by index), the index of the finding that raises it, or null. */
@@ -60,7 +61,7 @@ export function buildJudgePrompt(
   ].join('\n\n')
 }
 
-export function judgeArgs(prompt: string, model: string): string[] {
+export function judgeArgs(prompt: string, model: string, settings?: object): string[] {
   return [
     '-p',
     prompt,
@@ -76,6 +77,7 @@ export function judgeArgs(prompt: string, model: string): string[] {
     'dontAsk',
     '--max-turns',
     '3',
+    ...isolationArgs(settings),
   ]
 }
 
@@ -108,8 +110,12 @@ export async function judgeFindings(
   findings: readonly Finding[],
   model: string,
   exec: Exec,
+  settings?: object,
 ): Promise<Assignment> {
   if (expected.length === 0 || findings.length === 0) return expected.map(() => null)
-  const stdout = await exec('claude', judgeArgs(buildJudgePrompt(expected, findings), model))
+  const stdout = await exec(
+    'claude',
+    judgeArgs(buildJudgePrompt(expected, findings), model, settings),
+  )
   return parseJudgeOutput(stdout, expected.length, findings.length)
 }
