@@ -52,7 +52,8 @@ rather than label, or to review a head that is already reviewed. The command:
 
 1. Claims the pull request: the processing label replaces the requested one, and a stale
    `final approval` is removed. `claimed: false` means another run owns it, the request was
-   withdrawn, or the newest review already covers this head: stop.
+   withdrawn, or the newest review already covers this head: go to Step 5 to remove the worktree
+   and the run directory, and never run `abort`, because the claim is not this run's.
 2. Prepares the run directory with no model calls: the numbered diff and one patch per file,
    `context.md` (the last review, unresolved findings, other reviewers' notes), `rules/INDEX.md`
    (this repository's `AGENTS.md` and skills at the base ref, and those of the repositories that
@@ -101,7 +102,9 @@ with `post --dry-run`.
 - A hidden marker records the reviewed SHA, the verdict, and the effort.
 - On Approve the `final approval` label is added; otherwise it is removed. Then the completed
   label replaces the processing one. Completed means posted, not approved.
-- It refuses when the head moved since the review ran: run Step 2 again with `--force`.
+- It refuses when the head moved since the review ran. Check out the new head in the worktree
+  (`git -C <clone> fetch origin <head> && git -C "$run/tree" checkout --detach <head>`), then run
+  Step 2 again with `--force`: the review refuses a worktree that is not at the current head.
 
 After posting a follow-up, resolve the threads the review found fixed: the `fixedThreadIds` it
 printed, which `report.md` repeats as a ready `code-reviewer resolve` command.

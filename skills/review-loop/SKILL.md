@@ -113,7 +113,7 @@ waits for an answer does not count toward the three.
 - Yes: `code-reviewer post` as in the review skill, then add the review link to the section.
 - Changes: edit `review.json` as told, show `post --dry-run`, and ask again.
 - No: `code-reviewer abort` and note it in the section.
-- The head moved while waiting: say so, and review again with `--force`.
+- The head moved while waiting: say so, check out the new head in the worktree, and review again with `--force` (see the `review` skill, Step 4).
 
 ## Step 5 - Hand back
 
