@@ -6,28 +6,25 @@ All rows: 2026-11-16, reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attemp
 installed rule skills (`--select`) and 3 without (`--no-rules`), one session. See
 [HISTORY.md](HISTORY.md) for every run.
 
-Mined cases (13 real pull requests from `cases.json`), current skill instruction:
+Mined cases (8 real pull requests from `cases.json`), current skill instruction:
 
-| Pillar      | Cases | Expected findings caught, with skills | Without | Runs that loaded every selected skill |
-| ----------- | ----- | ------------------------------------- | ------- | ------------------------------------- |
-| design      | 9     | 12 of 27                              | 4 of 27 | 27 of 27                              |
-| rules       | 1     | 3 of 3                                | 0 of 3  | 3 of 3                                |
-| correctness | 3     | 1 of 12                               | 0 of 12 | 9 of 9                                |
+| Pillar        | Cases | Expected findings caught, with skills | Without | Runs that loaded every selected skill |
+| ------------- | ----- | ------------------------------------- | ------- | ------------------------------------- |
+| design        | 4     | 10 of 12                              | 4 of 12 | 12 of 12                              |
+| rules         | 1     | 3 of 3                                | 0 of 3  | 3 of 3                                |
+| correctness ‡ | 3     | 4 of 12                               | 0 of 12 | 9 of 9                                |
 
-- The with-skills arm is two runs of the same commit and session (six cases, then the other
-  seven); the control is one run of all 13. Reviewer cost $0.23 a pillar run with skills.
+- ‡ measured after the correctness prompt's options check was widened; with the prompt before it
+  the row was 1 of 12. The gain is `vouchington-tooling-154`: 4 of 6 expected findings, and the
+  defect raised in 3 of 3 runs, against 0 of 6 before.
+- The with-skills arm is several runs of one session; the control is one run. Five
+  vouchington-platform cases that were in those runs have since been removed and are left out of
+  this table. Reviewer cost about $0.23 a pillar run with skills.
 - Skill loading is fixed: with the earlier instruction a reviewer told to load 12 to 20 skills
-  loaded 0 to 2 of them. Loading them did not raise catches: the earlier instruction caught 16 of
-  27 on design and the same 3 of 3 and 1 of 12. At 3 attempts, 12 against 16 of 27 is not a
-  resolved difference, but it rules out a large gain from loading every selected skill.
+  loaded 0 to 2 of them. Loading them did not raise catches.
 - `vouchington-1144` is a ceiling case: the control catches it 3 of 3.
-- Never caught in either arm: `vouchington-4154`, `vouchington-tooling-154`,
-  `vouchington-platform-57`, `-62` and `-66`.
-- `vouchington-platform-57`, `-59`, `-62`, `-66` and `-67` expect "this workflow belongs in the
-  application, not a shared package". That rule is in vouchington-platform's own `AGENTS.md` today
-  but was added after these snapshots, so the reviewer has no rule source for it here and the
-  cases carry no `expectedSkills`. `rules-repo-orchestration-package` is the fixture form with the
-  rule present.
+- `vouchington-4154` has never been caught in either arm; `vouchington-2936` was caught 1 of 3,
+  then 0 of 3.
 - At 3 attempts a difference of one catch is noise.
 
 Fixture cases (`synthetic.json`, rules and correctness pillars). Rows marked † come from a second
@@ -49,10 +46,12 @@ run later the same day, after three positives were replaced and two negatives cl
   without the skill also notices a `LIMIT` with no `ORDER BY`, and misses only when the judge holds
   it to citing the rule.
 - The † rows used the current skill instruction; the others used the earlier one.
-- `rules-repo-orchestration-package` (rule in the fixture repository's own `AGENTS.md`) is piloted
-  only, 1 attempt per arm: caught in both. `--no-rules` removes the shared skills, not the
-  repository's `AGENTS.md`, so its control is not a null hypothesis; the case checks that a
-  repository rule is applied and cited.
+- `rules-repo-orchestration-package` puts a rule in the fixture repository's own `AGENTS.md` (a
+  business workflow must not live in a package). With skills: caught and tied to that rule 3 of 3.
+  `--no-rules` removes the shared skills, not the repository's `AGENTS.md`, so the control (caught
+  1 of 1) is not a null hypothesis; the case checks that a repository rule is applied and cited.
+- With the widened options check, the nine correctness fixtures score as before: positives 9 of 9,
+  no high or blocking finding on a negative in 18 runs.
 - Reviewer cost: $0.12 a pillar run with skills.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).

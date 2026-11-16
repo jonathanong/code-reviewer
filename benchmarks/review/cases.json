@@ -25,30 +25,6 @@
     "expectedSkills": ["skills:typescript-authoring"]
   },
   {
-    "id": "vouchington-platform-67",
-    "repo": "vouchington/vouchington-platform",
-    "pr": 67,
-    "title": "feat(votes): add generic vote engine",
-    "baseSha": "b78e98258bcd6c5f147371c6955c729881b42dd5",
-    "headSha": "6ce02598bcf8b85baca29d8e86261d42f66c721d",
-    "kind": "positive",
-    "revertedBy": {
-      "pr": 83,
-      "sha": "825529a07c24a6066f0b434c22b18387be501df3"
-    },
-    "reason": "Over-extracted application-shaped HTTP vote mutation lifecycle before a second independent consumer; first consumer stayed line-neutral and still needed a large adapter.",
-    "expected": [
-      {
-        "pillar": "design",
-        "severity": "high",
-        "path": "packages/votes/src/handler.mts",
-        "lines": null,
-        "claim": "createVoteHandler bakes an application-shaped request lifecycle (auth, route rate limits, access hooks, 404/422/429 policy, noop handling) behind many injected hooks and six generic parameters. With only one consumer this boundary is speculative and the consumer will still need a large adapter, so it should stay in the product until a second consumer shows the real shared surface."
-      }
-    ],
-    "relation": "revert"
-  },
-  {
     "id": "vouchington-1092",
     "repo": "vouchington/vouchington",
     "pr": 1092,
@@ -565,106 +541,6 @@
     "relation": "rework",
     "confidence": "high",
     "expectedSkills": ["skills:postgres-schema-design"]
-  },
-  {
-    "id": "vouchington-platform-57",
-    "repo": "vouchington/vouchington-platform",
-    "pr": 57,
-    "title": "[codex] extract generic media upload orchestration",
-    "baseSha": "967ff3fac7b8234fa4e46e04f7806ad2002cab52",
-    "headSha": "4dbcac657963a84b9108f3a4011fb0a8a1e7ddfd",
-    "kind": "positive",
-    "reason": "Extracted the direct-upload lifecycle (create, complete, cleanup, metadata) into a shared package; consumers had to adapt authorization, transactions, queues and retries to it, so it was cut back to utilities within a day.",
-    "expected": [
-      {
-        "pillar": "design",
-        "severity": "high",
-        "path": "packages/media/src/create-upload.mts",
-        "lines": null,
-        "claim": "createUpload, completeUpload and cleanup encode an application-owned upload workflow (authorization, persistence transitions, queueing, retry and cleanup ordering) behind injected hooks. Every consumer must reshape its own transaction and state machine to fit the abstraction, so the shared boundary adds adapter code rather than removing it. The platform repo should publish generic utilities (validation, hashing, spooling, S3 operations), not the lifecycle."
-      }
-    ],
-    "revertedBy": {
-      "pr": 96,
-      "sha": "3adf4e4e24a8b480d586375e326e5d85b672e4ba"
-    },
-    "relation": "rework",
-    "confidence": "high"
-  },
-  {
-    "id": "vouchington-platform-59",
-    "repo": "vouchington/vouchington-platform",
-    "pr": 59,
-    "title": "feat(memberships): add provider-neutral engine",
-    "baseSha": "e7e710afaa5677953c37574300cffdf15999b6ba",
-    "headSha": "01208647ddab98408d791c476d46286560564861",
-    "kind": "positive",
-    "reason": "Shipped provider capability contracts and a package-owned lifecycle transition policy with no shared orchestrator consuming them; removed two days later to keep the repo utility-only.",
-    "expected": [
-      {
-        "pillar": "design",
-        "severity": "medium",
-        "path": "packages/memberships/src/lifecycle.mts",
-        "lines": null,
-        "claim": "Fixed lifecycle transitions and provider-neutral capability types (subscription create/update/cancel, webhook normalization, refunds) prescribe application workflow, but no shared orchestrator consumes them. State transitions and payment-provider contracts are application policy; publishing them as a package freezes a speculative API. Keep only reusable catalog, SKU grouping and status predicate helpers."
-      }
-    ],
-    "revertedBy": {
-      "pr": 98,
-      "sha": "99a56b3c4dfd8c61c10c77dac1ffce04a576793d"
-    },
-    "relation": "rework",
-    "confidence": "medium"
-  },
-  {
-    "id": "vouchington-platform-62",
-    "repo": "vouchington/vouchington-platform",
-    "pr": 62,
-    "title": "feat(auth): add injected authentication engine",
-    "baseSha": "27f23c4a1784cfd8586e3d3076cea66d760d1a18",
-    "headSha": "7265f2f3b600248f2e93cb4db759c21cf0a3c025",
-    "kind": "positive",
-    "reason": "Published email OTP, MFA/TOTP, OAuth, JWT session issuance and HTTP handler factories; the consumer only used passkey primitives, so the orchestration was deleted five weeks later.",
-    "expected": [
-      {
-        "pillar": "design",
-        "severity": "high",
-        "path": "packages/auth/src/authentication.mts",
-        "lines": null,
-        "claim": "This packages whole login flows (OTP, MFA, OAuth connect/continue, session issuance) behind injected hooks and adds api-server handler factories. Login-state transitions, cookies and persistence are application-owned, so every consumer must adapt its own policy to the engine while the package has no independent reuse. Only protocol-level primitives such as WebAuthn passkey ceremonies belong in a shared utility package."
-      }
-    ],
-    "revertedBy": {
-      "pr": 112,
-      "sha": "85ce55a94206c97164c5743f4c8fbeb975094920"
-    },
-    "relation": "rework",
-    "confidence": "high"
-  },
-  {
-    "id": "vouchington-platform-66",
-    "repo": "vouchington/vouchington-platform",
-    "pr": 66,
-    "title": "feat(reviews): add policy-injected review engine",
-    "baseSha": "9c4e38cb155d54024ec14e49f63d34556bfd828b",
-    "headSha": "65ab5a259863efaa0fc53857aff12c3e85a71e46",
-    "kind": "positive",
-    "reason": "Extracted a transaction-locked review lifecycle with injected authorization, policy and post-commit hooks; the product adopted then reverted it because its adapter grew and duplicated validation, and the package was removed.",
-    "expected": [
-      {
-        "pillar": "design",
-        "severity": "high",
-        "path": "packages/reviews/src/engine.mts",
-        "lines": null,
-        "claim": "createReviewsEngine owns the review lifecycle (transaction, locking, authorization, target eligibility, rating and deletion policy, post-commit effects) behind many injected callbacks, plus optional route registration. The abstraction is shaped around one application's flow, so a consumer must build a large adapter and re-validate inputs it cannot fully delegate. With a single consumer, this orchestration should stay in the application rather than become a shared package."
-      }
-    ],
-    "revertedBy": {
-      "pr": 112,
-      "sha": "85ce55a94206c97164c5743f4c8fbeb975094920"
-    },
-    "relation": "undo",
-    "confidence": "high"
   },
   {
     "id": "vouchington-402",

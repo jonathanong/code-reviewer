@@ -59,7 +59,10 @@ Hunt for defects first, then judge tests. For each changed function, ask:
 - **Allowlists and parsers**: does a new check reject real inputs the code elsewhere permits (file
   modes, optional fields, other platforms, legacy formats)?
 - **Options threading**: when a function gained an option, does every caller and internal helper
-  forward it, or do some paths fall back to defaults?
+  forward it, or do some paths fall back to defaults? When new code calls a helper that takes
+  options (a marker, a pattern, a client, a locale), open the helper and check that the new
+  code's own caller can set them. New code that pins the helper's defaults gives a wrong result
+  to every caller configured differently.
 - **Lifecycle**: does cleanup remove something still in use (files, checkouts, handles) by later
   steps or post-job hooks? Do failure paths skip cleanup or restore?
 - **Data shape**: does a new query's filter and order match an index? Does a loop read unbounded

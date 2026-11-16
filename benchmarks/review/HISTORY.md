@@ -2,6 +2,39 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: correctness options check widened; five platform cases removed
+
+Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts, with-skills arm,
+same session as the entries below, whose current-instruction runs are the control for the prompt.
+
+Prompt: the "Options threading" item in `correctness.md` now also covers new code that calls a
+helper taking options without letting its own caller set them. `vouchington-tooling-154` was
+missed because its two new functions never gained an option: they call codec helpers that take
+`marker` and `sessionIdPattern` and pin the defaults.
+
+| Case (correctness)        | Prompt before | Widened prompt               |
+| ------------------------- | ------------- | ---------------------------- |
+| `vouchington-tooling-154` | 0 of 6        | 4 of 6, defect raised 3 of 3 |
+| `vouchington-2936`        | 1 of 3        | 0 of 3                       |
+| `vouchington-4154`        | 0 of 3        | 0 of 3                       |
+| Fixture positives (3)     | 9 of 9        | 9 of 9                       |
+| Fixture negatives (6)     | 0 high of 18  | 0 high of 18                 |
+
+Reviewer cost $2.30 for the mined runs and $3.53 for the fixtures. The fixture "before" figures
+are from the full run below (with the two cleaned negatives from the entry after it).
+`rules-docs-only-readme` drew a medium finding in 3 of 3 runs (the README's `pnpm test` cannot
+run because `vitest` is not a declared dependency); both of its trees now declare it, not
+re-measured. Correctness figures in earlier entries used the prompt before this change.
+
+Cases:
+
+- Removed `vouchington-platform-57`, `-59`, `-62`, `-66` and `-67`. Their rule is not in their
+  snapshots (see the entry below), and `rules-repo-orchestration-package` covers it. Earlier
+  entries that count 9 design cases or 13 mined cases include them; without them the
+  current-instruction design figure is 10 of 12 with skills against 4 of 12 without.
+- `rules-repo-orchestration-package` measured: caught and tied to the repository rule in 3 of 3
+  with skills ($0.43).
+
 ## 2026-11-16: remaining mined cases with the current instruction; repository-rule fixture
 
 Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts, same session
