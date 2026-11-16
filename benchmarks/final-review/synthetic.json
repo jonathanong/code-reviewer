@@ -56,18 +56,18 @@
     ]
   },
   {
-    "id": "rules-tooling-sweep-until-empty",
-    "fixture": "fixtures/rules-tooling-sweep-until-empty",
+    "id": "rules-skills-sweep-until-empty",
+    "fixture": "fixtures/rules-skills-sweep-until-empty",
     "title": "feat: purge expired sessions every 15 minutes",
     "kind": "positive",
-    "reason": "Each statement is bounded, but the run loops until a batch comes back short. The vouchington-tooling bounded-iteration skill requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
+    "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the shared skills repository requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
         "path": "src/jobs/purge-sessions.ts",
         "lines": null,
-        "claim": "Citing the vouchington-tooling bounded-iteration skill (cap every run, report whether work remains, never loop until empty), the purge job keeps deleting batches until one comes back short, so a single run has no cap on total rows or time. A finding that only praises the LIMIT or SKIP LOCKED, or does not tie the loop to that rule, does not match."
+        "claim": "Citing the bounded-iteration skill (cap every run, report whether work remains, never loop until empty), the purge job keeps deleting batches until one comes back short, so a single run has no cap on total rows or time. A finding that only praises the LIMIT or SKIP LOCKED, or does not tie the loop to that rule, does not match."
       }
     ]
   },

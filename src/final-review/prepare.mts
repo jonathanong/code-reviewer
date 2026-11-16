@@ -16,7 +16,7 @@ export type PrepareOptions = {
   requested?: Effort
   /** A checkout with history at the base, for the history trigger. */
   tree?: string
-  /** A directory of local clones (vouchington-tooling, no-mistakes, dependency repositories). */
+  /** A directory of local clones (no-mistakes, skills, dependency repositories). */
   clones?: string
 }
 

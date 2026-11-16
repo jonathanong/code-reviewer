@@ -58,7 +58,7 @@ reverts and regression fixes, and keep negatives at roughly a third of the set.
 Every run stages rule sources into `.final-review/rules/` with the same code `prepare` uses: the
 fixture's `base/` instructions and skills (a mined case's head, since its base is not exported),
 the shared rule skills from the clones under `--clones` (default `FINAL_REVIEWER_CLONE_ROOT`; it
-needs `no-mistakes` and `vouchington-tooling`), and fixture dependencies from `repos/`. The pillar
+needs `no-mistakes` and `skills`, the jonathanong/skills clone), and fixture dependencies from `repos/`. The pillar
 prompt points at `rules/INDEX.md`. `--no-rules` stages nothing, for control runs that check a case
 needs its rule source to be caught. The rules digest is part of the cache key.
 
@@ -70,7 +70,7 @@ digest, so a score change can be traced to a rule change. Every staged skill's `
 files are staged with it.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: a shared no-mistakes rule
-(`rules-shared-error-text`), a shared vouchington-tooling skill (`rules-tooling-sweep-until-empty`),
+(`rules-shared-error-text`), a shared `skills` repository skill (`rules-skills-sweep-until-empty`),
 a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides a
 shared one (`rules-local-override`, negative), and a compliant dependency call
 (`rules-dependency-flag-ok`, negative). Each positive's claim requires citing its rule source, so

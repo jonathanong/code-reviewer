@@ -14,9 +14,8 @@ describe('suggestSkills', () => {
     const found = suggestSkills(['src/a.ts', 'src/a.test.ts', 'src/b.spec.ts'])
     expect(found.get('typescript-rules')).toBe('src/a.ts')
     expect(found.get('testing-rules')).toBe('src/a.test.ts')
-    expect(found.get('vitest-test-authoring')).toBe('src/a.test.ts')
+    expect(found.get('test-authoring')).toBe('src/a.test.ts')
     expect(names(['tests/x.py'])).toContain('test-authoring')
-    expect(names(['tests/x.py'])).not.toContain('vitest-test-authoring')
   })
 
   it.each([
@@ -29,13 +28,20 @@ describe('suggestSkills', () => {
     ['src/lib.rs', 'rust-rules'],
     ['crates/a/Cargo.toml', 'rust-rules'],
     ['.github/workflows/ci.yml', 'github-actions-authoring'],
-    ['action.yml', 'github-actions-checklist'],
+    ['action.yml', 'github-actions-authoring'],
     ['package.json', 'package-json-checklist'],
     ['pnpm-lock.yaml', 'dependency-rules'],
     ['.github/dependabot.yml', 'dependabot'],
     ['Dockerfile', 'infra-rules'],
     ['scripts/run.sh', 'infra-rules'],
+    ['src/a.ts', 'typescript-authoring'],
+    ['app/page.tsx', 'react-app-structure'],
+    ['src/lib.rs', 'rust-authoring'],
     ['src/webhook.ts', 'integrations-rules'],
+    ['src/webhook.ts', 'http-api-design'],
+    ['src/flags.ts', 'feature-rollout'],
+    ['src/metrics.ts', 'structured-logging'],
+    ['App.swift', 'native-app-architecture'],
     ['src/flags.ts', 'rollout-rules'],
     ['src/metrics.ts', 'observability-rules'],
     ['App.swift', 'native-app-rules'],

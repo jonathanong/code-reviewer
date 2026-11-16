@@ -12,9 +12,9 @@ rule skills (see the contract), never from the pull request head.
   rules; if it does, review the rule change itself as a finding target, but judge the rest of the
   diff by the base rules.
 - **Shared rule skills**: the no-mistakes-rules skills (MUST NOT / SHOULD NOT lists by topic) and
-  the vouchington-tooling skills (workflow checklists, testing, database), including the review
-  criteria in agent-workflow's `references/review.md`. Read every suggested skill; open the others
-  only when their description matches the change.
+  the `skills` repository's design and procedure skills (testing, database and queues, CI,
+  dependencies, language and API design). Read every suggested skill; open the others only when
+  their description matches the change.
 - **Dependencies**: when the change calls into or configures a dependency repository listed in
   the index, read that repository's instructions and skills and check the change against what
   they require of callers (contracts, naming, registration, call order, required options).

@@ -45,7 +45,7 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(out, { recursive: true, force: true }))
 
-const [noMistakes, tooling] = SHARED_SOURCES as [
+const [noMistakes, skills] = SHARED_SOURCES as [
   (typeof SHARED_SOURCES)[number],
   (typeof SHARED_SOURCES)[number],
 ]
@@ -75,14 +75,11 @@ function input(overrides: Partial<StageInput> = {}): StageInput {
         }),
       },
       {
-        source: tooling,
+        source: skills,
         refLabel: 'default branch origin/main',
         reader: reader({
-          'plugins/vouchington-workflow/skills/agent-workflow/SKILL.md': skill(
-            'agent-workflow',
-            'W',
-          ),
-          'plugins/vouchington-workflow/skills/agent-workflow/references/review.md': 'criteria',
+          'skills/agent-workflow/SKILL.md': skill('agent-workflow', 'W'),
+          'skills/agent-workflow/references/review-response.md': 'dispositions',
         }),
       },
     ],
@@ -127,8 +124,8 @@ describe('stageRuleSources', () => {
       'rules/shared/no-mistakes-rules/AGENTS.md',
       'rules/shared/no-mistakes-rules/skills/rust-rules/SKILL.md',
       'rules/shared/no-mistakes-rules/skills/testing-rules/SKILL.md',
-      'rules/shared/vouchington-tooling/vouchington-workflow/skills/agent-workflow/SKILL.md',
-      'rules/shared/vouchington-tooling/vouchington-workflow/skills/agent-workflow/references/review.md',
+      'rules/shared/skills/skills/agent-workflow/SKILL.md',
+      'rules/shared/skills/skills/agent-workflow/references/review-response.md',
     ])
     expect(existsSync(join(out, 'rules/repo/docs/AGENTS.md'))).toBe(false)
     expect(read('rules/repo/AGENTS.md')).toBe('root rules')
@@ -161,11 +158,11 @@ describe('stageRuleSources', () => {
         'Other:',
         '- shared/no-mistakes-rules/skills/rust-rules/SKILL.md: rust-rules — R',
         '',
-        '### vouchington-tooling (default branch origin/main)',
+        '### skills (default branch origin/main)',
         'Suggested for this change:',
-        '- shared/vouchington-tooling/vouchington-workflow/skills/agent-workflow/SKILL.md: agent-workflow — W (src/a.test.ts)',
+        '- shared/skills/skills/agent-workflow/SKILL.md: agent-workflow — W (src/a.test.ts)',
         'References:',
-        '- shared/vouchington-tooling/vouchington-workflow/skills/agent-workflow/references/review.md',
+        '- shared/skills/skills/agent-workflow/references/review-response.md',
         '',
         '## Dependencies',
         '',
@@ -194,11 +191,11 @@ describe('stageRuleSources', () => {
       diff: '',
       shared: [],
       related: [],
-      missing: ['vouchington-tooling: no clone at /c/vouchington-tooling'],
+      missing: ['skills: no clone at /c/skills'],
     })
     expect(result.missing).toEqual([
       'This repository: not staged (no --tree)',
-      'vouchington-tooling: no clone at /c/vouchington-tooling',
+      'skills: no clone at /c/skills',
     ])
     expect(read('rules/INDEX.md')).toBe(
       [
@@ -209,7 +206,7 @@ describe('stageRuleSources', () => {
         '## Missing',
         '',
         '- This repository: not staged (no --tree)',
-        '- vouchington-tooling: no clone at /c/vouchington-tooling',
+        '- skills: no clone at /c/skills',
         '',
       ].join('\n'),
     )
@@ -237,10 +234,10 @@ describe('stageRuleSources', () => {
       shared: [
         { source: noMistakes, refLabel: 'r', reader: reader({}, true) },
         {
-          source: tooling,
+          source: skills,
           refLabel: 'r',
           reader: reader({
-            'plugins/vouchington-testing/skills/t/SKILL.md': skill('t', long),
+            'skills/t/SKILL.md': skill('t', long),
           }),
         },
       ],
