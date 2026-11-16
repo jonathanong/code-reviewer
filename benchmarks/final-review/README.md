@@ -271,6 +271,39 @@ what is missing. A case whose labeled pillar has no current judgement is recorde
 rather than verified, and the summary lists any case with no saved run. `--score-only` re-scores
 the saved outputs as they are, without model calls.
 
+## Skill selection
+
+Before the pillars run, `review` makes one tool-less Haiku call (`selectSkills`) that reads the pull
+request title, the changed-file index, the start of each file's patch, and the descriptions of the installed rule skills, and names
+the skills the pillars must load. This eval asks one question: does that call name every skill a
+case needs? It runs the same function on the same kind of input for each case that declares
+`expectedSkills`, several times, and counts the attempts that name all of them. An any-of group is
+met by any one member.
+
+```bash
+pnpm exec code-reviewer bench-selection \
+  --cases benchmarks/final-review/cases.json \
+  --cases benchmarks/final-review/synthetic.json \
+  --out "$TMPDIR/final-review-selection"
+```
+
+Each attempt costs one Haiku call, with `--attempts 3` (default) per case. Attempts are saved to
+`<out>/raw/<case>/<attempt>.json`; `summary.md` has a row per case, a row per expected skill (the
+skills whose descriptions fail to trigger), and tokens by model. `--score-only` re-scores saved
+attempts, `--case <id>` limits the run, and `--cache <dir>` reuses the clone cache of an earlier
+`bench` run.
+
+It does not show that the reviewer then loads or applies a selected skill, that a selected skill
+helps, or that the other skills offered did no harm: it counts only the names returned. Selecting
+extra skills is not penalized; the mean number selected is reported beside the hit rate.
+
+Agent model Haiku; no judge (the score is a set comparison). 14 mined and 10 synthetic cases,
+3 attempts each.
+
+| Date       | Commit  | Cases | Attempts | Named every expected skill | Mean selected | Cost  |
+| ---------- | ------- | ----- | -------- | -------------------------- | ------------- | ----- |
+| 2026-11-16 | c27a372 | 24    | 72       | 72 of 72                   | 9.5           | $0.22 |
+
 ## Metrics
 
 | Metric             | Meaning                                                                              |

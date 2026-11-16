@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { diffFileName, renderDiffIndex, splitDiff } from './diff-files.mts'
-import { numberDiff } from './numbered-diff.mts'
+import {
+  diffExcerpt,
+  diffFileName,
+  renderDiffIndex,
+  renderIndexFile,
+  splitDiff,
+} from './diff-files.mts'
+import { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 
 const PATCH = [
   'preamble',
@@ -55,5 +61,25 @@ describe('splitDiff', () => {
       '- `d/0002.patch` +2 -0 src/b.ts',
       '',
     ])
+  })
+
+  it('puts the legend before the index in the index file', () => {
+    const text = renderIndexFile(splitDiff(PATCH), 'd')
+    expect(text.startsWith(NUMBERED_DIFF_LEGEND)).toBe(true)
+    expect(text.endsWith(renderDiffIndex(splitDiff(PATCH), 'd'))).toBe(true)
+  })
+})
+
+describe('diffExcerpt', () => {
+  const file = (path: string, text: string) => ({ path, text, added: 1, removed: 0 })
+
+  it('keeps short patches whole and clips long ones per file', () => {
+    expect(diffExcerpt([file('a', 'ab\n'), file('b', 'x'.repeat(10))], 5)).toBe('ab\n\nxxxxx\n…\n')
+  })
+
+  it('stops at the total budget', () => {
+    expect(diffExcerpt([file('a', 'aaaa'), file('b', 'bbbb'), file('c', 'cccc')], 10, 6)).toBe(
+      'aaaa\nbb',
+    )
   })
 })

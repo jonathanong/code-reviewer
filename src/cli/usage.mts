@@ -15,6 +15,7 @@ code-reviewer status --repo owner/name --pr N
 code-reviewer plugins [--require NAME]...
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
+code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
   auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
   FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
@@ -63,7 +64,13 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   and no subagents, on the pillar findings a bench --out DIR saved (each judged-real finding is
   also planted under a second pillar), and scores real findings kept, label recall, severity
   agreement, duplicates merged, and other blocking and high findings confirmed by --checker;
-  --prompts is the skill's references directory. bench and bench-verifier stage the same rule sources under
+  --prompts is the skill's references directory.
+  bench-selection runs only the Haiku skill-selection step (the same call review makes) on the
+  cases that declare expectedSkills, --attempts times each (default 3), and writes one raw file per
+  attempt to --out/raw/<case>/<n>.json. It scores how often every expected skill is selected, per
+  case and per expected skill, with mean skills selected and cost by model. It does not run a
+  reviewer, so it does not show that a selected skill is then loaded or applied. --cache DIR
+  reuses the clone cache of an earlier bench; --score-only re-scores saved attempts. bench and bench-verifier stage the same rule sources under
   .final-review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
   the case's repoId); --no-rules stages none and withholds the Skill tool, for control

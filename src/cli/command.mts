@@ -20,7 +20,7 @@ import { FINAL_REVIEW_USAGE } from './usage.mts'
 export type { FinalReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, or bench-verifier'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -69,6 +69,7 @@ async function run(
   }
   if (subcommand === 'bench') return deps.runBench(args)
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
+  if (subcommand === 'bench-selection') return deps.runSelectionBench(args)
   const values = parse(args)
   if (subcommand === undefined) throw new Error(`final-review needs ${SUBCOMMANDS}.`)
   if (subcommand === 'plugins') {

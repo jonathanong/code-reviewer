@@ -3,9 +3,9 @@ import { join } from 'node:path'
 
 import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
-import { diffFileName, renderDiffIndex, splitDiff } from './diff-files.mts'
+import { diffFileName, renderIndexFile, splitDiff } from './diff-files.mts'
 import { FinalReviewError, type Effort } from './finding.mts'
-import { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
+import { numberDiff } from './numbered-diff.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
@@ -42,8 +42,7 @@ function writeDiff(out: string, name: string, patch: string, write: Write): stri
   mkdirSync(dir, { recursive: true })
   const files = splitDiff(numbered)
   files.forEach((file, index) => write(join(dir, diffFileName(index)), file.text))
-  const index = `${NUMBERED_DIFF_LEGEND}\n\n${renderDiffIndex(files, dir)}`
-  write(join(dir, 'INDEX.md'), index)
+  write(join(dir, 'INDEX.md'), renderIndexFile(files, dir))
   return [`${name}.patch`, `${name}/INDEX.md`]
 }
 

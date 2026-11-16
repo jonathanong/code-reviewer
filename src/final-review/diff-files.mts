@@ -1,3 +1,5 @@
+import { NUMBERED_DIFF_LEGEND } from './numbered-diff.mts'
+
 /** One file's section of a (numbered) unified diff. */
 export type DiffFile = { path: string; text: string; added: number; removed: number }
 
@@ -46,4 +48,26 @@ export function renderDiffIndex(files: readonly DiffFile[], dir: string): string
     .sort((a, b) => b.file.added + b.file.removed - (a.file.added + a.file.removed))
     .map(({ file, name }) => `- \`${dir}/${name}\` +${file.added} -${file.removed} ${file.path}`)
   return [`# Changed files (${files.length})`, '', ...rows, ''].join('\n')
+}
+
+/** The `INDEX.md` a reviewer reads: the numbered-diff legend, then the index of per-file patches. */
+export function renderIndexFile(files: readonly DiffFile[], dir: string): string {
+  return `${NUMBERED_DIFF_LEGEND}\n\n${renderDiffIndex(files, dir)}`
+}
+
+/**
+ * The start of each file's patch, for a cheap call that only needs to see what the change is
+ * about. Each file is clipped to `perFile` characters and the whole to `total`.
+ */
+export function diffExcerpt(files: readonly DiffFile[], perFile = 2500, total = 40_000): string {
+  const parts: string[] = []
+  let used = 0
+  for (const file of files) {
+    if (used >= total) break
+    const text = file.text.length <= perFile ? file.text : `${file.text.slice(0, perFile)}\n…\n`
+    const part = text.slice(0, total - used)
+    parts.push(part)
+    used += part.length
+  }
+  return parts.join('\n')
 }

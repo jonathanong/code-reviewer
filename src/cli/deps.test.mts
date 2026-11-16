@@ -9,12 +9,16 @@ vi.mock('../final-review/benchmark/cli.mts', () => ({
 vi.mock('../final-review/benchmark/exec.mts', () => ({
   defaultExec: vi.fn(async () => '[{"id":"rules@m","version":"1.0.0","enabled":true}]'),
 }))
+vi.mock('../final-review/benchmark/selection-cli.mts', () => ({
+  runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
+}))
 vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
 import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
 import { defaultExec } from '../final-review/benchmark/exec.mts'
+import { runFinalReviewSelectionBenchCli } from '../final-review/benchmark/selection-cli.mts'
 import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
 import type { GhAuth } from '../gh-cli/index.mts'
 import { createDefaultDeps } from './deps.mts'
@@ -142,5 +146,7 @@ describe('createDefaultDeps', () => {
     expect(runFinalReviewBenchCli).toHaveBeenCalledWith(['--x'])
     await expect(deps.runVerifierBench(['--y'])).resolves.toBe(6)
     expect(runFinalReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
+    await expect(deps.runSelectionBench(['--z'])).resolves.toBe(4)
+    expect(runFinalReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
   })
 })

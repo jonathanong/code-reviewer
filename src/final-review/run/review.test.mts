@@ -101,6 +101,8 @@ function setup(
       writeFileSync(join(out, 'diff', 'INDEX.md'), '- a.ts')
       mkdirSync(join(out, 'since'), { recursive: true })
       writeFileSync(join(out, 'since', 'INDEX.md'), '- since.ts')
+      writeFileSync(join(out, 'diff.patch'), 'diff --git a/a.ts b/a.ts\n+full\n')
+      writeFileSync(join(out, 'since.patch'), 'diff --git a/since.ts b/since.ts\n+newer\n')
       writeFileSync(join(out, 'context.json'), JSON.stringify({ title: 'Add widget' }))
       after(out)
       return { headSha: SHA, plan } as never
@@ -192,6 +194,8 @@ describe('runReview', () => {
     const outcome = await runReview(steps, options)
     expect(outcome.ok).toBe(true)
     expect(prompts[0]).toContain('- since.ts')
+    expect(prompts[0]).toContain('+newer')
+    expect(prompts[0]).not.toContain('+full')
     expect(prompts.some((prompt) => prompt.includes(`${out}/rules/INDEX.md`))).toBe(true)
   })
 
