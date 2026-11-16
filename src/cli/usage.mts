@@ -55,7 +55,10 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
   --no-rules run of the same cases: the summary adds control recall and lift (grounded minus control
   recall over positives both runs scored) and lists cases the control caught. bench also records each
-  run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens).
+  run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens) and a
+  Tokens by model table (runs, input, output, cost per pillar and model, plus an all row).
+  bench-verifier records and prints the same by model for its verifier and checker runs. review
+  shows cost and tokens by model for the whole review in report.json and report.md.
   bench-verifier runs only the verifier, one call per case
   and no subagents, on the pillar findings a bench --out DIR saved (each judged-real finding is
   also planted under a second pillar), and scores real findings kept, label recall, severity

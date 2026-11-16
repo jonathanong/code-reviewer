@@ -78,6 +78,25 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+const usage = (model: string, costUsd: number) => ({
+  costUsd,
+  turns: 1,
+  durationMs: 1,
+  inputTokens: 100,
+  outputTokens: 10,
+  cacheReadTokens: null,
+  cacheCreationTokens: null,
+  byModel: {
+    [model]: {
+      inputTokens: 100,
+      outputTokens: 10,
+      cacheReadTokens: null,
+      cacheCreationTokens: null,
+      costUsd,
+    },
+  },
+})
+
 describe('runFinalReviewVerifierBenchCli', () => {
   it('validates arguments', async () => {
     const { deps } = harness(async () => '')
@@ -164,15 +183,26 @@ describe('runFinalReviewVerifierBenchCli', () => {
       inputs: gradeInputs(n1, output, ['haiku', 'opus']),
       added: [],
       checks: [],
+      checkUsage: usage('opus', 3),
     }
-    h.store.set('o/raw/n1.json', JSON.stringify({ input, output, graded }))
-    h.store.set('o/raw/x1.json', JSON.stringify({ input, output }))
+    h.store.set('o/raw/n1.json', JSON.stringify({ input, output, graded, usage: usage('opus', 2) }))
+    h.store.set('o/raw/p1.json', JSON.stringify({ input, output }))
+    h.store.set('o/raw/x1.json', JSON.stringify({ input, output, usage: usage('opus', 1) }))
     await runFinalReviewVerifierBenchCli([...BASE, '--score-only', '--judge', 'haiku'], h.deps)
     expect(exec).not.toHaveBeenCalled()
     const markdown = h.store.get('o/summary.md') as string
     expect(markdown).toContain('judged by haiku')
     expect(markdown).toContain('| 1 | n/a | n/a → n/a | n/a | n/a (0) | n/a | 1.0 → 0.0 |')
     expect(markdown).toContain('- x1: not graded')
+    expect(markdown).toContain('| Run | Model | Runs | Input tokens | Output tokens | Cost |')
+    expect(markdown).toContain('| verifier | opus | 2 | 200 | 20 | $3.00 |')
+    expect(markdown).toContain('| checker | opus | 1 | 100 | 10 | $3.00 |')
+    expect(markdown).toContain('| all | opus | 3 | 300 | 30 | $6.00 |')
+    const saved = JSON.parse(h.store.get('o/summary.json') as string)
+    expect(saved.models.map((group: { name: string }) => group.name)).toEqual([
+      'verifier',
+      'checker',
+    ])
   })
 
   it('reuses a saved verifier output only while its run inputs match', async () => {

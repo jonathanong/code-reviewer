@@ -1,4 +1,5 @@
 import type { Usage } from '../benchmark/usage.mts'
+import { summarizeModels, type ModelTotals } from '../benchmark/usage-summary.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
@@ -43,6 +44,8 @@ export type ReportData = {
   skipped: SkippedPillar[]
   skillSelection: SkillChoice
   verifier: { model: string; usage: Usage | null } | null
+  /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier. */
+  usageByModel: Array<{ name: string; models: ModelTotals[] }>
 }
 
 export type ReportInput = {
@@ -96,6 +99,22 @@ function markDropped(
   })
 }
 
+function present(usages: ReadonlyArray<Usage | null>): Usage[] {
+  return usages.filter((usage): usage is Usage => usage !== null)
+}
+
+function byStep(input: ReportInput) {
+  const pillars = input.pillars.flatMap((pillar) => [
+    pillar.usage,
+    ...pillar.failedAttempts.map((attempt) => attempt.usage),
+  ])
+  return [
+    { name: 'selection', models: summarizeModels(present([input.skillSelection.usage])) },
+    { name: 'pillars', models: summarizeModels(present(pillars)) },
+    { name: 'verifier', models: summarizeModels(present([input.verifier?.output.usage ?? null])) },
+  ]
+}
+
 export function buildReport(input: ReportInput): ReportData {
   const output = input.verifier?.output
   return {
@@ -120,6 +139,7 @@ export function buildReport(input: ReportInput): ReportData {
       input.verifier === undefined
         ? null
         : { model: input.verifier.model, usage: input.verifier.output.usage },
+    usageByModel: byStep(input),
   }
 }
 

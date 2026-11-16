@@ -41,7 +41,8 @@ each retried once), runs the verifier, and writes:
 - `preview.md`: the reviews `post --dry-run` would send.
 - `report.md` and `report.json`: the pull request, mode and effort, what it does, the verdict, the
   verified findings, and, per pillar, the model, skills loaded, cost, turns, and every raw finding
-  with whether the verifier kept or dropped it and why. `report.md` is rendered from
+  with whether the verifier kept or dropped it and why, the total cost, and a "Tokens by model"
+  table for selection, pillars (failed attempts included), and verifier. `report.md` is rendered from
   `report.json`; `code-reviewer report --out DIR` renders it again, for a running document.
 - `skills.json`, `pillars/<pillar>.json`, `verifier.json`: the intermediate results.
 

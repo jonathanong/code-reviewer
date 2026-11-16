@@ -10,7 +10,8 @@ const finding = (title: string): Finding => ({
   body: 'b',
 })
 
-const out = (verdicts: unknown) => JSON.stringify({ structured_output: { verdicts } })
+const out = (verdicts: unknown, costUsd?: number) =>
+  JSON.stringify({ type: 'result', total_cost_usd: costUsd, structured_output: { verdicts } })
 
 describe('verifier check', () => {
   it('lists only the requested findings with their output index', () => {
@@ -69,13 +70,16 @@ describe('verifier check', () => {
     const cwds: Array<string | undefined> = []
     const exec = async (_command: string, _args: string[], options?: { cwd?: string }) => {
       cwds.push(options?.cwd)
-      return out([{ index: 0, holds: true, reason: 'yes' }])
+      return out([{ index: 0, holds: true, reason: 'yes' }], 0.25)
     }
     const run = { model: 'opus', maxTurns: 3 }
-    expect((await checkFindings('/snap', [finding('a')], [], run, exec)).size).toBe(0)
+    const none = await checkFindings('/snap', [finding('a')], [], run, exec)
+    expect(none.checks.size).toBe(0)
+    expect(none.usage).toBeNull()
     expect(cwds).toEqual([])
-    const checks = await checkFindings('/snap', [finding('a')], [0], run, exec)
+    const { checks, usage } = await checkFindings('/snap', [finding('a')], [0], run, exec)
     expect(checks.get(0)).toEqual({ holds: true, reason: 'yes' })
+    expect(usage?.costUsd).toBe(0.25)
     expect(cwds).toEqual(['/snap'])
   })
 })

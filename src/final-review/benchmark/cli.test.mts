@@ -231,7 +231,14 @@ describe('runFinalReviewBenchCli runs', () => {
 
   it('records the result subtype and usage of a failed claude run', async () => {
     stdoutSpy()
-    const stdout = JSON.stringify({ type: 'result', subtype: 'error_max_turns', total_cost_usd: 3 })
+    const stdout = JSON.stringify({
+      type: 'result',
+      subtype: 'error_max_turns',
+      total_cost_usd: 3,
+      modelUsage: {
+        opus: { inputTokens: 1000, outputTokens: 50, cacheReadInputTokens: 500, costUSD: 3 },
+      },
+    })
     const h = harness(
       { 'cases.json': JSON.stringify([CASES[0]]), 'prompts/security.md': 'P' },
       async () => {
@@ -244,6 +251,13 @@ describe('runFinalReviewBenchCli runs', () => {
     expect(raw.usage.costUsd).toBe(3)
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('| security | 1 | $3.00 | $3.00 | n/a | n/a |')
+    expect(markdown).toContain('| Pillar | Model | Runs | Input tokens | Output tokens | Cost |')
+    expect(markdown).toContain('| security | opus | 1 | 1,500 | 50 | $3.00 |')
+    expect(markdown).toContain('| all | opus | 1 | 1,500 | 50 | $3.00 |')
+    const saved = JSON.parse(h.files.get('out/summary.json') as string)
+    expect(saved[0].summary.usage.models).toEqual([
+      { model: 'opus', runs: 1, inputTokens: 1500, outputTokens: 50, costUsd: 3 },
+    ])
   })
 
   it('honors --case, --pillar, --model, and --max-turns', async () => {

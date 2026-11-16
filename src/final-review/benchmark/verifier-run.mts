@@ -9,6 +9,7 @@ import {
 } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
+import { parseUsage, resultEvent, type Usage } from './usage.mts'
 import { caseRevision, describeCase } from './fixture.mts'
 import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
@@ -162,7 +163,7 @@ export async function runVerifier(
   findings: readonly Finding[],
   run: VerifierRun,
   exec: Exec,
-): Promise<VerifierOutput> {
+): Promise<{ output: VerifierOutput; usage: Usage }> {
   const rules = hasRulesIndex(dir)
   const prompt = buildVerifierPrompt(run.verifierPrompt, item, findings, rules)
   const stdout = await exec(
@@ -172,5 +173,8 @@ export async function runVerifier(
       cwd: dir,
     },
   )
-  return parseVerifierOutput(stdout, findings.length)
+  return {
+    output: parseVerifierOutput(stdout, findings.length),
+    usage: parseUsage(resultEvent(stdout)),
+  }
 }

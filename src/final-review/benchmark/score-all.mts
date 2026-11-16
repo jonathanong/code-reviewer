@@ -8,7 +8,7 @@ import { readCaseResult } from './case-result.mts'
 import { renderSummaryTable, summarizePillar, type CaseScore } from './score.mts'
 import { skillNotes, type SkillCase } from './skills-score.mts'
 import type { Usage } from './usage.mts'
-import { renderCostTable } from './usage-summary.mts'
+import { renderCostTable, renderModelTable } from './usage-summary.mts'
 
 export type Options = {
   out: string
@@ -77,6 +77,10 @@ export function scoreAll(
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',
     renderCostTable(report.map((entry) => entry.summary)),
+    'Tokens by model (input includes cache reads and writes):',
+    renderModelTable(
+      report.map((entry) => ({ name: entry.summary.pillar, models: entry.summary.usage.models })),
+    ),
     ...(notes.length > 0 ? ['Skills:', notes.join('\n')] : []),
     ...(controlNotes.length > 0 ? ['Control:', controlNotes.join('\n')] : []),
     ...(errorLines.length > 0 ? ['Errors and skipped runs:', errorLines.join('\n')] : []),

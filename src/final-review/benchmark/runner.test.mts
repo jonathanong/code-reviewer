@@ -29,6 +29,7 @@ const NO_USAGE = {
   outputTokens: null,
   cacheReadTokens: null,
   cacheCreationTokens: null,
+  byModel: {},
 }
 
 const output = (findings: unknown) => JSON.stringify({ structured_output: { findings } })

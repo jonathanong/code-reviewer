@@ -179,6 +179,7 @@ describe('verifier run', () => {
       },
     )
     expect(calls).toEqual(['claude /snap'])
-    expect(result).toEqual({ summary: 's', findings: [], sources: [] })
+    expect(result.output).toEqual({ summary: 's', findings: [], sources: [] })
+    expect(result.usage.byModel).toEqual({})
   })
 })

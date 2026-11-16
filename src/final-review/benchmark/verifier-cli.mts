@@ -7,7 +7,8 @@ import type { BenchDeps } from './cli.mts'
 import { pool } from '../run/pool.mts'
 import { judgeAll } from './judge-all.mts'
 import { benchPlugins } from './plugin-settings.mts'
-import { gradeAll, gradeInputs, type VerifierRaw } from './verifier-grade.mts'
+import { gradeAll, type VerifierRaw } from './verifier-grade.mts'
+import { readRaw, scoreAll } from './verifier-summary.mts'
 import { collectVerifierInput, type VerifierInput } from './verifier-input.mts'
 import {
   defaultVerifierDeps,
@@ -15,12 +16,6 @@ import {
   type VerifierBenchDeps,
 } from './verifier-snapshot.mts'
 import { runVerifier, verifierRunInputs, type VerifierRun } from './verifier-run.mts'
-import {
-  renderVerifierTable,
-  scoreVerifierCase,
-  summarizeVerifier,
-  type VerifierCaseScore,
-} from './verifier-score.mts'
 
 type Options = {
   findingsFrom: string
@@ -32,10 +27,6 @@ type Options = {
   judge: string
   checker: string
   noRules: boolean
-}
-
-function readRaw(path: string, deps: BenchDeps): VerifierRaw | undefined {
-  return deps.exists(path) ? (JSON.parse(deps.readFile(path)) as VerifierRaw) : undefined
 }
 
 function errorMessage(error: unknown): string {
@@ -90,37 +81,13 @@ async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDe
       const saved = readRaw(join(options.out, 'raw', `${item.id}.json`), deps)
       if (saved !== undefined && 'output' in saved && saved.inputs === inputs) return
       deps.log(`verify ${item.id}`)
-      raw = { input, inputs, output: await runVerifier(item, dir, input.findings, run, deps.exec) }
+      const { output, usage } = await runVerifier(item, dir, input.findings, run, deps.exec)
+      raw = { input, inputs, output, usage }
     } catch (error) {
       raw = { input, error: errorMessage(error) }
     }
     writeRaw(item, raw, options, deps)
   })
-}
-
-function scoreAll(cases: EvalCase[], options: Options, deps: BenchDeps): string {
-  const scores: VerifierCaseScore[] = []
-  const errors: string[] = []
-  for (const item of cases) {
-    const raw = readRaw(join(options.out, 'raw', `${item.id}.json`), deps)
-    if (raw === undefined) errors.push(`- ${item.id}: not run`)
-    else if ('error' in raw) errors.push(`- ${item.id}: ${raw.error}`)
-    else if (raw.graded?.inputs !== gradeInputs(item, raw.output, [options.judge, options.checker]))
-      errors.push(`- ${item.id}: not graded`)
-    else scores.push(scoreVerifierCase(item, raw.input, raw.output, raw.graded))
-  }
-  const summary = summarizeVerifier(scores)
-  deps.writeFile(
-    join(options.out, 'summary.json'),
-    `${JSON.stringify({ summary, scores, errors }, null, 2)}\n`,
-  )
-  const markdown = [
-    `Labels judged by ${options.judge}; other blocking and high findings checked by ${options.checker}.`,
-    renderVerifierTable(summary),
-    ...(errors.length > 0 ? ['Errors:', errors.join('\n')] : []),
-  ].join('\n\n')
-  deps.writeFile(join(options.out, 'summary.md'), `${markdown}\n`)
-  return markdown
 }
 
 /**

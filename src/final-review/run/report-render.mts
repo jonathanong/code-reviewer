@@ -1,4 +1,5 @@
 import type { Usage } from '../benchmark/usage.mts'
+import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
 import { locationText } from '../render.mts'
 import { costBreakdown, type ReportData, type ReportFinding, type ReportPillar } from './report.mts'
@@ -81,6 +82,9 @@ export function renderReport(data: ReportData): string {
       : data.skipped.map((entry) => `- ${entry.pillar}: ${entry.reason}`).join('\n'),
     '### Cost',
     `Total: ${money(cost.total)} (skill selection ${money(cost.selection)}, pillars ${money(cost.pillars)}, verifier ${money(cost.verifier)}${data.verifier === null ? '' : `, ${data.verifier.model}`})`,
+    '### Tokens by model',
+    'Input counts fresh, cache read and cache creation tokens. Failed attempts are included.',
+    renderModelTable(data.usageByModel, 'Step'),
   )
   return `${sections.join('\n\n')}\n`
 }

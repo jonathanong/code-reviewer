@@ -158,6 +158,43 @@ describe('buildReport', () => {
   })
 })
 
+describe('usage by model', () => {
+  const withModels = (model: string, costUsd: number, output: number) =>
+    parseUsage({
+      total_cost_usd: costUsd,
+      modelUsage: { [model]: { inputTokens: 10, outputTokens: output, costUSD: costUsd } },
+    })
+
+  const input: ReportInput = {
+    ...INPUT,
+    skillSelection: { selected: [], available: 1, usage: withModels('haiku', 0.01, 1) },
+    pillars: [
+      {
+        ...(PILLARS[0] as PillarResult),
+        usage: withModels('sonnet', 0.25, 5),
+        failedAttempts: [{ error: 'boom', usage: withModels('sonnet', 0.05, 2) }],
+      },
+      { ...(PILLARS[2] as PillarResult), usage: null },
+    ],
+    verifier: { model: 'opus', output: { ...OUTPUT, usage: withModels('opus', 1.5, 9) } },
+  }
+
+  it('totals tokens and cost per model for each step, failed attempts included', () => {
+    const data = buildReport(input)
+    expect(data.usageByModel.map((step) => step.name)).toEqual(['selection', 'pillars', 'verifier'])
+    expect(data.usageByModel[1]?.models).toEqual([
+      { model: 'sonnet', runs: 2, inputTokens: 20, outputTokens: 7, costUsd: 0.3 },
+    ])
+    expect(renderReport(data)).toContain('| pillars | sonnet | 2 | 20 | 7 | $0.30 |')
+    expect(renderReport(data)).toContain('| all | opus | 1 | 10 | 9 | $1.50 |')
+    expect(renderReport(data)).toContain('### Tokens by model')
+  })
+
+  it('has no models for a review whose usage lacks them', () => {
+    expect(buildReport(INPUT).usageByModel.flatMap((step) => step.models)).toEqual([])
+  })
+})
+
 describe('renderReport', () => {
   const markdown = renderReport(buildReport(INPUT))
 
