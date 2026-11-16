@@ -122,7 +122,12 @@ async function run(
       print({ removed: await revokeFinalApproval(io) })
       return 0
     case 'status': {
-      const status = await reviewStatus(io)
+      const found = await reviewStatus(io)
+      // A skip stands only while its completed label does: a new request or claim removes it.
+      const skipped =
+        found.skipped &&
+        (await deps.createLabelIo(pull).labels()).includes(labelsFor(deps, pull.repo).completed)
+      const status = { ...found, skipped }
       print(status)
       return status.approved || status.skipped ? 0 : 1
     }

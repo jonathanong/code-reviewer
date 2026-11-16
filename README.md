@@ -116,7 +116,7 @@ Label names and an optional GitHub check run are set here too, per organization 
 `code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings.
 `code-reviewer skip` closes out a pull request the plan will not review: it posts one COMMENT
 review on the head with a `verdict=Skipped` marker, then swaps the labels. `status` exits 0 for
-a skipped head (it never counts as approval and the approval label is not added), `claim`
+a skipped head while its completed label stands (it never counts as approval and the approval label is not added), `claim`
 declines it like any reviewed head unless `--force`, and a later review treats it as a first
 review.
 

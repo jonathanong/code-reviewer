@@ -260,8 +260,17 @@ describe('runReviewCommand', () => {
         { body: `<!-- final-review sha=${SHA} verdict=Skipped effort=low -->`, author: 'bot' },
       ]),
     })
-    await expect(runReviewCommand(['status', ...PR], deps(skipped))).resolves.toBe(0)
+    const done = deps(skipped)
+    done.createLabelIo.mockReturnValue({
+      ...fakeLabelIo(),
+      labels: vi.fn(async () => ['final-review:complete']),
+    })
+    await expect(runReviewCommand(['status', ...PR], done)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({ approved: false, skipped: true })
+    // A forced re-review swapped the completed label for the in-progress one.
+    out.length = 0
+    await expect(runReviewCommand(['status', ...PR], deps(skipped))).resolves.toBe(1)
+    expect(JSON.parse(out.join(''))).toMatchObject({ skipped: false })
   })
 
   it('reports usage and validation errors with exit code 2', async () => {
