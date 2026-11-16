@@ -47,9 +47,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
      final-review findings with their thread ids, and other reviewers' notes (Codex, CodeRabbit,
      Copilot, humans), squashed and truncated;
    - `rules/INDEX.md` and the files it lists: this repository's `AGENTS.md` files and skills at
-     the base ref; the shared rule skills (no-mistakes-rules and the `skills`
-     repository) from each clone's default branch, with the ones the changed paths suggest marked; and
-     the instructions and skills of each repository under the clone root that this
+     the base ref, and the instructions and skills of each repository under the clone root that this
      reviewer's `repos/<owner>/<name>.json` configs link to the change (as consumed, or as a
      consumer of what it touches, listed as Consumers), or whose package the diff imports. Its
      `Missing` section names any source that could not be staged: fix the

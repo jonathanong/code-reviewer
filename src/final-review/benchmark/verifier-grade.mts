@@ -69,9 +69,7 @@ export type GradeOptions = {
   checker: string
   maxTurns: number
   jobs: number
-  clones: string | undefined
   noRules: boolean
-  noShared: boolean
 }
 
 async function gradeCase(

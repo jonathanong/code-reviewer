@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { parseRepoConfig, type RepoConfigs } from './config.mts'
 import type { RuleReader } from './reader.mts'
-import { SHARED_SOURCES } from './shared.mts'
 import { stageRuleSources, type StageInput } from './stage.mts'
 
 function reader(files: Record<string, string>, fail = false): RuleReader {
@@ -45,11 +44,6 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(out, { recursive: true, force: true }))
 
-const [noMistakes, skills] = SHARED_SOURCES as [
-  (typeof SHARED_SOURCES)[number],
-  (typeof SHARED_SOURCES)[number],
-]
-
 function input(overrides: Partial<StageInput> = {}): StageInput {
   return {
     changedPaths: ['src/a.test.ts'],
@@ -64,25 +58,6 @@ function input(overrides: Partial<StageInput> = {}): StageInput {
       }),
       refLabel: 'base abc1234',
     },
-    shared: [
-      {
-        source: noMistakes,
-        refLabel: 'default branch origin/main',
-        reader: reader({
-          'plugins/no-mistakes-rules/AGENTS.md': 'shared rules',
-          'plugins/no-mistakes-rules/skills/testing-rules/SKILL.md': skill('testing-rules', 'T'),
-          'plugins/no-mistakes-rules/skills/rust-rules/SKILL.md': skill('rust-rules', 'R'),
-        }),
-      },
-      {
-        source: skills,
-        refLabel: 'default branch origin/main',
-        reader: reader({
-          'skills/agent-workflow/SKILL.md': skill('agent-workflow', 'W'),
-          'skills/agent-workflow/references/review-response.md': 'dispositions',
-        }),
-      },
-    ],
     related: [
       {
         name: 'lib',
@@ -112,7 +87,7 @@ function input(overrides: Partial<StageInput> = {}): StageInput {
 const read = (path: string) => readFileSync(join(out, path), 'utf8')
 
 describe('stageRuleSources', () => {
-  it('stages repo, shared, and dependency rules and writes the index', async () => {
+  it('stages repo and dependency rules and writes the index', async () => {
     const result = await stageRuleSources(out, input())
     expect(result.written).toEqual([
       'rules/INDEX.md',
@@ -121,16 +96,10 @@ describe('stageRuleSources', () => {
       'rules/repo/.agents/skills/x/SKILL.md',
       'rules/repo/AGENTS.md',
       'rules/repo/src/CLAUDE.md',
-      'rules/shared/no-mistakes-rules/AGENTS.md',
-      'rules/shared/no-mistakes-rules/skills/rust-rules/SKILL.md',
-      'rules/shared/no-mistakes-rules/skills/testing-rules/SKILL.md',
-      'rules/shared/skills/skills/agent-workflow/SKILL.md',
-      'rules/shared/skills/skills/agent-workflow/references/review-response.md',
     ])
     expect(existsSync(join(out, 'rules/repo/docs/AGENTS.md'))).toBe(false)
     expect(read('rules/repo/AGENTS.md')).toBe('root rules')
     expect(result).toMatchObject({
-      suggested: ['testing-rules', 'agent-workflow'],
       related: ['lib'],
       missing: [],
     })
@@ -138,7 +107,7 @@ describe('stageRuleSources', () => {
       [
         '# Rule sources',
         '',
-        'Paths are relative to this file. Read the instructions that apply and the suggested skills; open other skills only when their description matches the change.',
+        'Paths are relative to this file. Read the instructions that apply; open skills only when their description matches the change.',
         '',
         '## This repository (base abc1234)',
         '',
@@ -147,22 +116,6 @@ describe('stageRuleSources', () => {
         '- repo/src/CLAUDE.md',
         'Skills:',
         '- repo/.agents/skills/x/SKILL.md: x — Repo skill',
-        '',
-        '## Shared skills',
-        '',
-        '### no-mistakes-rules (default branch origin/main)',
-        'Instructions:',
-        '- shared/no-mistakes-rules/AGENTS.md',
-        'Suggested for this change:',
-        '- shared/no-mistakes-rules/skills/testing-rules/SKILL.md: testing-rules — T (src/a.test.ts)',
-        'Other:',
-        '- shared/no-mistakes-rules/skills/rust-rules/SKILL.md: rust-rules — R',
-        '',
-        '### skills (default branch origin/main)',
-        'Suggested for this change:',
-        '- shared/skills/skills/agent-workflow/SKILL.md: agent-workflow — W (src/a.test.ts)',
-        'References:',
-        '- shared/skills/skills/agent-workflow/references/review-response.md',
         '',
         '## Dependencies',
         '',
@@ -198,7 +151,6 @@ describe('stageRuleSources', () => {
         }),
         refLabel: 'base',
       },
-      shared: [],
       related: [],
       missing: [],
     })
@@ -215,7 +167,6 @@ describe('stageRuleSources', () => {
     const result = await stageRuleSources(out, {
       changedPaths: [],
       diff: '',
-      shared: [],
       related: [],
       missing: ['skills: no clone at /c/skills'],
     })
@@ -227,7 +178,7 @@ describe('stageRuleSources', () => {
       [
         '# Rule sources',
         '',
-        'Paths are relative to this file. Read the instructions that apply and the suggested skills; open other skills only when their description matches the change.',
+        'Paths are relative to this file. Read the instructions that apply; open skills only when their description matches the change.',
         '',
         '## Missing',
         '',
@@ -255,26 +206,25 @@ describe('stageRuleSources', () => {
     const long = 'd'.repeat(300)
     const result = await stageRuleSources(out, {
       changedPaths: ['.github/workflows/ci.yml'],
-      diff: 'diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml\n+ - uses: acme/act@v1\n',
+      diff: 'diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml\n+ - uses: acme/act@v1\n+import "long"\n',
       repo: { reader: reader({}, true), refLabel: 'base' },
-      shared: [
-        { source: noMistakes, refLabel: 'r', reader: reader({}, true) },
-        {
-          source: skills,
-          refLabel: 'r',
-          reader: reader({
-            'skills/t/SKILL.md': skill('t', long),
-          }),
-        },
-      ],
       related: [
         { name: 'act', reader: reader({}, true), refLabel: 'r', codeHint: 'h', stageCode: false },
+        {
+          name: 'long',
+          reader: reader({
+            'package.json': '{"name":"long"}',
+            'skills/t/SKILL.md': skill('t', long),
+          }),
+          refLabel: 'r',
+          codeHint: 'h',
+          stageCode: false,
+        },
       ],
       missing: [],
     })
     expect(result.missing).toEqual([
       'This repository: could not list files at mem',
-      'no-mistakes-rules: could not list files at mem',
       'act: could not list files at mem',
     ])
     const index = read('rules/INDEX.md')
@@ -293,7 +243,6 @@ describe('stageRuleSources', () => {
       changedPaths: [],
       diff: '',
       repo: { reader: gone, refLabel: 'base' },
-      shared: [],
       related: [],
       missing: [],
     })
@@ -320,7 +269,6 @@ describe('stageRuleSources', () => {
         'acme/app': { consumes: [...many.map(({ repo }) => ({ repo })), { repo: 'acme/gone' }] },
         'acme/web': { consumes: [{ repo: 'acme/app', via: 'HTTP API' }] },
       }),
-      shared: [],
       related: [
         lib,
         ...many,
@@ -362,7 +310,6 @@ describe('stageRuleSources', () => {
       diff: '',
       repoId: 'acme/app',
       configs: configs({ 'acme/web': { consumes: [{ repo: 'acme/app' }] } }),
-      shared: [],
       related: [
         {
           name: 'web',

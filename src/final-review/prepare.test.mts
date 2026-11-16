@@ -59,7 +59,7 @@ function fakeIo({ reviewed = null, since, history = [] }: Overrides = {}) {
     compareDiff: vi.fn(async () => PATCH),
     treeHead: vi.fn(async () => HEAD),
     history: vi.fn(async () => history),
-    ruleSources: vi.fn(async () => ({ shared: [], related: [], missing: ['x: none'] })),
+    ruleSources: vi.fn(async () => ({ related: [], missing: ['x: none'] })),
   } satisfies PrepareIo
 }
 
@@ -150,7 +150,6 @@ describe('prepareReview', () => {
     expect(io.ruleSources).toHaveBeenCalledWith({ clones: '/clones', tree: '/tree', baseSha: BASE })
     expect(summary.written).toContain('rules/INDEX.md')
     expect(summary.rules).toMatchObject({
-      suggested: [],
       related: [],
       consumers: [],
       missing: ['This repository: not staged (no --tree)', 'x: none'],

@@ -67,7 +67,7 @@ export function buildVerifierPrompt(
     'them whole.',
     ...(hasRules
       ? [
-          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources for this change: this repository's instructions and skills at the base, shared rule skills, the rules and code of the repositories the change depends on, and the repositories configured as consuming what it touches. Read it before verifying.`,
+          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources for this change: this repository's instructions and skills at the base, the rules and code of the repositories the change depends on, and the repositories configured as consuming what it touches. Read it before verifying.`,
         ]
       : []),
     NUMBERED_DIFF_LEGEND,
