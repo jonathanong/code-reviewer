@@ -66,8 +66,8 @@ Pillar runs also get the `Skill` tool, so they can load installed plugin rule sk
 session can; `--no-rules` withholds it. `--no-shared` stages the repository and dependency rules
 but not the shared clones, which measures whether installed skills are found by description
 alone. Each raw result records the enabled plugins and their versions (`plugins`) beside the rules
-digest, so a score change can be traced to a rule change. Every staged skill's `references/*.md`
-files are staged with it.
+digest, so a score change can be traced to a rule change. Every staged skill's markdown files under
+`references/`, at any depth, are staged with it.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: a shared no-mistakes rule
 (`rules-shared-error-text`), a shared `skills` repository skill (`rules-skills-sweep-until-empty`),
@@ -126,7 +126,10 @@ finding is labeled real (it raises a labeled problem) or noise. For each case it
 pillar's findings, plants a copy of each real finding under a second pillar, and makes one
 `claude -p` call (default Opus) in the same git-free snapshot with `verifier.md`, the congruence
 pillar, and the findings as indexed JSON. The verifier returns the review with `sources` on every
-finding: the input indexes it confirms or merges.
+finding: the input indexes it confirms or merges. The snapshot also gets the same staged rule
+sources as `bench` (`--clones`, `--no-rules`, `--no-shared`, with the same meaning), and the
+verifier prompt points at `rules/INDEX.md`; the verifier and the checker read them but get no
+`Skill` tool.
 
 The verifier may add findings of its own, with an empty `sources` array. A correct addition is a
 win, so findings are graded on whether they are right rather than counted:
@@ -147,7 +150,7 @@ win, so findings are graded on whether they are right rather than counted:
 
 Results go to `<out>/raw/<case>.json` (input, output, and grade), `summary.json`, and
 `summary.md`. A saved verifier output is reused only while the case head, verifier prompt, model,
-turn limit, and input findings all match, so a rerun resumes, repeats what changed, and grades only
+turn limit, input findings, and staged rules digest all match, so a rerun resumes, repeats what changed, and grades only
 what is missing. A case whose labeled pillar has no current judgement is recorded as an error
 rather than verified, and the summary lists any case with no saved run. `--score-only` re-scores
 the saved outputs as they are, without model calls.

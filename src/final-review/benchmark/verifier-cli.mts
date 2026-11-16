@@ -3,10 +3,15 @@ import { parseArgs } from 'node:util'
 
 import { PILLARS } from '../finding.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
-import { defaultBenchDeps, type BenchDeps } from './cli.mts'
+import type { BenchDeps } from './cli.mts'
 import { judgeAll, pool } from './judge-all.mts'
 import { gradeAll, gradeInputs, type VerifierRaw } from './verifier-grade.mts'
 import { collectVerifierInput, type VerifierInput } from './verifier-input.mts'
+import {
+  defaultVerifierDeps,
+  prepareVerifierSnapshot,
+  type VerifierBenchDeps,
+} from './verifier-snapshot.mts'
 import { runVerifier, verifierRunInputs, type VerifierRun } from './verifier-run.mts'
 import {
   renderVerifierTable,
@@ -24,6 +29,9 @@ type Options = {
   jobs: number
   judge: string
   checker: string
+  clones: string | undefined
+  noRules: boolean
+  noShared: boolean
 }
 
 function readRaw(path: string, deps: BenchDeps): VerifierRaw | undefined {
@@ -47,7 +55,7 @@ function verifierPrompt(prompts: string, deps: BenchDeps): string {
   ].join('\n\n')
 }
 
-async function runAll(cases: EvalCase[], options: Options, deps: BenchDeps): Promise<void> {
+async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDeps): Promise<void> {
   const run: VerifierRun = {
     verifierPrompt: verifierPrompt(options.prompts, deps),
     model: options.model,
@@ -66,18 +74,18 @@ async function runAll(cases: EvalCase[], options: Options, deps: BenchDeps): Pro
       deps.log(`skip ${item.id}: no pillar findings`)
       return []
     }
-    // A saved output is reused only for the same run, so a resume never reports stale results.
-    const inputs = verifierRunInputs(item, input, run)
-    const saved = readRaw(join(options.out, 'raw', `${item.id}.json`), deps)
-    if (saved !== undefined && 'output' in saved && saved.inputs === inputs) return []
-    return [{ item, input, inputs }]
+    return [{ item, input }]
   })
-  await pool(tasks, options.jobs, async ({ item, input, inputs }) => {
-    deps.log(`verify ${item.id}`)
+  await pool(tasks, options.jobs, async ({ item, input }) => {
     let raw: VerifierRaw
     try {
-      const cache = join(options.findingsFrom, 'cache')
-      const { dir } = await deps.prepare(item, cache, join(options.out, 'work'), deps.exec)
+      // The rules digest keys a saved output, so staging comes before the resume check.
+      const { dir, rules } = await prepareVerifierSnapshot(item, options, deps)
+      const inputs = verifierRunInputs(item, input, run, rules)
+      // A saved output is reused only for the same run, so a resume never reports stale results.
+      const saved = readRaw(join(options.out, 'raw', `${item.id}.json`), deps)
+      if (saved !== undefined && 'output' in saved && saved.inputs === inputs) return
+      deps.log(`verify ${item.id}`)
       raw = { input, inputs, output: await runVerifier(item, dir, input.findings, run, deps.exec) }
     } catch (error) {
       raw = { input, error: errorMessage(error) }
@@ -117,7 +125,7 @@ function scoreAll(cases: EvalCase[], options: Options, deps: BenchDeps): string 
  */
 export async function runFinalReviewVerifierBenchCli(
   args: string[],
-  deps: BenchDeps = defaultBenchDeps,
+  deps: VerifierBenchDeps = defaultVerifierDeps,
 ): Promise<number> {
   const { values } = parseArgs({
     args,
@@ -134,6 +142,9 @@ export async function runFinalReviewVerifierBenchCli(
       'score-only': { type: 'boolean' },
       judge: { type: 'string' },
       checker: { type: 'string' },
+      clones: { type: 'string' },
+      'no-rules': { type: 'boolean' },
+      'no-shared': { type: 'boolean' },
     },
   })
   const { cases: casesPath, out } = values
@@ -156,6 +167,9 @@ export async function runFinalReviewVerifierBenchCli(
     jobs: Number(values.jobs ?? '3'),
     judge: values.judge ?? 'sonnet',
     checker: values.checker ?? 'opus',
+    clones: values.clones ?? process.env.FINAL_REVIEWER_CLONE_ROOT,
+    noRules: values['no-rules'] === true,
+    noShared: values['no-shared'] === true,
   }
   if (!scoreOnly) {
     await judgeAll(

@@ -85,7 +85,7 @@ describe('skillInfo', () => {
 })
 
 describe('referencePaths', () => {
-  it('takes markdown directly under references/ of the given skills', () => {
+  it('takes markdown at any depth under references/ of the given skills', () => {
     const all = [
       'skills/a/SKILL.md',
       'skills/a/references/one.md',
@@ -94,7 +94,10 @@ describe('referencePaths', () => {
       'skills/a/notes.md',
       'skills/b/references/other.md',
     ]
-    expect(referencePaths(all, ['skills/a/SKILL.md'])).toEqual(['skills/a/references/one.md'])
+    expect(referencePaths(all, ['skills/a/SKILL.md'])).toEqual([
+      'skills/a/references/deep/two.md',
+      'skills/a/references/one.md',
+    ])
     expect(referencePaths(all, [])).toEqual([])
   })
 })
