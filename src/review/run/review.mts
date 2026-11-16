@@ -158,9 +158,10 @@ async function review(
 export async function runReview(steps: ReviewSteps, options: ReviewOptions): Promise<ReviewResult> {
   const claim = await steps.claim()
   if (!claim.claimed) return { ok: true, summary: { ...claim } }
-  mkdirSync(options.out, { recursive: true })
   const closed = { value: false }
   try {
+    // Inside the guard: a claim must be dropped when the output directory cannot be made.
+    mkdirSync(options.out, { recursive: true })
     return await review(steps, options, closed)
   } catch (error) {
     const summary: Record<string, unknown> = { claimed: true, error: message(error) }

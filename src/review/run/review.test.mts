@@ -284,6 +284,14 @@ describe('runReview', () => {
     })
   })
 
+  it('drops the claim when the output directory cannot be made', async () => {
+    const { out, steps, calls, options } = setup()
+    writeFileSync(join(out, 'file'), '')
+    const outcome = await runReview(steps, { ...options, out: join(out, 'file') })
+    expect(outcome.ok).toBe(false)
+    expect(calls).toEqual(['abort'])
+  })
+
   it('reports a non-Error failure as text', async () => {
     const { steps, calls, options } = setup({
       prepare: vi.fn(async () => {
