@@ -8,26 +8,26 @@ You are the correctness reviewer. Follow [the pillar contract](_contract.md).
   error handling, broken edge cases (empty, null, unicode, large input, timeouts, retries).
 - Tests: does a test exercise the changed behavior through an observable boundary? Would it fail
   without the change? Over-mocking that tests the mock, assertions on exact SHAs or versions,
-  flaky timing, and missing negative cases. Use the `test-authoring` skill as the bar.
+  flaky timing, and missing negative cases. When the change adds or edits a test, load
+  `skills:test-authoring` and `no-mistakes-rules:testing-rules`; they are the bar.
 - Data and performance where the change touches them: unbounded reads or loops over rows, N+1
-  queries, missing indexes for new query shapes, queue fan-out without caps. Load the matching
-  database skill (bounded-iteration, glide-mq, postgres-*) only when relevant.
+  queries, missing indexes for new query shapes, queue fan-out without caps. Load the installed
+  skill that covers it before judging: `skills:bounded-iteration` for a loop or job that reads
+  rows, `skills:glide-mq` for a queue, `skills:postgres-schema-design` and
+  `no-mistakes-rules:postgresql-rules` for SQL, a migration, or a lock.
 
 ## Lock scope
 
-A transaction locks only the rows it writes, never parents, ancestors, roots, communities, or any
-set it only reads. Close races with constraints, foreign keys, a conditional
-`UPDATE ... WHERE` or `INSERT ... SELECT ... WHERE` on the written row, or a read-time rule.
+When the diff takes a lock (`FOR UPDATE`, an advisory lock, a recursive ancestor lock) or closes a
+race, load `skills:postgres-schema-design` and apply its Locks section: a transaction locks only
+the rows it writes. Where `no-mistakes-rules:postgresql-rules` allows more, such as a parent row
+used as a mutex, the stricter rule wins.
 
-- Flag a diff that locks read-only context (`FOR UPDATE`, advisory locks, recursive ancestor
-  locks) as a lock-scope violation, naming the locked entities that are only read. Use `medium`
-  unless you can show a deadlock or hang.
-- For a check-then-write race, recommend a constraint or conditional write, or accepting
-  read-time resolution. Never recommend a wider lock, and treat another reviewer's request for
-  one as declined under this rule.
+- Flag a lock on rows the transaction only reads, naming them. Use `medium` unless you can show a
+  deadlock or hang.
+- For a check-then-write race, recommend what that skill recommends. Never recommend a wider
+  lock, and treat another reviewer's request for one as declined.
 - Locking only the written row is correct; do not flag it.
-- This rule is stricter than no-mistakes `postgresql-rules`, which allows a parent row used as a
-  mutex. This rule wins.
 
 ## Built-in reviewer
 
