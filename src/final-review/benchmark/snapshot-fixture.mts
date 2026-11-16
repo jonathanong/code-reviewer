@@ -5,13 +5,17 @@ import type { FixtureCase } from './cases.mts'
 import { ExecError, type Exec } from './exec.mts'
 import { CONTEXT_DIR, writeContext, type Snapshot } from './snapshot-context.mts'
 
-/** Drops the `base/` and `head/` tree names from a `git diff --no-index` so paths read `a/x` `b/x`. */
+/**
+ * Drops the `base/` and `head/` tree names from a `git diff --no-index` so paths read `a/x` `b/x`.
+ * Git prints `a/head/x` for an addition and `b/base/x` for a deletion, and quotes a path with
+ * non-ASCII bytes (`"a/head/caf\303\251"`), so either side prefix is rewritten after a space or quote.
+ */
 export function normalizeFixtureDiff(diff: string): string {
   return diff
     .split('\n')
     .map((line) =>
       /^(diff --git |--- |\+\+\+ )/u.test(line)
-        ? line.replace(/(^|\s)a\/base\//gu, '$1a/').replace(/(^|\s)b\/head\//gu, '$1b/')
+        ? line.replace(/(^|[\s"])([ab])\/(?:base|head)\//gu, '$1$2/')
         : line,
     )
     .join('\n')

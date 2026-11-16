@@ -46,8 +46,9 @@ export function gitReader(
   return {
     label,
     async list() {
-      const out = await git(['-C', repoDir, 'ls-tree', '-r', '--name-only', ref])
-      return out.split('\n').filter((line) => line.length > 0)
+      // `-z` keeps non-ASCII paths verbatim; otherwise git quotes and octal-escapes them.
+      const out = await git(['-C', repoDir, 'ls-tree', '-r', '-z', '--name-only', ref])
+      return out.split('\0').filter((line) => line.length > 0)
     },
     async read(path) {
       try {

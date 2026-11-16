@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { createCommandRunner } from '../../gh-cli/exec.mts'
 import { defaultRef, dirReader, gitReader } from './reader.mts'
 
 const dirs: string[] = []
@@ -50,14 +51,34 @@ describe('dirReader', () => {
 describe('gitReader', () => {
   it('lists with ls-tree and reads with show at the ref', async () => {
     const git = vi.fn(async (args: string[]) =>
-      args.includes('ls-tree') ? 'a.md\nb/c.md\n' : 'body',
+      args.includes('ls-tree') ? 'a.md\0b/c.md\0' : 'body',
     )
     const reader = gitReader('/repo', 'origin/main', git)
     expect(reader.label).toBe('origin/main')
     expect(await reader.list()).toEqual(['a.md', 'b/c.md'])
     expect(await reader.read('a.md')).toBe('body')
-    expect(git).toHaveBeenCalledWith(['-C', '/repo', 'ls-tree', '-r', '--name-only', 'origin/main'])
+    expect(git).toHaveBeenCalledWith([
+      '-C',
+      '/repo',
+      'ls-tree',
+      '-r',
+      '-z',
+      '--name-only',
+      'origin/main',
+    ])
     expect(git).toHaveBeenCalledWith(['-C', '/repo', 'show', 'origin/main:a.md'])
+  })
+
+  it('lists and reads a non-ASCII path from a real repository verbatim', async () => {
+    const repo = tree(['AGENTS.md', 'café/AGENTS.md', 'a b/x.md'])
+    const run = createCommandRunner('git')
+    const identity = ['-c', 'user.name=t', '-c', 'user.email=t@example.com']
+    await run(['-C', repo, 'init', '-q'])
+    await run(['-C', repo, 'add', '.'])
+    await run(['-C', repo, ...identity, 'commit', '-q', '-m', 'x'])
+    const reader = gitReader(repo, 'HEAD', run)
+    expect((await reader.list()).sort()).toEqual(['AGENTS.md', 'a b/x.md', 'café/AGENTS.md'])
+    expect(await reader.read('café/AGENTS.md')).toBe('text of café/AGENTS.md')
   })
 
   it('returns undefined when show fails and honors a label', async () => {
