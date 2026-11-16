@@ -46,8 +46,7 @@
         "claim": "createVoteHandler bakes an application-shaped request lifecycle (auth, route rate limits, access hooks, 404/422/429 policy, noop handling) behind many injected hooks and six generic parameters. With only one consumer this boundary is speculative and the consumer will still need a large adapter, so it should stay in the product until a second consumer shows the real shared surface."
       }
     ],
-    "relation": "revert",
-    "expectedSkills": ["skills:typescript-authoring"]
+    "relation": "revert"
   },
   {
     "id": "vouchington-1092",
@@ -590,8 +589,7 @@
       "sha": "3adf4e4e24a8b480d586375e326e5d85b672e4ba"
     },
     "relation": "rework",
-    "confidence": "high",
-    "expectedSkills": ["skills:typescript-authoring"]
+    "confidence": "high"
   },
   {
     "id": "vouchington-platform-59",
@@ -616,8 +614,7 @@
       "sha": "99a56b3c4dfd8c61c10c77dac1ffce04a576793d"
     },
     "relation": "rework",
-    "confidence": "medium",
-    "expectedSkills": ["skills:typescript-authoring"]
+    "confidence": "medium"
   },
   {
     "id": "vouchington-platform-62",
@@ -642,8 +639,7 @@
       "sha": "85ce55a94206c97164c5743f4c8fbeb975094920"
     },
     "relation": "rework",
-    "confidence": "high",
-    "expectedSkills": ["skills:typescript-authoring"]
+    "confidence": "high"
   },
   {
     "id": "vouchington-platform-66",
@@ -668,8 +664,7 @@
       "sha": "85ce55a94206c97164c5743f4c8fbeb975094920"
     },
     "relation": "undo",
-    "confidence": "high",
-    "expectedSkills": ["skills:typescript-authoring"]
+    "confidence": "high"
   },
   {
     "id": "vouchington-402",

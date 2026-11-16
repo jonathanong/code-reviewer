@@ -6,28 +6,28 @@ All rows: 2026-11-16, reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attemp
 installed rule skills (`--select`) and 3 without (`--no-rules`), one session. See
 [HISTORY.md](HISTORY.md) for every run.
 
-Mined cases (13 real pull requests from `cases.json`):
+Mined cases (13 real pull requests from `cases.json`), current skill instruction:
 
-| Pillar      | Cases | Expected findings caught, with skills | Without | Runs that loaded the expected skill |
-| ----------- | ----- | ------------------------------------- | ------- | ----------------------------------- |
-| design      | 9     | 16 of 27                              | 4 of 27 | 12 of 27                            |
-| rules       | 1     | 3 of 3                                | 0 of 3  | 3 of 3                              |
-| correctness | 3     | 1 of 12                               | 0 of 12 | 6 of 9                              |
+| Pillar      | Cases | Expected findings caught, with skills | Without | Runs that loaded every selected skill |
+| ----------- | ----- | ------------------------------------- | ------- | ------------------------------------- |
+| design      | 9     | 12 of 27                              | 4 of 27 | 27 of 27                              |
+| rules       | 1     | 3 of 3                                | 0 of 3  | 3 of 3                                |
+| correctness | 3     | 1 of 12                               | 0 of 12 | 9 of 9                                |
 
-- This table was measured with the earlier skill instruction. Selection named the expected skill
-  in 39 of 39 runs, but a reviewer told to load 12 to 20 skills loaded 0 to 2 of them.
-- The instruction now in `skillInstruction` was then measured on the six cases with the worst
-  loading (3 attempts): every selected skill was loaded in 18 of 18 runs (2 of 18 before, for the
-  expected skill), at $0.27 a run against $0.19. Catches on the five design cases were 10 of 15
-  against 13 of 15 before, which 3 attempts cannot tell apart. The other seven cases are not
-  re-measured with it.
+- The with-skills arm is two runs of the same commit and session (six cases, then the other
+  seven); the control is one run of all 13. Reviewer cost $0.23 a pillar run with skills.
+- Skill loading is fixed: with the earlier instruction a reviewer told to load 12 to 20 skills
+  loaded 0 to 2 of them. Loading them did not raise catches: the earlier instruction caught 16 of
+  27 on design and the same 3 of 3 and 1 of 12. At 3 attempts, 12 against 16 of 27 is not a
+  resolved difference, but it rules out a large gain from loading every selected skill.
 - `vouchington-1144` is a ceiling case: the control catches it 3 of 3.
-- `vouchington-4154`, `vouchington-tooling-154`, `vouchington-platform-62` and
-  `vouchington-platform-66` were never caught in either arm. One later run with the current
-  instruction did raise the `vouchington-tooling-154` defect, at medium (not scored).
-- `vouchington-platform-62` and `-66` expect "this orchestration belongs in the application, not a
-  shared package"; no installed skill states that rule, so their `skills:typescript-authoring` tag
-  is a loose fit.
+- Never caught in either arm: `vouchington-4154`, `vouchington-tooling-154`,
+  `vouchington-platform-57`, `-62` and `-66`.
+- `vouchington-platform-57`, `-59`, `-62`, `-66` and `-67` expect "this workflow belongs in the
+  application, not a shared package". That rule is in vouchington-platform's own `AGENTS.md` today
+  but was added after these snapshots, so the reviewer has no rule source for it here and the
+  cases carry no `expectedSkills`. `rules-repo-orchestration-package` is the fixture form with the
+  rule present.
 - At 3 attempts a difference of one catch is noise.
 
 Fixture cases (`synthetic.json`, rules and correctness pillars). Rows marked † come from a second
@@ -49,6 +49,10 @@ run later the same day, after three positives were replaced and two negatives cl
   without the skill also notices a `LIMIT` with no `ORDER BY`, and misses only when the judge holds
   it to citing the rule.
 - The † rows used the current skill instruction; the others used the earlier one.
+- `rules-repo-orchestration-package` (rule in the fixture repository's own `AGENTS.md`) is piloted
+  only, 1 attempt per arm: caught in both. `--no-rules` removes the shared skills, not the
+  repository's `AGENTS.md`, so its control is not a null hypothesis; the case checks that a
+  repository rule is applied and cited.
 - Reviewer cost: $0.12 a pillar run with skills.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).

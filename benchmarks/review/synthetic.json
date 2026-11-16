@@ -209,6 +209,22 @@
     ]
   },
   {
+    "id": "rules-repo-orchestration-package",
+    "fixture": "fixtures/rules-repo-orchestration-package",
+    "title": "feat(reviews): add a hook-injected review engine",
+    "kind": "positive",
+    "reason": "The rule comes from this repository's own AGENTS.md, not a shared skill: \"Business workflows, domain state transitions, policy, persistence, and authorization stay in the application, never in a package, even behind injected callbacks.\" The new package owns the review submission workflow and its moderation policy behind hooks. It is the fixture form of the mined vouchington-platform cases, whose snapshots predate that repository's rule.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "packages/reviews/src/index.ts",
+        "lines": null,
+        "claim": "Citing this repository's AGENTS.md (business workflows, domain state transitions, policy and authorization stay in the application, never in a package, even behind injected callbacks), createReviewsEngine puts the review submission workflow and product policy (rating range, own-target and duplicate refusal, moderation hold for low ratings, owner notification) in a package behind injected hooks. A finding that does not tie this to the repository's own rule does not match."
+      }
+    ]
+  },
+  {
     "id": "rules-local-override",
     "fixture": "fixtures/rules-local-override",
     "title": "feat: parse amounts from user input",
