@@ -24,6 +24,16 @@ const item: EvalCase = {
   expected: [],
 }
 
+const NO_USAGE = {
+  costUsd: null,
+  turns: null,
+  durationMs: null,
+  inputTokens: null,
+  outputTokens: null,
+  cacheReadTokens: null,
+  cacheCreationTokens: null,
+}
+
 const output = (findings: unknown) => JSON.stringify({ structured_output: { findings } })
 
 describe('prompt and args', () => {
@@ -32,7 +42,8 @@ describe('prompt and args', () => {
     expect(prompt.startsWith('Pillar text\n\n## Pull request under review')).toBe(true)
     expect(prompt).toContain('Repository: acme/widgets.')
     expect(prompt).toContain('.final-review/pr.md')
-    expect(prompt).toContain('.final-review/diff.patch')
+    expect(prompt).toContain('.final-review/files.md')
+    expect(prompt).toContain('never read the combined `.final-review/diff.patch` whole')
     expect(prompt).toContain('untrusted input')
   })
 
@@ -96,8 +107,13 @@ describe('parsePillarOutput', () => {
         },
       ],
       skills: [],
+      usage: NO_USAGE,
     })
-    expect(parsePillarOutput(output([]), 'design')).toEqual({ findings: [], skills: [] })
+    expect(parsePillarOutput(output([]), 'design')).toEqual({
+      findings: [],
+      skills: [],
+      usage: NO_USAGE,
+    })
   })
 
   it('collects distinct, successfully loaded Skill names from a stream-json run in first-use order', () => {
@@ -146,7 +162,47 @@ describe('parsePillarOutput', () => {
     expect(parsePillarOutput(stream, 'rules')).toEqual({
       findings: [],
       skills: ['no-mistakes-rules:testing-rules', 'skills:bounded-iteration'],
+      usage: NO_USAGE,
     })
+  })
+
+  it('reads usage from the final result event', () => {
+    const stream = [
+      JSON.stringify({ type: 'assistant', message: { content: [] } }),
+      JSON.stringify({
+        type: 'result',
+        subtype: 'success',
+        num_turns: 7,
+        duration_ms: 1234,
+        total_cost_usd: 0.42,
+        usage: {
+          input_tokens: 10,
+          output_tokens: 20,
+          cache_read_input_tokens: 300,
+          cache_creation_input_tokens: 40,
+        },
+        structured_output: { findings: [] },
+      }),
+    ].join('\n')
+    expect(parsePillarOutput(stream, 'rules').usage).toEqual({
+      costUsd: 0.42,
+      turns: 7,
+      durationMs: 1234,
+      inputTokens: 10,
+      outputTokens: 20,
+      cacheReadTokens: 300,
+      cacheCreationTokens: 40,
+    })
+  })
+
+  it('keeps what an old single-object result has and nulls the rest', () => {
+    const old = JSON.stringify({
+      type: 'result',
+      total_cost_usd: 1.5,
+      usage: { input_tokens: 'many' },
+      structured_output: { findings: [] },
+    })
+    expect(parsePillarOutput(old, 'rules').usage).toEqual({ ...NO_USAGE, costUsd: 1.5 })
   })
 
   it('rejects non-JSON output and missing structured findings', () => {
@@ -180,6 +236,7 @@ describe('runPillar', () => {
     expect(findings).toEqual({
       findings: [{ pillar: 'history', severity: 'low', title: 'T', body: 'B' }],
       skills: [],
+      usage: NO_USAGE,
     })
     const [command, args, options] = exec.mock.calls[0] as unknown as [
       string,

@@ -90,6 +90,20 @@ non-empty array of full names, meaning any one of them satisfies it:
   listed as `caught without <skill>`. `summary.json` holds the four counts (`grounded`,
   `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
 
+### Cost and turns
+
+The pillar prompt points the reviewer at `.final-review/files.md` (an index of per-file patches in
+`.final-review/diff/`) and tells it never to read the combined `diff.patch` whole, so a large pull
+request does not exhaust the context in one read. Each raw result records `usage` from the final
+`result` event: `costUsd`, `turns`, `durationMs`, `inputTokens`, `outputTokens`, `cacheReadTokens`,
+`cacheCreationTokens` (null for a field the event lacks). A run that exits non-zero but printed a
+result event keeps its usage, and its error names the result subtype, for example
+`claude exited with 1 (error_max_turns)`. Under the score table, a Cost table lists per pillar the
+runs with usage, total cost, cost per run, turns per run, and input tokens per run (input + cache
+read + cache creation); `summary.json` holds the same as `usage` on each pillar summary. Raw
+results saved before this change have no `usage`: `--score-only` leaves them out (`n/a`), not as
+zero. `bench-verifier` does not record usage.
+
 ### Paired control
 
 `--baseline DIR` (with or without `--score-only`) points at the `--out` directory of an earlier

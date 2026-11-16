@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { runFinalReviewBenchCli, type PillarBenchDeps } from './cli.mts'
+import { ExecError } from './exec.mts'
 
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
@@ -222,6 +223,23 @@ describe('runFinalReviewBenchCli runs', () => {
     expect(markdown).toContain('- security n1: plain string')
   })
 
+  it('records the result subtype and usage of a failed claude run', async () => {
+    stdoutSpy()
+    const stdout = JSON.stringify({ type: 'result', subtype: 'error_max_turns', total_cost_usd: 3 })
+    const h = harness(
+      { 'cases.json': JSON.stringify([CASES[0]]), 'prompts/security.md': 'P' },
+      async () => {
+        throw new ExecError('claude exited with 1', 1, stdout, null)
+      },
+    )
+    await runFinalReviewBenchCli(BASE, h.deps)
+    const raw = JSON.parse(h.files.get('out/raw/security/p1.json') as string)
+    expect(raw.error).toBe('claude exited with 1 (error_max_turns)')
+    expect(raw.usage.costUsd).toBe(3)
+    const markdown = h.files.get('out/summary.md') as string
+    expect(markdown).toContain('| security | 1 | $3.00 | $3.00 | n/a | n/a |')
+  })
+
   it('honors --case, --pillar, --model, and --max-turns', async () => {
     stdoutSpy()
     const h = harness({
@@ -309,6 +327,8 @@ describe('skill loads', () => {
     await runFinalReviewBenchCli(['--cases', 'cases.json', '--out', 'out', '--score-only'], h.deps)
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('| security | 3 | 100% | 100% | 0% (1) | 0.7 | 33% | 50% |')
+    // Raw results saved before usage was recorded count as missing, not zero.
+    expect(markdown).toContain('| security | 0 | n/a | n/a | n/a | n/a |')
     expect(markdown).toContain('- security p2: caught without rules:testing-rules')
     expect(markdown).toContain('- security n1: missing rules:testing-rules')
     expect(markdown).not.toContain('Control run')

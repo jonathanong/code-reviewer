@@ -1,6 +1,8 @@
 import type { Finding, Pillar, Severity } from '../finding.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
 import type { BaselineSummary } from './baseline.mts'
+import type { Usage } from './usage.mts'
+import { summarizeUsage, type UsageSummary } from './usage-summary.mts'
 import { summarizeSkills, type SkillCase, type SkillsSummary } from './skills-score.mts'
 
 const LINE_TOLERANCE = 10
@@ -27,6 +29,7 @@ export type PillarSummary = {
   falseAlarmRate: number | null
   meanFindings: number | null
   skills: SkillsSummary
+  usage: UsageSummary
   /** Paired control comparison; present only with `--baseline`. */
   baseline?: BaselineSummary
 }
@@ -107,6 +110,7 @@ export function summarizePillar(
   scores: readonly CaseScore[],
   skillCases: readonly SkillCase[] = [],
   skillsAvailable: boolean | null = null,
+  usages: readonly Usage[] = [],
 ): PillarSummary {
   const negatives = scores.filter((score) => score.kind === 'negative')
   const matched = sum(scores, (score) => score.matched)
@@ -131,6 +135,7 @@ export function summarizePillar(
       scores.length,
     ),
     skills: summarizeSkills(skillCases, skillsAvailable),
+    usage: summarizeUsage(usages),
   }
 }
 

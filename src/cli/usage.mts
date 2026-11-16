@@ -36,7 +36,8 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   with expectedSkills (full plugin:skill names; an array entry is any-of), reports skills loaded and
   grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
   --no-rules run of the same cases: the summary adds control recall and lift (grounded minus control
-  recall over positives both runs scored) and lists cases the control caught.
+  recall over positives both runs scored) and lists cases the control caught. bench also records each
+  run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens).
   bench-verifier runs only the verifier, one call per case
   and no subagents, on the pillar findings a bench --out DIR saved (each judged-real finding is
   also planted under a second pillar), and scores real findings kept, label recall, severity

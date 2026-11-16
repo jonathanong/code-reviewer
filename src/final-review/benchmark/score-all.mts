@@ -7,6 +7,8 @@ import { assertBaseline, baselineNotes, compareBaseline, readBaseline } from './
 import { readCaseResult } from './case-result.mts'
 import { renderSummaryTable, summarizePillar, type CaseScore } from './score.mts'
 import { skillNotes, type SkillCase } from './skills-score.mts'
+import type { Usage } from './usage.mts'
+import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
   out: string
@@ -34,8 +36,10 @@ export function scoreAll(
     const skillCases: SkillCase[] = []
     const errors: string[] = []
     const tools: boolean[] = []
+    const usages: Usage[] = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
+      if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
         continue
@@ -45,7 +49,7 @@ export function scoreAll(
       if (result.skillCase !== null) skillCases.push(result.skillCase)
     }
     const available = tools.length === 0 ? null : tools.some(Boolean)
-    const summary = summarizePillar(pillar, scores, skillCases, available)
+    const summary = summarizePillar(pillar, scores, skillCases, available, usages)
     if (control !== undefined)
       summary.baseline = compareBaseline(
         skillCases,
@@ -71,6 +75,8 @@ export function scoreAll(
   const markdown = [
     `Matching: ${matching}.`,
     renderSummaryTable(report.map((entry) => entry.summary)),
+    'Cost (runs with recorded usage):',
+    renderCostTable(report.map((entry) => entry.summary)),
     ...(notes.length > 0 ? ['Skills:', notes.join('\n')] : []),
     ...(controlNotes.length > 0 ? ['Control:', controlNotes.join('\n')] : []),
     ...(errorLines.length > 0 ? ['Errors and skipped runs:', errorLines.join('\n')] : []),

@@ -9,6 +9,7 @@ import { judgeAll, pool, type RawResult } from './judge-all.mts'
 import { runPillar } from './runner.mts'
 import { scoreAll, type Options } from './score-all.mts'
 import { NO_RULES, stageCaseRules } from './rules.mts'
+import { describeFailure } from './usage.mts'
 import { defaultExec, prepareSnapshot, type Exec, type Snapshot } from './snapshot.mts'
 
 export type BenchDeps = {
@@ -103,10 +104,11 @@ async function runAll(
     try {
       const { model, maxTurns } = options
       const run = { pillar, pillarPrompt, model, maxTurns, skills: !options.noRules }
-      const { findings, skills } = await runPillar(item, dir, run, deps.exec)
-      result = { findings, skills, skillTool: !options.noRules, ...seen }
+      const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
+      result = { findings, skills, skillTool: !options.noRules, usage, ...seen }
     } catch (error) {
-      result = { error: error instanceof Error ? error.message : String(error), ...seen }
+      const { message, usage } = describeFailure(error)
+      result = { error: message, ...(usage === null ? {} : { usage }), ...seen }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
   })
