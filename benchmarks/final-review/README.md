@@ -73,9 +73,13 @@ Pillar runs use `--output-format stream-json --verbose`. The runner reads findin
 result event and records the distinct skills loaded through the `Skill` tool (a request counts only when its
 tool result came back without an error), in first-use order,
 as `skills` in each raw result (`skillTool` records whether the tool was available; `--no-rules`
-runs have none, so `skills` is empty). A case may declare `"expectedSkills": ["testing-rules"]`;
-a name matches a loaded skill equal to it or to its part after the last `:`, so `testing-rules`
-matches `no-mistakes-rules:testing-rules`. The expectation applies to the pillars of the case's
+runs have none, so `skills` is empty). A case may declare
+`"expectedSkills": ["no-mistakes-rules:testing-rules"]`. A name must be the full `plugin:skill`
+name (a bare name is rejected when the cases load), and only a loaded skill with exactly that name
+satisfies it, so a same-named skill from a stale plugin does not. An entry may instead be a
+non-empty array of full names, meaning any one of them satisfies it:
+`[["skills:bounded-iteration", "no-mistakes-rules:queue-rules"]]`; a missing group is listed as
+`a | b`. The expectation applies to the pillars of the case's
 `expected` findings, and to every pillar run for a negative case. The summary adds:
 
 - **Skills loaded**: the share of expected skills that were loaded, over cases that declare them
@@ -86,6 +90,20 @@ matches `no-mistakes-rules:testing-rules`. The expectation applies to the pillar
   listed as `caught without <skill>`. `summary.json` holds the four counts (`grounded`,
   `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
 
+### Paired control
+
+`--baseline DIR` (with or without `--score-only`) points at the `--out` directory of an earlier
+`--no-rules` run of the same cases. The summary table gains **Control recall** and **Lift**
+columns per pillar, over the positives with `expectedSkills` that both runs scored: control
+recall is the share of them the control caught, and lift is grounded recall minus control recall
+over the same positives. A case the control caught is listed as `control caught <id>: does not
+discriminate`: a reviewer with no rules finds it too, so it does not measure the rules. With
+`--judge`, the control's saved judge grades are read, not re-made; judge the control directory
+first (`bench --score-only --judge MODEL --out DIR`), and its unjudged cases are left out of the
+comparison. `summary.json` holds the numbers as `baseline` (`cases`, `groundedRecall`,
+`controlRecall`, `lift`, `controlCaught`) on each pillar summary. `bench` fails when DIR has no
+raw results for the cases.
+
 A `--no-rules` run is the ablation baseline: every catch is ungrounded, and the summary says so
 (`skillsAvailable: false`), so a skill-enabled run's grounded recall can be compared against it.
 Raw results saved before this change lack `skills`; `--score-only` counts them as nothing loaded,
@@ -95,7 +113,12 @@ stale result look current; the rules digest and `plugins` are unchanged.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: an installed
 `no-mistakes-rules` skill (`rules-shared-error-text`), an installed `skills` plugin skill
-(`rules-skills-sweep-until-empty`),
+(`rules-skills-sweep-until-empty`, which accepts either of two skills),
+workflow-only, manifest-only, and test-only changes (`rules-workflow-only-*`,
+`rules-manifest-only-*`, `rules-test-only-*`), `rules-content-only-*` cases whose changed file path
+gives no hint of the rule (only the code does), a docs-only negative (`rules-docs-only-readme`), a
+near-miss negative that complies with a rule it resembles breaking
+(`rules-near-miss-renamed-log-field-monitor-updated`),
 a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides an
 installed one (`rules-local-override`, negative), and a compliant dependency call
 (`rules-dependency-flag-ok`, negative). Each positive's claim requires citing its rule source, so

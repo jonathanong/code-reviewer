@@ -42,7 +42,7 @@
   {
     "id": "rules-shared-error-text",
     "fixture": "fixtures/rules-shared-error-text",
-    "expectedSkills": ["testing-rules"],
+    "expectedSkills": ["no-mistakes-rules:testing-rules"],
     "title": "feat: parse amounts from user input",
     "kind": "positive",
     "reason": "The new tests match error message text. Only the shared no-mistakes testing-rules forbid it; the repository's AGENTS.md is silent.",
@@ -59,7 +59,7 @@
   {
     "id": "rules-skills-sweep-until-empty",
     "fixture": "fixtures/rules-skills-sweep-until-empty",
-    "expectedSkills": ["bounded-iteration"],
+    "expectedSkills": [["skills:bounded-iteration", "no-mistakes-rules:queue-rules"]],
     "title": "feat: purge expired sessions every 15 minutes",
     "kind": "positive",
     "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the installed skills plugin requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
@@ -76,7 +76,7 @@
   {
     "id": "rules-test-only-per-item",
     "fixture": "fixtures/rules-test-only-per-item",
-    "expectedSkills": ["testing-rules"],
+    "expectedSkills": ["no-mistakes-rules:testing-rules"],
     "title": "test: cover overdueInvoices",
     "kind": "positive",
     "reason": "A test-only change. The first test asserts on every returned invoice in a loop without asserting the result is non-empty, so it passes if the function returns nothing. Only the shared no-mistakes testing-rules state this; the repository's AGENTS.md is silent.",
@@ -91,36 +91,104 @@
     ]
   },
   {
-    "id": "rules-workflow-only-checkout-credentials",
-    "fixture": "fixtures/rules-workflow-only-checkout-credentials",
-    "expectedSkills": ["github-actions-rules"],
+    "id": "rules-workflow-only-path-filtered-required-check",
+    "fixture": "fixtures/rules-workflow-only-path-filtered-required-check",
+    "expectedSkills": ["no-mistakes-rules:github-actions-rules"],
     "title": "ci: add a lint workflow",
     "kind": "positive",
-    "reason": "A workflow-only change. The new workflow's checkout keeps its credentials although no later step pushes; the existing ci.yml sets persist-credentials: false. Only the shared no-mistakes github-actions-rules state this.",
+    "reason": "A workflow-only change. The new Lint workflow is a required check on main (the PR says so) but its pull_request trigger has a paths filter, so a PR that touches neither src/ nor package.json never reports it. Only the shared no-mistakes github-actions-rules state this; the repository's AGENTS.md is silent.",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
         "path": ".github/workflows/lint.yml",
         "lines": null,
-        "claim": "Citing the shared no-mistakes github-actions-rules skill (MUST NOT persist checkout credentials unless a later step pushes; set persist-credentials: false), the new lint workflow's actions/checkout step does not set persist-credentials: false although no step pushes. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes github-actions-rules skill (MUST NOT path-filter a required check; skipped jobs look missing; use an always-reporting gate), the new lint workflow's pull_request trigger has a `paths` filter although Lint is a required check on main, so pull requests that change neither src/ nor package.json never report it. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
   {
-    "id": "rules-manifest-only-git-dependency",
-    "fixture": "fixtures/rules-manifest-only-git-dependency",
-    "expectedSkills": ["dependency-rules"],
-    "title": "chore: add money-format",
+    "id": "rules-manifest-only-duplicate-utility",
+    "fixture": "fixtures/rules-manifest-only-duplicate-utility",
+    "expectedSkills": ["no-mistakes-rules:dependency-rules"],
+    "title": "chore: add slugify",
     "kind": "positive",
-    "reason": "A manifest-only change. The new dependency is a git URL on a branch. Only the shared no-mistakes dependency-rules state this.",
+    "reason": "A manifest-only change. The new slugify dependency duplicates the existing toSlug utility in src/text.ts. Only the shared no-mistakes dependency-rules state this; the repository's AGENTS.md is silent.",
     "expected": [
       {
         "pillar": "rules",
         "severity": "medium",
         "path": "package.json",
         "lines": null,
-        "claim": "Citing the shared no-mistakes dependency-rules skill (SHOULD NOT depend on git URLs or unapproved registries), the new money-format dependency is a GitHub git URL pinned to a branch instead of a registry version. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes dependency-rules skill (SHOULD NOT add a dependency when an existing utility fits), the new slugify dependency duplicates the repository's existing toSlug utility in src/text.ts. A finding that only says the dependency is unused or unlocked, or does not tie this to that shared rule, does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-content-only-renamed-log-field",
+    "fixture": "fixtures/rules-content-only-renamed-log-field",
+    "expectedSkills": ["no-mistakes-rules:observability-rules"],
+    "title": "refactor: name the invite retry field after its parameter",
+    "kind": "positive",
+    "reason": "The changed file's path gives no hint of the topic. The change renames the retryCount log field, but ops/monitors.json still queries retryCount, so the monitor stops matching. Only the shared no-mistakes observability-rules state this.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/members/service.ts",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes observability-rules skill (MUST NOT rename or retype a log field or metric that a monitor or dashboard reads without updating it in the same change), the 'invite send failed' log now uses `attempt` instead of `retryCount`, but the invite-retries-high monitor in ops/monitors.json still queries retryCount and will never match. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-content-only-not-in-nullable",
+    "fixture": "fixtures/rules-content-only-not-in-nullable",
+    "expectedSkills": ["no-mistakes-rules:postgresql-rules"],
+    "title": "feat: list members who have not been invited",
+    "kind": "positive",
+    "reason": "The changed file's path gives no hint of the topic. The query uses NOT IN (SELECT member_id FROM invites) and invites.member_id is nullable, so one email-only invite makes the query return no rows. Only the shared no-mistakes postgresql-rules state this.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/members/roster.ts",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes postgresql-rules skill (MUST NOT use NOT IN (SELECT ...); NULLs silently drop rows; use NOT EXISTS), uninvitedMembers filters with NOT IN over invites.member_id, which is nullable, so a single invite without a member makes it return nothing. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-content-only-dedup-by-entity",
+    "fixture": "fixtures/rules-content-only-dedup-by-entity",
+    "expectedSkills": ["no-mistakes-rules:queue-rules"],
+    "title": "feat: sync the billing system when a member changes plan",
+    "kind": "positive",
+    "reason": "The changed file's path gives no hint of the topic. The job id is keyed by member alone and completed jobs are retained for a day, so a second plan change within the day is deduped away and never synced. Only the shared no-mistakes queue-rules state this.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/members/plans.ts",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes queue-rules skill (MUST NOT key dedup ids by entity alone; include the triggering event, because retained jobs still hold the id), the sync-plan job id is `sync-plan:${memberId}` with completed jobs retained for a day, so a later plan change for the same member within that day is dropped. A finding that does not tie this to that shared rule does not match."
+      }
+    ]
+  },
+  {
+    "id": "rules-content-only-form-body-mutation",
+    "fixture": "fixtures/rules-content-only-form-body-mutation",
+    "expectedSkills": ["no-mistakes-rules:security-rules"],
+    "title": "feat: change email from the settings page",
+    "kind": "positive",
+    "reason": "The changed file's path gives no hint of the topic. The cookie-authenticated JSON route that changes a member's email also accepts form-encoded bodies, which a cross-site HTML form can submit. Only the shared no-mistakes security-rules state this.",
+    "expected": [
+      {
+        "pillar": "rules",
+        "severity": "high",
+        "path": "src/members/profile.ts",
+        "lines": null,
+        "claim": "Citing the shared no-mistakes security-rules skill (MUST NOT accept form-encoded or multipart bodies on mutating JSON routes; CSRF), handleEmailChange authenticates with a session cookie and now also parses application/x-www-form-urlencoded bodies, so another site can change a member's email with a plain form post. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
@@ -146,6 +214,23 @@
     "title": "feat: parse amounts from user input",
     "kind": "negative",
     "reason": "Same tests as rules-shared-error-text, but this repository's AGENTS.md requires exact message assertions and explicitly overrides the shared testing rule. Nothing should be flagged at high or above.",
+    "expected": []
+  },
+  {
+    "id": "rules-docs-only-readme",
+    "fixture": "fixtures/rules-docs-only-readme",
+    "title": "docs: document how to run the tests",
+    "kind": "negative",
+    "reason": "A README-only change that adds a short, accurate test command section. Nothing should be flagged at high or above.",
+    "expected": []
+  },
+  {
+    "id": "rules-near-miss-renamed-log-field-monitor-updated",
+    "fixture": "fixtures/rules-near-miss-renamed-log-field-monitor-updated",
+    "expectedSkills": ["no-mistakes-rules:observability-rules"],
+    "title": "refactor: name the invite retry field after its parameter",
+    "kind": "negative",
+    "reason": "Same rename as rules-content-only-renamed-log-field, but the same change updates the invite-retries-high monitor to the new field name, which is what the observability-rules require. Nothing should be flagged at high or above.",
     "expected": []
   },
   {

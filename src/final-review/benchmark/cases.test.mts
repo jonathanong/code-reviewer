@@ -159,21 +159,27 @@ describe('parseEvalCases', () => {
 })
 
 describe('expectedSkills', () => {
-  it('accepts a non-empty array of names and leaves it off otherwise', () => {
+  it('accepts full names and any-of groups, and leaves it off otherwise', () => {
     const [with_, without] = parseEvalCases([
-      positive({ expectedSkills: ['testing-rules'] }),
+      positive({ expectedSkills: ['r:testing-rules', ['a:x', 'b:y']] }),
       negative(),
     ])
-    expect(with_?.expectedSkills).toEqual(['testing-rules'])
+    expect(with_?.expectedSkills).toEqual(['r:testing-rules', ['a:x', 'b:y']])
     expect(without).not.toHaveProperty('expectedSkills')
   })
 
-  it('rejects empty, non-array, and non-string entries', () => {
-    for (const expectedSkills of [[], 'testing-rules', [''], [1]]) {
-      expect(message([positive({ expectedSkills })])).toBe(
-        'cases[0]: expectedSkills must be a non-empty array of non-empty strings',
-      )
-    }
+  it('rejects empty, non-array, and bare or non-string names', () => {
+    const cases: Array<[unknown, string]> = [
+      [[], 'expectedSkills must be a non-empty array'],
+      ['r:testing-rules', 'expectedSkills must be a non-empty array'],
+      [['testing-rules'], 'expectedSkills names must be full plugin:skill strings'],
+      [[''], 'expectedSkills names must be full plugin:skill strings'],
+      [[1], 'expectedSkills names must be full plugin:skill strings'],
+      [[['a:x', 'bare']], 'expectedSkills names must be full plugin:skill strings'],
+      [[[]], 'an expectedSkills any-of group must not be empty'],
+    ]
+    for (const [expectedSkills, text] of cases)
+      expect(message([positive({ expectedSkills })])).toBe(`cases[0]: ${text}`)
   })
 })
 

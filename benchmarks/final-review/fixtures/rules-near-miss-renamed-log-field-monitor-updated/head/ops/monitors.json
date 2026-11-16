@@ -1,0 +1,9 @@
+{
+  "monitors": [
+    {
+      "name": "invite-retries-high",
+      "query": "message:\"invite send failed\" AND attempt:>=3",
+      "notify": "oncall"
+    }
+  ]
+}
