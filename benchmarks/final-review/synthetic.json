@@ -40,19 +40,19 @@
     "expected": []
   },
   {
-    "id": "rules-shared-error-text",
-    "fixture": "fixtures/rules-shared-error-text",
+    "id": "rules-test-only-whole-module-mock",
+    "fixture": "fixtures/rules-test-only-whole-module-mock",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],
-    "title": "feat: parse amounts from user input",
+    "title": "test: cover withRetry",
     "kind": "positive",
-    "reason": "The new tests match error message text. Only the shared no-mistakes testing-rules forbid it; the repository's AGENTS.md is silent.",
+    "reason": "A test-only change. The test replaces the whole export object of ./settings.ts with a factory that returns only retryLimit, dropping the module's other exports. That looks idiomatic; only the shared no-mistakes testing-rules forbid it, and the repository's AGENTS.md is silent.",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
-        "path": "src/amount.test.ts",
+        "path": "src/retry.test.ts",
         "lines": null,
-        "claim": "Citing the shared no-mistakes testing-rules skill (MUST NOT match error message text; assert type, code, or structured fields), the tests assert the InvalidAmountError message text instead of its type or its INVALID_AMOUNT code. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes testing-rules skill (MUST NOT replace a mocked module's whole export object; spread the real module and override what you need), retry.test.ts mocks './settings.ts' with a factory that returns only retryLimit, so the module's other export (timeoutMs) is gone for the code under test. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
@@ -142,19 +142,19 @@
     ]
   },
   {
-    "id": "rules-content-only-not-in-nullable",
-    "fixture": "fixtures/rules-content-only-not-in-nullable",
+    "id": "rules-content-only-metrics-on-tx-client",
+    "fixture": "fixtures/rules-content-only-metrics-on-tx-client",
     "expectedSkills": ["no-mistakes-rules:postgresql-rules"],
-    "title": "feat: list members who have not been invited",
+    "title": "feat: record where members sign up from",
     "kind": "positive",
-    "reason": "The changed file's path gives no hint of the topic. The query uses NOT IN (SELECT member_id FROM invites) and invites.member_id is nullable, so one email-only invite makes the query return no rows. Only the shared no-mistakes postgresql-rules state this.",
+    "reason": "The changed file's path gives no hint of the topic. A best-effort signup_events insert runs on the signup transaction's own client inside a try/catch that swallows its error. A failed statement aborts the transaction, so COMMIT then fails and the signup is rolled back. Only the shared no-mistakes postgresql-rules state this.",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
-        "path": "src/members/roster.ts",
+        "path": "src/members/signup.ts",
         "lines": null,
-        "claim": "Citing the shared no-mistakes postgresql-rules skill (MUST NOT use NOT IN (SELECT ...); NULLs silently drop rows; use NOT EXISTS), uninvitedMembers filters with NOT IN over invites.member_id, which is nullable, so a single invite without a member makes it return nothing. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes postgresql-rules skill (MUST NOT run logging or metrics code that queries the database on the transaction's connection; its failure aborts the transaction), createMember writes the best-effort signup_events row on the signup transaction's client and swallows its error, so a failure there leaves the transaction aborted and the signup fails at COMMIT. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
@@ -213,7 +213,7 @@
     "fixture": "fixtures/rules-local-override",
     "title": "feat: parse amounts from user input",
     "kind": "negative",
-    "reason": "Same tests as rules-shared-error-text, but this repository's AGENTS.md requires exact message assertions and explicitly overrides the shared testing rule. Nothing should be flagged at high or above.",
+    "reason": "The tests match the exact error message text, and this repository's AGENTS.md requires exact message assertions and explicitly overrides the shared testing rule. Nothing should be flagged at high or above.",
     "expected": []
   },
   {

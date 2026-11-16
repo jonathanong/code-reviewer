@@ -112,7 +112,7 @@ re-runs pillars), and the judge cache is keyed on findings only, so the new fiel
 stale result look current; the rules digest and `plugins` are unchanged.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: an installed
-`no-mistakes-rules` skill (`rules-shared-error-text`), an installed `skills` plugin skill
+`no-mistakes-rules` skill (`rules-test-only-whole-module-mock`), an installed `skills` plugin skill
 (`rules-skills-sweep-until-empty`, which accepts either of two skills),
 workflow-only, manifest-only, and test-only changes (`rules-workflow-only-*`,
 `rules-manifest-only-*`, `rules-test-only-*`), `rules-content-only-*` cases whose changed file path
