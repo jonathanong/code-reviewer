@@ -61,6 +61,7 @@ function thread(first: ThreadComment | undefined, overrides: Partial<ReviewThrea
 function pull(overrides: Partial<PrConversation> = {}): PrConversation {
   return {
     title: 'Title',
+    author: { login: 'dev', __typename: 'User' },
     body: 'Does a thing.',
     closingIssuesReferences: { nodes: [] },
     headRefOid: C,

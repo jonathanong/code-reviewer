@@ -4,6 +4,7 @@ import { DEFAULT_CONFIG_DIR } from './rules/config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhFinalReviewIo } from './github.mts'
 import type { PullTarget } from './target.mts'
+import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
 import type { TrustedAuthors } from './trust.mts'
 
@@ -13,7 +14,8 @@ export type PrepareIo = {
   /** Logins whose `final-review` markers count. */
   trusted(): Promise<TrustedAuthors>
   diff(): Promise<string>
-  paths(): Promise<string[]>
+  /** The changed files with their changed line counts. */
+  files(): Promise<ChangedFile[]>
   conversation(): Promise<PrConversation>
   compare(base: string, head: string): Promise<SinceDiff>
   compareDiff(base: string, head: string): Promise<string>
@@ -47,7 +49,11 @@ export function createGhPrepareIo(
     headSha: () => io.headSha(),
     trusted: () => io.trustedAuthors(),
     diff: () => io.diff(),
-    paths: async () => (await io.listFiles()).map((file) => file.filename),
+    files: async () =>
+      (await io.listFiles()).map((file) => ({
+        path: file.filename,
+        lines: (file.additions ?? 0) + (file.deletions ?? 0),
+      })),
     conversation: () => fetchConversation(target, run),
     async compare(base, head) {
       let parsed: CompareJson
@@ -63,7 +69,12 @@ export function createGhPrepareIo(
         paths: files.map((file) => file.filename),
         // The compare API lists at most 300 files; more means the since-diff is a rewrite.
         ...(files.length >= MAX_COMPARE_FILES ? { truncated: true } : {}),
-        lines: files.reduce((sum, file) => sum + (file.additions ?? 0) + (file.deletions ?? 0), 0),
+        lines: reviewableLines(
+          files.map((file) => ({
+            path: file.filename,
+            lines: (file.additions ?? 0) + (file.deletions ?? 0),
+          })),
+        ),
       }
     },
     compareDiff: (base, head) =>

@@ -18,6 +18,74 @@ const SECURITY_RES: readonly RegExp[] = [
   /(?:^|\/)(?:package\.json|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|Cargo\.(?:toml|lock)|go\.(?:mod|sum)|requirements[^/]*\.txt|poetry\.lock|Package\.resolved|Gemfile(?:\.lock)?)$|\.csproj$/u,
 ]
 
+const LOCKFILES: ReadonlySet<string> = new Set([
+  'pnpm-lock.yaml',
+  'package-lock.json',
+  'npm-shrinkwrap.json',
+  'yarn.lock',
+  'bun.lock',
+  'bun.lockb',
+  'Cargo.lock',
+  'Package.resolved',
+  'packages.lock.json',
+  'Gemfile.lock',
+  'poetry.lock',
+  'uv.lock',
+  'go.sum',
+  '.terraform.lock.hcl',
+])
+
+const MANIFESTS: ReadonlySet<string> = new Set([
+  'package.json',
+  'Cargo.toml',
+  'go.mod',
+  'pyproject.toml',
+  'Gemfile',
+  'Package.swift',
+])
+const MANIFEST_NAME_RES: readonly RegExp[] = [/^requirements[^/]*\.txt$/u, /\.csproj$/u]
+/** Dependabot bumps GitHub Actions in workflow files. */
+const WORKFLOW_RE = /^\.github\/workflows\/[^/]+\.ya?ml$/u
+
+const GENERATED_RES: readonly RegExp[] = [
+  /\.(?:min\.(?:js|css)|map)$/u,
+  /\.snap$|(?:^|\/)__snapshots__\//u,
+  /(?:^|\/)(?:dist|build|generated|__generated__|vendor|node_modules)\//u,
+  /\.(?:generated|gen)\.[^/]+$|\.pb\.go$|_pb2\.py$/u,
+]
+
+/** True when the file's basename is a dependency lockfile. */
+export function isLockfile(path: string): boolean {
+  return LOCKFILES.has(basename(path))
+}
+
+function basename(path: string): string {
+  return path.slice(path.lastIndexOf('/') + 1)
+}
+
+/** Lockfiles, build output, snapshots, and code generators' files: not worth reviewing line by line. */
+export function isGenerated(path: string): boolean {
+  return isLockfile(path) || GENERATED_RES.some((re) => re.test(path))
+}
+
+/** Dependency manifests, lockfiles, and workflow files: what a Dependabot pull request edits. */
+export function isDependencyFile(path: string): boolean {
+  const name = basename(path)
+  return (
+    isLockfile(path) ||
+    MANIFESTS.has(name) ||
+    MANIFEST_NAME_RES.some((re) => re.test(name)) ||
+    WORKFLOW_RE.test(path)
+  )
+}
+
+export type ChangedFile = { path: string; lines: number }
+
+/** Changed lines outside generated files. */
+export function reviewableLines(files: readonly ChangedFile[]): number {
+  return files.reduce((sum, file) => sum + (isGenerated(file.path) ? 0 : file.lines), 0)
+}
+
 export function isDocPath(path: string): boolean {
   return DOC_RE.test(path) && !MANIFEST_RE.test(path)
 }

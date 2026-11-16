@@ -3,9 +3,13 @@ import { describe, expect, it } from 'vitest'
 import {
   historyHits,
   isDocPath,
+  isDependencyFile,
   isDocsOnly,
+  isGenerated,
+  isLockfile,
   isTestOrDocsOnly,
   isTestPath,
+  reviewableLines,
   securityTriggers,
 } from './triggers.mts'
 
@@ -109,5 +113,107 @@ describe('historyHits', () => {
       'apply hotfix now',
       'it reverts a thing',
     ])
+  })
+})
+
+describe('isLockfile', () => {
+  it.each([
+    'pnpm-lock.yaml',
+    'package-lock.json',
+    'npm-shrinkwrap.json',
+    'yarn.lock',
+    'bun.lock',
+    'bun.lockb',
+    'Cargo.lock',
+    'Package.resolved',
+    'packages.lock.json',
+    'Gemfile.lock',
+    'poetry.lock',
+    'uv.lock',
+    'go.sum',
+    '.terraform.lock.hcl',
+    'apps/web/pnpm-lock.yaml',
+  ])('treats %s as a lockfile', (path) => {
+    expect(isLockfile(path)).toBe(true)
+  })
+
+  it.each([
+    'package.json',
+    'pnpm-lock.yaml.bak',
+    'src/lock.ts',
+    'docs/yarn.lock.md',
+    'a/Cargo.toml',
+  ])('does not treat %s as a lockfile', (path) => {
+    expect(isLockfile(path)).toBe(false)
+  })
+})
+
+describe('isGenerated', () => {
+  it.each([
+    'pnpm-lock.yaml',
+    'dist/index.js',
+    'apps/web/build/main.js',
+    'src/generated/api.ts',
+    'src/__generated__/types.ts',
+    'vendor/lib.go',
+    'node_modules/x/index.js',
+    'app.min.js',
+    'app.min.css',
+    'app.js.map',
+    'a.test.ts.snap',
+    'src/__snapshots__/a.txt',
+    'schema.generated.ts',
+    'api.gen.ts',
+    'api.pb.go',
+    'api_pb2.py',
+  ])('treats %s as generated', (path) => {
+    expect(isGenerated(path)).toBe(true)
+  })
+
+  it.each(['src/a.ts', 'distance/a.ts', 'src/building/a.ts', 'src/generate.ts', 'a.map.ts'])(
+    'treats %s as hand-written',
+    (path) => {
+      expect(isGenerated(path)).toBe(false)
+    },
+  )
+})
+
+describe('isDependencyFile', () => {
+  it.each([
+    'package.json',
+    'apps/a/Cargo.toml',
+    'go.mod',
+    'pyproject.toml',
+    'requirements.txt',
+    'py/requirements-dev.txt',
+    'Gemfile',
+    'App/App.csproj',
+    'Package.swift',
+    '.github/workflows/ci.yml',
+    '.github/workflows/release.yaml',
+    'yarn.lock',
+  ])('treats %s as a dependency file', (path) => {
+    expect(isDependencyFile(path)).toBe(true)
+  })
+
+  it.each(['src/a.ts', 'scripts/package.json.sh', '.github/workflows/sub/x.yml', 'action.yml'])(
+    'does not treat %s as a dependency file',
+    (path) => {
+      expect(isDependencyFile(path)).toBe(false)
+    },
+  )
+})
+
+describe('reviewableLines', () => {
+  it('sums only hand-written files', () => {
+    expect(
+      reviewableLines([
+        { path: 'src/a.ts', lines: 7 },
+        { path: 'pnpm-lock.yaml', lines: 500 },
+        { path: 'dist/x.js', lines: 90 },
+        { path: 'b.ts', lines: 3 },
+      ]),
+    ).toBe(10)
+    expect(reviewableLines([])).toBe(0)
   })
 })

@@ -9,7 +9,7 @@ import { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
-import { historyHits } from './triggers.mts'
+import { historyHits, reviewableLines } from './triggers.mts'
 
 export type PrepareOptions = {
   out: string
@@ -25,6 +25,7 @@ export type PrepareSummary = {
   baseSha: string
   files: number
   lines: number
+  mode: ReviewPlan['mode']
   plan: ReviewPlan
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
@@ -56,13 +57,14 @@ export async function prepareReview(
   write: Write = (path, text) => writeFileSync(path, text),
 ): Promise<PrepareSummary> {
   mkdirSync(options.out, { recursive: true })
-  const [headSha, patch, paths, conversation, trusted] = await Promise.all([
+  const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(),
-    io.paths(),
+    io.files(),
     io.conversation(),
     io.trusted(),
   ])
+  const paths = files.map((file) => file.path)
   if (options.tree !== undefined) {
     const treeHead = await io.treeHead(options.tree)
     if (treeHead !== headSha) {
@@ -89,7 +91,10 @@ export async function prepareReview(
   const history = subjects === undefined ? undefined : historyHits(subjects)
   const plan = planReview({
     paths,
+    reviewableLines: reviewableLines(files),
     context,
+    authorLogin: conversation.author?.login ?? null,
+    authorIsBot: conversation.author?.__typename === 'Bot',
     ...(options.requested === undefined ? {} : { requested: options.requested }),
     ...(since === undefined ? {} : { since }),
     ...(history === undefined ? {} : { history }),
@@ -112,6 +117,7 @@ export async function prepareReview(
     baseSha: context.baseSha,
     files: paths.length,
     lines: context.lines,
+    mode: plan.mode,
     plan,
     written,
     rules: {

@@ -14,7 +14,7 @@ self-review to GitHub. Local sessions only, never CI. A review is not a merge de
 stays with the human or the triage loop.
 
 Arguments: `owner/name#number` (or a pull request URL) and an optional effort: `low`, `medium`, or
-`high`. Without one, the CLI picks `high` for a first review and `low` for a follow-up. To run as
+`high`. Without one, the CLI picks the mode: light (`low`) for a follow-up and for small, docs-only, test-only or Dependabot pull requests, full (`high`) otherwise. To run as
 the standing reviewer that other sessions ask, use the [final-reviewer](../final-reviewer/SKILL.md)
 skill, which calls this one per pull request.
 
@@ -70,7 +70,7 @@ For each entry in `plan.pillars`, start one background subagent on that entry's 
 only paths, never file contents:
 
 - its pillar file and [the contract](references/pillars/_contract.md);
-- `"$run/tree"`, `"$run/diff/INDEX.md"`, `"$run/context.md"`, `"$run/rules/INDEX.md"`, and at `low` effort
+- `"$run/tree"`, `"$run/diff/INDEX.md"`, `"$run/context.md"`, `"$run/rules/INDEX.md"`, and, when `plan.sinceSha` is set (a follow-up),
   `"$run/since/INDEX.md"` (review the new commits; read the full diff only for surrounding code);
 - the base and head SHAs, and the repositories to search for blast radius;
 - the instruction to write its JSON to `"$run/pillars/<pillar>.json"` and reply with one line:

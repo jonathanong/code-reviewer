@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { FollowUpContext } from './context.mts'
+import { SMALL_PR_LINES } from './mode.mts'
 import { planReview, type PlanInput } from './plan.mts'
 
 const HEAD = 'a'.repeat(40)
@@ -41,8 +42,11 @@ const names = (result: Plan) => result.pillars.map((p) => p.pillar)
 const skipped = (result: Plan) =>
   Object.fromEntries(result.skipped.map((s) => [s.pillar, s.reason]))
 
-function plan(input: Partial<PlanInput> = {}) {
-  return planReview({ paths: ['src/a.ts'], context: context(), ...input })
+function plan(
+  input: Partial<Omit<PlanInput, 'reviewableLines'>> & { reviewableLines?: number } = {},
+) {
+  const base = input.context ?? context()
+  return planReview({ paths: ['src/a.ts'], reviewableLines: base.lines, context: base, ...input })
 }
 
 describe('planReview full reviews', () => {
@@ -50,6 +54,7 @@ describe('planReview full reviews', () => {
     const result = plan()
     expect(result).toMatchObject({
       upToDate: false,
+      mode: 'full',
       effort: 'high',
       sinceSha: null,
       verifierModel: 'opus',
@@ -74,8 +79,8 @@ describe('planReview full reviews', () => {
     expect(skipped(result).design).toBe('Docs-only change.')
   })
 
-  it('skips blast-radius for test-only changes', () => {
-    const result = plan({ paths: ['a.test.ts'] })
+  it('skips blast-radius for test-only changes when full review is requested', () => {
+    const result = plan({ paths: ['a.test.ts'], requested: 'high' })
     expect(names(result)).toEqual(['rules', 'correctness', 'design'])
     expect(skipped(result)['blast-radius']).toBe('Test- or docs-only change.')
   })
@@ -110,13 +115,16 @@ describe('planReview follow-ups', () => {
       context: reviewed({ unresolved: [finding('security'), finding('congruence')] }),
       since,
     })
+    expect(result.mode).toBe('light')
     expect(result.effort).toBe('low')
     expect(result.sinceSha).toBe(OLD)
     expect(names(result)).toEqual(['correctness', 'security'])
     expect(result.verifierModel).toBe('sonnet')
     expect(skipped(result).rules).toBe('Low-effort follow-up without an open finding.')
     expect(skipped(result).history).toBe('Low-effort follow-up without an open finding.')
-    expect(result.reasons).toEqual([])
+    expect(result.reasons).toEqual([
+      'Follow-up after an earlier review: light review of the new commits.',
+    ])
   })
 
   it('adds security from since paths and never history on low', () => {
@@ -128,10 +136,9 @@ describe('planReview follow-ups', () => {
     expect(names(result)).toEqual(['correctness', 'security'])
   })
 
-  it('uses opus for large follow-ups', () => {
+  it('keeps a sonnet verifier for large light follow-ups', () => {
     const result = plan({ context: reviewed({ lines: 5000 }), since: { ...since, lines: 301 } })
-    expect(result.effort).toBe('low')
-    expect(result.verifierModel).toBe('opus')
+    expect(result).toMatchObject({ mode: 'light', effort: 'low', verifierModel: 'sonnet' })
   })
 
   it('handles docs-only low follow-ups', () => {
@@ -141,7 +148,7 @@ describe('planReview follow-ups', () => {
 
   it('escalates a requested low review with no earlier review', () => {
     const result = plan({ requested: 'low' })
-    expect(result.effort).toBe('high')
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
     expect(result.reasons).toEqual(['No earlier final review: high effort.'])
   })
 
@@ -149,7 +156,7 @@ describe('planReview follow-ups', () => {
     'escalates when the reviewed SHA is not an ancestor (%j)',
     (diff) => {
       const result = plan({ context: reviewed(), ...(diff === undefined ? {} : { since: diff }) })
-      expect(result.effort).toBe('high')
+      expect(result).toMatchObject({ mode: 'full', effort: 'high' })
       expect(result.sinceSha).toBeNull()
       expect(result.reasons).toEqual([
         'The reviewed SHA is not an ancestor of the head: high effort.',
@@ -159,7 +166,7 @@ describe('planReview follow-ups', () => {
 
   it('escalates when new commits change more than half the pull request', () => {
     const result = plan({ context: reviewed({ lines: 100 }), since: { ...since, lines: 51 } })
-    expect(result.effort).toBe('high')
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
     expect(result.reasons).toEqual([
       'New commits change more than half the pull request: high effort.',
     ])
@@ -167,7 +174,7 @@ describe('planReview follow-ups', () => {
 
   it('escalates when the conversation was truncated', () => {
     const result = plan({ context: reviewed({ truncated: true }), since })
-    expect(result.effort).toBe('high')
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
     expect(result.reasons).toEqual([
       'The review conversation is longer than the digest reads: high effort.',
     ])
@@ -175,9 +182,192 @@ describe('planReview follow-ups', () => {
 
   it('escalates when the compare API truncated the since diff', () => {
     const result = plan({ context: reviewed(), since: { ...since, truncated: true } })
-    expect(result.effort).toBe('high')
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
     expect(result.reasons).toEqual([
       'The diff since the reviewed SHA is too large to list: high effort.',
     ])
+  })
+})
+
+describe('planReview skip', () => {
+  const dependabot = { authorLogin: 'dependabot[bot]', authorIsBot: true }
+
+  it('skips a Dependabot pull request that changes only lockfiles', () => {
+    const result = plan({ ...dependabot, paths: ['pnpm-lock.yaml', 'apps/a/Cargo.lock'] })
+    expect(result).toMatchObject({ mode: 'skip', effort: 'low', sinceSha: null, pillars: [] })
+    expect(result.skipReason).toBe(
+      'Dependabot pull request that changes only lockfiles: no review.',
+    )
+    expect(result.reasons).toEqual([result.skipReason])
+    expect(result.skipped).toHaveLength(6)
+    expect(result.skipped.every((s) => s.reason === result.skipReason)).toBe(true)
+  })
+
+  it.each(['dependabot[bot]', 'app/dependabot'])('recognizes the login %s', (authorLogin) => {
+    expect(plan({ authorLogin, paths: ['yarn.lock'] }).mode).toBe('skip')
+  })
+
+  it('recognizes the bare login only for a bot account', () => {
+    expect(plan({ authorLogin: 'dependabot', authorIsBot: true, paths: ['go.sum'] }).mode).toBe(
+      'skip',
+    )
+    expect(plan({ authorLogin: 'dependabot', paths: ['go.sum'] }).mode).not.toBe('skip')
+  })
+
+  it('does not skip other authors, mixed paths, or an empty file list', () => {
+    expect(plan({ authorLogin: 'dev', paths: ['yarn.lock'] }).mode).not.toBe('skip')
+    expect(plan({ authorLogin: null, paths: ['yarn.lock'] }).mode).not.toBe('skip')
+    expect(plan({ ...dependabot, paths: ['yarn.lock', 'src/a.ts'] }).mode).toBe('light')
+    expect(plan({ ...dependabot, paths: [] }).mode).toBe('light')
+  })
+
+  it.each(['medium', 'high', 'low'] as const)(
+    'reviews a skip case when --effort %s is given',
+    (requested) => {
+      const result = plan({ ...dependabot, paths: ['yarn.lock'], requested })
+      expect(result.mode).not.toBe('skip')
+      expect(result.skipReason).toBeUndefined()
+      expect(result.reasons[0]).toBe(
+        `Dependabot lockfile-only pull request: --effort ${requested} forces a review.`,
+      )
+      expect(result.pillars.length).toBeGreaterThan(0)
+    },
+  )
+
+  it('marks a skipped head that was already reviewed as up to date', () => {
+    const result = plan({
+      ...dependabot,
+      paths: ['yarn.lock'],
+      context: context({ reviewedSha: HEAD }),
+    })
+    expect(result).toMatchObject({ mode: 'skip', upToDate: true })
+  })
+})
+
+describe('planReview light first reviews', () => {
+  const dependabot = { authorLogin: 'dependabot[bot]', authorIsBot: true }
+
+  it('runs rules and correctness with a sonnet verifier on a Dependabot pull request', () => {
+    const result = plan({ ...dependabot, paths: ['package.json'], history: ['Revert "x"'] })
+    expect(result).toMatchObject({
+      mode: 'light',
+      effort: 'low',
+      sinceSha: null,
+      verifierModel: 'sonnet',
+    })
+    expect(names(result)).toEqual(['rules', 'correctness'])
+    expect(skipped(result)).toEqual({
+      design: 'Light review.',
+      'blast-radius': 'Light review.',
+      security: 'Light review.',
+      history: 'Light review.',
+    })
+    expect(result.reasons).toEqual(['Dependabot pull request: light review.'])
+  })
+
+  it('does not count manifests, lockfiles, or workflows as security triggers for Dependabot', () => {
+    const paths = ['package.json', 'pnpm-lock.yaml', '.github/workflows/ci.yml', 'Cargo.toml']
+    expect(names(plan({ ...dependabot, paths }))).toEqual(['rules', 'correctness'])
+    expect(names(plan({ paths }))).toContain('security')
+  })
+
+  it('still triggers security for other Dependabot paths', () => {
+    const result = plan({ ...dependabot, paths: ['package.json', 'scripts/deploy.sh'] })
+    expect(names(result)).toEqual(['rules', 'correctness', 'security'])
+    expect(result.reasons).toContain('Security trigger: scripts/deploy.sh.')
+  })
+
+  it('counts reviewable lines, not raw lines, for the small threshold', () => {
+    const result = plan({
+      context: context({ lines: 9000 }),
+      reviewableLines: SMALL_PR_LINES,
+    })
+    expect(result.mode).toBe('light')
+    expect(result.reasons).toEqual([
+      `Small pull request (${SMALL_PR_LINES} reviewable lines): light review.`,
+    ])
+    expect(
+      plan({ context: context({ lines: 9000 }), reviewableLines: SMALL_PR_LINES + 1 }).mode,
+    ).toBe('full')
+  })
+
+  it('reviews a human pull request of only generated files as light, not skipped', () => {
+    const result = plan({
+      paths: ['pnpm-lock.yaml'],
+      context: context({ lines: 4000 }),
+      reviewableLines: 0,
+    })
+    expect(result).toMatchObject({ mode: 'light', verifierModel: 'sonnet' })
+    expect(names(result)).toEqual(['rules', 'correctness', 'security'])
+  })
+
+  it('does not let a generated trigger path make a small pull request large', () => {
+    const result = plan({ paths: ['dist/handler.js', 'src/a.ts'], reviewableLines: 10 })
+    expect(result.mode).toBe('light')
+  })
+
+  it('compares reviewable lines on both sides of the follow-up rule', () => {
+    const reviewed = context({ reviewedSha: OLD, lines: 10_000 })
+    const since = { status: 'ahead', paths: ['src/a.ts'], lines: 60 }
+    expect(plan({ context: reviewed, since, reviewableLines: 100 }).mode).toBe('full')
+    expect(plan({ context: reviewed, since, reviewableLines: 120 }).mode).toBe('light')
+  })
+
+  it('keeps full effort for a Dependabot pull request when --effort asks', () => {
+    expect(plan({ ...dependabot, requested: 'medium' })).toMatchObject({
+      mode: 'full',
+      effort: 'medium',
+    })
+  })
+
+  it('is light for tests-only and mixed docs and tests, without the security rule for docs', () => {
+    expect(plan({ paths: ['a.test.ts', 'README.md'] })).toMatchObject({
+      mode: 'light',
+      effort: 'low',
+      verifierModel: 'sonnet',
+    })
+    const docs = plan({ paths: ['README.md'] })
+    expect(docs).toMatchObject({ mode: 'light' })
+    expect(docs.pillars).toEqual([{ pillar: 'rules', model: 'haiku' }])
+    expect(docs.reasons).toEqual(['Only docs and tests changed: light review.'])
+  })
+
+  it('adds security to a tests-only change that touches a trigger path', () => {
+    const result = plan({ paths: ['src/auth.test.ts'] })
+    expect(result.mode).toBe('light')
+    expect(names(result)).toEqual(['rules', 'correctness', 'security'])
+  })
+
+  it('is light for a small pull request up to the threshold', () => {
+    const result = plan({ context: context({ lines: SMALL_PR_LINES }) })
+    expect(result).toMatchObject({ mode: 'light', effort: 'low', verifierModel: 'sonnet' })
+    expect(names(result)).toEqual(['rules', 'correctness'])
+    expect(result.reasons).toEqual([
+      `Small pull request (${SMALL_PR_LINES} reviewable lines): light review.`,
+    ])
+  })
+
+  it('is full just over the threshold', () => {
+    expect(plan({ context: context({ lines: SMALL_PR_LINES + 1 }) }).mode).toBe('full')
+  })
+
+  it('is never small when a security trigger path changed', () => {
+    const result = plan({ paths: ['src/auth.ts'], context: context({ lines: 5 }) })
+    expect(result).toMatchObject({ mode: 'full', effort: 'high', verifierModel: 'opus' })
+    expect(names(result)).toContain('security')
+  })
+
+  it('lets an explicit effort win over a small pull request', () => {
+    const result = plan({ context: context({ lines: 5 }), requested: 'medium' })
+    expect(result).toMatchObject({ mode: 'full', effort: 'medium' })
+  })
+
+  it('adds security to a light follow-up whose new commits touch a trigger path', () => {
+    const result = plan({
+      context: context({ reviewedSha: OLD }),
+      since: { status: 'ahead', paths: ['.github/workflows/ci.yml'], lines: 10 },
+    })
+    expect(result.mode).toBe('light')
+    expect(names(result)).toEqual(['correctness', 'security'])
   })
 })

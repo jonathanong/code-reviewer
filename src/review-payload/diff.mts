@@ -7,6 +7,8 @@ export type ReviewFile = {
   previous_filename?: string
   patch?: string
   status?: string
+  additions?: number
+  deletions?: number
 }
 
 export type CommentableIndex = {
@@ -70,6 +72,8 @@ function asReviewFiles(parsed: unknown): ReviewFile[] {
       file.previous_filename = record.previous_filename
     if (typeof record.patch === 'string') file.patch = record.patch
     if (typeof record.status === 'string') file.status = record.status
+    if (typeof record.additions === 'number') file.additions = record.additions
+    if (typeof record.deletions === 'number') file.deletions = record.deletions
     return [file]
   })
 }
