@@ -166,7 +166,7 @@ describe('abortReview', () => {
 
 describe('claimReview when the head is already reviewed', () => {
   it('answers the request with complete and keeps final approval', async () => {
-    const io = fakeIo([REQUESTED_LABEL, 'final approval'])
+    const io = fakeIo([REQUESTED_LABEL, COMPLETE_LABEL, 'final approval'])
     await expect(claimReview(io, { headReviewed: true })).resolves.toMatchObject({
       claimed: false,
       reason: 'head already reviewed',
@@ -175,13 +175,13 @@ describe('claimReview when the head is already reviewed', () => {
   })
 
   it('adds nothing when no request is pending', async () => {
-    const io = fakeIo(['final approval'])
+    const io = fakeIo([COMPLETE_LABEL, 'final approval'])
     await claimReview(io, { headReviewed: true })
     expect(io.calls).toEqual([])
   })
 
   it('reviews again with force', async () => {
-    const io = fakeIo(['final approval'])
+    const io = fakeIo([COMPLETE_LABEL, 'final approval'])
     await expect(claimReview(io, { force: true, headReviewed: true })).resolves.toMatchObject({
       claimed: true,
     })
