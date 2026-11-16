@@ -71,7 +71,7 @@ async function run(
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
   if (subcommand === 'bench-selection') return deps.runSelectionBench(args)
   const values = parse(args)
-  if (subcommand === undefined) throw new Error(`code-reviewer needs ${SUBCOMMANDS}.`)
+  if (subcommand === undefined) throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
   if (subcommand === 'plugins') {
     const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
     print(result)
@@ -127,7 +127,7 @@ async function run(
       return status.approved ? 0 : 1
     }
     default:
-      throw new Error(`code-reviewer needs ${SUBCOMMANDS}.`)
+      throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
   }
 }
 

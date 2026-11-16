@@ -14,107 +14,103 @@ self-review to GitHub. Local sessions only, never CI. A review is not a merge de
 stays with the human or the triage loop.
 
 Arguments: `owner/name#number` (or a pull request URL) and an optional effort: `low`, `medium`, or
-`high`. Without one, the CLI picks the mode: light (`low`) for a follow-up and for small, docs-only, test-only or Dependabot pull requests, full (`high`) otherwise. To run as
+`high`. Without one, the CLI picks the mode: light (`low`) for a follow-up and for small,
+docs-only, test-only or Dependabot pull requests, full (`high`) otherwise, and skip for a
+Dependabot change to lockfiles only ([dispatch](references/dispatch.md) has the rules). To run as
 the standing reviewer that other sessions ask, use the [review-loop](../review-loop/SKILL.md)
 skill, which calls this one per pull request.
 
-The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer
-checkout; `help` lists the flags). Every subcommand prints a short JSON result. It authenticates as
-the GitHub App when `CODE_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login
-(`code-reviewer auth` says which).
+The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer checkout; `help` lists
+the flags). Every subcommand prints a short JSON result. It authenticates as the GitHub App when
+`CODE_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login (`code-reviewer auth`
+says which).
 
 ## Token budget
 
-The session that runs this skill only orchestrates. It never reads the diff, the pillar outputs,
-or the conversation itself: the CLI writes them to the run directory and subagents read them
-there. Each subagent replies with one line, and its full output stays in a file.
+The session that runs this skill only orchestrates. One headless command does the review and
+writes every file; the session reads the one JSON line it prints and, to present the review,
+`report.md`. Never read the diff or the pillar outputs into the session.
 
-## Step 1 - Claim and prepare
+## Step 1 - Check out the head
 
-1. `code-reviewer claim --repo <repo> --pr <n>` (add `--force` when the request came by
-   message rather than label). It adds `final-review:in-progress`, then removes
-   `final-review:requested`, `final-review:complete`, and a stale `final approval`. `claimed:
-   false` means another run owns it or the request was withdrawn: stop.
-2. Create a private run directory: `run=$(mktemp -d "${TMPDIR:-/tmp}/review-<name>-<n>-XXXXXX")`.
-3. Check out the head as a detached worktree at `"$run/tree"` from a local clone when one exists
+1. Create a private run directory: `run=$(mktemp -d "${TMPDIR:-/tmp}/review-<name>-<n>-XXXXXX")`.
+2. Check out the head as a detached worktree at `"$run/tree"` from a local clone when one exists
    (`git -C <clone> fetch origin <head> && git -C <clone> worktree add --detach "$run/tree" <head>`),
    otherwise from a blobless clone under `"$run"`.
-4. `code-reviewer prepare --repo <repo> --pr <n> --out "$run" --tree "$run/tree" --clones <clone root> [--effort <e>]`
-   (`--clones` defaults to `CODE_REVIEWER_CLONE_ROOT`). It writes, without any model calls:
-   - `diff.patch` and `diff/INDEX.md` with one numbered patch per file (base and head line numbers
-     on every line);
-   - `context.md`: the last review (SHA, verdict, effort), commits since, unresolved
-     review findings with their thread ids, and other reviewers' notes (Codex, CodeRabbit,
-     Copilot, humans), squashed and truncated;
-   - `rules/INDEX.md` and the files it lists: this repository's `AGENTS.md` files and skills at
-     the base ref, and the instructions and skills of each repository under the clone root that this
-     reviewer's `repos/<owner>/<name>.json` configs link to the change (as consumed, or as a
-     consumer of what it touches, listed as Consumers), or whose package the diff imports. Its
-     `Missing` section names any source that could not be staged: fix the
-     clone root rather than reviewing without it;
-   - `since.patch` and `since/INDEX.md` for a follow-up whose last reviewed SHA is an ancestor;
-   - `plan.json`: effort, pillars with their model tier, the verifier tier, and skipped pillars
-     with reasons ([dispatch](references/dispatch.md) documents the rules).
-5. `claim` already declines a head the newest review covers once posting finished, meaning
-   the `final-review:complete` label is set (`reason: "head already reviewed"`, with that
-   review's status); a partial post left by a failed run is claimed again. It swaps the request label for `complete` without
-   touching `final approval`: reply with that verdict and stop. Use `--force` to review the same
-   head again (for example at a higher effort).
-6. Clean up when the review is posted or fails: `git -C <clone> worktree remove --force
-   "$run/tree"`, then `rm -rf "$run"`. On failure also run `code-reviewer abort` (add
-   `--requeue` only once, for a transient error).
 
-## Step 2 - Dispatch pillars
+## Step 2 - Run the review
 
-For each entry in `plan.pillars`, start one background subagent on that entry's `model`. Give it
-only paths, never file contents:
+Run this in the background, so the session stays free:
 
-- its pillar file and [the contract](references/pillars/_contract.md);
-- `"$run/tree"`, `"$run/diff/INDEX.md"`, `"$run/context.md"`, `"$run/rules/INDEX.md"`, and, when `plan.sinceSha` is set (a follow-up),
-  `"$run/since/INDEX.md"` (review the new commits; read the full diff only for surrounding code);
-- the base and head SHAs, and the repositories to search for blast radius;
-- the instruction to write its JSON to `"$run/pillars/<pillar>.json"` and reply with one line:
-  `<pillar>: <n> findings` or `<pillar>: failed: <reason>`.
+```bash
+code-reviewer review --repo <repo> --pr <n> --out "$run" --tree "$run/tree" \
+  --clones <clone root> [--effort <e>] [--force]
+```
 
-Large pull requests: pillars read `INDEX.md` first and open per-file patches as needed, never the
-whole `diff.patch`. A pillar that fails or writes invalid JSON is retried once, then listed in
-`skipped` with the error.
+`--clones` defaults to `CODE_REVIEWER_CLONE_ROOT`. Add `--force` when the request came by message
+rather than label, or to review a head that is already reviewed. The command:
+
+1. Claims the pull request: the processing label replaces the requested one, and a stale
+   `final approval` is removed. `claimed: false` means another run owns it, the request was
+   withdrawn, or the newest review already covers this head: stop.
+2. Prepares the run directory with no model calls: the numbered diff and one patch per file,
+   `context.md` (the last review, unresolved findings, other reviewers' notes), `rules/INDEX.md`
+   (this repository's `AGENTS.md` and skills at the base ref, and those of the repositories that
+   this reviewer's `repos/` configs or the diff's imports link to the change), and `plan.json`.
+3. On a skip plan, closes the request with the reason and writes a short report. Nothing is
+   posted; go to Step 5.
+4. Picks the rule skills for the change with one Haiku call, runs the planned pillars as headless
+   runs that load only the `no-mistakes-rules` and `skills` plugins, then runs the verifier.
+5. Writes `review.json` (what `post` takes), `preview.md` (the review as it would be posted), and
+   `report.md` with the pull request summary, the verdict, every pillar's findings including the
+   ones the verifier dropped and why, the skills each pillar loaded, and the cost by model.
+
+It prints one line: `{claimed, mode, verdict, findings, costUsd, report, review, headSha}`. It
+never posts. If it fails after the claim it drops the processing label itself and exits 1; when
+every pillar fails it fails the review, not approves it.
 
 | Pillar       | File                                               | Covers                                                                                 |
 | ------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | rules        | [rules](references/pillars/rules.md)               | AGENTS.md and skills from the base ref, hygiene, semver, dependency policy             |
-| correctness  | [correctness](references/pillars/correctness.md)   | Bugs, tests, data and performance, built-in code review at low effort                  |
+| correctness  | [correctness](references/pillars/correctness.md)   | Bugs, tests, data and performance                                                      |
 | design       | [design](references/pillars/design.md)             | Intent, approach, elegance, DRY, return on investment                                  |
 | blast-radius | [blast-radius](references/pillars/blast-radius.md) | Consumers across repositories, native and web clients, rollout, observability, privacy |
-| security     | [security](references/pillars/security.md)         | Only on a security trigger; built-in security review                                   |
+| security     | [security](references/pillars/security.md)         | Only on a security trigger                                                             |
 | history      | [history](references/pillars/history.md)           | Only on a history trigger; earlier reverts and fixes                                   |
-| congruence   | [congruence](references/pillars/congruence.md)     | Performed by the verifier                                                              |
+| congruence   | [congruence](references/pillars/congruence.md)     | Performed by the [verifier](references/verifier.md)                                    |
 
-## Step 3 - Verify and post
+## Step 3 - Get permission to post
 
-When every pillar has replied, start one subagent on `plan.verifierModel` with
-[the verifier](references/verifier.md), the run directory, the repository, the pull request
-number, and the head SHA. It merges `"$run/pillars/*.json"` and `plan.skipped`, writes
-`"$run/review.json"`, previews it with `post --dry-run`, posts it, resolves the threads of fixed
-findings, and replies with one line: the verdict and the review URLs.
+Show the human the verdict, the findings by severity, and the path of `report.md`, and ask
+whether to post. Post without asking only when the human has said this kind of review may be
+posted unattended. A human who wants a finding changed edits `review.json`; preview the result
+with `post --dry-run`.
 
-`code-reviewer post` renders and posts the review:
+## Step 4 - Post or drop
+
+- Post: `code-reviewer post --repo <repo> --pr <n> --head-sha <headSha> --input "$run/review.json"`.
+- Drop: `code-reviewer abort --repo <repo> --pr <n>` (add `--requeue` to ask again later).
+
+`post` renders and posts the review:
 
 - The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is always a COMMENT,
   because GitHub does not let an author approve their own pull request.
 - Findings are tagged `[blocking]`, `[high]`, `[medium]`, or `[low]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.
 - A hidden marker records the reviewed SHA, the verdict, and the effort.
-- On Approve the `final approval` label is added; otherwise it is removed. Then
-  `final-review:complete` replaces `final-review:in-progress`. `complete` means posted, not
-  approved.
-- It refuses when the head moved since `prepare`: re-run from Step 1 with `--force`.
+- On Approve the `final approval` label is added; otherwise it is removed. Then the completed
+  label replaces the processing one. Completed means posted, not approved.
+- It refuses when the head moved since the review ran: run Step 2 again with `--force`.
 
-## Step 4 - Report
+After posting a follow-up, resolve the threads of findings that were fixed with
+`code-reviewer resolve --repo <repo> --pr <n> --thread <id>...`; `context.md` lists the thread ids.
 
-Reply to the requester with the verdict and the review link. Merging agents check
-`code-reviewer status`, which exits 0 only when the newest review approved the
-current head and the `final approval` label is present.
+## Step 5 - Clean up and report
+
+`git -C <clone> worktree remove --force "$run/tree"`, then `rm -rf "$run"` once the report has
+been recorded. Reply to the requester with the verdict and the review link. Merging agents check
+`code-reviewer status`, which exits 0 only when the newest review approved the current head and
+the `final approval` label is present.
 
 ## Benchmarks
 

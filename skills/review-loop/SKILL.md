@@ -1,6 +1,6 @@
 ---
 name: review-loop
-description: Run the standing final-reviewer session that takes review requests by label or message and posts reviews.
+description: Run the standing review-loop session that takes review requests by label or message, reviews each pull request, and posts with the human's permission.
 ---
 
 # Standing code reviewer
@@ -9,7 +9,7 @@ Read applicable `AGENTS.md` and their declared adapter alias, otherwise
 `.agents/skills/final-reviewer/SKILL.md` from the launch directory if present.
 Local policy overrides these defaults; do not reload an already-read adapter or canonical skill.
 
-One long-running, attended session named `final-reviewer` runs in the code-reviewer
+One long-running, attended session named `review-loop` runs in the code-reviewer
 checkout. It is the main checkout, not a worktree-isolated session, because it creates review
 worktrees for other repositories. It is local only, never CI, and it never merges.
 
@@ -34,7 +34,7 @@ Requests reach the reviewer in two ways. Both end up as the same label, so GitHu
 
 - **Label**: anyone adds `final-review:requested` to a pull request. A requester that wants a
   follow-up after pushing fixes adds it again.
-- **Message**: another session sends `final-reviewer` (for example with SendMessage)
+- **Message**: another session sends `review-loop` (for example with SendMessage)
   `owner/name#number` and optionally an effort. Add the label yourself with
   `gh api --method POST repos/<repo>/issues/<n>/labels -f 'labels[]=final-review:requested'` (not
   `gh pr edit --add-label`, which rejects a label the repository has not defined yet), and
@@ -85,27 +85,41 @@ only `labeled` with a request label matters, so they are filtered out.
 
 ## Step 3 - Review
 
-For each queued pull request, run the [review](../review/SKILL.md) skill, in the
-background so the session stays free. Run at most three reviews at once; each one dispatches its
-own pillar subagents. The session keeps only each review's one-line results: never paste diffs,
-pillar JSON, or review bodies into it.
+For each queued pull request, follow the [review](../review/SKILL.md) skill: check out the head,
+then run `code-reviewer review` as a background command. Run at most three at once. Each is a
+separate headless run, not a subagent, so the session keeps only the one JSON line each prints:
+never paste diffs, pillar output, or review bodies into the session.
 
-Model tiers come from `plan.json`: pillars on Sonnet (Haiku for docs-only changes and history),
-the verifier on Opus (Sonnet for small low-effort follow-ups). Use Haiku for mechanical side work
-such as cloning or cleanup.
+A skip (`mode: "skip"`) is finished when the command exits: record it in the document and move on.
 
-## Step 4 - Hand back
+## Step 4 - Record, then ask before posting
+
+Keep one document per session: a Claude Doc when the docs connector is available, otherwise a
+Markdown file in the session scratchpad. Its purpose is that the human understands each change
+and can check that their rules were applied, and that there is a history of what every pillar
+said.
+
+When a review finishes, append its `report.md` as one section: the pull request summary, the
+verdict, the verified findings, every pillar's raw findings with the ones the verifier dropped
+and why, the skills each pillar loaded, and the cost. Start a new document after about 25 pull
+requests, or one per organization when the session reviews several, and link the new one from the
+old.
+
+Then tell the human the pull request, the verdict, the count of findings by severity, and the
+document link, and ask whether to post. Post only on their answer, unless they have said that
+kind of review may be posted unattended. While waiting, keep reviewing the queue; a review that
+waits for an answer does not count toward the three.
+
+- Yes: `code-reviewer post` as in the review skill, then add the review link to the section.
+- Changes: edit `review.json` as told, show `post --dry-run`, and ask again.
+- No: `code-reviewer abort` and note it in the section.
+- The head moved while waiting: say so, and review again with `--force`.
+
+## Step 5 - Hand back
 
 Posting the review is the hand-back: the pull request's shepherd sees the review and its inline
-comments, and `final-review:complete` replaces `final-review:in-progress`. `complete` means the
-review was posted; approval is the `final approval` label, which `code-reviewer status`
-checks. Reply to a requester that messaged with the verdict and the review link.
+comments, and the completed label replaces the processing one. Completed means the review was
+posted; approval is the `final approval` label, which `code-reviewer status` checks. Reply to a
+requester that messaged with the verdict and the review link.
 
 Merge authority is separate: the human, or the triage loop within its grant, merges.
-
-## Presenting to the human
-
-Keep one living document per session (a Claude Doc when the docs connector is available,
-otherwise a Markdown file in the session scratchpad). Give each pull request one line or short
-section: the verdict, each blocking item in one line, and the review link. GitHub is the record;
-do not copy the review.

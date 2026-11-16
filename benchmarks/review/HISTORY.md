@@ -2,6 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: verifier prompt no longer tells the verifier to post
+
+No run. `verifier.md` dropped its instructions to preview, post, and resolve threads, which the
+headless run already overrode; it now asks for fixed thread ids in the summary. The skills,
+source and benchmark directories were renamed (`skills/review`, `src/review`,
+`benchmarks/review`), and the snapshot directory is `.review/`. Verifier numbers were never
+recorded, so nothing is made incomparable.
+
 ## 2026-11-16: skill selection measured, then given a diff excerpt
 
 Agent model Haiku, no judge, 3 attempts per case, 24 cases with `expectedSkills` (14 mined, 10
