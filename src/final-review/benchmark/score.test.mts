@@ -10,6 +10,7 @@ import {
   type CaseScore,
 } from './score.mts'
 import { summarizeSkills } from './skills-score.mts'
+import { summarizeUsage } from './usage-summary.mts'
 
 function exp(overrides: Partial<ExpectedFinding> = {}): ExpectedFinding {
   return {
@@ -158,6 +159,7 @@ describe('summaries', () => {
       falseAlarmRate: null,
       meanFindings: null,
       skills: summarizeSkills([]),
+      usage: summarizeUsage([]),
     })
   })
 
@@ -188,6 +190,7 @@ describe('summaries', () => {
         negativeCases: 2,
         falseAlarmRate: 0.5,
         meanFindings: 1.25,
+        usage: summarizeUsage([]),
         skills: summarizeSkills([
           { id: 'a', expectedSkills: ['x', 'y'], missing: ['y'], outcome: 'ungrounded' },
         ]),
