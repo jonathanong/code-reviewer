@@ -4,7 +4,8 @@
 
 One run: 2026-11-16, at the commit that added this table, reviewer Sonnet 5.5, selection Haiku,
 judge Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`).
-Reviewer and selection cost $23.41 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
+Rule plugins: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14. Reviewer and selection cost
+$23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
 Mined cases (8 real pull requests from `cases.json`):
@@ -47,9 +48,9 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 - Negatives drew three low findings in 84 runs and nothing higher.
 - Reviewer cost: $0.12 a pillar run with skills on a fixture, $0.23 on a mined case.
 
-Skill selection alone (`bench-selection`, Haiku, 23 tagged cases, 3 attempts, $0.20): the expected
-skill was named in 69 of 69 attempts, with 8.8 skills selected on average (2 to 5 on fixtures, 12
-to 20 on the larger mined cases).
+Skill selection alone (`bench-selection`, Haiku, 22 tagged cases, 3 attempts, $0.19): the expected
+skill was named in 66 of 66 attempts, with 9.1 skills selected on average (2 to 9 on fixtures, 5
+to 20 on mined cases).
 
 Verifier (`bench-verifier`, Opus, first pilot, 2 fixture cases, 1 attempt, $0.51): the one real
 finding was kept at its severity and its planted duplicate merged. Too small to quote a rate.
@@ -101,7 +102,9 @@ that needs no clone or `gh`:
   configs refer to.
 
 Fixture cases are cached by a content hash of the fixture directory instead of a head SHA.
-`synthetic.json` holds the fixture cases: the `lock-scope-*` cases for the correctness pillar and
+`synthetic.json` holds the fixture cases: the `lock-scope-*` cases for the correctness pillar,
+`options-forwarded-to-helper` (a negative: new code that forwards a helper's options draws no
+options finding), and
 the `rules-*` cases, one per shared rule skill. It is separate from `cases.json`; run it with `--cases
 benchmarks/review/synthetic.json`. A fixture must be synthetic: never copy private code.
 

@@ -5,7 +5,8 @@ Newest first. Every measured run and every change to what is measured gets an en
 ## 2026-11-16: closing run on one commit; README rebuilt from it
 
 Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts with `--select`
-and 3 with `--no-rules`, one session. Reviewer and selection cost $23.41: fixtures $10.75 with,
+and 3 with `--no-rules`, one session. Rule plugins `no-mistakes-rules` 0.109.60 and `skills`
+0480fabddb14. Reviewer and selection cost $23.43: fixtures $10.75 with,
 $4.34 without, $0.16 selection; mined $5.58 with, $2.47 without, $0.13 selection.
 
 Why: the README table had rows from several runs and two prompts. Every README number now comes
@@ -42,9 +43,11 @@ Changes in this commit:
   `vouchington-tooling-154` does.
 - Selection wording: a stricter instruction ("pick a skill only when the changed lines contain what
   its description names") was measured with `bench-selection` against the current one. Hits 69 of
-  69 both ways; mean selected 8.7 against 8.8. No gain, not kept.
+  69 both ways; mean selected 8.7 against 8.8. No gain, not kept. Those runs included a positive
+  fixture dropped in this commit; re-scored without it the current wording is 66 of 66, mean 9.1.
 - `selectSkills` now tries a failed selection call once more, after the `vouchington-1146` run above
   reviewed without skills. Not re-measured.
+- `security.md` keeps its "Built-in reviewer" section: no saved run covers the security pillar.
 - First `bench-verifier` pilot: `lock-scope-race-response` and `lock-scope-written-row-only`, 1
   attempt, Opus, $0.51. Real kept 1 of 1, severity agreed, planted duplicate merged.
 
