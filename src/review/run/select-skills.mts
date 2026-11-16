@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import { describeFailure } from '../benchmark/usage.mts'
+import { addUsage, describeFailure } from '../benchmark/usage.mts'
 import { RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
 import { parseFrontmatter } from '../rules/collect.mts'
 import { isolationArgs } from './claude-flags.mts'
@@ -74,12 +74,23 @@ export type SelectionInput = {
   cwd: string
 }
 
-/** One cheap Haiku call, with no tools, that picks the rule skills for the change. */
+/**
+ * Picks the rule skills for the change. A failed call is tried once more, because a review that
+ * continues with no selection runs without the shared rules.
+ */
 export async function selectSkills(input: SelectionInput): Promise<SkillChoice> {
   const available = input.skills.length
   if (available === 0) {
     return { selected: [], available, error: 'No rule skills are installed.', usage: null }
   }
+  const first = await selectOnce(input, available)
+  if (first.error === undefined) return first
+  const second = await selectOnce(input, available)
+  return { ...second, usage: addUsage(first.usage, second.usage) }
+}
+
+/** One cheap Haiku call, with no tools. */
+async function selectOnce(input: SelectionInput, available: number): Promise<SkillChoice> {
   const prompt = buildSelectionPrompt(input.title, input.index, input.skills, input.excerpt)
   const args = [
     '-p',

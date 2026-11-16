@@ -93,8 +93,21 @@ describe('selectSkills', () => {
     })
     const choice = await selectSkills({ ...base, exec: failing })
     expect(choice.selected).toEqual([])
+    expect(failing).toHaveBeenCalledTimes(2)
     expect(choice.error).toContain('error_max_turns')
-    expect(choice.usage?.costUsd).toBe(0.2)
+    expect(choice.usage?.costUsd).toBe(0.4)
+  })
+
+  it('tries a failed call once more and uses the second answer', async () => {
+    let calls = 0
+    const flaky = async () => {
+      calls += 1
+      if (calls === 1) throw new ExecError('claude exited with 1', 1, '', undefined)
+      return answer(['skills:documentation'])
+    }
+    const choice = await selectSkills({ ...base, exec: flaky })
+    expect(choice.error).toBeUndefined()
+    expect(choice.selected).toEqual(['skills:documentation'])
   })
 
   it('records an answer without a skills list', async () => {

@@ -83,3 +83,35 @@ export function describeFailure(error: unknown): { message: string; usage: Usage
   const subtype = typeof event.subtype === 'string' ? ` (${event.subtype})` : ''
   return { message: [`${first}${subtype}`, ...rest].join('\n'), usage: parseUsage(event) }
 }
+
+const plus = (a: number | null, b: number | null) =>
+  a === null && b === null ? null : (a ?? 0) + (b ?? 0)
+
+/** The usage of two calls counted as one, such as a failed attempt and its retry. */
+export function addUsage(a: Usage | null, b: Usage | null): Usage | null {
+  if (a === null || b === null) return a ?? b
+  const byModel: Record<string, ModelUsage> = { ...a.byModel }
+  for (const [model, used] of Object.entries(b.byModel)) {
+    const prior = byModel[model]
+    byModel[model] =
+      prior === undefined
+        ? used
+        : {
+            inputTokens: plus(prior.inputTokens, used.inputTokens),
+            outputTokens: plus(prior.outputTokens, used.outputTokens),
+            cacheReadTokens: plus(prior.cacheReadTokens, used.cacheReadTokens),
+            cacheCreationTokens: plus(prior.cacheCreationTokens, used.cacheCreationTokens),
+            costUsd: plus(prior.costUsd, used.costUsd),
+          }
+  }
+  return {
+    costUsd: plus(a.costUsd, b.costUsd),
+    turns: plus(a.turns, b.turns),
+    durationMs: plus(a.durationMs, b.durationMs),
+    inputTokens: plus(a.inputTokens, b.inputTokens),
+    outputTokens: plus(a.outputTokens, b.outputTokens),
+    cacheReadTokens: plus(a.cacheReadTokens, b.cacheReadTokens),
+    cacheCreationTokens: plus(a.cacheCreationTokens, b.cacheCreationTokens),
+    byModel,
+  }
+}
