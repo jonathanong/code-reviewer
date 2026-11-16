@@ -4,8 +4,10 @@
 - Run one case with `pnpm exec code-reviewer bench --cases <file> --pillar <p> --case <id> --out <dir>`.
   Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
 - Run the skill-selection eval with `pnpm exec code-reviewer bench-selection --cases <file>... --out <dir>`; it costs one Haiku call per attempt, and a case tagged `expectedSkills` is in it.
-- Pilot a new case with one attempt. Before quoting a number, run 3 attempts with skills and 3 with
-  `--select` (what `review` does) and 3 with `--no-rules` in the same session, then score with `--score-only --baseline <control dir>`.
+- Pilot a new case with one attempt. Before quoting a number, run 3 attempts with `--select` (what
+  `review` does: Haiku picks the skills) and 3 with `--no-rules` in the same session, then score
+  with `--score-only --baseline <control dir>`. Run without either flag (every skill offered, none
+  named) only to separate a selection failure from a reviewer miss.
 - Do not run the whole of `cases.json` unless the owner asks: large cases cost dollars per run.
 - Give every positive case `expectedSkills` with full `plugin:skill` names when a shared rule
   skill states its rule. Do not write a case for a rule no skill states.
