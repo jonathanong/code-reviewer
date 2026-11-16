@@ -10,7 +10,7 @@ import {
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
 import { caseRevision, describeCase } from './fixture.mts'
-import { READ_ONLY_TOOLS } from './runner.mts'
+import { PILLAR_TOOLS, READ_ONLY_TOOLS } from './runner.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 import type { VerifierInput } from './verifier-input.mts'
 
@@ -67,7 +67,8 @@ export function buildVerifierPrompt(
     'them whole.',
     ...(hasRules
       ? [
-          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources for this change: this repository's instructions and skills at the base, shared rule skills, the rules and code of the repositories the change depends on, and the repositories configured as consuming what it touches. Read it before verifying.`,
+          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources for this change: this repository's instructions and skills at the base, the rules and code of the repositories the change depends on, and the repositories configured as consuming what it touches. Read it before verifying.`,
+          'Shared rules come only from installed plugin skills: when a finding cites a rule skill (`plugin:skill`), load it with the Skill tool and check the claim against its text.',
         ]
       : []),
     NUMBERED_DIFF_LEGEND,
@@ -80,7 +81,14 @@ export function buildVerifierPrompt(
   ].join('\n\n')
 }
 
-export function verifierArgs(prompt: string, model: string, maxTurns: number): string[] {
+/** `skills` adds the Skill tool, so cited rule skills can be loaded; off for control runs. */
+export function verifierArgs(
+  prompt: string,
+  model: string,
+  maxTurns: number,
+  skills = false,
+): string[] {
+  const tools = skills ? PILLAR_TOOLS : READ_ONLY_TOOLS
   return [
     '-p',
     prompt,
@@ -91,9 +99,9 @@ export function verifierArgs(prompt: string, model: string, maxTurns: number): s
     '--json-schema',
     JSON.stringify(VERIFIER_OUTPUT_SCHEMA),
     '--tools',
-    READ_ONLY_TOOLS,
+    tools,
     '--allowedTools',
-    READ_ONLY_TOOLS,
+    tools,
     '--permission-mode',
     'dontAsk',
     '--max-turns',
@@ -144,7 +152,10 @@ export async function runVerifier(
   run: VerifierRun,
   exec: Exec,
 ): Promise<VerifierOutput> {
-  const prompt = buildVerifierPrompt(run.verifierPrompt, item, findings, hasRulesIndex(dir))
-  const stdout = await exec('claude', verifierArgs(prompt, run.model, run.maxTurns), { cwd: dir })
+  const rules = hasRulesIndex(dir)
+  const prompt = buildVerifierPrompt(run.verifierPrompt, item, findings, rules)
+  const stdout = await exec('claude', verifierArgs(prompt, run.model, run.maxTurns, rules), {
+    cwd: dir,
+  })
   return parseVerifierOutput(stdout, findings.length)
 }

@@ -29,6 +29,8 @@ describe('verifier check', () => {
     const args = checkArgs('P', 'opus', 7)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])
     expect(args.at(-1)).toBe('7')
+    expect(args).toContain('Read,Grep,Glob')
+    expect(checkArgs('P', 'opus', 7, true)).toContain('Read,Grep,Glob,Skill')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string).required).toEqual([
       'verdicts',
     ])

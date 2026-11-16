@@ -68,8 +68,8 @@ function harness(
       return { dir: `/snap/${item.id}`, diff: '', body: '' }
     },
     cwd: () => '/work',
-    stageRules: async (item, _snapshot, clones, _git, withShared) => {
-      staged.push(`${item.id}:${String(clones)}${withShared === false ? ':no-shared' : ''}`)
+    stageRules: async (item) => {
+      staged.push(item.id)
       return 'digest-1'
     },
   }
@@ -133,18 +133,12 @@ describe('runFinalReviewBenchCli runs', () => {
     expect(out).toHaveBeenCalledWith(`${markdown.trimEnd()}\n`)
   })
 
-  it('stages rules, records their digest, and passes --clones or the env default', async () => {
+  it('stages rules and records their digest', async () => {
     stdoutSpy()
-    const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
-    const h = harness(files)
-    await runFinalReviewBenchCli([...BASE, '--clones', '/clones'], h.deps)
-    expect(h.staged.sort((a, b) => a.localeCompare(b))).toEqual(['n1:/clones', 'p1:/clones'])
+    const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
+    await runFinalReviewBenchCli(BASE, h.deps)
+    expect(h.staged.sort((a, b) => a.localeCompare(b))).toEqual(['n1', 'p1'])
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).rules).toBe('digest-1')
-    vi.stubEnv('FINAL_REVIEWER_CLONE_ROOT', '/env-clones')
-    const again = harness(files)
-    await runFinalReviewBenchCli(BASE, again.deps)
-    expect(again.staged).toContain('p1:/env-clones')
-    vi.unstubAllEnvs()
   })
 
   it('stages nothing with --no-rules and records the digest as none', async () => {
@@ -168,14 +162,7 @@ describe('runFinalReviewBenchCli runs', () => {
     ])
     const args = h.execCalls[0]?.args ?? []
     expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Skill')
-    expect(h.staged).toEqual(['p1:undefined', 'n1:undefined'])
-  })
-
-  it('leaves out the shared clones with --no-shared', async () => {
-    stdoutSpy()
-    const h = harness({ 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' })
-    await runFinalReviewBenchCli([...BASE, '--no-shared', '--clones', '/c'], h.deps)
-    expect(h.staged).toEqual(['p1:/c:no-shared', 'n1:/c:no-shared'])
+    expect(h.staged).toEqual(['p1', 'n1'])
   })
 
   it('records unknown plugins when they cannot be listed', async () => {

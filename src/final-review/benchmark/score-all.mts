@@ -15,9 +15,7 @@ export type Options = {
   jobs: number
   scoreOnly: boolean
   judge: string | undefined
-  clones: string | undefined
   noRules: boolean
-  noShared: boolean
 }
 
 export function scoreAll(

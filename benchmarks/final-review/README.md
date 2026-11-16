@@ -57,15 +57,13 @@ reverts and regression fixes, and keep negatives at roughly a third of the set.
 
 Every run stages rule sources into `.final-review/rules/` with the same code `prepare` uses: the
 fixture's `base/` instructions and skills (a mined case's head, since its base is not exported),
-the shared rule skills from the clones under `--clones` (default `FINAL_REVIEWER_CLONE_ROOT`; it
-needs `no-mistakes` and `skills`, the jonathanong/skills clone), and fixture dependencies from `repos/`. The pillar
+and fixture dependencies and consumers from `repos/`. Shared rules are never staged. The pillar
 prompt points at `rules/INDEX.md`. `--no-rules` stages nothing, for control runs that check a case
 needs its rule source to be caught. The rules digest is part of the cache key.
 
 Pillar runs also get the `Skill` tool, so they can load installed plugin rule skills as a review
-session can; `--no-rules` withholds it. `--no-shared` stages the repository and dependency rules
-but not the shared clones, which measures whether installed skills are found by description
-alone. Each raw result records the enabled plugins and their versions (`plugins`) beside the rules
+session can; `--no-rules` withholds it. Installed plugin skills are the only source of shared
+rules, found by description. Each raw result records the enabled plugins and their versions (`plugins`) beside the rules
 digest, so a score change can be traced to a rule change. Every staged skill's markdown files under
 `references/`, at any depth, are staged with it.
 
@@ -95,10 +93,11 @@ so re-run them to measure skill loads. Raw results are not reused across runs (`
 re-runs pillars), and the judge cache is keyed on findings only, so the new fields never make a
 stale result look current; the rules digest and `plugins` are unchanged.
 
-The `rules-*` cases in `synthetic.json` test the rules pillar: a shared no-mistakes rule
-(`rules-shared-error-text`), a shared `skills` repository skill (`rules-skills-sweep-until-empty`),
-a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides a
-shared one (`rules-local-override`, negative), and a compliant dependency call
+The `rules-*` cases in `synthetic.json` test the rules pillar: an installed
+`no-mistakes-rules` skill (`rules-shared-error-text`), an installed `skills` plugin skill
+(`rules-skills-sweep-until-empty`),
+a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides an
+installed one (`rules-local-override`, negative), and a compliant dependency call
 (`rules-dependency-flag-ok`, negative). Each positive's claim requires citing its rule source, so
 a generic finding does not match.
 
@@ -153,7 +152,7 @@ pillar's findings, plants a copy of each real finding under a second pillar, and
 `claude -p` call (default Opus) in the same git-free snapshot with `verifier.md`, the congruence
 pillar, and the findings as indexed JSON. The verifier returns the review with `sources` on every
 finding: the input indexes it confirms or merges. The snapshot also gets the same staged rule
-sources as `bench` (`--clones`, `--no-rules`, `--no-shared`, with the same meaning), and the
+sources as `bench` (`--no-rules` has the same meaning), and the
 verifier prompt points at `rules/INDEX.md`; the verifier and the checker read them but get no
 `Skill` tool.
 

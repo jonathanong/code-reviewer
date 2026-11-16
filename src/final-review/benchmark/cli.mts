@@ -85,12 +85,7 @@ async function runAll(
     )
     snapshots.set(item.id, snapshot)
     // The digest keys a saved raw result to the rules it saw; control runs record `none`.
-    digests.set(
-      item.id,
-      options.noRules
-        ? NO_RULES
-        : await deps.stageRules(item, snapshot, options.clones, undefined, !options.noShared),
-    )
+    digests.set(item.id, options.noRules ? NO_RULES : await deps.stageRules(item, snapshot))
   }
   const contractPath = join(options.prompts, '_contract.md')
   const contract = deps.exists(contractPath) ? deps.readFile(contractPath).trim() : ''
@@ -136,9 +131,7 @@ export async function runFinalReviewBenchCli(
       jobs: { type: 'string' },
       'score-only': { type: 'boolean' },
       judge: { type: 'string' },
-      clones: { type: 'string' },
       'no-rules': { type: 'boolean' },
-      'no-shared': { type: 'boolean' },
     },
   })
   if (values.cases === undefined || values.out === undefined)
@@ -159,9 +152,7 @@ export async function runFinalReviewBenchCli(
     jobs: Number(values.jobs ?? '3'),
     scoreOnly: values['score-only'] === true,
     judge: values.judge,
-    clones: values.clones ?? process.env.FINAL_REVIEWER_CLONE_ROOT,
     noRules: values['no-rules'] === true,
-    noShared: values['no-shared'] === true,
   }
   await runAll(cases, pillars, options, deps)
   if (options.judge !== undefined) {

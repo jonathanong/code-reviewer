@@ -8,9 +8,7 @@ import { declaredLinks } from './declared.mts'
 import { renderIndex, type Staged } from './index-render.mts'
 import type { RuleReader } from './reader.mts'
 import { findRelated, MAX_RELATED, type Related } from './related.mts'
-import { sharedPaths, type SharedSource } from './shared.mts'
 import { classify, copy, listAll, type Files } from './stage-files.mts'
-import { suggestSkills } from './topics.mts'
 
 export type StageInput = {
   changedPaths: readonly string[]
@@ -20,7 +18,6 @@ export type StageInput = {
   repoId?: string
   /** The reviewer's per-repository configs; none when omitted. */
   configs?: RepoConfigs
-  shared: { source: SharedSource; reader: RuleReader; refLabel: string }[]
   /**
    * Candidate repositories; only those the diff uses or the configs link to this change are
    * staged. `repo` is `owner/name` when the origin is known.
@@ -40,7 +37,6 @@ export type StageResult = {
   /** Files written, relative to `out`. */
   written: string[]
   digest: string
-  suggested: string[]
   related: string[]
   /** Repositories configured as consuming what this change touches. */
   consumers: string[]
@@ -108,7 +104,7 @@ async function stageLinks(
 
 /**
  * Copies the rule sources for a change into `<out>/rules/` and writes `INDEX.md`: this repository's
- * instructions and skills, the shared skills, and the rules of the repositories it depends on or
+ * instructions and skills and the rules of the repositories it depends on or
  * that consume it.
  */
 export async function stageRuleSources(out: string, input: StageInput): Promise<StageResult> {
@@ -129,22 +125,11 @@ export async function stageRuleSources(out: string, input: StageInput): Promise<
       staged: classify(await copy(files, input.repo.reader, 'repo', paths)),
     }
   }
-  const suggested = suggestSkills(input.changedPaths)
-  const shared = []
-  for (const item of input.shared) {
-    const all = await listAll(item.reader, item.source.name, missing)
-    const paths = sharedPaths(item.source, all)
-    const dest = `shared/${item.source.name}`
-    const staged = await copy(files, item.reader, dest, paths, item.source.prefix)
-    shared.push({ name: item.source.name, label: item.refLabel, staged: classify(staged) })
-  }
   const { deps, consumers } = await stageLinks(files, input, missing)
   const index = renderIndex({
     ...(repo === undefined ? {} : { repo }),
-    shared,
     deps,
     consumers,
-    suggested,
     missing,
   })
   files.set('rules/INDEX.md', index)
@@ -155,13 +140,9 @@ export async function stageRuleSources(out: string, input: StageInput): Promise<
     mkdirSync(dirname(join(out, path)), { recursive: true })
     writeFileSync(join(out, path), text)
   }
-  const staged = new Set(
-    shared.flatMap((source) => source.staged.skills.map((skill) => skill.name)),
-  )
   return {
     written,
     digest: hash.digest('hex'),
-    suggested: [...suggested.keys()].filter((name) => staged.has(name)),
     related: deps.map((dep) => dep.name),
     consumers: consumers.map((dep) => dep.name),
     missing,
