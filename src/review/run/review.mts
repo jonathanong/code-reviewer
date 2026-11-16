@@ -17,6 +17,7 @@ import {
   failedSkips,
   message,
   read,
+  threadIdsOf,
   titleOf,
   writeJson,
   type ReviewOptions,
@@ -109,6 +110,7 @@ async function review(
       run,
       findings,
       skipped,
+      threads: threadIdsOf(out),
     },
     { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
   )
@@ -146,6 +148,7 @@ async function review(
       report,
       review: join(out, 'review.json'),
       headSha,
+      fixedThreadIds: output.fixedThreadIds,
     },
   }
 }

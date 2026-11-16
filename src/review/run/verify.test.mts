@@ -28,6 +28,7 @@ const INPUT: VerifierInput = {
   run: { out: '/run', sinceSha: null, hasRules: true },
   findings: FINDINGS,
   skipped: [{ pillar: 'security', reason: 'No security trigger paths changed.' }],
+  threads: ['T1', 'T2'],
 }
 
 const verified = { pillar: 'rules', severity: 'high', title: 'A', body: 'a', sources: [0] }
@@ -78,12 +79,21 @@ describe('parseReviewVerifier', () => {
       }),
       2,
     )
+    expect(parsed.fixedThreadIds).toEqual([])
     expect(parsed.summary).toBe('Review.')
     expect(parsed.pullRequestSummary).toBe('It adds A.')
     expect(parsed.findings).toHaveLength(1)
     expect(parsed.sources).toEqual([[0]])
     expect([...parsed.dropped]).toEqual([[1, 'Speculative.']])
     expect(parsed.usage.costUsd).toBe(0.7)
+  })
+
+  it('keeps only the fixed thread ids the context listed', () => {
+    const output = { summary: 's', findings: [], fixedThreadIds: ['T2', 'FORGED', 7, 'T2'] }
+    expect(parseReviewVerifier(stream(output), 0, ['T1', 'T2']).fixedThreadIds).toEqual(['T2'])
+    expect(
+      parseReviewVerifier(stream({ ...output, fixedThreadIds: 'T1' }), 0, ['T1']).fixedThreadIds,
+    ).toEqual([])
   })
 
   it('tolerates a missing summary and dropped list but not missing findings', () => {

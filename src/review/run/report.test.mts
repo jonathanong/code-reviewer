@@ -76,6 +76,7 @@ const OUTPUT: ReviewVerifierOutput = {
   findings: [kept],
   sources: [[0]],
   dropped: new Map([[1, 'Style only.']]),
+  fixedThreadIds: [],
   skills: [],
   usage: usage(1.5, 12),
 }
@@ -188,6 +189,14 @@ describe('usage by model', () => {
     expect(renderReport(data)).toContain('| pillars | sonnet | 2 | 20 | 7 | $0.30 |')
     expect(renderReport(data)).toContain('| all | opus | 1 | 10 | 9 | $1.50 |')
     expect(renderReport(data)).toContain('### Tokens by model')
+    expect(renderReport(data)).not.toContain('Fixed since the last review')
+    const fixed = buildReport({
+      ...INPUT,
+      verifier: { model: 'opus', output: { ...OUTPUT, fixedThreadIds: ['T1', 'T2'] } },
+    })
+    expect(renderReport(fixed)).toContain(
+      'run `code-reviewer resolve --repo acme/widgets --pr 4 --thread T1 T2`',
+    )
   })
 
   it('has no models for a review whose usage lacks them', () => {

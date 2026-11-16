@@ -148,6 +148,7 @@ describe('runReview', () => {
       report: join(out, 'report.md'),
       review: join(out, 'review.json'),
       headSha: SHA,
+      fixedThreadIds: [],
     })
     expect(calls).toEqual([])
     for (const file of [
@@ -301,6 +302,21 @@ describe('runReview', () => {
     const outcome = await runReview(steps, options)
     expect(outcome.summary).toMatchObject({ error: 'plain failure' })
     expect(calls).toEqual(['abort'])
+  })
+
+  it('reports the fixed threads the context listed, for the caller to resolve', async () => {
+    const context = { title: 'T', unresolved: [{ threadId: 'T1' }, { threadId: null }, null] }
+    const verifier = () =>
+      result(
+        { summary: 's', pullRequestSummary: 'p', findings: [], fixedThreadIds: ['T1', 'X'] },
+        1,
+      )
+    const { out, steps, options } = setup({ exec: claude({ verifier }) }, PLAN, (dir) =>
+      writeFileSync(join(dir, 'context.json'), JSON.stringify(context)),
+    )
+    const outcome = await runReview(steps, options)
+    expect(outcome.summary.fixedThreadIds).toEqual(['T1'])
+    expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain('--thread T1`')
   })
 
   it('titles a pull request without a title and runs without plugin info', async () => {

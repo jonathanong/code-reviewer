@@ -73,6 +73,12 @@ export function renderReport(data: ReportData): string {
     data.summary,
     `### Verified findings (${data.findings.length})`,
     data.findings.length === 0 ? 'None.' : data.findings.map(verified).join('\n\n'),
+    ...(data.fixedThreadIds.length === 0
+      ? []
+      : [
+          '### Fixed since the last review',
+          `After posting, run \`code-reviewer resolve --repo ${data.repo} --pr ${data.pr} --thread ${data.fixedThreadIds.join(' ')}\`.`,
+        ]),
     '### Pillars',
     `Skills selected: ${data.skillSelection.selected.length === 0 ? 'none' : data.skillSelection.selected.join(', ')}${data.skillSelection.error === undefined ? '' : ` (selection error: ${data.skillSelection.error})`}`,
     ...data.pillars.map(pillar),

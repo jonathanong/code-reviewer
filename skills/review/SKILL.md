@@ -65,7 +65,8 @@ rather than label, or to review a head that is already reviewed. The command:
    `report.md` with the pull request summary, the verdict, every pillar's findings including the
    ones the verifier dropped and why, the skills each pillar loaded, and the cost by model.
 
-It prints one line: `{claimed, mode, verdict, findings, costUsd, report, review, headSha}`. It
+It prints one line:
+`{claimed, mode, verdict, findings, costUsd, report, review, headSha, fixedThreadIds}`. It
 never posts. If it fails after the claim it drops the processing label itself and exits 1; when
 every pillar fails it fails the review, not approves it.
 
@@ -102,8 +103,8 @@ with `post --dry-run`.
   label replaces the processing one. Completed means posted, not approved.
 - It refuses when the head moved since the review ran: run Step 2 again with `--force`.
 
-After posting a follow-up, resolve the threads of findings that were fixed with
-`code-reviewer resolve --repo <repo> --pr <n> --thread <id>...`; `context.md` lists the thread ids.
+After posting a follow-up, resolve the threads the review found fixed: the `fixedThreadIds` it
+printed, which `report.md` repeats as a ready `code-reviewer resolve` command.
 
 ## Step 5 - Clean up and report
 

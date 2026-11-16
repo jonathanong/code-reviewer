@@ -50,6 +50,13 @@ export function titleOf(out: string): string {
   return typeof title === 'string' ? title : '(untitled)'
 }
 
+/** Thread ids of the unresolved earlier findings that `prepare` recorded. */
+export function threadIdsOf(out: string): string[] {
+  const { unresolved } = JSON.parse(read(join(out, 'context.json'))) as { unresolved?: unknown }
+  const entries = Array.isArray(unresolved) ? (unresolved as Array<{ threadId?: unknown }>) : []
+  return entries.flatMap((entry) => (typeof entry?.threadId === 'string' ? [entry.threadId] : []))
+}
+
 /** The pillars that never answered, as `skipped` entries that are safe to post. */
 export function failedSkips(results: readonly PillarResult[]) {
   return results

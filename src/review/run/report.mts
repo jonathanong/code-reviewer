@@ -40,6 +40,8 @@ export type ReportData = {
   /** Null for a skipped review, which has no findings to derive one from. */
   verdict: Verdict | null
   findings: Finding[]
+  /** Threads of earlier findings that are now fixed, to resolve after posting. */
+  fixedThreadIds: string[]
   pillars: ReportPillar[]
   skipped: SkippedPillar[]
   skillSelection: SkillChoice
@@ -132,6 +134,7 @@ export function buildReport(input: ReportInput): ReportData {
     summary: output?.summary ?? '',
     verdict: input.verdict,
     findings: output?.findings ?? [],
+    fixedThreadIds: output?.fixedThreadIds ?? [],
     pillars: markDropped(input.pillars, output),
     skipped: input.skipped,
     skillSelection: input.skillSelection,

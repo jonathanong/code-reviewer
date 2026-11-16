@@ -21,6 +21,7 @@ export const REVIEW_VERIFIER_SCHEMA = {
   properties: {
     ...VERIFIER_OUTPUT_SCHEMA.properties,
     pullRequestSummary: { type: 'string' },
+    fixedThreadIds: { type: 'array', items: { type: 'string' } },
     dropped: {
       type: 'array',
       items: {
@@ -41,6 +42,8 @@ export type VerifierInput = {
   /** Every finding every pillar returned, in the order the output's `sources` index them. */
   findings: readonly Finding[]
   skipped: readonly SkippedPillar[]
+  /** Thread ids of the unresolved earlier findings; the only ids the verifier may report fixed. */
+  threads: readonly string[]
 }
 
 export function buildVerifierRunPrompt(input: VerifierInput): string {
@@ -55,6 +58,8 @@ export function buildVerifierRunPrompt(input: VerifierInput): string {
     'rejected or merged away without a source in `dropped` with a one-line reason.',
     '`pullRequestSummary` is two to four sentences on what the pull request does; `summary` is the',
     'review summary described above.',
+    'On a re-review, `fixedThreadIds` lists the thread ids from `context.md` of earlier findings that',
+    'are now fixed, so the caller can resolve them; leave it empty otherwise.',
     'The working directory is a checkout of the pull request head. The run directory files:',
     runFileLines(input.run).join('\n'),
     `The congruence pillar is \`${join(input.references, 'pillars', 'congruence.md')}\` and the pillar contract is \`${join(input.references, 'pillars', '_contract.md')}\`. \`plan.json\` is \`${join(input.run.out, 'plan.json')}\`.`,
@@ -75,15 +80,25 @@ export type ReviewVerifierOutput = VerifierOutput & {
   pullRequestSummary: string
   /** Reasons the verifier gave for input findings it dropped, by input index. */
   dropped: Map<number, string>
+  /** Threads of earlier findings the verifier judged fixed; only ids the context listed. */
+  fixedThreadIds: string[]
   skills: string[]
   usage: Usage
 }
 
 /** Reads the verifier's stream; extras the model got wrong are ignored, not fatal. */
-export function parseReviewVerifier(stdout: string, inputCount: number): ReviewVerifierOutput {
+export function parseReviewVerifier(
+  stdout: string,
+  inputCount: number,
+  threads: readonly string[] = [],
+): ReviewVerifierOutput {
   const { structured, skills, usage } = readStream(stdout, 'Verifier run')
   const base = validateVerifierOutput(structured, inputCount)
-  const extra = structured as { pullRequestSummary?: unknown; dropped?: unknown }
+  const extra = structured as {
+    pullRequestSummary?: unknown
+    dropped?: unknown
+    fixedThreadIds?: unknown
+  }
   const dropped = new Map<number, string>()
   const entries = Array.isArray(extra.dropped) ? (extra.dropped as unknown[]) : []
   for (const entry of entries) {
@@ -96,7 +111,10 @@ export function parseReviewVerifier(stdout: string, inputCount: number): ReviewV
   }
   const summary =
     typeof extra.pullRequestSummary === 'string' ? extra.pullRequestSummary.trim() : ''
-  return { ...base, pullRequestSummary: summary, dropped, skills, usage }
+  // The ids come from a model that read untrusted text, so only listed threads pass.
+  const claimed = new Set(Array.isArray(extra.fixedThreadIds) ? extra.fixedThreadIds : [])
+  const fixedThreadIds = threads.filter((id) => claimed.has(id))
+  return { ...base, pullRequestSummary: summary, dropped, fixedThreadIds, skills, usage }
 }
 
 /** Runs the verifier once in the checkout with read-only tools and the Skill tool. */
@@ -125,5 +143,5 @@ export async function runReviewVerifier(
     cwd: options.tree,
     timeoutMs: RUN_TIMEOUT_MS,
   })
-  return parseReviewVerifier(stdout, input.findings.length)
+  return parseReviewVerifier(stdout, input.findings.length, input.threads)
 }
