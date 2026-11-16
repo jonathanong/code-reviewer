@@ -19,7 +19,10 @@ describe('createGhPrepareIo', () => {
     const { io } = setup(run)
     expect(await io.headSha()).toBe('a'.repeat(40))
     expect(await io.diff()).toBe('DIFF')
-    expect(await io.paths()).toEqual(['a.ts', 'b.md'])
+    expect(await io.files()).toEqual([
+      { path: 'a.ts', lines: 0 },
+      { path: 'b.md', lines: 0 },
+    ])
     expect(run).toHaveBeenCalledWith(['pr', 'diff', '7', '-R', 'o/r', '--color', 'never'])
   })
 
@@ -47,6 +50,26 @@ describe('createGhPrepareIo', () => {
       lines: 5,
     })
     expect(run).toHaveBeenCalledWith(['api', 'repos/o/r/compare/x...y'])
+  })
+
+  it('leaves generated files out of the compare line count', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify({
+        status: 'ahead',
+        files: [
+          { filename: 'a.ts', additions: 2, deletions: 3 },
+          { filename: 'pnpm-lock.yaml', additions: 900, deletions: 100 },
+        ],
+      }),
+    )
+    expect(await setup(run).io.compare('x', 'y')).toMatchObject({ lines: 5 })
+  })
+
+  it('counts additions and deletions per listed file', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify([{ filename: 'a.ts', additions: 4, deletions: 1 }]),
+    )
+    expect(await setup(run).io.files()).toEqual([{ path: 'a.ts', lines: 5 }])
   })
 
   it('defaults missing compare fields', async () => {

@@ -54,7 +54,7 @@ describe('createDefaultDeps', () => {
     expect(runner).toHaveBeenLastCalledWith('acme', 'widgets')
     await expect(deps.createLabelIo(TARGET).labels()).resolves.toEqual(['one', 'two'])
     expect(runner).toHaveBeenCalledTimes(2)
-    await expect(deps.createPrepareIo(TARGET).paths()).resolves.toEqual([])
+    await expect(deps.createPrepareIo(TARGET).files()).resolves.toEqual([])
     expect(runner).toHaveBeenCalledTimes(3)
     expect(fakeRun).toHaveBeenCalledTimes(3)
     expect(getAuth).toHaveBeenCalledOnce()

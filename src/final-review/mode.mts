@@ -1,6 +1,12 @@
 import type { Effort } from './finding.mts'
 import type { PlanInput } from './plan.mts'
-import { isLockfile, isTestOrDocsOnly, securityTriggers } from './triggers.mts'
+import {
+  isDependencyFile,
+  isGenerated,
+  isLockfile,
+  isTestOrDocsOnly,
+  securityTriggers,
+} from './triggers.mts'
 
 export type Mode = 'skip' | 'light' | 'full'
 
@@ -39,11 +45,21 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
   if (since.truncated === true) {
     return escalate('The diff since the reviewed SHA is too large to list:')
   }
-  if (since.lines * 2 > context.lines) {
+  if (since.lines * 2 > input.reviewableLines) {
     return escalate('New commits change more than half the pull request:')
   }
   reasons.push('Follow-up after an earlier review: light review of the new commits.')
   return light(reviewedSha)
+}
+
+/**
+ * The paths that trigger the security pillar. A Dependabot pull request edits manifests, lockfiles,
+ * and workflow files by design, so those do not count for it.
+ */
+export function securityPaths(input: PlanInput, paths: readonly string[]): string[] {
+  const hits = securityTriggers(paths)
+  if (!isDependabot(input.authorLogin, input.authorIsBot === true)) return hits
+  return hits.filter((path) => !isDependencyFile(path))
 }
 
 /** Chooses skip, light, or full, and the effort the plan records for it. */
@@ -72,8 +88,10 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
     reasons.push('Only docs and tests changed: light review.')
     return light(null)
   }
-  if (context.lines <= SMALL_PR_LINES && securityTriggers(input.paths).length === 0) {
-    reasons.push(`Small pull request (${context.lines} changed lines): light review.`)
+  // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
+  const handWritten = input.paths.filter((path) => !isGenerated(path))
+  if (input.reviewableLines <= SMALL_PR_LINES && securityTriggers(handWritten).length === 0) {
+    reasons.push(`Small pull request (${input.reviewableLines} reviewable lines): light review.`)
     return light(null)
   }
   return full('high')

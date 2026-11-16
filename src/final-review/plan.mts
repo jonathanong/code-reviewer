@@ -1,7 +1,7 @@
 import type { FollowUpContext } from './context.mts'
 import type { Effort, Pillar, SkippedPillar } from './finding.mts'
-import { chooseMode, type Mode, type ModeChoice } from './mode.mts'
-import { isDocsOnly, isTestOrDocsOnly, securityTriggers } from './triggers.mts'
+import { chooseMode, securityPaths, type Mode, type ModeChoice } from './mode.mts'
+import { isDocsOnly, isTestOrDocsOnly } from './triggers.mts'
 
 export type Model = 'haiku' | 'sonnet' | 'opus'
 
@@ -10,6 +10,7 @@ export type SinceDiff = {
   /** `ahead` when the reviewed SHA is an ancestor of the head; anything else means rewritten. */
   status: string
   paths: string[]
+  /** Changed lines outside generated files. */
   lines: number
   /** The compare API hit its file cap, so the real change is larger than `paths` shows. */
   truncated?: boolean
@@ -17,6 +18,8 @@ export type SinceDiff = {
 
 export type PlanInput = {
   paths: string[]
+  /** Changed lines outside generated files (lockfiles, build output, snapshots) in the whole pull request. */
+  reviewableLines: number
   context: FollowUpContext
   requested?: Effort
   since?: SinceDiff
@@ -57,7 +60,7 @@ const DISPATCHED: readonly Pillar[] = [
 function selectPillars(input: PlanInput, choice: ModeChoice, paths: string[]) {
   const why = new Map<Pillar, string>()
   const run = new Set<Pillar>()
-  const security = securityTriggers(paths)
+  const security = securityPaths(input, paths)
   const reasonFor = (text: string) => DISPATCHED.forEach((name) => why.set(name, text))
   if (choice.sinceSha !== null) {
     run.add('correctness')

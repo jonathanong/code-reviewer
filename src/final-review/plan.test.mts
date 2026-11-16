@@ -42,8 +42,11 @@ const names = (result: Plan) => result.pillars.map((p) => p.pillar)
 const skipped = (result: Plan) =>
   Object.fromEntries(result.skipped.map((s) => [s.pillar, s.reason]))
 
-function plan(input: Partial<PlanInput> = {}) {
-  return planReview({ paths: ['src/a.ts'], context: context(), ...input })
+function plan(
+  input: Partial<Omit<PlanInput, 'reviewableLines'>> & { reviewableLines?: number } = {},
+) {
+  const base = input.context ?? context()
+  return planReview({ paths: ['src/a.ts'], reviewableLines: base.lines, context: base, ...input })
 }
 
 describe('planReview full reviews', () => {
@@ -252,16 +255,62 @@ describe('planReview light first reviews', () => {
       sinceSha: null,
       verifierModel: 'sonnet',
     })
-    expect(names(result)).toEqual(['rules', 'correctness', 'security'])
+    expect(names(result)).toEqual(['rules', 'correctness'])
     expect(skipped(result)).toEqual({
       design: 'Light review.',
       'blast-radius': 'Light review.',
+      security: 'Light review.',
       history: 'Light review.',
     })
+    expect(result.reasons).toEqual(['Dependabot pull request: light review.'])
+  })
+
+  it('does not count manifests, lockfiles, or workflows as security triggers for Dependabot', () => {
+    const paths = ['package.json', 'pnpm-lock.yaml', '.github/workflows/ci.yml', 'Cargo.toml']
+    expect(names(plan({ ...dependabot, paths }))).toEqual(['rules', 'correctness'])
+    expect(names(plan({ paths }))).toContain('security')
+  })
+
+  it('still triggers security for other Dependabot paths', () => {
+    const result = plan({ ...dependabot, paths: ['package.json', 'scripts/deploy.sh'] })
+    expect(names(result)).toEqual(['rules', 'correctness', 'security'])
+    expect(result.reasons).toContain('Security trigger: scripts/deploy.sh.')
+  })
+
+  it('counts reviewable lines, not raw lines, for the small threshold', () => {
+    const result = plan({
+      context: context({ lines: 9000 }),
+      reviewableLines: SMALL_PR_LINES,
+    })
+    expect(result.mode).toBe('light')
     expect(result.reasons).toEqual([
-      'Dependabot pull request: light review.',
-      'Security trigger: package.json.',
+      `Small pull request (${SMALL_PR_LINES} reviewable lines): light review.`,
     ])
+    expect(
+      plan({ context: context({ lines: 9000 }), reviewableLines: SMALL_PR_LINES + 1 }).mode,
+    ).toBe('full')
+  })
+
+  it('reviews a human pull request of only generated files as light, not skipped', () => {
+    const result = plan({
+      paths: ['pnpm-lock.yaml'],
+      context: context({ lines: 4000 }),
+      reviewableLines: 0,
+    })
+    expect(result).toMatchObject({ mode: 'light', verifierModel: 'sonnet' })
+    expect(names(result)).toEqual(['rules', 'correctness', 'security'])
+  })
+
+  it('does not let a generated trigger path make a small pull request large', () => {
+    const result = plan({ paths: ['dist/handler.js', 'src/a.ts'], reviewableLines: 10 })
+    expect(result.mode).toBe('light')
+  })
+
+  it('compares reviewable lines on both sides of the follow-up rule', () => {
+    const reviewed = context({ reviewedSha: OLD, lines: 10_000 })
+    const since = { status: 'ahead', paths: ['src/a.ts'], lines: 60 }
+    expect(plan({ context: reviewed, since, reviewableLines: 100 }).mode).toBe('full')
+    expect(plan({ context: reviewed, since, reviewableLines: 120 }).mode).toBe('light')
   })
 
   it('keeps full effort for a Dependabot pull request when --effort asks', () => {
@@ -294,7 +343,7 @@ describe('planReview light first reviews', () => {
     expect(result).toMatchObject({ mode: 'light', effort: 'low', verifierModel: 'sonnet' })
     expect(names(result)).toEqual(['rules', 'correctness'])
     expect(result.reasons).toEqual([
-      `Small pull request (${SMALL_PR_LINES} changed lines): light review.`,
+      `Small pull request (${SMALL_PR_LINES} reviewable lines): light review.`,
     ])
   })
 

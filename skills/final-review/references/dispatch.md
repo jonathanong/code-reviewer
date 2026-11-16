@@ -17,13 +17,24 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
 | 4     | An earlier final review exists and an escalation applies, or `--effort low` is given with no earlier review | full            | high         |
 | 5     | First review by Dependabot (any files)                                                                      | light           | low          |
 | 6     | First review that changes only docs and/or tests                                                            | light           | low          |
-| 7     | First review of at most 100 changed lines (`SMALL_PR_LINES`) with no security trigger path                  | light           | low          |
+| 7     | First review of at most 100 reviewable lines (`SMALL_PR_LINES`) with no security trigger path               | light           | low          |
 | 8     | Everything else                                                                                             | full            | high         |
 
 - Dependabot is the author login `dependabot[bot]` or `app/dependabot`, or `dependabot` for a bot
   account. Lockfiles are matched by basename: `pnpm-lock.yaml`, `package-lock.json`,
   `npm-shrinkwrap.json`, `yarn.lock`, `bun.lock`, `bun.lockb`, `Cargo.lock`, `Package.resolved`,
   `packages.lock.json`, `Gemfile.lock`, `poetry.lock`, `uv.lock`, `go.sum`, `.terraform.lock.hcl`.
+- Line counts leave out generated files: lockfiles, `*.min.js`, `*.min.css`, `*.map`, `*.snap` and
+  `__snapshots__/`, anything under `dist/`, `build/`, `generated/`, `__generated__/`, `vendor/` or
+  `node_modules/`, and `*.generated.*`, `*.gen.*`, `*.pb.go`, `*_pb2.py`. The small-pull-request
+  threshold and both sides of the follow-up "more than half" comparison use these reviewable lines
+  (`context.md` still shows the raw total). A generated file with a security trigger name does not
+  make a pull request non-small. A pull request that changes only generated files and is not from
+  Dependabot has 0 reviewable lines, so it is reviewed light, not skipped.
+- For a Dependabot pull request, manifests, lockfiles and workflow files (`.github/workflows/*.yml`)
+  are not security triggers (`package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`,
+  `requirements*.txt`, `Gemfile`, `*.csproj`, `Package.swift`); any other trigger path still adds
+  the security pillar.
 - A skip plan has no pillars and a `skipReason`; do not review. With `--effort` (any value) a skip
   case is reviewed instead.
 - Escalations of a follow-up to full: the review conversation was truncated, the last reviewed SHA

@@ -65,7 +65,12 @@ function fakeIo({ reviewed = null, since, history = [], author, lines, paths }: 
     headSha: vi.fn(async () => HEAD),
     trusted: vi.fn(async () => new Set(['bot'])),
     diff: vi.fn(async () => PATCH),
-    paths: vi.fn(async () => paths ?? ['src/a.ts']),
+    files: vi.fn(async () =>
+      (paths ?? ['src/a.ts']).map((path, index) => ({
+        path,
+        lines: index === 0 ? (lines ?? 300) : 0,
+      })),
+    ),
     conversation: vi.fn(async () => conversation(reviewed, author, lines)),
     compare: vi.fn(async () => since ?? { status: 'ahead', paths: ['src/a.ts'], lines: 4 }),
     compareDiff: vi.fn(async () => PATCH),
@@ -213,5 +218,18 @@ describe('prepareReview', () => {
   it('plans a light review for a small pull request and treats a deleted author as unknown', async () => {
     const summary = await prepareReview(fakeIo({ author: null, lines: 10 }), { out })
     expect(summary.mode).toBe('light')
+  })
+
+  it('counts only reviewable lines from the changed files', async () => {
+    const io = fakeIo({ lines: 400, paths: ['pnpm-lock.yaml', 'src/a.ts'] })
+    io.files.mockResolvedValue([
+      { path: 'pnpm-lock.yaml', lines: 400 },
+      { path: 'src/a.ts', lines: 30 },
+    ])
+    const summary = await prepareReview(io, { out })
+    expect(summary).toMatchObject({ lines: 400, mode: 'light' })
+    expect(summary.plan.reasons).toContain(
+      'Small pull request (30 reviewable lines): light review.',
+    )
   })
 })
