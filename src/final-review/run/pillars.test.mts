@@ -1,0 +1,145 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import type { Exec } from '../benchmark/exec.mts'
+import type { Pillar } from '../finding.mts'
+import { runPillars, type PillarsInput } from './pillars.mts'
+
+const dirs: string[] = []
+afterEach(() => {
+  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
+})
+
+const finding = (title: string) => ({ severity: 'high', title, body: 'B', path: 'a.ts', line: 3 })
+const answer = (findings: unknown[], cost = 0.5) =>
+  JSON.stringify({
+    type: 'result',
+    total_cost_usd: cost,
+    num_turns: 4,
+    structured_output: { findings },
+  })
+
+function setup(exec: Exec, overrides: Partial<PillarsInput> = {}) {
+  const out = mkdtempSync(join(tmpdir(), 'pillars-'))
+  dirs.push(out)
+  const input: PillarsInput = {
+    pillars: [
+      { pillar: 'rules', model: 'sonnet' },
+      { pillar: 'correctness', model: 'sonnet' },
+      { pillar: 'history', model: 'haiku' },
+    ],
+    tree: '/tree',
+    run: { out, sinceSha: null, hasRules: true },
+    mode: 'full',
+    jobs: 2,
+    contract: 'CONTRACT',
+    readPillar: (pillar: Pillar) => `PILLAR ${pillar}`,
+    skills: ['skills:documentation'],
+    settings: { enabledPlugins: {} },
+    exec,
+    ...overrides,
+  }
+  return { out, input }
+}
+
+const promptOf = (call: unknown[]) => (call[1] as string[])[1] as string
+const forPillar = (exec: ReturnType<typeof vi.fn>, pillar: string) =>
+  exec.mock.calls.filter((call) => promptOf(call).includes(`PILLAR ${pillar}`))
+
+describe('runPillars', () => {
+  it('runs each pillar in the checkout and saves its findings, skills, and usage', async () => {
+    const exec = vi.fn(async (_command: string, args: string[]) =>
+      answer([finding(`from ${args[args.indexOf('--model') + 1]}`)]),
+    )
+    const { out, input } = setup(exec)
+    const results = await runPillars(input)
+    expect(results.map((result) => [result.pillar, result.model])).toEqual([
+      ['rules', 'sonnet'],
+      ['correctness', 'sonnet'],
+      ['history', 'haiku'],
+    ])
+    expect(results[2]?.findings[0]).toMatchObject({ pillar: 'history', title: 'from haiku' })
+    expect(results[0]?.usage?.costUsd).toBe(0.5)
+    const saved = JSON.parse(readFileSync(join(out, 'pillars', 'rules.json'), 'utf8'))
+    expect(saved).toMatchObject({
+      pillar: 'rules',
+      model: 'sonnet',
+      skills: [],
+      failedAttempts: [],
+    })
+    const [command, args, options] = exec.mock.calls[0] as unknown as [
+      string,
+      string[],
+      { cwd: string; timeoutMs: number },
+    ]
+    expect(command).toBe('claude')
+    expect(options.cwd).toBe('/tree')
+    expect(args[args.indexOf('--effort') + 1]).toBe('medium')
+    expect(args[args.indexOf('--add-dir') + 1]).toBe(out)
+    expect(args).toContain('--settings')
+    expect(promptOf(exec.mock.calls[0] as unknown[])).toContain('call the Skill tool')
+  })
+
+  it('uses low effort for a light plan and omits plugin settings when unknown', async () => {
+    const exec = vi.fn(async () => answer([]))
+    const { input } = setup(exec, { mode: 'light' })
+    const { settings: _settings, ...withoutSettings } = input
+    await runPillars(withoutSettings)
+    const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
+    expect(args[args.indexOf('--effort') + 1]).toBe('low')
+    expect(args).not.toContain('--settings')
+  })
+
+  it('never runs more than `jobs` pillars at once', async () => {
+    let active = 0
+    let peak = 0
+    const exec: Exec = async () => {
+      active += 1
+      peak = Math.max(peak, active)
+      await Promise.resolve()
+      await Promise.resolve()
+      active -= 1
+      return answer([])
+    }
+    await runPillars(setup(exec, { jobs: 2 }).input)
+    expect(peak).toBe(2)
+  })
+
+  it('retries a failed pillar once and keeps the cost of the failed attempt', async () => {
+    let tries = 0
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if ((args[1] as string).includes('PILLAR rules')) {
+        tries += 1
+        if (tries === 1) throw new Error('claude crashed')
+      }
+      return answer([])
+    })
+    const results = await runPillars(setup(exec).input)
+    expect(forPillar(exec, 'rules')).toHaveLength(2)
+    expect(results[0]?.error).toBeUndefined()
+    expect(results[0]?.failedAttempts).toEqual([{ error: 'claude crashed', usage: null }])
+  })
+
+  it('records the error after the retry fails too', async () => {
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if ((args[1] as string).includes('PILLAR history')) return 'not json'
+      return answer([])
+    })
+    const { out, input } = setup(exec)
+    const results = await runPillars(input)
+    expect(forPillar(exec, 'history')).toHaveLength(2)
+    const history = results[2]
+    expect(history).toMatchObject({
+      pillar: 'history',
+      findings: [],
+      usage: null,
+      error: 'Pillar run did not print JSON.',
+    })
+    expect(history?.failedAttempts).toHaveLength(2)
+    expect(JSON.parse(readFileSync(join(out, 'pillars', 'history.json'), 'utf8')).error).toBe(
+      'Pillar run did not print JSON.',
+    )
+  })
+})

@@ -22,6 +22,41 @@ As a Claude Code plugin, add the marketplace `jonathanong/code-reviewer` and ins
 `code-reviewer` plugin. The standing reviewer session runs in this checkout; see
 [`skills/final-reviewer/SKILL.md`](skills/final-reviewer/SKILL.md).
 
+## Running a review
+
+```bash
+code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer report --out DIR
+```
+
+`review` runs one pull request end to end with headless `claude -p` calls and stops before
+posting, so you can read the result first. `--tree` is a checkout at the pull request head and
+`--out` receives the run files; both become absolute paths. It claims the pull request (a head the
+newest review already covers is declined unless `--force`), runs `prepare`, asks Haiku to pick
+rule skills for the changed files, runs the pillars the plan chose (`--jobs` at a time, default 3,
+each retried once), runs the verifier, and writes:
+
+- `review.json`: the input `post` accepts. Post it after reading `preview.md`:
+  `code-reviewer post --repo owner/name --pr N --head-sha SHA --input DIR/review.json`.
+- `preview.md`: the reviews `post --dry-run` would send.
+- `report.md` and `report.json`: the pull request, mode and effort, what it does, the verdict, the
+  verified findings, and, per pillar, the model, skills loaded, cost, turns, and every raw finding
+  with whether the verifier kept or dropped it and why. `report.md` is rendered from
+  `report.json`; `code-reviewer report --out DIR` renders it again, for a running document.
+- `skills.json`, `pillars/<pillar>.json`, `verifier.json`: the intermediate results.
+
+The run prints one JSON line with the mode, verdict, finding counts, total cost, and file paths.
+Labels stay at processing. A `skip` plan closes the pull request through `skip` and writes a
+short report. If anything fails after the claim, the claim is dropped without a requeue and the
+command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
+pillar fails, the review fails closed instead of approving unchecked code.
+
+Every headless run passes `--strict-mcp-config --setting-sources user` and
+`--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
+plugins (`no-mistakes-rules`, `skills`). That keeps fixed context near 17k tokens instead of
+about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
+`bench`, where `--no-rules` sets every plugin false.
+
 ## Repository configs: `repos/<owner>/<name>.json`
 
 Reviewed repositories carry no reviewer config. What the reviewer cannot work out from a diff

@@ -57,6 +57,9 @@ export function pluginSettings(
 /** An enabled user-scope plugin and where Claude Code installed it. */
 export type PluginInstall = { name: string; installPath: string }
 
+/** What a review needs from one `claude plugin list --json`: what is enabled and where it lives. */
+export type PluginInfo = { enabled: Plugin[]; installs: PluginInstall[] }
+
 type Installed = { id?: unknown; scope?: unknown; enabled?: unknown; installPath?: unknown }
 
 /**

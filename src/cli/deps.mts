@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 import {
   createGhFinalReviewIo,
@@ -11,7 +12,13 @@ import {
   type PrepareIo,
   type PullTarget,
 } from '../final-review/index.mts'
-import { parsePluginList, type Plugin } from '../final-review/plugins.mts'
+import type { Exec } from '../final-review/benchmark/exec.mts'
+import {
+  parsePluginInstalls,
+  parsePluginList,
+  type Plugin,
+  type PluginInfo,
+} from '../final-review/plugins.mts'
 import {
   DEFAULT_CONFIG_DIR,
   loadRepoConfigs,
@@ -37,6 +44,12 @@ export type FinalReviewDeps = {
   readFile(path: string): string
   /** The Claude Code plugins enabled for this session's user and project. */
   listPlugins(): Promise<Plugin[]>
+  /** The enabled plugins and where the user-scope ones are installed. */
+  pluginInfo(): Promise<PluginInfo>
+  /** Runs a binary (`claude`) and resolves its stdout. */
+  exec: Exec
+  /** The directory holding the verifier and pillar prompts (`skills/final-review/references`). */
+  references(): string
   runBench(args: string[]): Promise<number>
   runVerifierBench(args: string[]): Promise<number>
 }
@@ -78,6 +91,18 @@ export function createDefaultDeps(
         process.cwd(),
       )
     },
+    pluginInfo: async () => {
+      const { defaultExec } = await import('../final-review/benchmark/exec.mts')
+      const listed = await defaultExec('claude', ['plugin', 'list', '--json'])
+      return {
+        enabled: parsePluginList(listed, process.cwd()),
+        installs: parsePluginInstalls(listed),
+      }
+    },
+    exec: async (command, args, options) =>
+      (await import('../final-review/benchmark/exec.mts')).defaultExec(command, args, options),
+    references: () =>
+      fileURLToPath(new URL('../../skills/final-review/references', import.meta.url)),
     runBench: async (args) =>
       (await import('../final-review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
     runVerifierBench: async (args) =>

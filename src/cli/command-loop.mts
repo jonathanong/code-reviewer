@@ -58,6 +58,64 @@ function settings(values: LoopValues, deps: FinalReviewDeps) {
   }
 }
 
+/** Takes a requested review; the outcome says whether it was claimed. */
+export async function claimCommand(
+  values: LoopValues,
+  target: () => PullTarget,
+  deps: FinalReviewDeps,
+) {
+  const force = values.force === true
+  const status = force ? undefined : await finalReviewStatus(deps.createIo(target()))
+  const outcome = await claimReview(deps.createLabelIo(target()), labelsFor(deps, target().repo), {
+    force,
+    headReviewed: status?.current === true,
+  })
+  if (!outcome.claimed) return status === undefined ? outcome : { ...outcome, status }
+  return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED, status?.headSha) }
+}
+
+/** Drops the in-progress label; `--requeue` asks again. */
+export async function abortCommand(
+  values: LoopValues,
+  target: () => PullTarget,
+  deps: FinalReviewDeps,
+) {
+  const labels = await abortReview(deps.createLabelIo(target()), labelsFor(deps, target().repo), {
+    requeue: values.requeue === true,
+  })
+  return { ...labels, checkRun: await checkRunFor(deps, target(), abortedStep()) }
+}
+
+/** Closes a pull request the plan will not review. */
+export async function skipCommand(
+  values: LoopValues,
+  target: () => PullTarget,
+  deps: FinalReviewDeps,
+) {
+  if (values.reason === undefined || values.reason.trim() === '') {
+    throw new Error('skip needs --reason.')
+  }
+  const labels = await skipReview(deps.createLabelIo(target()), labelsFor(deps, target().repo))
+  const checkRun = await checkRunFor(deps, target(), skippedStep(values.reason))
+  return { skipped: true, reason: values.reason, ...labels, checkRun }
+}
+
+/** Gathers the diff, context, plan and rule sources into `--out`. */
+export async function prepareCommand(
+  values: LoopValues,
+  target: () => PullTarget,
+  deps: FinalReviewDeps,
+) {
+  if (values.out === undefined) throw new Error('prepare needs --out.')
+  const requested = effort(values.effort)
+  return prepareReview(deps.createPrepareIo(target()), {
+    out: values.out,
+    ...(requested === undefined ? {} : { requested }),
+    ...(values.tree === undefined ? {} : { tree: values.tree }),
+    ...(values.clones === undefined ? {} : { clones: values.clones }),
+  })
+}
+
 /** The standing-loop subcommands; returns undefined for any other subcommand. */
 export async function runLoopCommand(
   subcommand: string,
@@ -72,48 +130,14 @@ export async function runLoopCommand(
       return settings(values, deps)
     case 'queue':
       return listQueueFor(deps, values.owner, values.repo ?? [])
-    case 'claim': {
-      const force = values.force === true
-      const status = force ? undefined : await finalReviewStatus(deps.createIo(target()))
-      const outcome = await claimReview(
-        deps.createLabelIo(target()),
-        labelsFor(deps, target().repo),
-        {
-          force,
-          headReviewed: status?.current === true,
-        },
-      )
-      if (!outcome.claimed) return status === undefined ? outcome : { ...outcome, status }
-      return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED, status?.headSha) }
-    }
-    case 'abort': {
-      const labels = await abortReview(
-        deps.createLabelIo(target()),
-        labelsFor(deps, target().repo),
-        {
-          requeue: values.requeue === true,
-        },
-      )
-      return { ...labels, checkRun: await checkRunFor(deps, target(), abortedStep()) }
-    }
-    case 'skip': {
-      if (values.reason === undefined || values.reason.trim() === '') {
-        throw new Error('skip needs --reason.')
-      }
-      const labels = await skipReview(deps.createLabelIo(target()), labelsFor(deps, target().repo))
-      const checkRun = await checkRunFor(deps, target(), skippedStep(values.reason))
-      return { skipped: true, reason: values.reason, ...labels, checkRun }
-    }
-    case 'prepare': {
-      if (values.out === undefined) throw new Error('prepare needs --out.')
-      const requested = effort(values.effort)
-      return prepareReview(deps.createPrepareIo(target()), {
-        out: values.out,
-        ...(requested === undefined ? {} : { requested }),
-        ...(values.tree === undefined ? {} : { tree: values.tree }),
-        ...(values.clones === undefined ? {} : { clones: values.clones }),
-      })
-    }
+    case 'claim':
+      return claimCommand(values, target, deps)
+    case 'abort':
+      return abortCommand(values, target, deps)
+    case 'skip':
+      return skipCommand(values, target, deps)
+    case 'prepare':
+      return prepareCommand(values, target, deps)
     case 'resolve': {
       const { owner, name } = splitRepo(target().repo)
       return { resolved: await resolveThreads(deps.runner(owner, name), values.thread ?? []) }

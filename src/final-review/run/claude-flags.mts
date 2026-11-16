@@ -75,6 +75,10 @@ export type PillarArgsOptions = {
   settings?: object
   /** Directories outside the working directory the run may read. */
   addDirs?: readonly string[]
+  /** The JSON schema the run must satisfy; the pillar schema by default. */
+  schema?: object
+  /** False for a run that must not dispatch the explorer (the verifier). */
+  explorer?: boolean
 }
 
 /** The `claude -p` argument list for one pillar run. */
@@ -89,7 +93,7 @@ export function pillarArgs(options: PillarArgsOptions): string[] {
     'stream-json',
     '--verbose',
     '--json-schema',
-    JSON.stringify(PILLAR_OUTPUT_SCHEMA),
+    JSON.stringify(options.schema ?? PILLAR_OUTPUT_SCHEMA),
     '--tools',
     tools,
     '--allowedTools',
@@ -101,8 +105,7 @@ export function pillarArgs(options: PillarArgsOptions): string[] {
     ...isolationArgs(options.settings),
     '--effort',
     options.effort ?? CLAUDE_EFFORT.full,
-    '--agents',
-    JSON.stringify(EXPLORER_AGENTS),
+    ...(options.explorer === false ? [] : ['--agents', JSON.stringify(EXPLORER_AGENTS)]),
     ...(options.addDirs === undefined || options.addDirs.length === 0
       ? []
       : ['--add-dir', ...options.addDirs]),

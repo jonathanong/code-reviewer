@@ -5,6 +5,8 @@ code-reviewer claim --repo owner/name --pr N [--force]
 code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
+code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run]
 code-reviewer diff --repo owner/name --pr N
@@ -32,6 +34,11 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
   the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
   change as consumed or as consumers) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
+  review runs claim, prepare, a Haiku skill selection, the planned pillars (--jobs at a time,
+  default 3, each retried once), and the verifier with headless claude runs, then writes
+  review.json, preview.md, report.md and report.json to --out and stops before posting. It fails
+  closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
+  from report.json.
   resolve resolves review threads of fixed findings.
   Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
   plus the comma-separated logins in FINAL_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
