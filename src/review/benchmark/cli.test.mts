@@ -180,7 +180,7 @@ describe('runReviewBenchCli runs', () => {
     const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
     const h = harness({ ...files, '/snap/p1/.review/pr.md': '# T', '/snap/n1/.review/pr.md': '' })
     await runReviewBenchCli([...BASE, '--select'], h.deps)
-    expect(h.execCalls[0]?.args[1]).toContain('call the Skill tool for each of these skills')
+    expect(h.execCalls[0]?.args[1]).toContain('call the Skill tool once for each of these skills')
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).selected).toEqual([
       'skills:one',
     ])

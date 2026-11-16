@@ -7,6 +7,7 @@ import {
   SKILL_SELECTION_SCHEMA,
   buildSelectionPrompt,
   listRuleSkills,
+  MAX_SELECTED,
   selectSkills,
 } from './select-skills.mts'
 
@@ -42,6 +43,17 @@ describe('listRuleSkills', () => {
 describe('selectSkills', () => {
   const skills = listRuleSkills(INSTALLS)
   const base = { title: 'Add widget', index: '- a.ts', skills, cwd: '/tree' }
+
+  it('keeps the first MAX_SELECTED names, which the prompt asks for most relevant first', async () => {
+    const many = Array.from({ length: MAX_SELECTED + 3 }, (_, i) => ({
+      name: `skills:s${i}`,
+      description: '',
+    }))
+    const exec = vi.fn(async () => answer(many.map((skill) => skill.name)))
+    const choice = await selectSkills({ ...base, skills: many, exec })
+    expect(choice.selected).toEqual(many.slice(0, MAX_SELECTED).map((skill) => skill.name))
+    expect(buildSelectionPrompt('t', 'i', many)).toContain(`return at most ${MAX_SELECTED}`)
+  })
 
   it('asks Haiku with no tools and keeps only offered names, once each', async () => {
     const exec = vi.fn(async () =>

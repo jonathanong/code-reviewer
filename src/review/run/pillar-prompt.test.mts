@@ -29,7 +29,7 @@ describe('buildPillarRunPrompt', () => {
     expect(prompt.startsWith('CONTRACT\n\nPILLAR\n\n## This run')).toBe(true)
     expect(
       prompt.endsWith(
-        'Before any other work, call the Skill tool for each of these skills, selected for the files this pull request changes: skills:a, skills:b.',
+        'Before reading any file, call the Skill tool once for each of these skills, all in your first turn: skills:a, skills:b. They were selected for the files this pull request changes, so load every one, including any that looks unrelated to this pillar.',
       ),
     ).toBe(true)
   })

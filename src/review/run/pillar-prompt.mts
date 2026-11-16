@@ -34,7 +34,7 @@ export function skillInstruction(skills: readonly string[]): string[] {
   return skills.length === 0
     ? []
     : [
-        `Before any other work, call the Skill tool for each of these skills, selected for the files this pull request changes: ${skills.join(', ')}.`,
+        `Before reading any file, call the Skill tool once for each of these skills, all in your first turn: ${skills.join(', ')}. They were selected for the files this pull request changes, so load every one, including any that looks unrelated to this pillar.`,
       ]
 }
 
