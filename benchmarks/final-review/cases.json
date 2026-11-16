@@ -21,7 +21,8 @@
         "claim": "This entire package is a nine-line re-export (with a few renames) of valkyries; it adds a new published boundary, release entry and dependency-policy surface without any behavior of its own. Consumers can depend on valkyries directly, so this facade should not be extracted."
       }
     ],
-    "relation": "revert"
+    "relation": "revert",
+    "expectedSkills": ["skills:typescript-authoring"]
   },
   {
     "id": "vouchington-platform-67",
@@ -45,7 +46,8 @@
         "claim": "createVoteHandler bakes an application-shaped request lifecycle (auth, route rate limits, access hooks, 404/422/429 policy, noop handling) behind many injected hooks and six generic parameters. With only one consumer this boundary is speculative and the consumer will still need a large adapter, so it should stay in the product until a second consumer shows the real shared surface."
       }
     ],
-    "relation": "revert"
+    "relation": "revert",
+    "expectedSkills": ["skills:typescript-authoring"]
   },
   {
     "id": "vouchington-1092",
@@ -69,7 +71,8 @@
         "claim": "The chat envelope (role, text, error) contains no entity references, so splitting it into chat_role/chat_text/chat_error columns plus a new enum and cross-column CHECKs does not follow the repo storage rule that only entity ids become relations while structured documents stay JSON. This adds schema and service churn without enforcing any relation."
       }
     ],
-    "relation": "revert"
+    "relation": "revert",
+    "expectedSkills": ["skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-platform-69",
@@ -152,7 +155,8 @@
         "claim": "This normalization adds many tables, ordinals, partition-drop special cases and rewritten writers/readers (about 80 files) for data that is only ever read back whole. The relational model buys no integrity or query benefit here, so the approach is over-engineered for payloads."
       }
     ],
-    "relation": "revert"
+    "relation": "revert",
+    "expectedSkills": ["skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-1077",
@@ -183,7 +187,8 @@
         "claim": "The answer-selection table plus assertion functions and triggers re-implement what a typed value with a CHECK could enforce. Three tables and cross-table triggers for one answer value is heavier than needed; only the question reference needs a foreign key."
       }
     ],
-    "relation": "revert"
+    "relation": "revert",
+    "expectedSkills": ["skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-tooling-154",
@@ -214,7 +219,8 @@
         "claim": "updateExactCheckpoint parses the existing comment with parseCheckpoint using default options, so custom-marker comments are rejected as not matching the run binding. Thread the same codec options here; the tests only use the library default marker, which hides this."
       }
     ],
-    "relation": "fix-forward"
+    "relation": "fix-forward",
+    "expectedSkills": ["no-mistakes-rules:typescript-rules"]
   },
   {
     "id": "vouchington-tooling-187",
@@ -293,7 +299,8 @@
         "claim": "The advisory lock key is built from the batch id text as supplied. UUIDs that differ only in case map to different hashes and so different locks, but the same row; concurrent inserts can both pass the lock and collide on the unique index. Canonicalize the UUID before hashing, e.g. cast to uuid."
       }
     ],
-    "relation": "fix-forward"
+    "relation": "fix-forward",
+    "expectedSkills": ["skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-4154",
@@ -317,7 +324,8 @@
         "claim": "The new bounded unlink flow pages pending aliases by unlink_topic_id ordered by id, but this partial index only covers unlink_topic_id. Include id in the index so the paged query is index-ordered rather than sorting each page."
       }
     ],
-    "relation": "fix-forward"
+    "relation": "fix-forward",
+    "expectedSkills": ["skills:postgres-node-performance-tuning"]
   },
   {
     "id": "vouchington-2806",
@@ -389,7 +397,8 @@
         "claim": "Grouping all npm (and likewise Actions, NuGet, Swift) minor/patch and security updates into catch-all buckets couples unrelated upgrades in a single PR. The repo dependency policy groups by package family, so define family groups and leave singletons ungrouped."
       }
     ],
-    "relation": "fix-forward"
+    "relation": "fix-forward",
+    "expectedSkills": ["skills:dependabot"]
   },
   {
     "id": "vouchington-clients-130",
@@ -552,7 +561,8 @@
       "sha": "a48e25ced1e29333be972b33dc99b13ccda85b08"
     },
     "relation": "rework",
-    "confidence": "high"
+    "confidence": "high",
+    "expectedSkills": ["skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-platform-57",
@@ -577,7 +587,8 @@
       "sha": "3adf4e4e24a8b480d586375e326e5d85b672e4ba"
     },
     "relation": "rework",
-    "confidence": "high"
+    "confidence": "high",
+    "expectedSkills": ["skills:typescript-authoring"]
   },
   {
     "id": "vouchington-platform-59",
@@ -602,7 +613,8 @@
       "sha": "99a56b3c4dfd8c61c10c77dac1ffce04a576793d"
     },
     "relation": "rework",
-    "confidence": "medium"
+    "confidence": "medium",
+    "expectedSkills": ["skills:typescript-authoring"]
   },
   {
     "id": "vouchington-platform-62",
@@ -627,7 +639,8 @@
       "sha": "85ce55a94206c97164c5743f4c8fbeb975094920"
     },
     "relation": "rework",
-    "confidence": "high"
+    "confidence": "high",
+    "expectedSkills": ["skills:typescript-authoring"]
   },
   {
     "id": "vouchington-platform-66",
@@ -652,7 +665,8 @@
       "sha": "85ce55a94206c97164c5743f4c8fbeb975094920"
     },
     "relation": "undo",
-    "confidence": "high"
+    "confidence": "high",
+    "expectedSkills": ["skills:typescript-authoring"]
   },
   {
     "id": "vouchington-402",
