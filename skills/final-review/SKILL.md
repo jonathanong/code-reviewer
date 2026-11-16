@@ -57,8 +57,9 @@ there. Each subagent replies with one line, and its full output stays in a file.
    - `since.patch` and `since/INDEX.md` for a follow-up whose last reviewed SHA is an ancestor;
    - `plan.json`: effort, pillars with their model tier, the verifier tier, and skipped pillars
      with reasons ([dispatch](references/dispatch.md) documents the rules).
-5. `claim` already declines a head the newest final review covers (`reason: "head already
-   reviewed"`, with that review's status), and swaps the request label for `complete` without
+5. `claim` already declines a head the newest final review covers once posting finished, meaning
+   the `final-review:complete` label is set (`reason: "head already reviewed"`, with that
+   review's status); a partial post left by a failed run is claimed again. It swaps the request label for `complete` without
    touching `final approval`: reply with that verdict and stop. Use `--force` to review the same
    head again (for example at a higher effort).
 6. Clean up when the review is posted or fails: `git -C <clone> worktree remove --force
