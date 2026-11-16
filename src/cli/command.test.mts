@@ -9,6 +9,9 @@ vi.mock('../final-review/benchmark/cli.mts', () => ({
 vi.mock('../final-review/run/review.mts', () => ({
   runReview: vi.fn(async () => ({ ok: true, summary: { claimed: true } })),
 }))
+vi.mock('../final-review/benchmark/selection-cli.mts', () => ({
+  runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
+}))
 vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
@@ -17,6 +20,7 @@ import type { FinalReviewIo, LabelIo, PrepareIo } from '../final-review/index.mt
 import { NO_CONFIGS, parseRepoConfig } from '../final-review/rules/config.mts'
 import { runReview } from '../final-review/run/review.mts'
 import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
+import { runFinalReviewSelectionBenchCli } from '../final-review/benchmark/selection-cli.mts'
 import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
 import { runFinalReviewCommand, type FinalReviewDeps } from './command.mts'
 
@@ -64,6 +68,7 @@ function deps(io: FinalReviewIo, input = '{}'): MockDeps {
     references: vi.fn(() => '/references'),
     runBench: vi.fn(async () => 7),
     runVerifierBench: vi.fn(async () => 8),
+    runSelectionBench: vi.fn(async () => 9),
   }
 }
 
@@ -94,6 +99,8 @@ describe('runFinalReviewCommand', () => {
     expect(d.runBench).toHaveBeenCalledWith(['--cases', 'c'])
     await expect(runFinalReviewCommand(['bench-verifier', '--out', 'o'], d)).resolves.toBe(8)
     expect(d.runVerifierBench).toHaveBeenCalledWith(['--out', 'o'])
+    await expect(runFinalReviewCommand(['bench-selection', '--out', 'o'], d)).resolves.toBe(9)
+    expect(d.runSelectionBench).toHaveBeenCalledWith(['--out', 'o'])
     expect(d.createIo).not.toHaveBeenCalled()
   })
 
@@ -258,7 +265,7 @@ describe('runFinalReviewCommand', () => {
     await expect(runFinalReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('final-review: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, or bench-verifier.',
+      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection.',
     )
   })
 
@@ -345,6 +352,8 @@ describe('runFinalReviewCommand default dependencies', () => {
       expect(runFinalReviewBenchCli).toHaveBeenCalledWith(['--x'])
       await expect(runFinalReviewCommand(['bench-verifier', '--y'])).resolves.toBe(6)
       expect(runFinalReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
+      await expect(runFinalReviewCommand(['bench-selection', '--z'])).resolves.toBe(4)
+      expect(runFinalReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

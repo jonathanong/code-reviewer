@@ -52,6 +52,7 @@ export type FinalReviewDeps = {
   references(): string
   runBench(args: string[]): Promise<number>
   runVerifierBench(args: string[]): Promise<number>
+  runSelectionBench(args: string[]): Promise<number>
 }
 
 /** Default dependencies; App or `gh` auth is chosen once, on first use. */
@@ -107,6 +108,10 @@ export function createDefaultDeps(
       (await import('../final-review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
     runVerifierBench: async (args) =>
       (await import('../final-review/benchmark/verifier-cli.mts')).runFinalReviewVerifierBenchCli(
+        args,
+      ),
+    runSelectionBench: async (args) =>
+      (await import('../final-review/benchmark/selection-cli.mts')).runFinalReviewSelectionBenchCli(
         args,
       ),
   }

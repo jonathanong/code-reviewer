@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-15: skill-selection eval added
+
+No run. `bench-selection` calls `selectSkills` on each case with `expectedSkills`, `--attempts`
+times, and scores whether every expected skill is named. It adds a measurement and changes no
+existing case, grader, or prompt, so earlier entries stay comparable. Its results table in
+`README.md` is marked not yet measured.
+
+- The selection input is rebuilt from the same snapshot `bench` makes: the title is the first line
+  of the snapshot's `pr.md`, and the index is rendered as `prepare` writes `diff/INDEX.md`.
+
 ## 2026-11-16: correctness prompt reads lock rules from the skill
 
 Commit: this change, on `feat/review-command`. Reviewer Sonnet, judge Opus, 3 attempts per arm,

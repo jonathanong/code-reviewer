@@ -1,3 +1,5 @@
+import { NUMBERED_DIFF_LEGEND } from './numbered-diff.mts'
+
 /** One file's section of a (numbered) unified diff. */
 export type DiffFile = { path: string; text: string; added: number; removed: number }
 
@@ -46,4 +48,9 @@ export function renderDiffIndex(files: readonly DiffFile[], dir: string): string
     .sort((a, b) => b.file.added + b.file.removed - (a.file.added + a.file.removed))
     .map(({ file, name }) => `- \`${dir}/${name}\` +${file.added} -${file.removed} ${file.path}`)
   return [`# Changed files (${files.length})`, '', ...rows, ''].join('\n')
+}
+
+/** The `INDEX.md` a reviewer reads: the numbered-diff legend, then the index of per-file patches. */
+export function renderIndexFile(files: readonly DiffFile[], dir: string): string {
+  return `${NUMBERED_DIFF_LEGEND}\n\n${renderDiffIndex(files, dir)}`
 }
