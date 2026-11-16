@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 
 import { FinalReviewError, PILLARS, SEVERITIES, type Pillar, type Severity } from '../finding.mts'
+import type { ExpectedSkill } from './skills-score.mts'
 
 export type ExpectedFinding = {
   pillar: Pillar
@@ -16,8 +17,8 @@ type CaseBase = {
   kind: 'positive' | 'negative'
   reason: string
   expected: ExpectedFinding[]
-  /** Rule skills a run should load; a name matches a loaded skill or its part after the last `:`. */
-  expectedSkills?: string[]
+  /** Rule skills a run should load by full `plugin:skill` name; an array entry is any-of. */
+  expectedSkills?: ExpectedSkill[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -113,15 +114,21 @@ function source(
   return { repo, pr: raw.pr as number, baseSha, headSha }
 }
 
-function skillNames(value: unknown, where: string): string[] | undefined {
+function skillName(value: unknown, where: string): string {
+  if (typeof value !== 'string' || !value.includes(':'))
+    fail(where, 'expectedSkills names must be full plugin:skill strings')
+  return value
+}
+
+function skillNames(value: unknown, where: string): ExpectedSkill[] | undefined {
   if (value === undefined) return undefined
-  if (
-    !Array.isArray(value) ||
-    value.length === 0 ||
-    value.some((name) => typeof name !== 'string' || name.length === 0)
-  )
-    fail(where, 'expectedSkills must be a non-empty array of non-empty strings')
-  return value as string[]
+  if (!Array.isArray(value) || value.length === 0)
+    fail(where, 'expectedSkills must be a non-empty array')
+  return value.map((entry): ExpectedSkill => {
+    if (!Array.isArray(entry)) return skillName(entry, where)
+    if (entry.length === 0) fail(where, 'an expectedSkills any-of group must not be empty')
+    return entry.map((name) => skillName(name, where))
+  })
 }
 
 function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {

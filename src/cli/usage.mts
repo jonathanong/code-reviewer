@@ -9,7 +9,7 @@ code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
 code-reviewer plugins [--require NAME]...
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules]
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
   auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
   FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
@@ -33,7 +33,10 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   head and the label is present. bench runs each pillar prompt against labeled cases from a git-free
   snapshot of the pre-merge head and scores recall and precision; --judge grades by claim
   with a model instead of by location. bench also records the skills each run loads and, for cases
-  with expectedSkills, reports skills loaded and grounded recall (catches that loaded the skill).
+  with expectedSkills (full plugin:skill names; an array entry is any-of), reports skills loaded and
+  grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
+  --no-rules run of the same cases: the summary adds control recall and lift (grounded minus control
+  recall over positives both runs scored) and lists cases the control caught.
   bench-verifier runs only the verifier, one call per case
   and no subagents, on the pillar findings a bench --out DIR saved (each judged-real finding is
   also planted under a second pillar), and scores real findings kept, label recall, severity

@@ -200,4 +200,23 @@ describe('summaries', () => {
       '| design | 4 | 67% | 100% | 50% (2) | 1.3 | 50% | 0% |',
     ])
   })
+
+  it('adds control columns when any pillar has a baseline', () => {
+    const baseline = {
+      cases: 2,
+      groundedRecall: 1,
+      controlRecall: 0.5,
+      lift: 0.5,
+      controlCaught: [],
+    }
+    const table = renderSummaryTable([
+      { ...summarizePillar('rules', []), baseline },
+      summarizePillar('design', []),
+    ])
+    expect(table.split('\n').slice(0, 1)[0]).toMatch(
+      /Grounded recall \| Control recall \| Lift \|$/u,
+    )
+    expect(table).toContain('| n/a | 50% | 50% |')
+    expect(table).toContain('| n/a | n/a | n/a |')
+  })
 })

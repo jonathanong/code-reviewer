@@ -1,5 +1,6 @@
 import type { Finding, Pillar, Severity } from '../finding.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
+import type { BaselineSummary } from './baseline.mts'
 import { summarizeSkills, type SkillCase, type SkillsSummary } from './skills-score.mts'
 
 const LINE_TOLERANCE = 10
@@ -26,6 +27,8 @@ export type PillarSummary = {
   falseAlarmRate: number | null
   meanFindings: number | null
   skills: SkillsSummary
+  /** Paired control comparison; present only with `--baseline`. */
+  baseline?: BaselineSummary
 }
 
 const RANK: Record<Severity, number> = { blocking: 0, high: 1, medium: 2, low: 3 }
@@ -135,15 +138,20 @@ function pct(value: number | null): string {
   return value === null ? 'n/a' : `${Math.round(value * 100)}%`
 }
 
-/** Renders pillar summaries as a markdown table. */
+/** Renders pillar summaries as a markdown table; control columns appear with a baseline. */
 export function renderSummaryTable(summaries: readonly PillarSummary[]): string {
-  const rows = summaries.map(
-    (s) =>
-      `| ${s.pillar} | ${s.cases} | ${pct(s.recall)} | ${pct(s.severityAgreement)} | ${pct(s.falseAlarmRate)} (${s.negativeCases}) | ${s.meanFindings === null ? 'n/a' : s.meanFindings.toFixed(1)} | ${pct(s.skills.loaded)} | ${pct(s.skills.groundedRecall)} |`,
-  )
+  const paired = summaries.some((s) => s.baseline !== undefined)
+  const rows = summaries.map((s) => {
+    const base = s.baseline
+    const extra = paired
+      ? ` ${pct(base?.controlRecall ?? null)} | ${pct(base?.lift ?? null)} |`
+      : ''
+    return `| ${s.pillar} | ${s.cases} | ${pct(s.recall)} | ${pct(s.severityAgreement)} | ${pct(s.falseAlarmRate)} (${s.negativeCases}) | ${s.meanFindings === null ? 'n/a' : s.meanFindings.toFixed(1)} | ${pct(s.skills.loaded)} | ${pct(s.skills.groundedRecall)} |${extra}`
+  })
+  const head = paired ? ' Control recall | Lift |' : ''
   return [
-    '| Pillar | Cases | Recall | Severity agreement | False alarms (negatives) | Findings per PR | Skills loaded | Grounded recall |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    `| Pillar | Cases | Recall | Severity agreement | False alarms (negatives) | Findings per PR | Skills loaded | Grounded recall |${head}`,
+    `| --- | --- | --- | --- | --- | --- | --- | --- |${paired ? ' --- | --- |' : ''}`,
     ...rows,
   ].join('\n')
 }

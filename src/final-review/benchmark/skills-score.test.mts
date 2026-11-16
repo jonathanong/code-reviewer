@@ -4,6 +4,7 @@ import { parseEvalCases } from './cases.mts'
 import {
   expectedSkillsFor,
   scoreSkills,
+  skillLabel,
   skillLoaded,
   skillNotes,
   summarizeSkills,
@@ -22,36 +23,45 @@ const [positive, negative, plain] = parseEvalCases([
     id: 'p',
     kind: 'positive',
     expected: [{ pillar: 'rules', severity: 'high', path: null, lines: null, claim: 'c' }],
-    expectedSkills: ['testing-rules', 'dependency-rules'],
+    expectedSkills: ['r:testing-rules', 'r:dependency-rules'],
   },
-  { ...base, id: 'n', kind: 'negative', expected: [], expectedSkills: ['testing-rules'] },
+  { ...base, id: 'n', kind: 'negative', expected: [], expectedSkills: ['r:testing-rules'] },
   { ...base, id: 'plain', kind: 'negative', expected: [] },
 ])
 if (positive === undefined || negative === undefined || plain === undefined)
   throw new Error('setup')
 
 describe('skills scoring', () => {
-  it('matches a name to a loaded skill or the part after the last colon', () => {
-    expect(skillLoaded('testing-rules', ['no-mistakes-rules:testing-rules'])).toBe(true)
-    expect(skillLoaded('testing-rules', ['testing-rules'])).toBe(true)
-    expect(skillLoaded('testing-rules', ['rules:other', 'testing'])).toBe(false)
-    expect(skillLoaded('testing-rules', [])).toBe(false)
+  it('requires the full plugin:skill name', () => {
+    expect(skillLoaded('r:testing-rules', ['r:testing-rules'])).toBe(true)
+    expect(skillLoaded('r:testing-rules', ['stale:testing-rules'])).toBe(false)
+    expect(skillLoaded('r:testing-rules', ['testing-rules', 'r:other'])).toBe(false)
+    expect(skillLoaded('r:testing-rules', [])).toBe(false)
+  })
+
+  it('accepts any one of an any-of group and labels it with pipes', () => {
+    const group = ['a:x', 'b:y']
+    expect(skillLoaded(group, ['b:y'])).toBe(true)
+    expect(skillLoaded(group, ['c:y'])).toBe(false)
+    expect(skillLabel(group)).toBe('a:x | b:y')
+    expect(skillLabel('a:x')).toBe('a:x')
+    expect(scoreSkills(positive, [group], [], false).missing).toEqual([group])
   })
 
   it('applies expectations to the expected pillars, and to every pillar of a negative', () => {
-    expect(expectedSkillsFor(positive, 'rules')).toEqual(['testing-rules', 'dependency-rules'])
+    expect(expectedSkillsFor(positive, 'rules')).toEqual(['r:testing-rules', 'r:dependency-rules'])
     expect(expectedSkillsFor(positive, 'design')).toEqual([])
-    expect(expectedSkillsFor(negative, 'design')).toEqual(['testing-rules'])
+    expect(expectedSkillsFor(negative, 'design')).toEqual(['r:testing-rules'])
     expect(expectedSkillsFor(plain, 'rules')).toEqual([])
   })
 
   it('classifies grounded, ungrounded, loaded-missed, and missed positives', () => {
-    const wanted = ['testing-rules', 'dependency-rules']
-    const all = ['x:testing-rules', 'dependency-rules']
+    const wanted = ['r:testing-rules', 'r:dependency-rules']
+    const all = ['r:testing-rules', 'r:dependency-rules']
     expect(scoreSkills(positive, wanted, all, true)).toMatchObject({ outcome: 'grounded' })
-    expect(scoreSkills(positive, wanted, ['testing-rules'], true)).toMatchObject({
+    expect(scoreSkills(positive, wanted, ['r:testing-rules'], true)).toMatchObject({
       outcome: 'ungrounded',
-      missing: ['dependency-rules'],
+      missing: ['r:dependency-rules'],
     })
     expect(scoreSkills(positive, wanted, all, false).outcome).toBe('loaded-missed')
     expect(scoreSkills(positive, wanted, [], false).outcome).toBe('missed')
@@ -92,5 +102,8 @@ describe('skills scoring', () => {
       '- rules p: caught without a',
     ])
     expect(skillNotes([{ ...control, skills: summarizeSkills(skillCases, true) }])).toHaveLength(2)
+    const group = [scoreSkills(positive, [['a:x', 'b:y']], [], false)]
+    const grouped = { pillar: 'rules' as const, skillCases: group, skills: summarizeSkills(group) }
+    expect(skillNotes([grouped])).toEqual(['- rules p: missing a:x | b:y'])
   })
 })

@@ -286,7 +286,7 @@ describe('skill loads', () => {
     stdoutSpy()
     const withSkills = (item: Record<string, unknown>) => ({
       ...item,
-      expectedSkills: ['testing-rules'],
+      expectedSkills: ['rules:testing-rules'],
     })
     const hit = JSON.parse(HIT).structured_output.findings.map((finding: object) => ({
       pillar: 'security',
@@ -309,8 +309,8 @@ describe('skill loads', () => {
     await runFinalReviewBenchCli(['--cases', 'cases.json', '--out', 'out', '--score-only'], h.deps)
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('| security | 3 | 100% | 100% | 0% (1) | 0.7 | 33% | 50% |')
-    expect(markdown).toContain('- security p2: caught without testing-rules')
-    expect(markdown).toContain('- security n1: missing testing-rules')
+    expect(markdown).toContain('- security p2: caught without rules:testing-rules')
+    expect(markdown).toContain('- security n1: missing rules:testing-rules')
     expect(markdown).not.toContain('Control run')
     const { skills } = JSON.parse(h.files.get('out/summary.json') as string)[0].summary
     expect(skills).toMatchObject({ grounded: 1, ungrounded: 1, loadedMissed: 0, missed: 0 })
@@ -374,6 +374,30 @@ describe('runFinalReviewBenchCli --score-only', () => {
     expect(markdown).toMatch(/- security p[12]: not judged/u)
     // The unjudged case is excluded, not scored by location.
     expect(markdown).toContain('| security | 1 | 100% |')
+  })
+
+  it('passes --baseline through to a paired control summary', async () => {
+    stdoutSpy()
+    const withSkills = { ...caseJson('p1', 'positive'), expectedSkills: ['rules:testing-rules'] }
+    const hit = JSON.parse(HIT).structured_output.findings.map((finding: object) => ({
+      pillar: 'security',
+      ...finding,
+    }))
+    const h = harness({
+      'cases.json': JSON.stringify([withSkills]),
+      'out/raw/security/p1.json': JSON.stringify({
+        findings: hit,
+        skills: ['rules:testing-rules'],
+      }),
+      'ctl/raw/security/p1.json': JSON.stringify({ findings: hit, skills: [], skillTool: false }),
+    })
+    await runFinalReviewBenchCli([...scoreOnly, '--baseline', 'ctl'], h.deps)
+    const markdown = h.files.get('out/summary.md') as string
+    expect(markdown).toContain('Control recall')
+    expect(markdown).toContain('- security: control caught p1: does not discriminate')
+    await expect(
+      runFinalReviewBenchCli([...scoreOnly, '--baseline', 'nowhere'], h.deps),
+    ).rejects.toThrow('--baseline nowhere has no raw results')
   })
 
   it('labels location matching without --judge', async () => {

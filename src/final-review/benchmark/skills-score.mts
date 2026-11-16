@@ -3,11 +3,14 @@ import type { EvalCase } from './cases.mts'
 
 export type SkillOutcome = 'grounded' | 'ungrounded' | 'loaded-missed' | 'missed'
 
+/** A full `plugin:skill` name, or a non-empty group of which any one satisfies the expectation. */
+export type ExpectedSkill = string | string[]
+
 export type SkillCase = {
   id: string
-  expectedSkills: string[]
+  expectedSkills: ExpectedSkill[]
   /** Expected skills the run did not load. */
-  missing: string[]
+  missing: ExpectedSkill[]
   /** Positive cases only: caught with every skill loaded, caught without, or not caught. */
   outcome: SkillOutcome | null
 }
@@ -26,25 +29,31 @@ export type SkillsSummary = {
   groundedRecall: number | null
 }
 
-/** A name matches a loaded skill when equal to it or to its part after the last `:`. */
-export function skillLoaded(name: string, loaded: readonly string[]): boolean {
-  return loaded.some((skill) => skill === name || skill.slice(skill.lastIndexOf(':') + 1) === name)
+/** An expectation is met by a loaded skill with exactly the full name (any one of a group). */
+export function skillLoaded(expected: ExpectedSkill, loaded: readonly string[]): boolean {
+  const names = typeof expected === 'string' ? [expected] : expected
+  return names.some((name) => loaded.includes(name))
+}
+
+/** Shows an any-of group as `a | b`. */
+export function skillLabel(expected: ExpectedSkill): string {
+  return typeof expected === 'string' ? expected : expected.join(' | ')
 }
 
 /** The skills a case expects for one pillar: those of its expected pillars; all for a negative. */
-export function expectedSkillsFor(item: EvalCase, pillar: Pillar): string[] {
+export function expectedSkillsFor(item: EvalCase, pillar: Pillar): ExpectedSkill[] {
   const applies = item.kind === 'negative' || item.expected.some((entry) => entry.pillar === pillar)
   return applies ? (item.expectedSkills ?? []) : []
 }
 
-function outcome(caught: boolean, missing: readonly string[]): SkillOutcome {
+function outcome(caught: boolean, missing: readonly ExpectedSkill[]): SkillOutcome {
   if (caught) return missing.length === 0 ? 'grounded' : 'ungrounded'
   return missing.length === 0 ? 'loaded-missed' : 'missed'
 }
 
 export function scoreSkills(
   item: EvalCase,
-  expectedSkills: string[],
+  expectedSkills: ExpectedSkill[],
   loaded: readonly string[],
   caught: boolean,
 ): SkillCase {
@@ -86,7 +95,7 @@ export function skillNotes(entries: readonly NoteEntry[]): string[] {
     lines.push('Control run: no skills available; recall here is the baseline a skill must beat.')
   for (const { pillar, skillCases } of entries) {
     for (const item of skillCases) {
-      const names = item.missing.join(', ')
+      const names = item.missing.map(skillLabel).join(', ')
       if (item.missing.length > 0) lines.push(`- ${pillar} ${item.id}: missing ${names}`)
       if (item.outcome === 'ungrounded')
         lines.push(`- ${pillar} ${item.id}: caught without ${names}`)

@@ -132,6 +132,7 @@ export async function runFinalReviewBenchCli(
       'score-only': { type: 'boolean' },
       judge: { type: 'string' },
       'no-rules': { type: 'boolean' },
+      baseline: { type: 'string' },
     },
   })
   if (values.cases === undefined || values.out === undefined)
@@ -153,6 +154,7 @@ export async function runFinalReviewBenchCli(
     scoreOnly: values['score-only'] === true,
     judge: values.judge,
     noRules: values['no-rules'] === true,
+    ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }
   await runAll(cases, pillars, options, deps)
   if (options.judge !== undefined) {
