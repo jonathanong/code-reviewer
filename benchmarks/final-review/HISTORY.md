@@ -2,6 +2,32 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-15: replacement rule fixtures measured
+
+Commit 87c967e. Reviewer Sonnet 5.5, judge Opus, 3 attempts with skills and 3 with `--no-rules`,
+rules pillar, `rules-test-only-whole-module-mock` and `rules-content-only-metrics-on-tx-client`.
+
+- With skills: both caught in 3 of 3 attempts, expected skill loaded in 6 of 6 runs.
+- Control: neither caught in 3 of 3 attempts.
+- Cost $0.17 a run, about 10 turns.
+
+Both cases discriminate. The other 12 rules fixtures were not re-run in this session.
+
+## 2026-11-15: naming the skills in the prompt on mined cases
+
+Commit 87c967e with a prompt edit made only in a scratch copy: a section at the end of the pillar
+prompt naming four skills to load (`skills:typescript-authoring`,
+`no-mistakes-rules:typescript-rules`, `skills:test-authoring`, `no-mistakes-rules:testing-rules`).
+Reviewer Sonnet 5.5, judge Opus, 3 attempts, no control.
+
+- Design (`vouchington-platform-60`, `-62`, `-67`): 9 of 9 runs loaded both TypeScript skills;
+  3 of 9 expected findings caught, all with the skill loaded. About $0.29 a run, 12 to 24 turns.
+- Correctness (`vouchington-tooling-154`): 0 of 3 runs loaded any skill; 0 of 6 expected findings
+  caught. One case only, so the cause is not separated from the case; `correctness.md` also tells
+  the reviewer to load skills "only when relevant".
+
+Named skills are loaded reliably by the design pillar. Not committed.
+
 ## 2026-11-15: stronger "load skills" wording on mined cases
 
 Commit 2486bc6 with prompt edits made only in a scratch copy. Reviewer Sonnet 5.5, judge Opus, 3

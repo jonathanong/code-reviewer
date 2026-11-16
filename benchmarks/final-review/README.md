@@ -22,8 +22,8 @@ installed rule skills and 3 without (`--no-rules`). See [HISTORY.md](HISTORY.md)
 Fixture cases (`synthetic.json`), 2026-11-15, commit 2d9a96f, reviewer and judge both Sonnet 5.5,
 3 attempts with skills and 1 without, so not comparable with the table above: rules pillar, 10
 positive and 4 negative cases, recall 100%, false alarms 0 of 4, expected skill loaded in 90% of
-runs, control recall 22%. The two cases the control caught were replaced afterwards and the
-replacements are not measured yet.
+runs, control recall 22%. The two cases the control caught were replaced; the
+replacements (Opus judge, 3 attempts per arm) are caught 3 of 3 with skills and 0 of 3 without.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
