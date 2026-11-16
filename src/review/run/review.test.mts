@@ -107,7 +107,9 @@ function setup(
       after(out)
       return { headSha: SHA, plan } as never
     }),
-    skip: vi.fn(async (reason: string) => calls.push(`skip ${reason}`)),
+    skip: vi.fn(async (reason: string, headSha: string) =>
+      calls.push(`skip ${reason} @${headSha}`),
+    ),
     abort: vi.fn(async () => calls.push('abort')),
     preview: vi.fn(async () => ({
       verdict: 'Comment',
@@ -218,7 +220,7 @@ describe('runReview', () => {
     const plan = { ...PLAN, mode: 'skip' as const, skipReason: 'Lockfile only.', pillars: [] }
     const { out, steps, calls, options } = setup({}, plan)
     const outcome = await runReview(steps, options)
-    expect(calls).toEqual(['skip Lockfile only.'])
+    expect(calls).toEqual([`skip Lockfile only. @${SHA}`])
     expect(outcome.summary).toMatchObject({
       claimed: true,
       mode: 'skip',
@@ -234,7 +236,7 @@ describe('runReview', () => {
     const { steps, calls, options } = setup({}, plan, (out) => mkdirSync(join(out, 'report.json')))
     const outcome = await runReview(steps, options)
     expect(outcome.ok).toBe(false)
-    expect(calls).toEqual(['skip Lockfile only.'])
+    expect(calls).toEqual([`skip Lockfile only. @${SHA}`])
   })
 
   it('fails closed and aborts without requeue when every pillar fails', async () => {

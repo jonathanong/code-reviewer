@@ -12,7 +12,7 @@ export type PostOutcome = {
   label: 'added' | 'removed' | 'unchanged'
 }
 
-const SHA_RE = /^[0-9a-f]{40}$/u
+export const SHA_RE = /^[0-9a-f]{40}$/u
 
 /** Removes a stale `final approval` label; run before every re-review. */
 export async function revokeFinalApproval(io: ReviewIo): Promise<boolean> {
@@ -61,6 +61,8 @@ export type ReviewStatus = {
   labeled: boolean
   /** True only when the newest review approved the current head and the label is on. */
   approved: boolean
+  /** True when the newest review is a skip notice for the current head: nothing left to review. */
+  skipped: boolean
 }
 
 export const MARKER_RE =
@@ -93,5 +95,6 @@ export async function reviewStatus(io: ReviewIo): Promise<ReviewStatus> {
     current,
     labeled,
     approved: current && labeled && verdict === 'Approve',
+    skipped: current && verdict === 'Skipped',
   }
 }

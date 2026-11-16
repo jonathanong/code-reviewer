@@ -62,7 +62,11 @@ function counts(findings: readonly Finding[]): string {
 }
 
 /** Hidden marker other agents parse to tie a review and its label to one head SHA. */
-export function reviewMarker(headSha: string, verdict: Verdict, effort: Effort): string {
+export function reviewMarker(
+  headSha: string,
+  verdict: Verdict | 'Skipped',
+  effort: Effort,
+): string {
   return `<!-- final-review sha=${headSha} verdict=${verdict.replace(' ', '-')} effort=${effort} -->`
 }
 

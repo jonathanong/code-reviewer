@@ -47,8 +47,8 @@ each retried once), runs the verifier, and writes:
 - `skills.json`, `pillars/<pillar>.json`, `verifier.json`: the intermediate results.
 
 The run prints one JSON line with the mode, verdict, finding counts, total cost, and file paths.
-Labels stay at processing. A `skip` plan closes the pull request through `skip` and writes a
-short report. If anything fails after the claim, the claim is dropped without a requeue and the
+Labels stay at processing. A `skip` plan closes the pull request through `skip` (a short skip
+review on the head, then the labels) and writes a short report. If anything fails after the claim, the claim is dropped without a requeue and the
 command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
 pillar fails, the review fails closed instead of approving unchecked code.
 
@@ -109,11 +109,16 @@ Label names and an optional GitHub check run are set here too, per organization 
   approved head.
 - `checkRun`: absent means no check run. When set, and calls use the GitHub App, `claim` opens a
   check run at the head, `post` completes it from the verdict, and `abort` and `skip` cancel or
-  skip it. Under the local `gh` login the result says the check run was skipped.
+  skip it. Under the local `gh` login the same states are written as a commit status whose
+  context is the configured name (`via` in the result says which).
 - `consumes` is valid only in a repository file.
 
 `code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings.
-`code-reviewer skip` closes out a pull request the plan will not review.
+`code-reviewer skip` closes out a pull request the plan will not review: it posts one COMMENT
+review on the head with a `verdict=Skipped` marker, then swaps the labels. `status` exits 0 for
+a skipped head (it never counts as approval and the approval label is not added), `claim`
+declines it like any reviewed head unless `--force`, and a later review treats it as a first
+review.
 
 ## Authentication and trust
 

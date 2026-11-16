@@ -58,8 +58,8 @@ rather than label, or to review a head that is already reviewed. The command:
    `context.md` (the last review, unresolved findings, other reviewers' notes), `rules/INDEX.md`
    (this repository's `AGENTS.md` and skills at the base ref, and those of the repositories that
    this reviewer's `repos/` configs or the diff's imports link to the change), and `plan.json`.
-3. On a skip plan, closes the request with the reason and writes a short report. Nothing is
-   posted; go to Step 5.
+3. On a skip plan, posts a short skip review on the head with the reason (so `status` passes),
+   closes the request, and writes a short report; go to Step 5.
 4. Picks the rule skills for the change with one Haiku call, runs the planned pillars as headless
    runs that load only the `no-mistakes-rules` and `skills` plugins, then runs the verifier.
 5. Writes `review.json` (what `post` takes), `preview.md` (the review as it would be posted), and
@@ -113,8 +113,8 @@ printed, which `report.md` repeats as a ready `code-reviewer resolve` command.
 
 `git -C <clone> worktree remove --force "$run/tree"`, then `rm -rf "$run"` once the report has
 been recorded. Reply to the requester with the verdict and the review link. Merging agents check
-`code-reviewer status`, which exits 0 only when the newest review approved the current head and
-the `final approval` label is present.
+`code-reviewer status`, which exits 0 only when the newest review approved the current head with
+the `final approval` label present, or skipped it.
 
 ## Benchmarks
 

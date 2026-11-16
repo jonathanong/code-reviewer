@@ -11,7 +11,7 @@ import {
   resolveThreads,
   reviewSettings,
   settingsProblems,
-  skipReview,
+  skipPullRequest,
   skippedStep,
   type Effort,
   type PullTarget,
@@ -78,14 +78,28 @@ export async function abortCommand(values: LoopValues, target: () => PullTarget,
   return { ...labels, checkRun: await checkRunFor(deps, target(), abortedStep()) }
 }
 
-/** Closes a pull request the plan will not review. */
-export async function skipCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
+/**
+ * Closes a pull request the plan will not review: posts a skip review on the head (which `status`
+ * accepts), then swaps the labels. `expectedHead` is the head the caller prepared.
+ */
+export async function skipCommand(
+  values: LoopValues,
+  target: () => PullTarget,
+  deps: ReviewDeps,
+  expectedHead?: string,
+) {
   if (values.reason === undefined || values.reason.trim() === '') {
     throw new Error('skip needs --reason.')
   }
-  const labels = await skipReview(deps.createLabelIo(target()), labelsFor(deps, target().repo))
-  const checkRun = await checkRunFor(deps, target(), skippedStep(values.reason))
-  return { skipped: true, reason: values.reason, ...labels, checkRun }
+  const { headSha, url, ...labels } = await skipPullRequest(
+    deps.createIo(target()),
+    deps.createLabelIo(target()),
+    labelsFor(deps, target().repo),
+    values.reason,
+    expectedHead,
+  )
+  const checkRun = await checkRunFor(deps, target(), skippedStep(values.reason, url), headSha)
+  return { skipped: true, reason: values.reason, review: url, ...labels, checkRun }
 }
 
 /** Gathers the diff, context, plan and rule sources into `--out`. */

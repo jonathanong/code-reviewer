@@ -124,7 +124,7 @@ async function run(
     case 'status': {
       const status = await reviewStatus(io)
       print(status)
-      return status.approved ? 0 : 1
+      return status.approved || status.skipped ? 0 : 1
     }
     default:
       throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)

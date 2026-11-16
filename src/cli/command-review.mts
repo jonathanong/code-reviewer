@@ -44,7 +44,7 @@ export async function reviewCommand(
     {
       claim: () => claimCommand(resolved, targetOf, deps),
       prepare: () => prepareCommand(resolved, targetOf, deps),
-      skip: (reason) => skipCommand({ ...resolved, reason }, targetOf, deps),
+      skip: (reason, headSha) => skipCommand({ ...resolved, reason }, targetOf, deps, headSha),
       abort: () => abortCommand({ ...resolved, requeue: false }, targetOf, deps),
       preview: (input, headSha) =>
         postFinalReview(deps.createIo(target), input, headSha, { dryRun: true }),

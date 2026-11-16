@@ -134,9 +134,10 @@ export function buildFollowUpContext(
   const markedReviews = own.filter(
     (review) => MARKER_RE.test(review.body) || PART_MARKER_RE.test(review.body),
   )
+  // A skip notice reviewed nothing, so it is not a prior review: the next review is a first one.
   const latest = own
     .map((review) => MARKER_RE.exec(review.body))
-    .filter((match) => match !== null)
+    .filter((match) => match !== null && match[2] !== 'Skipped')
     .at(-1)
   const reviewedSha = latest?.[1] ?? null
   const oids = pull.commits.nodes.map((node) => node.commit.oid)
