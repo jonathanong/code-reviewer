@@ -42,6 +42,7 @@
   {
     "id": "rules-shared-error-text",
     "fixture": "fixtures/rules-shared-error-text",
+    "expectedSkills": ["testing-rules"],
     "title": "feat: parse amounts from user input",
     "kind": "positive",
     "reason": "The new tests match error message text. Only the shared no-mistakes testing-rules forbid it; the repository's AGENTS.md is silent.",
@@ -58,6 +59,7 @@
   {
     "id": "rules-skills-sweep-until-empty",
     "fixture": "fixtures/rules-skills-sweep-until-empty",
+    "expectedSkills": ["bounded-iteration"],
     "title": "feat: purge expired sessions every 15 minutes",
     "kind": "positive",
     "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the shared skills repository requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
@@ -74,6 +76,7 @@
   {
     "id": "rules-test-only-per-item",
     "fixture": "fixtures/rules-test-only-per-item",
+    "expectedSkills": ["testing-rules"],
     "title": "test: cover overdueInvoices",
     "kind": "positive",
     "reason": "A test-only change. The first test asserts on every returned invoice in a loop without asserting the result is non-empty, so it passes if the function returns nothing. Only the shared no-mistakes testing-rules state this; the repository's AGENTS.md is silent.",
@@ -90,6 +93,7 @@
   {
     "id": "rules-workflow-only-checkout-credentials",
     "fixture": "fixtures/rules-workflow-only-checkout-credentials",
+    "expectedSkills": ["github-actions-rules"],
     "title": "ci: add a lint workflow",
     "kind": "positive",
     "reason": "A workflow-only change. The new workflow's checkout keeps its credentials although no later step pushes; the existing ci.yml sets persist-credentials: false. Only the shared no-mistakes github-actions-rules state this.",
@@ -106,6 +110,7 @@
   {
     "id": "rules-manifest-only-git-dependency",
     "fixture": "fixtures/rules-manifest-only-git-dependency",
+    "expectedSkills": ["dependency-rules"],
     "title": "chore: add money-format",
     "kind": "positive",
     "reason": "A manifest-only change. The new dependency is a git URL on a branch. Only the shared no-mistakes dependency-rules state this.",

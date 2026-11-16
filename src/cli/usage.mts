@@ -33,7 +33,9 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   the label before a re-review. status exits 0 only when the newest final review approved the current
   head and the label is present. bench runs each pillar prompt against labeled cases from a git-free
   snapshot of the pre-merge head and scores recall and precision; --judge grades by claim
-  with a model instead of by location. bench-verifier runs only the verifier, one call per case
+  with a model instead of by location. bench also records the skills each run loads and, for cases
+  with expectedSkills, reports skills loaded and grounded recall (catches that loaded the skill).
+  bench-verifier runs only the verifier, one call per case
   and no subagents, on the pillar findings a bench --out DIR saved (each judged-real finding is
   also planted under a second pillar), and scores real findings kept, label recall, severity
   agreement, duplicates merged, and other blocking and high findings confirmed by --checker;

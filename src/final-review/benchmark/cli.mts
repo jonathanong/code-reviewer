@@ -108,7 +108,8 @@ async function runAll(
     try {
       const { model, maxTurns } = options
       const run = { pillar, pillarPrompt, model, maxTurns, skills: !options.noRules }
-      result = { findings: await runPillar(item, dir, run, deps.exec), ...seen }
+      const { findings, skills } = await runPillar(item, dir, run, deps.exec)
+      result = { findings, skills, skillTool: !options.noRules, ...seen }
     } catch (error) {
       result = { error: error instanceof Error ? error.message : String(error), ...seen }
     }

@@ -79,7 +79,8 @@ export function pillarArgs(
     '--model',
     model,
     '--output-format',
-    'json',
+    'stream-json',
+    '--verbose',
     '--json-schema',
     JSON.stringify(PILLAR_OUTPUT_SCHEMA),
     '--tools',
@@ -93,23 +94,59 @@ export function pillarArgs(
   ]
 }
 
-/** Reads `structured_output.findings` from `claude -p --output-format json` and tags the pillar. */
-export function parsePillarOutput(stdout: string, pillar: Pillar): Finding[] {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(stdout)
-  } catch {
-    throw new FinalReviewError('Pillar run did not print JSON.')
+function jsonLines(stdout: string): unknown[] {
+  const docs: unknown[] = []
+  for (const line of stdout.split('\n')) {
+    try {
+      docs.push(JSON.parse(line))
+    } catch {
+      // Blank and non-JSON lines are ignored.
+    }
   }
-  const structured = (parsed as { structured_output?: { findings?: unknown } } | null)
-    ?.structured_output
-  if (structured === undefined || !Array.isArray(structured.findings)) {
+  return docs
+}
+
+type ToolUse = { type?: unknown; name?: unknown; input?: { skill?: unknown } }
+
+/** Distinct `Skill` tool_use skill names in a stream-json event list, in first-use order. */
+function loadedSkills(events: readonly Record<string, unknown>[]): string[] {
+  const skills = new Set<string>()
+  for (const event of events) {
+    const content = (event.message as { content?: unknown } | undefined)?.content
+    if (event.type !== 'assistant' || !Array.isArray(content)) continue
+    for (const part of content as ToolUse[]) {
+      const skill = part?.input?.skill
+      if (part?.type === 'tool_use' && part.name === 'Skill' && typeof skill === 'string')
+        skills.add(skill)
+    }
+  }
+  return [...skills]
+}
+
+export type PillarOutput = { findings: Finding[]; skills: string[] }
+
+/**
+ * Reads `structured_output.findings` from the last event that carries it and the loaded skills from
+ * `claude -p --output-format stream-json --verbose` (JSONL). A single `--output-format json`
+ * object is accepted too.
+ */
+export function parsePillarOutput(stdout: string, pillar: Pillar): PillarOutput {
+  const docs = jsonLines(stdout)
+  if (docs.length === 0) throw new FinalReviewError('Pillar run did not print JSON.')
+  const events = docs.filter((doc): doc is Record<string, unknown> => isObject(doc))
+  const result = events.findLast((event) => 'structured_output' in event)
+  const structured = result?.structured_output as { findings?: unknown } | null | undefined
+  if (structured === undefined || structured === null || !Array.isArray(structured.findings)) {
     throw new FinalReviewError('Pillar run returned no structured findings.')
   }
   const findings = structured.findings.map((finding: unknown) =>
-    finding !== null && typeof finding === 'object' ? { ...finding, pillar } : finding,
+    isObject(finding) ? { ...finding, pillar } : finding,
   )
-  return parseFinalReviewInput({ findings }).findings
+  return { findings: parseFinalReviewInput({ findings }).findings, skills: loadedSkills(events) }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object'
 }
 
 export type PillarRun = {
@@ -127,7 +164,7 @@ export async function runPillar(
   dir: string,
   run: PillarRun,
   exec: Exec,
-): Promise<Finding[]> {
+): Promise<PillarOutput> {
   const prompt = buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir))
   const tools = run.skills === false ? READ_ONLY_TOOLS : PILLAR_TOOLS
   const stdout = await exec('claude', pillarArgs(prompt, run.model, run.maxTurns, tools), {

@@ -69,6 +69,31 @@ alone. Each raw result records the enabled plugins and their versions (`plugins`
 digest, so a score change can be traced to a rule change. Every staged skill's markdown files under
 `references/`, at any depth, are staged with it.
 
+### Skill loads
+
+Pillar runs use `--output-format stream-json --verbose`. The runner reads findings from the
+result event and records the distinct skills loaded through the `Skill` tool, in first-use order,
+as `skills` in each raw result (`skillTool` records whether the tool was available; `--no-rules`
+runs have none, so `skills` is empty). A case may declare `"expectedSkills": ["testing-rules"]`;
+a name matches a loaded skill equal to it or to its part after the last `:`, so `testing-rules`
+matches `no-mistakes-rules:testing-rules`. The expectation applies to the pillars of the case's
+`expected` findings, and to every pillar run for a negative case. The summary adds:
+
+- **Skills loaded**: the share of expected skills that were loaded, over cases that declare them
+  (`n/a` when none do). Cases missing a skill are listed under the table.
+- **Grounded recall**: positives with `expectedSkills` whose expected finding was matched AND
+  whose expected skills were all loaded, over all such positives. A catch without the skill is
+  ungrounded: the null-hypothesis outcome, where the model would have found it anyway, and it is
+  listed as `caught without <skill>`. `summary.json` holds the four counts (`grounded`,
+  `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
+
+A `--no-rules` run is the ablation baseline: every catch is ungrounded, and the summary says so
+(`skillsAvailable: false`), so a skill-enabled run's grounded recall can be compared against it.
+Raw results saved before this change lack `skills`; `--score-only` counts them as nothing loaded,
+so re-run them to measure skill loads. Raw results are not reused across runs (`bench` always
+re-runs pillars), and the judge cache is keyed on findings only, so the new fields never make a
+stale result look current; the rules digest and `plugins` are unchanged.
+
 The `rules-*` cases in `synthetic.json` test the rules pillar: a shared no-mistakes rule
 (`rules-shared-error-text`), a shared `skills` repository skill (`rules-skills-sweep-until-empty`),
 a dependency's rules for callers (`rules-dependency-flag-key`), a repository rule that overrides a

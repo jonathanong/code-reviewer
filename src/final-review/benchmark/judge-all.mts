@@ -11,7 +11,16 @@ import type { Exec } from './snapshot.mts'
  * enabled Claude Code plugins and versions whose skills it could load.
  */
 export type RawResult =
-  | { findings: Finding[]; judged?: Judged; rules?: string; plugins?: string[] }
+  | {
+      findings: Finding[]
+      judged?: Judged
+      rules?: string
+      plugins?: string[]
+      /** Distinct skills the run loaded through the Skill tool; absent in older results. */
+      skills?: string[]
+      /** False for a control run with no Skill tool; absent in older results. */
+      skillTool?: boolean
+    }
   | { error: string; rules?: string; plugins?: string[] }
 
 export type JudgeDeps = {
