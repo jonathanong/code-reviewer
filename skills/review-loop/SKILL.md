@@ -51,6 +51,9 @@ one, and a request for a pull request already being reviewed is noted for after 
    confirm your own skill list shows skills from each required plugin: a session started before a
    plugin was installed or updated does not see it. On either failure, stop, review nothing, and
    tell the human to install the plugin or restart the session.
+   The rules are only as new as the installed plugins, and nothing updates them for you. Report
+   the printed versions to the human at every start, with the update command for each
+   (`claude plugin update <plugin>@<marketplace>`); an update needs a session restart.
 2. `code-reviewer auth` (App or `gh`) and `code-reviewer queue --owner <owner>`.
 3. Entries in state `in-progress` were abandoned by an earlier session: review them with
    `claim --force`. Entries in state `requested` are queued in the order listed.

@@ -2,6 +2,52 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: closing run on one commit; README rebuilt from it
+
+Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts with `--select`
+and 3 with `--no-rules`, one session. Reviewer and selection cost $23.41: fixtures $10.75 with,
+$4.34 without, $0.16 selection; mined $5.58 with, $2.47 without, $0.13 selection.
+
+Why: the README table had rows from several runs and two prompts. Every README number now comes
+from this run, except the selection and verifier lines below.
+
+| Group                                         | With skills | Without |
+| --------------------------------------------- | ----------- | ------- |
+| Fixture rules positives (10)                  | 30 of 30    | 3 of 30 |
+| `rules-repo-orchestration-package`            | 3 of 3      | 3 of 3  |
+| `links-declared-api-payload`                  | 3 of 3      | 0 of 3  |
+| `lock-scope-*` positives (2)                  | 6 of 6      | 6 of 6  |
+| Fixture negatives, high or blocking (14 rows) | 0 of 42     | 0 of 42 |
+| Mined design (4)                              | 10 of 12    | 5 of 12 |
+| Mined rules (1)                               | 3 of 3      | 0 of 3  |
+| Mined correctness (3)                         | 5 of 12     | 4 of 12 |
+
+- `vouchington-tooling-154` scored 5 of 6 with skills and 4 of 6 without: the widened correctness
+  prompt catches it in the control too, so the previous entry's gain belongs to the prompt.
+- `vouchington-2936` 0 of 6 and `vouchington-4154` 0 of 6. Two prompt edits aimed at them (a longer
+  "Data shape" item; "when you object to an approach, still review it as written") were tried at 3
+  attempts, changed nothing, and were dropped. On `vouchington-2936` the reviewer objects to the
+  advisory lock, which `skills:postgres-schema-design` forbids, and never reaches the lock key.
+- One `vouchington-1146` run reviewed without skills because the selection call exited 1.
+- Expected skill selected and loaded: 30 of 30 fixture runs, 23 of 24 mined runs.
+
+Changes in this commit:
+
+- `correctness.md`: the "Built-in reviewer" section is removed. In the saved transcripts of about 340 bench cases the
+  reviewer never invoked `/code-review`, so the section did nothing in a headless run.
+- New negative `options-forwarded-to-helper`: a module split whose new function forwards the codec
+  options. 0 findings in the correctness pillar in 6 runs. Two positive twins (new code pinning the
+  helper's defaults) were written and dropped: the prompt from before the widening caught both 3 of
+  3, and so did the no-rules control, so neither showed the widening works. Only the mined
+  `vouchington-tooling-154` does.
+- Selection wording: a stricter instruction ("pick a skill only when the changed lines contain what
+  its description names") was measured with `bench-selection` against the current one. Hits 69 of
+  69 both ways; mean selected 8.7 against 8.8. No gain, not kept.
+- `selectSkills` now tries a failed selection call once more, after the `vouchington-1146` run above
+  reviewed without skills. Not re-measured.
+- First `bench-verifier` pilot: `lock-scope-race-response` and `lock-scope-written-row-only`, 1
+  attempt, Opus, $0.51. Real kept 1 of 1, severity agreed, planted duplicate merged.
+
 ## 2026-11-16: correctness options check widened; five platform cases removed
 
 Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts, with-skills arm,

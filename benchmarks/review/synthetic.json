@@ -40,6 +40,14 @@
     "expected": []
   },
   {
+    "id": "options-forwarded-to-helper",
+    "fixture": "fixtures/options-forwarded-to-helper",
+    "title": "refactor(references): split the module and resume interrupted imports",
+    "kind": "negative",
+    "reason": "Guards the correctness \"options threading\" check against noise: the pull request moves a codec whose helpers take a prefix option and adds selectResumePoint, which accepts the codec options, forwards them to sortedReferences, and tests a custom prefix. Nothing about options should be flagged.",
+    "expected": []
+  },
+  {
     "id": "rules-test-only-global-call-count",
     "fixture": "fixtures/rules-test-only-global-call-count",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],

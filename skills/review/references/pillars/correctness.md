@@ -29,13 +29,6 @@ used as a mutex, the stricter rule wins.
   lock, and treat another reviewer's request for one as declined.
 - Locking only the written row is correct; do not flag it.
 
-## Built-in reviewer
-
-If the host provides a built-in code review command (for example Claude Code's `/code-review`),
-run it at **low** effort against the pull request and fold its findings into yours after
-confirming each one in the code. If it is unavailable, review directly. Never post its output
-yourself.
-
 ## Not in scope
 
 Repository rules, approach and elegance, consumer breakage, security vulnerabilities, and the

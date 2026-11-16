@@ -2,57 +2,57 @@
 
 ## Current results
 
-All rows: 2026-11-16, reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts with the
-installed rule skills (`--select`) and 3 without (`--no-rules`), one session. See
-[HISTORY.md](HISTORY.md) for every run.
+One run: 2026-11-16, at the commit that added this table, reviewer Sonnet 5.5, selection Haiku,
+judge Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`).
+Reviewer and selection cost $23.41 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
+every run.
 
-Mined cases (8 real pull requests from `cases.json`), current skill instruction:
+Mined cases (8 real pull requests from `cases.json`):
 
-| Pillar        | Cases | Expected findings caught, with skills | Without | Runs that loaded every selected skill |
-| ------------- | ----- | ------------------------------------- | ------- | ------------------------------------- |
-| design        | 4     | 10 of 12                              | 4 of 12 | 12 of 12                              |
-| rules         | 1     | 3 of 3                                | 0 of 3  | 3 of 3                                |
-| correctness ‡ | 3     | 4 of 12                               | 0 of 12 | 9 of 9                                |
+| Pillar      | Cases | Expected findings caught, with skills | Without | Runs that loaded every selected skill |
+| ----------- | ----- | ------------------------------------- | ------- | ------------------------------------- |
+| design      | 4     | 10 of 12                              | 5 of 12 | 11 of 12                              |
+| rules       | 1     | 3 of 3                                | 0 of 3  | 3 of 3                                |
+| correctness | 3     | 5 of 12                               | 4 of 12 | 9 of 9                                |
 
-- ‡ measured after the correctness prompt's options check was widened; with the prompt before it
-  the row was 1 of 12. The gain is `vouchington-tooling-154`: 4 of 6 expected findings, and the
-  defect raised in 3 of 3 runs, against 0 of 6 before.
-- The with-skills arm is several runs of one session; the control is one run. Five
-  vouchington-platform cases that were in those runs have since been removed and are left out of
-  this table. Reviewer cost about $0.23 a pillar run with skills.
-- Skill loading is fixed: with the earlier instruction a reviewer told to load 12 to 20 skills
-  loaded 0 to 2 of them. Loading them did not raise catches.
+- The correctness row is `vouchington-tooling-154` alone: 5 of 6 with skills and 4 of 6 without.
+  The correctness prompt catches it, not the skills.
+- `vouchington-2936` and `vouchington-4154` were caught 0 of 3 in both arms. On
+  `vouchington-2936` every run objects to the advisory lock itself, citing the lock rules, and
+  never reviews the lock key the case expects. `vouchington-4154` expects a low-severity index
+  note inside a 54-file change.
 - `vouchington-1144` is a ceiling case: the control catches it 3 of 3.
-- `vouchington-4154` has never been caught in either arm; `vouchington-2936` was caught 1 of 3,
-  then 0 of 3.
+- One `vouchington-1146` run had no skills: the Haiku selection call failed, the review ran
+  without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).
 - At 3 attempts a difference of one catch is noise.
 
-Fixture cases (`synthetic.json`, rules and correctness pillars). Rows marked † come from a second
-run later the same day, after three positives were replaced and two negatives cleaned:
+Fixture cases (`synthetic.json`, rules and correctness pillars):
 
-| Group                                           | With skills   | Without      |
-| ----------------------------------------------- | ------------- | ------------ |
-| Rules positives, unchanged (7 cases)            | 21 of 21      | 0 of 21      |
-| Rules positives, replaced (3 cases) †           | 9 of 9        | 1 of 9       |
-| `links-declared-api-payload` (correctness)      | 3 of 3        | 0 of 3       |
-| `lock-scope-*` positives (correctness, 2)       | 6 of 6        | 6 of 6       |
-| Expected skill selected and loaded (8 cases)    | 24 of 24 runs | n/a          |
-| Expected skill selected and loaded (3 cases) †  | 9 of 9 runs   | n/a          |
-| Negatives with a high or blocking finding (4)   | 0 of 24 runs  | 0 of 24 runs |
-| Negatives with a high or blocking finding (2) † | 0 of 12 runs  | 0 of 12 runs |
+| Group                                                | With skills   | Without      |
+| ---------------------------------------------------- | ------------- | ------------ |
+| Rules positives (10 cases)                           | 30 of 30      | 3 of 30      |
+| `rules-repo-orchestration-package` (repository rule) | 3 of 3        | 3 of 3       |
+| `links-declared-api-payload` (correctness)           | 3 of 3        | 0 of 3       |
+| `lock-scope-*` positives (correctness, 2)            | 6 of 6        | 6 of 6       |
+| Expected skill selected and loaded (10 tagged cases) | 30 of 30 runs | n/a          |
+| Negatives with a high or blocking finding (7, rules) | 0 of 21 runs  | 0 of 21 runs |
+| Negatives with a high or blocking finding (7, corr.) | 0 of 21 runs  | 0 of 21 runs |
 
-- The two `lock-scope-*` positives are ceiling cases.
-- `rules-content-only-unordered-pick` is the one replaced case the control caught (1 of 3): a model
-  without the skill also notices a `LIMIT` with no `ORDER BY`, and misses only when the judge holds
-  it to citing the rule.
-- The † rows used the current skill instruction; the others used the earlier one.
-- `rules-repo-orchestration-package` puts a rule in the fixture repository's own `AGENTS.md` (a
-  business workflow must not live in a package). With skills: caught and tied to that rule 3 of 3.
-  `--no-rules` removes the shared skills, not the repository's `AGENTS.md`, so the control (caught
-  1 of 1) is not a null hypothesis; the case checks that a repository rule is applied and cited.
-- With the widened options check, the nine correctness fixtures score as before: positives 9 of 9,
-  no high or blocking finding on a negative in 18 runs.
-- Reviewer cost: $0.12 a pillar run with skills.
+- The control's three catches are one each on `rules-content-only-unordered-pick`,
+  `rules-manifest-only-duplicate-utility` and `rules-test-only-per-item`.
+- The two `lock-scope-*` positives are ceiling cases: the correctness prompt states their rule.
+- `rules-repo-orchestration-package` puts its rule in the fixture repository's own `AGENTS.md`.
+  `--no-rules` removes the shared skills, not that file, so its control is not a null hypothesis;
+  the case checks that a repository rule is applied and cited.
+- Negatives drew three low findings in 84 runs and nothing higher.
+- Reviewer cost: $0.12 a pillar run with skills on a fixture, $0.23 on a mined case.
+
+Skill selection alone (`bench-selection`, Haiku, 23 tagged cases, 3 attempts, $0.20): the expected
+skill was named in 69 of 69 attempts, with 8.8 skills selected on average (2 to 5 on fixtures, 12
+to 20 on the larger mined cases).
+
+Verifier (`bench-verifier`, Opus, first pilot, 2 fixture cases, 1 attempt, $0.51): the one real
+finding was kept at its severity and its planted duplicate merged. Too small to quote a rate.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
