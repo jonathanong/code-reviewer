@@ -52,8 +52,19 @@ Skill selection alone (`bench-selection`, Haiku, 22 tagged cases, 3 attempts, $0
 skill was named in 66 of 66 attempts, with 9.1 skills selected on average (2 to 9 on fixtures, 5
 to 20 on mined cases).
 
-Verifier (`bench-verifier`, Opus, first pilot, 2 fixture cases, 1 attempt, $0.51): the one real
-finding was kept at its severity and its planted duplicate merged. Too small to quote a rate.
+Verifier (`bench-verifier`, Opus, on the with-skills findings of the run above, 3 attempts, labels
+judged by Sonnet, $25.14):
+
+| Set           | Real findings kept | Planted duplicates merged | Severity kept   | Findings per case, before → after |
+| ------------- | ------------------ | ------------------------- | --------------- | --------------------------------- |
+| Fixtures (21) | 100% in 3 of 3     | 100% in 3 of 3            | 100% in 3 of 3  | 0.9 → 0.9                         |
+| Mined (8)     | 100% in 3 of 3     | 100% in 3 of 3            | 86%, 100%, 100% | 2.1 → 2.2                         |
+
+- The verifier lost no real finding and merged every planted duplicate. It removes almost
+  nothing, because these pillar runs produce little noise to remove.
+- It confirmed all 5 other high or blocking findings it was asked to check, so this run does not
+  show whether it would refute a wrong one.
+- It costs about $0.24 a fixture case and $0.43 a mined case, more than a pillar run.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 

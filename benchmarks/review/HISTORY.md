@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: first measured verifier run
+
+Commit: this change. `bench-verifier`, verifier Opus, labels judged by Sonnet, 3 attempts, on the
+with-skills findings of the closing run below (attempt N reads attempt N). Cost $25.14: fixtures
+$4.99, $4.85, $4.99; mined $3.85, $2.86, $3.60.
+
+| Set           | Real kept        | Label recall, pillars → verifier | Severity agreement | Other high/blocking confirmed | Duplicates merged | Findings before → after         |
+| ------------- | ---------------- | -------------------------------- | ------------------ | ----------------------------- | ----------------- | ------------------------------- |
+| Fixtures (21) | 100%, 100%, 100% | 100% → 100% in each              | 100% in each       | n/a, n/a, 1 of 1              | 100% in each      | 0.9 → 0.9, 0.8 → 0.8, 0.9 → 0.8 |
+| Mined (8)     | 100%, 100%, 100% | 78% → 78%, 67% → 78%, 56% → 56%  | 86%, 100%, 100%    | 2 of 2, n/a, 2 of 2           | 100% in each      | 2.3 → 2.3, 2.0 → 2.3, 2.1 → 2.1 |
+
+No real finding was dropped and every planted duplicate was merged. The verifier refuted nothing,
+so the run does not test refutation. `links-consumer-field-rename` was not run: its pillar
+(blast-radius) was not in the closing run. Label recall here is Sonnet-judged and is not comparable
+with the Opus-judged pillar tables.
+
 ## 2026-11-16: closing run on one commit; README rebuilt from it
 
 Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts with `--select`
