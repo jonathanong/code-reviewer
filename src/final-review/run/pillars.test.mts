@@ -80,6 +80,33 @@ describe('runPillars', () => {
     expect(args[args.indexOf('--add-dir') + 1]).toBe(out)
     expect(args).toContain('--settings')
     expect(promptOf(exec.mock.calls[0] as unknown[])).toContain('call the Skill tool')
+    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Agent,Skill')
+    expect(args[args.indexOf('--allowedTools') + 1]).toBe('Read,Grep,Glob,Agent,Skill')
+  })
+
+  it('lets only the history pillar read git history through the shell', async () => {
+    const exec = vi.fn(async (_command: string, _args: string[]) => answer([]))
+    await runPillars(setup(exec).input)
+    const args = (forPillar(exec, 'history')[0] as unknown as [string, string[]])[1]
+    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Agent,Skill,Bash')
+    expect(args[args.indexOf('--allowedTools') + 1]).toBe(
+      'Read,Grep,Glob,Agent,Skill,Bash(git log:*),Bash(git show:*)',
+    )
+  })
+
+  it('keeps the cost of an answer that fails validation', async () => {
+    let tries = 0
+    const exec = vi.fn(async (_command: string, args: string[]) => {
+      if ((args[1] as string).includes('PILLAR rules')) {
+        tries += 1
+        if (tries === 1) return answer([{ ...finding('x'), title: '' }], 0.25)
+      }
+      return answer([])
+    })
+    const results = await runPillars(setup(exec).input)
+    expect(results[0]?.error).toBeUndefined()
+    expect(results[0]?.failedAttempts).toHaveLength(1)
+    expect(results[0]?.failedAttempts[0]?.usage?.costUsd).toBe(0.25)
   })
 
   it('uses low effort for a light plan and omits plugin settings when unknown', async () => {

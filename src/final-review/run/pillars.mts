@@ -2,10 +2,10 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import { describeFailure } from '../benchmark/usage.mts'
+import { describeFailure, parseUsage, resultEvent } from '../benchmark/usage.mts'
 import type { Pillar } from '../finding.mts'
 import type { Model } from '../plan.mts'
-import { CLAUDE_EFFORT, pillarArgs } from './claude-flags.mts'
+import { CLAUDE_EFFORT, HISTORY_ALLOWED_TOOLS, HISTORY_TOOLS, pillarArgs } from './claude-flags.mts'
 import { buildPillarRunPrompt, type RunDir } from './pillar-prompt.mts'
 import { pool } from './pool.mts'
 import { parsePillarOutput } from './stream-output.mts'
@@ -46,21 +46,25 @@ async function runOne(
     maxTurns: REVIEW_MAX_TURNS,
     effort: CLAUDE_EFFORT[input.mode],
     addDirs: [input.run.out],
+    ...(pillar === 'history' ? { tools: HISTORY_TOOLS, allowedTools: HISTORY_ALLOWED_TOOLS } : {}),
     ...(input.settings === undefined ? {} : { settings: input.settings }),
   })
   const failedAttempts: FailedAttempt[] = []
   // One retry: a model call can fail for reasons that do not repeat.
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    let stdout: string | undefined
     try {
-      const stdout = await input.exec('claude', args, {
-        cwd: input.tree,
-        timeoutMs: RUN_TIMEOUT_MS,
-      })
+      stdout = await input.exec('claude', args, { cwd: input.tree, timeoutMs: RUN_TIMEOUT_MS })
       const { findings, skills, usage } = parsePillarOutput(stdout, pillar)
       return { pillar, model, skills, findings, usage, failedAttempts }
     } catch (error) {
       const { message, usage } = describeFailure(error)
-      failedAttempts.push({ error: message, usage })
+      // A run that answered but failed validation still cost what its result event says.
+      const event = stdout === undefined ? undefined : resultEvent(stdout)
+      failedAttempts.push({
+        error: message,
+        usage: usage ?? (event === undefined ? null : parseUsage(event)),
+      })
     }
   }
   const error = (failedAttempts.at(-1) as FailedAttempt).error

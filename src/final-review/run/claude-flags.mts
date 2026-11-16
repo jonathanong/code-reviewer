@@ -32,6 +32,12 @@ export const READ_ONLY_TOOLS = 'Read,Grep,Glob'
 export const SKILL_TOOLS = `${READ_ONLY_TOOLS},Skill`
 /** Pillars may hand exploration to the `explorer` subagent and load installed rule skills. */
 export const PILLAR_TOOLS = `${READ_ONLY_TOOLS},Agent,Skill`
+/**
+ * The history pillar also reads git history, and nothing else through the shell: `--allowedTools`
+ * limits Bash to `git log` and `git show`, and `dontAsk` denies every other command.
+ */
+export const HISTORY_TOOLS = `${PILLAR_TOOLS},Bash`
+export const HISTORY_ALLOWED_TOOLS = `${PILLAR_TOOLS},Bash(git log:*),Bash(git show:*)`
 /** Control runs differ from `PILLAR_TOOLS` only in having no Skill tool. */
 export const PILLAR_TOOLS_NO_SKILLS = `${READ_ONLY_TOOLS},Agent`
 
@@ -71,6 +77,8 @@ export type PillarArgsOptions = {
   model: string
   maxTurns: number
   tools?: string
+  /** The permission rules, when narrower than `tools`; `tools` by default. */
+  allowedTools?: string
   effort?: string
   settings?: object
   /** Directories outside the working directory the run may read. */
@@ -97,7 +105,7 @@ export function pillarArgs(options: PillarArgsOptions): string[] {
     '--tools',
     tools,
     '--allowedTools',
-    tools,
+    options.allowedTools ?? tools,
     '--permission-mode',
     'dontAsk',
     '--max-turns',
