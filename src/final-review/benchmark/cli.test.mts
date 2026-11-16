@@ -266,6 +266,70 @@ describe('runFinalReviewBenchCli runs', () => {
   })
 })
 
+describe('skill loads', () => {
+  const stream = (skill: string) =>
+    [
+      JSON.stringify({
+        type: 'assistant',
+        message: { content: [{ type: 'tool_use', name: 'Skill', id: 's1', input: { skill } }] },
+      }),
+      JSON.stringify({
+        type: 'user',
+        message: { content: [{ type: 'tool_result', tool_use_id: 's1' }] },
+      }),
+      HIT,
+    ].join('\n')
+
+  it('saves loaded skills and whether the Skill tool was available', async () => {
+    stdoutSpy()
+    const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
+    const h = harness(files, async () => stream('rules:testing-rules'))
+    await runFinalReviewBenchCli(BASE, h.deps)
+    const raw = JSON.parse(h.files.get('out/raw/security/p1.json') as string)
+    expect(raw).toMatchObject({ skills: ['rules:testing-rules'], skillTool: true })
+    const control = harness(files)
+    await runFinalReviewBenchCli([...BASE, '--no-rules'], control.deps)
+    const saved = JSON.parse(control.files.get('out/raw/security/p1.json') as string)
+    expect(saved).toMatchObject({ skills: [], skillTool: false })
+    const summary = JSON.parse(control.files.get('out/summary.json') as string)
+    expect(summary[0].summary.skills.skillsAvailable).toBe(false)
+  })
+
+  it('scores skills from saved raw results, counting old results as nothing loaded', async () => {
+    stdoutSpy()
+    const withSkills = (item: Record<string, unknown>) => ({
+      ...item,
+      expectedSkills: ['testing-rules'],
+    })
+    const hit = JSON.parse(HIT).structured_output.findings.map((finding: object) => ({
+      pillar: 'security',
+      ...finding,
+    }))
+    const h = harness({
+      'cases.json': JSON.stringify([
+        withSkills(caseJson('p1', 'positive')),
+        withSkills(caseJson('p2', 'positive')),
+        withSkills(caseJson('n1', 'negative')),
+      ]),
+      'out/raw/security/p1.json': JSON.stringify({
+        findings: hit,
+        skills: ['rules:testing-rules'],
+        skillTool: true,
+      }),
+      'out/raw/security/p2.json': JSON.stringify({ findings: hit }),
+      'out/raw/security/n1.json': JSON.stringify({ findings: [], skills: ['other'] }),
+    })
+    await runFinalReviewBenchCli(['--cases', 'cases.json', '--out', 'out', '--score-only'], h.deps)
+    const markdown = h.files.get('out/summary.md') as string
+    expect(markdown).toContain('| security | 3 | 100% | 100% | 0% (1) | 0.7 | 33% | 50% |')
+    expect(markdown).toContain('- security p2: caught without testing-rules')
+    expect(markdown).toContain('- security n1: missing testing-rules')
+    expect(markdown).not.toContain('Control run')
+    const { skills } = JSON.parse(h.files.get('out/summary.json') as string)[0].summary
+    expect(skills).toMatchObject({ grounded: 1, ungrounded: 1, loadedMissed: 0, missed: 0 })
+  })
+})
+
 describe('runFinalReviewBenchCli --score-only', () => {
   const scoreOnly = ['--cases', 'cases.json', '--out', 'out', '--score-only']
 

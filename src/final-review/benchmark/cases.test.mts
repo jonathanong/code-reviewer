@@ -158,6 +158,25 @@ describe('parseEvalCases', () => {
   })
 })
 
+describe('expectedSkills', () => {
+  it('accepts a non-empty array of names and leaves it off otherwise', () => {
+    const [with_, without] = parseEvalCases([
+      positive({ expectedSkills: ['testing-rules'] }),
+      negative(),
+    ])
+    expect(with_?.expectedSkills).toEqual(['testing-rules'])
+    expect(without).not.toHaveProperty('expectedSkills')
+  })
+
+  it('rejects empty, non-array, and non-string entries', () => {
+    for (const expectedSkills of [[], 'testing-rules', [''], [1]]) {
+      expect(message([positive({ expectedSkills })])).toBe(
+        'cases[0]: expectedSkills must be a non-empty array of non-empty strings',
+      )
+    }
+  })
+})
+
 describe('casesForPillar', () => {
   it('keeps positives for the pillar and every negative', () => {
     const cases = parseEvalCases([

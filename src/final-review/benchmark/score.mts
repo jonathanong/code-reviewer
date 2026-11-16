@@ -1,5 +1,6 @@
 import type { Finding, Pillar, Severity } from '../finding.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
+import { summarizeSkills, type SkillCase, type SkillsSummary } from './skills-score.mts'
 
 const LINE_TOLERANCE = 10
 
@@ -24,6 +25,7 @@ export type PillarSummary = {
   /** Share of negative cases with at least one blocking or high finding. */
   falseAlarmRate: number | null
   meanFindings: number | null
+  skills: SkillsSummary
 }
 
 const RANK: Record<Severity, number> = { blocking: 0, high: 1, medium: 2, low: 3 }
@@ -97,7 +99,12 @@ function sum(scores: readonly CaseScore[], pick: (score: CaseScore) => number): 
   return scores.reduce((total, score) => total + pick(score), 0)
 }
 
-export function summarizePillar(pillar: Pillar, scores: readonly CaseScore[]): PillarSummary {
+export function summarizePillar(
+  pillar: Pillar,
+  scores: readonly CaseScore[],
+  skillCases: readonly SkillCase[] = [],
+  skillsAvailable: boolean | null = null,
+): PillarSummary {
   const negatives = scores.filter((score) => score.kind === 'negative')
   const matched = sum(scores, (score) => score.matched)
   return {
@@ -120,6 +127,7 @@ export function summarizePillar(pillar: Pillar, scores: readonly CaseScore[]): P
       sum(scores, (score) => score.findings),
       scores.length,
     ),
+    skills: summarizeSkills(skillCases, skillsAvailable),
   }
 }
 
@@ -131,11 +139,11 @@ function pct(value: number | null): string {
 export function renderSummaryTable(summaries: readonly PillarSummary[]): string {
   const rows = summaries.map(
     (s) =>
-      `| ${s.pillar} | ${s.cases} | ${pct(s.recall)} | ${pct(s.severityAgreement)} | ${pct(s.falseAlarmRate)} (${s.negativeCases}) | ${s.meanFindings === null ? 'n/a' : s.meanFindings.toFixed(1)} |`,
+      `| ${s.pillar} | ${s.cases} | ${pct(s.recall)} | ${pct(s.severityAgreement)} | ${pct(s.falseAlarmRate)} (${s.negativeCases}) | ${s.meanFindings === null ? 'n/a' : s.meanFindings.toFixed(1)} | ${pct(s.skills.loaded)} | ${pct(s.skills.groundedRecall)} |`,
   )
   return [
-    '| Pillar | Cases | Recall | Severity agreement | False alarms (negatives) | Findings per PR |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Pillar | Cases | Recall | Severity agreement | False alarms (negatives) | Findings per PR | Skills loaded | Grounded recall |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
     ...rows,
   ].join('\n')
 }

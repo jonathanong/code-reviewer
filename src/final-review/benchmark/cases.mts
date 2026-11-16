@@ -16,6 +16,8 @@ type CaseBase = {
   kind: 'positive' | 'negative'
   reason: string
   expected: ExpectedFinding[]
+  /** Rule skills a run should load; a name matches a loaded skill or its part after the last `:`. */
+  expectedSkills?: string[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -111,6 +113,17 @@ function source(
   return { repo, pr: raw.pr as number, baseSha, headSha }
 }
 
+function skillNames(value: unknown, where: string): string[] | undefined {
+  if (value === undefined) return undefined
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.some((name) => typeof name !== 'string' || name.length === 0)
+  )
+    fail(where, 'expectedSkills must be a non-empty array of non-empty strings')
+  return value as string[]
+}
+
 function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
   const where = `cases[${index}]`
   if (!isRecord(raw)) fail(where, 'must be an object')
@@ -125,9 +138,11 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
     fail(where, 'a positive case needs an expected finding')
   if (raw.kind === 'negative' && parsed.length > 0)
     fail(where, 'a negative case has no expected findings')
+  const expectedSkills = skillNames(raw.expectedSkills, where)
   return {
     id: str(raw, 'id', where),
     ...origin,
+    ...(expectedSkills === undefined ? {} : { expectedSkills }),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',

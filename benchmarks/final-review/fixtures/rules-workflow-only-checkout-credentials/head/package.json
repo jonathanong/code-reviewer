@@ -1,0 +1,10 @@
+{
+  "name": "ledger",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "oxlint",
+    "test": "vitest run"
+  },
+  "packageManager": "pnpm@10.20.0"
+}

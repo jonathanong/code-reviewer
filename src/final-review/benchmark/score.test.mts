@@ -9,6 +9,7 @@ import {
   summarizePillar,
   type CaseScore,
 } from './score.mts'
+import { summarizeSkills } from './skills-score.mts'
 
 function exp(overrides: Partial<ExpectedFinding> = {}): ExpectedFinding {
   return {
@@ -156,6 +157,7 @@ describe('summaries', () => {
       negativeCases: 0,
       falseAlarmRate: null,
       meanFindings: null,
+      skills: summarizeSkills([]),
     })
   })
 
@@ -186,13 +188,16 @@ describe('summaries', () => {
         negativeCases: 2,
         falseAlarmRate: 0.5,
         meanFindings: 1.25,
+        skills: summarizeSkills([
+          { id: 'a', expectedSkills: ['x', 'y'], missing: ['y'], outcome: 'ungrounded' },
+        ]),
       },
     ])
     expect(table.split('\n')).toEqual([
-      '| Pillar | Cases | Recall | Severity agreement | False alarms (negatives) | Findings per PR |',
-      '| --- | --- | --- | --- | --- | --- |',
-      '| rules | 0 | n/a | n/a | n/a (0) | n/a |',
-      '| design | 4 | 67% | 100% | 50% (2) | 1.3 |',
+      '| Pillar | Cases | Recall | Severity agreement | False alarms (negatives) | Findings per PR | Skills loaded | Grounded recall |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| rules | 0 | n/a | n/a | n/a (0) | n/a | n/a | n/a |',
+      '| design | 4 | 67% | 100% | 50% (2) | 1.3 | 50% | 0% |',
     ])
   })
 })
