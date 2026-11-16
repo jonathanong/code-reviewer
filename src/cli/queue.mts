@@ -1,13 +1,13 @@
-import { listQueue, type QueueEntry } from '../final-review/index.mts'
+import { listQueue, type QueueEntry } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
-import type { FinalReviewDeps } from './deps.mts'
+import type { ReviewDeps } from './deps.mts'
 import { labelsFor } from './review-settings.mts'
 
 /**
  * Lists `repos` with one search per owner (each owner has its own installation token) and per label
  * set (the search names the labels).
  */
-async function listRepos(deps: FinalReviewDeps, repos: readonly string[]): Promise<QueueEntry[]> {
+async function listRepos(deps: ReviewDeps, repos: readonly string[]): Promise<QueueEntry[]> {
   const groups = new Map<
     string,
     { owner: string; labels: ReturnType<typeof labelsFor>; repos: string[] }
@@ -34,7 +34,7 @@ async function listRepos(deps: FinalReviewDeps, repos: readonly string[]): Promi
  * searched separately with their labels and left out of the owner-wide results.
  */
 export async function listQueueFor(
-  deps: FinalReviewDeps,
+  deps: ReviewDeps,
   owner: string | undefined,
   repos: readonly string[],
 ): Promise<QueueEntry[]> {

@@ -3,23 +3,23 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../final-review/benchmark/cli.mts', () => ({
-  runFinalReviewBenchCli: vi.fn(async () => 5),
+vi.mock('../review/benchmark/cli.mts', () => ({
+  runReviewBenchCli: vi.fn(async () => 5),
 }))
-vi.mock('../final-review/benchmark/exec.mts', () => ({
+vi.mock('../review/benchmark/exec.mts', () => ({
   defaultExec: vi.fn(async () => '[{"id":"rules@m","version":"1.0.0","enabled":true}]'),
 }))
-vi.mock('../final-review/benchmark/selection-cli.mts', () => ({
-  runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
+vi.mock('../review/benchmark/selection-cli.mts', () => ({
+  runReviewSelectionBenchCli: vi.fn(async () => 4),
 }))
-vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
-  runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
+vi.mock('../review/benchmark/verifier-cli.mts', () => ({
+  runReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
-import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
-import { defaultExec } from '../final-review/benchmark/exec.mts'
-import { runFinalReviewSelectionBenchCli } from '../final-review/benchmark/selection-cli.mts'
-import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
+import { runReviewBenchCli } from '../review/benchmark/cli.mts'
+import { defaultExec } from '../review/benchmark/exec.mts'
+import { runReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
+import { runReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
 import type { GhAuth } from '../gh-cli/index.mts'
 import { createDefaultDeps } from './deps.mts'
 
@@ -66,7 +66,7 @@ describe('createDefaultDeps', () => {
 
   it('passes the trusted-author allowlist to the gh ios', async () => {
     const { getAuth } = fakeAuth()
-    const deps = createDefaultDeps(getAuth, { FINAL_REVIEWER_TRUSTED_AUTHORS: 'App[bot], Me' })
+    const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_TRUSTED_AUTHORS: 'App[bot], Me' })
     await expect(deps.createIo(TARGET).trustedAuthors()).resolves.toEqual(
       new Set(['app[bot]', 'me']),
     )
@@ -80,7 +80,7 @@ describe('createDefaultDeps', () => {
     try {
       writeFileSync(join(dir, 'acme.json'), '{"labels":{"approval":"lgtm"}}')
       const getAuth = vi.fn((): GhAuth => ({ mode: 'gh', runner: () => async () => 'lgtm\n' }))
-      const deps = createDefaultDeps(getAuth, { FINAL_REVIEWER_CONFIG_DIR: dir })
+      const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: dir })
       expect(deps.configs().byOwner.get('acme')?.labels).toEqual({ approval: 'lgtm' })
       expect(deps.configs()).toBe(deps.configs())
       await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
@@ -99,7 +99,7 @@ describe('createDefaultDeps', () => {
   })
 
   it('defaults to the environment-based auth', () => {
-    vi.stubEnv('FINAL_REVIEWER_APP_ID', '')
+    vi.stubEnv('CODE_REVIEWER_APP_ID', '')
     expect(createDefaultDeps().authMode()).toBe('gh')
     vi.unstubAllEnvs()
   })
@@ -137,16 +137,16 @@ describe('createDefaultDeps', () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await deps.exec('claude', ['-p', 'x'], { cwd: '/tree', timeoutMs: 5 })
     expect(defaultExec).toHaveBeenCalledWith('claude', ['-p', 'x'], { cwd: '/tree', timeoutMs: 5 })
-    expect(deps.references().endsWith('skills/final-review/references')).toBe(true)
+    expect(deps.references().endsWith('skills/review/references')).toBe(true)
   })
 
   it('delegates the benchmarks', async () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await expect(deps.runBench(['--x'])).resolves.toBe(5)
-    expect(runFinalReviewBenchCli).toHaveBeenCalledWith(['--x'])
+    expect(runReviewBenchCli).toHaveBeenCalledWith(['--x'])
     await expect(deps.runVerifierBench(['--y'])).resolves.toBe(6)
-    expect(runFinalReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
+    expect(runReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
     await expect(deps.runSelectionBench(['--z'])).resolves.toBe(4)
-    expect(runFinalReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
+    expect(runReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
   })
 })

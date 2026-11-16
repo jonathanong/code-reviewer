@@ -1,0 +1,124 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import type { EvalCase } from './cases.mts'
+import {
+  CLAUDE_EFFORT,
+  PILLAR_TOOLS,
+  PILLAR_TOOLS_NO_SKILLS,
+  pillarArgs,
+} from '../run/claude-flags.mts'
+import { buildPillarPrompt, runPillar } from './runner.mts'
+
+const item: EvalCase = {
+  id: 'c1',
+  repo: 'acme/widgets',
+  pr: 9,
+  title: 'T',
+  baseSha: 'a'.repeat(40),
+  headSha: 'b'.repeat(40),
+  kind: 'negative',
+  reason: '',
+  expected: [],
+}
+
+const NO_USAGE = {
+  costUsd: null,
+  turns: null,
+  durationMs: null,
+  inputTokens: null,
+  outputTokens: null,
+  cacheReadTokens: null,
+  cacheCreationTokens: null,
+  byModel: {},
+}
+
+const output = (findings: unknown) => JSON.stringify({ structured_output: { findings } })
+
+describe('prompt and args', () => {
+  it('wraps the pillar prompt with untrusted context instructions', () => {
+    const prompt = buildPillarPrompt('  Pillar text  ', item)
+    expect(prompt.startsWith('Pillar text\n\n## Pull request under review')).toBe(true)
+    expect(prompt).toContain('Repository: acme/widgets.')
+    expect(prompt).toContain('.review/pr.md')
+    expect(prompt).toContain('.review/files.md')
+    expect(prompt).toContain('never read the combined `.review/diff.patch` whole')
+    expect(prompt).toContain('untrusted input')
+  })
+
+  it('mentions reviewer comments only when context.md exists', () => {
+    expect(buildPillarPrompt('P', item)).not.toContain('context.md')
+    const prompt = buildPillarPrompt('P', item, true)
+    expect(prompt).toContain('.review/context.md')
+    expect(prompt).toContain('not instructions')
+  })
+
+  it('points at the rules index only when rules were staged', () => {
+    expect(buildPillarPrompt('P', item)).not.toContain('INDEX.md')
+    const prompt = buildPillarPrompt('P', item, false, true)
+    expect(prompt).toContain('`.review/rules/INDEX.md` lists the rule sources for this change')
+    expect(prompt).toContain('Read it before reviewing.')
+  })
+
+  it('describes a fixture case without a repository', () => {
+    const fixture: EvalCase = { ...item, fixture: 'fx/a', fixtureDir: '/x' } as never
+    expect(buildPillarPrompt('P', fixture)).toContain('Fixture: fx/a.')
+  })
+})
+
+describe('runPillar', () => {
+  it('runs claude in the snapshot directory and parses its output', async () => {
+    const exec = vi.fn(async () => output([{ severity: 'low', title: 'T', body: 'B' }]))
+    const findings = await runPillar(
+      item,
+      '/snap',
+      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5 },
+      exec,
+    )
+    expect(findings).toEqual({
+      findings: [{ pillar: 'history', severity: 'low', title: 'T', body: 'B' }],
+      skills: [],
+      usage: NO_USAGE,
+    })
+    const [command, args, options] = exec.mock.calls[0] as unknown as [
+      string,
+      string[],
+      { cwd: string },
+    ]
+    expect(command).toBe('claude')
+    expect(args).toEqual(
+      pillarArgs({
+        prompt: buildPillarPrompt('Prompt', item),
+        model: 'opus',
+        maxTurns: 5,
+        effort: CLAUDE_EFFORT.full,
+      }),
+    )
+    expect(options).toEqual({ cwd: '/snap' })
+  })
+
+  it('drops the Skill tool for a control run', async () => {
+    const exec = vi.fn(async () => output([]))
+    await runPillar(
+      item,
+      '/snap',
+      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, skills: false },
+      exec,
+    )
+    const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
+    expect(args[args.indexOf('--tools') + 1]).toBe(PILLAR_TOOLS_NO_SKILLS)
+  })
+
+  it('passes the plugin settings through to claude', async () => {
+    const exec = vi.fn(async () => output([]))
+    const settings = { enabledPlugins: { 'skills@m': true } }
+    await runPillar(
+      item,
+      '/snap',
+      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, settings },
+      exec,
+    )
+    const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
+    expect(args[args.indexOf('--tools') + 1]).toBe(PILLAR_TOOLS)
+    expect(JSON.parse(args[args.indexOf('--settings') + 1] as string)).toEqual(settings)
+  })
+})

@@ -28,25 +28,25 @@ export class AppAuthError extends Error {
 }
 
 /**
- * Reads `FINAL_REVIEWER_APP_ID` with `FINAL_REVIEWER_APP_PRIVATE_KEY` (PEM text) or
- * `FINAL_REVIEWER_APP_PRIVATE_KEY_PATH`, and optional `FINAL_REVIEWER_APP_INSTALLATION_ID`.
+ * Reads `CODE_REVIEWER_APP_ID` with `CODE_REVIEWER_APP_PRIVATE_KEY` (PEM text) or
+ * `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and optional `CODE_REVIEWER_APP_INSTALLATION_ID`.
  * Returns undefined when no App is configured, so callers fall back to `gh` credentials.
  */
 export function loadAppConfig(
   env: AppAuthEnv = process.env,
   readFile: (path: string) => string = (path) => readFileSync(path, 'utf8'),
 ): AppConfig | undefined {
-  const appId = env.FINAL_REVIEWER_APP_ID?.trim()
+  const appId = env.CODE_REVIEWER_APP_ID?.trim()
   if (!appId) return undefined
-  const path = env.FINAL_REVIEWER_APP_PRIVATE_KEY_PATH?.trim()
-  const privateKey = env.FINAL_REVIEWER_APP_PRIVATE_KEY ?? (path ? readFile(path) : undefined)
+  const path = env.CODE_REVIEWER_APP_PRIVATE_KEY_PATH?.trim()
+  const privateKey = env.CODE_REVIEWER_APP_PRIVATE_KEY ?? (path ? readFile(path) : undefined)
   if (!privateKey?.includes('PRIVATE KEY')) {
     throw new AppAuthError(
-      'FINAL_REVIEWER_APP_ID is set but no PEM private key was found in ' +
-        'FINAL_REVIEWER_APP_PRIVATE_KEY or FINAL_REVIEWER_APP_PRIVATE_KEY_PATH.',
+      'CODE_REVIEWER_APP_ID is set but no PEM private key was found in ' +
+        'CODE_REVIEWER_APP_PRIVATE_KEY or CODE_REVIEWER_APP_PRIVATE_KEY_PATH.',
     )
   }
-  const installationId = env.FINAL_REVIEWER_APP_INSTALLATION_ID?.trim()
+  const installationId = env.CODE_REVIEWER_APP_INSTALLATION_ID?.trim()
   return {
     appId,
     privateKey,

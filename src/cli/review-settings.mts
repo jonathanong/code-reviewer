@@ -5,11 +5,11 @@ import {
   type CheckRunStep,
   type LabelNames,
   type PullTarget,
-} from '../final-review/index.mts'
+} from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
-import type { FinalReviewDeps } from './deps.mts'
+import type { ReviewDeps } from './deps.mts'
 
-export function labelsFor(deps: FinalReviewDeps, repo: string): LabelNames {
+export function labelsFor(deps: ReviewDeps, repo: string): LabelNames {
   return reviewSettings(deps.configs(), repo).labels
 }
 
@@ -18,7 +18,7 @@ export function labelsFor(deps: FinalReviewDeps, repo: string): LabelNames {
  * when the caller already holds the head it reviewed; otherwise on the head read once now.
  */
 export function checkRunFor(
-  deps: FinalReviewDeps,
+  deps: ReviewDeps,
   target: PullTarget,
   step: CheckRunStep,
   headSha?: string,

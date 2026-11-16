@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "code-reviewer",
-      "description": "Standing multi-pillar final reviewer with label intake and follow-up reviews.",
+      "description": "Standing multi-pillar code reviewer with label intake and follow-up reviews.",
       "source": "./",
       "category": "productivity",
       "homepage": "https://github.com/jonathanong/code-reviewer"

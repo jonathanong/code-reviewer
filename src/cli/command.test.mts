@@ -3,30 +3,30 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 
-vi.mock('../final-review/benchmark/cli.mts', () => ({
-  runFinalReviewBenchCli: vi.fn(async () => 5),
+vi.mock('../review/benchmark/cli.mts', () => ({
+  runReviewBenchCli: vi.fn(async () => 5),
 }))
-vi.mock('../final-review/run/review.mts', () => ({
+vi.mock('../review/run/review.mts', () => ({
   runReview: vi.fn(async () => ({ ok: true, summary: { claimed: true } })),
 }))
-vi.mock('../final-review/benchmark/selection-cli.mts', () => ({
-  runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
+vi.mock('../review/benchmark/selection-cli.mts', () => ({
+  runReviewSelectionBenchCli: vi.fn(async () => 4),
 }))
-vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
-  runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
+vi.mock('../review/benchmark/verifier-cli.mts', () => ({
+  runReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
-import type { FinalReviewIo, LabelIo, PrepareIo } from '../final-review/index.mts'
-import { NO_CONFIGS, parseRepoConfig } from '../final-review/rules/config.mts'
-import { runReview } from '../final-review/run/review.mts'
-import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
-import { runFinalReviewSelectionBenchCli } from '../final-review/benchmark/selection-cli.mts'
-import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
-import { runFinalReviewCommand, type FinalReviewDeps } from './command.mts'
+import type { ReviewIo, LabelIo, PrepareIo } from '../review/index.mts'
+import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
+import { runReview } from '../review/run/review.mts'
+import { runReviewBenchCli } from '../review/benchmark/cli.mts'
+import { runReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
+import { runReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
+import { runReviewCommand, type ReviewDeps } from './command.mts'
 
 const SHA = 'e'.repeat(40)
 
-type MockIo = { [K in keyof FinalReviewIo]: Mock<FinalReviewIo[K]> }
+type MockIo = { [K in keyof ReviewIo]: Mock<ReviewIo[K]> }
 
 function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
   return {
@@ -43,7 +43,7 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
   }
 }
 
-type MockDeps = { [K in keyof FinalReviewDeps]: Mock<FinalReviewDeps[K]> }
+type MockDeps = { [K in keyof ReviewDeps]: Mock<ReviewDeps[K]> }
 
 function fakeLabelIo(): LabelIo {
   return {
@@ -53,7 +53,7 @@ function fakeLabelIo(): LabelIo {
   }
 }
 
-function deps(io: FinalReviewIo, input = '{}'): MockDeps {
+function deps(io: ReviewIo, input = '{}'): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
     configs: vi.fn(() => NO_CONFIGS),
@@ -92,14 +92,14 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('runFinalReviewCommand', () => {
+describe('runReviewCommand', () => {
   it('forwards bench arguments without parsing them', async () => {
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['bench', '--cases', 'c'], d)).resolves.toBe(7)
+    await expect(runReviewCommand(['bench', '--cases', 'c'], d)).resolves.toBe(7)
     expect(d.runBench).toHaveBeenCalledWith(['--cases', 'c'])
-    await expect(runFinalReviewCommand(['bench-verifier', '--out', 'o'], d)).resolves.toBe(8)
+    await expect(runReviewCommand(['bench-verifier', '--out', 'o'], d)).resolves.toBe(8)
     expect(d.runVerifierBench).toHaveBeenCalledWith(['--out', 'o'])
-    await expect(runFinalReviewCommand(['bench-selection', '--out', 'o'], d)).resolves.toBe(9)
+    await expect(runReviewCommand(['bench-selection', '--out', 'o'], d)).resolves.toBe(9)
     expect(d.runSelectionBench).toHaveBeenCalledWith(['--out', 'o'])
     expect(d.createIo).not.toHaveBeenCalled()
   })
@@ -107,7 +107,7 @@ describe('runFinalReviewCommand', () => {
   it('resolves the pull request target for loop subcommands that need one', async () => {
     const { out } = capture()
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['claim', ...PR, '--force'], d)).resolves.toBe(0)
+    await expect(runReviewCommand(['claim', ...PR, '--force'], d)).resolves.toBe(0)
     expect(d.createLabelIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
     expect(JSON.parse(out.join(''))).toMatchObject({ claimed: true })
   })
@@ -116,10 +116,7 @@ describe('runFinalReviewCommand', () => {
     const { out } = capture()
     const d = deps(fakeIo(), JSON.stringify({ findings: [] }))
     await expect(
-      runFinalReviewCommand(
-        ['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--dry-run'],
-        d,
-      ),
+      runReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--dry-run'], d),
     ).resolves.toBe(0)
     expect(d.createIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
     expect(d.readFile).toHaveBeenCalledWith('f.json')
@@ -133,7 +130,7 @@ describe('runFinalReviewCommand', () => {
     const io = fakeIo()
     const d = deps(io, JSON.stringify({ findings: [] }))
     await expect(
-      runFinalReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', 'f.json'], d),
+      runReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', 'f.json'], d),
     ).resolves.toBe(0)
     expect(io.postReview).toHaveBeenCalledOnce()
     expect(JSON.parse(out.join(''))).toMatchObject({
@@ -156,12 +153,12 @@ describe('runFinalReviewCommand', () => {
     d.configs.mockReturnValue({
       ...NO_CONFIGS,
       byOwner: new Map([
-        ['acme', parseRepoConfig('{"checkRun":{"name":"Final review"}}', 'acme.json', 'owner')],
+        ['acme', parseRepoConfig('{"checkRun":{"name":"Code review"}}', 'acme.json', 'owner')],
       ]),
     })
     d.runner.mockReturnValue(run)
     const argv = ['post', ...PR, '--head-sha', SHA, '--input', 'f.json']
-    await expect(runFinalReviewCommand(argv, d)).resolves.toBe(0)
+    await expect(runReviewCommand(argv, d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({
       checkRun: { status: 'completed', url: 'https://example.test/check' },
     })
@@ -178,7 +175,7 @@ describe('runFinalReviewCommand', () => {
     out.length = 0
     run.mockRejectedValueOnce(new Error('403'))
     io.headSha.mockResolvedValueOnce(SHA)
-    await expect(runFinalReviewCommand(argv, d)).resolves.toBe(0)
+    await expect(runReviewCommand(argv, d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({
       label: 'added',
       checkRun: { status: 'failed', error: '403' },
@@ -188,19 +185,19 @@ describe('runFinalReviewCommand', () => {
   it('prints settings and skips a pull request', async () => {
     const { out } = capture()
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['settings', '--owner', 'acme'], d)).resolves.toBe(0)
+    await expect(runReviewCommand(['settings', '--owner', 'acme'], d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({ scope: 'acme', checkRun: null })
     out.length = 0
-    await expect(
-      runFinalReviewCommand(['skip', ...PR, '--reason', 'generated only'], d),
-    ).resolves.toBe(0)
+    await expect(runReviewCommand(['skip', ...PR, '--reason', 'generated only'], d)).resolves.toBe(
+      0,
+    )
     expect(JSON.parse(out.join(''))).toMatchObject({ skipped: true, reason: 'generated only' })
   })
 
   it('runs loop subcommands without a pull request target', async () => {
     const { out } = capture()
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['auth'], d)).resolves.toBe(0)
+    await expect(runReviewCommand(['auth'], d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toEqual({ mode: 'gh' })
     expect(d.createIo).not.toHaveBeenCalled()
   })
@@ -208,24 +205,24 @@ describe('runFinalReviewCommand', () => {
   it('requires --head-sha and --input for post', async () => {
     const { err } = capture()
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['post', ...PR, '--input', 'f'], d)).resolves.toBe(2)
-    await expect(runFinalReviewCommand(['post', ...PR, '--head-sha', SHA], d)).resolves.toBe(2)
+    await expect(runReviewCommand(['post', ...PR, '--input', 'f'], d)).resolves.toBe(2)
+    await expect(runReviewCommand(['post', ...PR, '--head-sha', SHA], d)).resolves.toBe(2)
     expect(err.join('')).toBe(
-      'final-review: post needs --head-sha and --input.\nfinal-review: post needs --head-sha and --input.\n',
+      'code-reviewer: post needs --head-sha and --input.\ncode-reviewer: post needs --head-sha and --input.\n',
     )
   })
 
   it('prints the numbered diff', async () => {
     const { out } = capture()
     const io = fakeIo({ diff: vi.fn(async () => '@@ -1 +1 @@\n+x') })
-    await expect(runFinalReviewCommand(['diff', ...PR], deps(io))).resolves.toBe(0)
+    await expect(runReviewCommand(['diff', ...PR], deps(io))).resolves.toBe(0)
     expect(out.join('')).toBe('@@ -1 +1 @@\n            1 +x')
   })
 
   it('revokes the approval label', async () => {
     const { out } = capture()
     const io = fakeIo()
-    await expect(runFinalReviewCommand(['revoke', ...PR], deps(io))).resolves.toBe(0)
+    await expect(runReviewCommand(['revoke', ...PR], deps(io))).resolves.toBe(0)
     expect(io.removeApprovalLabel).toHaveBeenCalledOnce()
     expect(JSON.parse(out.join(''))).toEqual({ removed: true })
   })
@@ -233,11 +230,11 @@ describe('runFinalReviewCommand', () => {
   it('lists plugins and exits 1 when a required one is missing', async () => {
     const { out } = capture()
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['plugins'], d)).resolves.toBe(0)
-    await expect(runFinalReviewCommand(['plugins', '--require', 'rules'], d)).resolves.toBe(0)
+    await expect(runReviewCommand(['plugins'], d)).resolves.toBe(0)
+    await expect(runReviewCommand(['plugins', '--require', 'rules'], d)).resolves.toBe(0)
     out.length = 0
     await expect(
-      runFinalReviewCommand(['plugins', '--require', 'rules', '--require', 'db'], d),
+      runReviewCommand(['plugins', '--require', 'rules', '--require', 'db'], d),
     ).resolves.toBe(1)
     expect(JSON.parse(out.join(''))).toEqual({ plugins: ['rules@m 1.0.0'], missing: ['db'] })
     expect(d.createIo).not.toHaveBeenCalled()
@@ -250,32 +247,32 @@ describe('runFinalReviewCommand', () => {
         { body: `<!-- final-review sha=${SHA} verdict=Approve effort=high -->`, author: 'bot' },
       ]),
     })
-    await expect(runFinalReviewCommand(['status', ...PR], deps(approved))).resolves.toBe(0)
+    await expect(runReviewCommand(['status', ...PR], deps(approved))).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({ approved: true })
-    await expect(runFinalReviewCommand(['status', ...PR], deps(fakeIo()))).resolves.toBe(1)
+    await expect(runReviewCommand(['status', ...PR], deps(fakeIo()))).resolves.toBe(1)
   })
 
   it('reports usage and validation errors with exit code 2', async () => {
     const { err } = capture()
     const d = deps(fakeIo())
-    await expect(runFinalReviewCommand(['status', '--pr', '4'], d)).resolves.toBe(2)
-    await expect(runFinalReviewCommand(['status', '--repo', 'a/b'], d)).resolves.toBe(2)
-    await expect(runFinalReviewCommand([], d)).resolves.toBe(2)
-    await expect(runFinalReviewCommand(['wat', ...PR], d)).resolves.toBe(2)
-    await expect(runFinalReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
-    expect(err.join('')).toContain('final-review: --repo and --pr are required.')
+    await expect(runReviewCommand(['status', '--pr', '4'], d)).resolves.toBe(2)
+    await expect(runReviewCommand(['status', '--repo', 'a/b'], d)).resolves.toBe(2)
+    await expect(runReviewCommand([], d)).resolves.toBe(2)
+    await expect(runReviewCommand(['wat', ...PR], d)).resolves.toBe(2)
+    await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
+    expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection.',
+      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection.',
     )
   })
 
   it('prints the review summary and exits 1 when the review failed', async () => {
     const { out } = capture()
     const args = ['review', ...PR, '--out', 'o', '--tree', 't']
-    await expect(runFinalReviewCommand(args, deps(fakeIo()))).resolves.toBe(0)
+    await expect(runReviewCommand(args, deps(fakeIo()))).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toEqual({ claimed: true })
     vi.mocked(runReview).mockResolvedValueOnce({ ok: false, summary: { error: 'x' } })
-    await expect(runFinalReviewCommand(args, deps(fakeIo()))).resolves.toBe(1)
+    await expect(runReviewCommand(args, deps(fakeIo()))).resolves.toBe(1)
   })
 
   it('re-renders a report from report.json and exits 2 for a bad one', async () => {
@@ -283,7 +280,7 @@ describe('runFinalReviewCommand', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cmd-report-'))
     try {
       writeFileSync(join(dir, 'report.json'), '{"version":2}')
-      await expect(runFinalReviewCommand(['report', '--out', dir], deps(fakeIo()))).resolves.toBe(2)
+      await expect(runReviewCommand(['report', '--out', dir], deps(fakeIo()))).resolves.toBe(2)
       expect(err.join('')).toContain('not a version 1 report')
       writeFileSync(
         join(dir, 'report.json'),
@@ -308,7 +305,7 @@ describe('runFinalReviewCommand', () => {
           pullRequestSummary: '',
         }),
       )
-      await expect(runFinalReviewCommand(['report', '--out', dir], deps(fakeIo()))).resolves.toBe(0)
+      await expect(runReviewCommand(['report', '--out', dir], deps(fakeIo()))).resolves.toBe(0)
       expect(JSON.parse(out.join('')).report).toBe(join(dir, 'report.md'))
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -317,8 +314,8 @@ describe('runFinalReviewCommand', () => {
 
   it('prints usage for help', async () => {
     const { out } = capture()
-    await expect(runFinalReviewCommand(['help'], deps(fakeIo()))).resolves.toBe(0)
-    await expect(runFinalReviewCommand(['--help'], deps(fakeIo()))).resolves.toBe(0)
+    await expect(runReviewCommand(['help'], deps(fakeIo()))).resolves.toBe(0)
+    await expect(runReviewCommand(['--help'], deps(fakeIo()))).resolves.toBe(0)
     expect(out.join('')).toContain('code-reviewer post --repo')
   })
 
@@ -328,32 +325,32 @@ describe('runFinalReviewCommand', () => {
     d.createIo.mockImplementation(() => {
       throw 'not an error'
     })
-    await expect(runFinalReviewCommand(['status', ...PR], d)).resolves.toBe(2)
-    expect(err.join('')).toBe('final-review: not an error\n')
+    await expect(runReviewCommand(['status', ...PR], d)).resolves.toBe(2)
+    expect(err.join('')).toBe('code-reviewer: not an error\n')
   })
 })
 
-describe('runFinalReviewCommand default dependencies', () => {
+describe('runReviewCommand default dependencies', () => {
   it('reads input from disk, builds a gh io, and delegates bench', async () => {
     const { err } = capture()
-    const dir = mkdtempSync(join(tmpdir(), 'final-review-cmd-'))
+    const dir = mkdtempSync(join(tmpdir(), 'review-cmd-'))
     try {
       const file = join(dir, 'findings.json')
       writeFileSync(file, '{"findings": 3}')
       // Real file read and JSON parse happen before any gh call; the invalid findings abort first.
       await expect(
-        runFinalReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', file]),
+        runReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', file]),
       ).resolves.toBe(2)
       expect(err.join('')).toContain('findings must be an array.')
       // A malformed repo is rejected by the default gh io factory without running gh.
-      await expect(runFinalReviewCommand(['status', '--repo', 'bad', '--pr', '1'])).resolves.toBe(2)
+      await expect(runReviewCommand(['status', '--repo', 'bad', '--pr', '1'])).resolves.toBe(2)
       expect(err.join('')).toContain('--repo must be owner/name.')
-      await expect(runFinalReviewCommand(['bench', '--x'])).resolves.toBe(5)
-      expect(runFinalReviewBenchCli).toHaveBeenCalledWith(['--x'])
-      await expect(runFinalReviewCommand(['bench-verifier', '--y'])).resolves.toBe(6)
-      expect(runFinalReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
-      await expect(runFinalReviewCommand(['bench-selection', '--z'])).resolves.toBe(4)
-      expect(runFinalReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
+      await expect(runReviewCommand(['bench', '--x'])).resolves.toBe(5)
+      expect(runReviewBenchCli).toHaveBeenCalledWith(['--x'])
+      await expect(runReviewCommand(['bench-verifier', '--y'])).resolves.toBe(6)
+      expect(runReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
+      await expect(runReviewCommand(['bench-selection', '--z'])).resolves.toBe(4)
+      expect(runReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

@@ -22,7 +22,7 @@ describe('createGhAuth', () => {
     const tokens = vi.fn(async () => 'app-token')
     const tokensFor = vi.fn(() => tokens)
     const auth = createGhAuth(
-      { FINAL_REVIEWER_APP_ID: '1', FINAL_REVIEWER_APP_PRIVATE_KEY: KEY },
+      { CODE_REVIEWER_APP_ID: '1', CODE_REVIEWER_APP_PRIVATE_KEY: KEY },
       tokensFor,
     )
     expect(auth.mode).toBe('app')
@@ -31,10 +31,10 @@ describe('createGhAuth', () => {
   })
 
   it('defaults to process.env and the real token provider', () => {
-    vi.stubEnv('FINAL_REVIEWER_APP_ID', '')
+    vi.stubEnv('CODE_REVIEWER_APP_ID', '')
     expect(createGhAuth().mode).toBe('gh')
-    vi.stubEnv('FINAL_REVIEWER_APP_ID', '5')
-    vi.stubEnv('FINAL_REVIEWER_APP_PRIVATE_KEY', KEY)
+    vi.stubEnv('CODE_REVIEWER_APP_ID', '5')
+    vi.stubEnv('CODE_REVIEWER_APP_PRIVATE_KEY', KEY)
     expect(createGhAuth().mode).toBe('app')
   })
 })

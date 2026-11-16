@@ -2,22 +2,22 @@ import { parseArgs } from 'node:util'
 
 import {
   completeReview,
-  finalReviewStatus,
+  reviewStatus,
   numberDiff,
-  parseFinalReviewInput,
+  parseReviewInput,
   postFinalReview,
   postedStep,
   revokeFinalApproval,
   type PullTarget,
-} from '../final-review/index.mts'
-import { checkPlugins } from '../final-review/plugins.mts'
+} from '../review/index.mts'
+import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
-import { createDefaultDeps, type FinalReviewDeps } from './deps.mts'
-import { FINAL_REVIEW_USAGE } from './usage.mts'
+import { createDefaultDeps, type ReviewDeps } from './deps.mts'
+import { REVIEW_USAGE } from './usage.mts'
 
-export type { FinalReviewDeps } from './deps.mts'
+export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
   'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection'
@@ -61,17 +61,17 @@ function parse(args: string[]) {
 async function run(
   subcommand: string | undefined,
   args: string[],
-  deps: FinalReviewDeps,
+  deps: ReviewDeps,
 ): Promise<number> {
   if (subcommand === 'help' || subcommand === '--help') {
-    process.stdout.write(FINAL_REVIEW_USAGE)
+    process.stdout.write(REVIEW_USAGE)
     return 0
   }
   if (subcommand === 'bench') return deps.runBench(args)
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
   if (subcommand === 'bench-selection') return deps.runSelectionBench(args)
   const values = parse(args)
-  if (subcommand === undefined) throw new Error(`final-review needs ${SUBCOMMANDS}.`)
+  if (subcommand === undefined) throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
   if (subcommand === 'plugins') {
     const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
     print(result)
@@ -98,7 +98,7 @@ async function run(
       if (values['head-sha'] === undefined || values.input === undefined) {
         throw new Error('post needs --head-sha and --input.')
       }
-      const input = parseFinalReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
+      const input = parseReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
       const dryRun = values['dry-run'] === true
       const outcome = await postFinalReview(io, input, values['head-sha'], { dryRun })
       if (dryRun) {
@@ -122,24 +122,24 @@ async function run(
       print({ removed: await revokeFinalApproval(io) })
       return 0
     case 'status': {
-      const status = await finalReviewStatus(io)
+      const status = await reviewStatus(io)
       print(status)
       return status.approved ? 0 : 1
     }
     default:
-      throw new Error(`final-review needs ${SUBCOMMANDS}.`)
+      throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
   }
 }
 
-export async function runFinalReviewCommand(
+export async function runReviewCommand(
   args: string[],
-  deps: FinalReviewDeps = createDefaultDeps(),
+  deps: ReviewDeps = createDefaultDeps(),
 ): Promise<number> {
   try {
     return await run(args[0], args.slice(1), deps)
   } catch (error) {
     process.stderr.write(
-      `final-review: ${error instanceof Error ? error.message : String(error)}\n`,
+      `code-reviewer: ${error instanceof Error ? error.message : String(error)}\n`,
     )
     return 2
   }

@@ -1,30 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../final-review/index.mts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../final-review/index.mts')>()),
+vi.mock('../review/index.mts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../review/index.mts')>()),
   listQueue: vi.fn(async () => [{ repo: 'acme/a', pr: 1 }]),
   claimReview: vi.fn(async () => ({ claimed: true })),
   abortReview: vi.fn(async () => ({ added: [] })),
   skipReview: vi.fn(async () => ({ added: ['done'], removed: ['busy'] })),
   prepareReview: vi.fn(async () => ({ headSha: 'h' })),
   resolveThreads: vi.fn(async (_run: unknown, ids: string[]) => ids),
-  finalReviewStatus: vi.fn(async () => ({ current: false })),
+  reviewStatus: vi.fn(async () => ({ current: false })),
 }))
 
 import {
   abortReview,
   claimReview,
-  finalReviewStatus,
+  reviewStatus,
   listQueue,
   DEFAULT_LABELS,
   prepareReview,
   resolveThreads,
   skipReview,
   type LabelNames,
-} from '../final-review/index.mts'
-import { parseRepoConfig, type RepoConfigs } from '../final-review/rules/config.mts'
+} from '../review/index.mts'
+import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import { runLoopCommand } from './command-loop.mts'
-import type { FinalReviewDeps } from './deps.mts'
+import type { ReviewDeps } from './deps.mts'
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
@@ -42,7 +42,7 @@ const CONFIGS: RepoConfigs = {
       'bob',
       config(
         'bob.json',
-        { labels: { requested: 'review me' }, checkRun: { name: 'Final review' } },
+        { labels: { requested: 'review me' }, checkRun: { name: 'Code review' } },
         'owner',
       ),
     ],
@@ -53,7 +53,7 @@ const CONFIGS: RepoConfigs = {
 
 function fakeDeps(mode: 'app' | 'gh' = 'app') {
   const labelIo = { labels: vi.fn(), add: vi.fn(), remove: vi.fn() }
-  const prepareIo = {} as ReturnType<FinalReviewDeps['createPrepareIo']>
+  const prepareIo = {} as ReturnType<ReviewDeps['createPrepareIo']>
   const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
   const runner = vi.fn(() => run)
   const createLabelIo = vi.fn(() => labelIo)
@@ -64,7 +64,7 @@ function fakeDeps(mode: 'app' | 'gh' = 'app') {
     createIo: vi.fn(() => ({ headSha: async () => 'h'.repeat(40) })),
     createPrepareIo: vi.fn(() => prepareIo),
     runner,
-  } as unknown as FinalReviewDeps
+  } as unknown as ReviewDeps
   return { deps, labelIo, prepareIo, run, runner, createLabelIo }
 }
 
@@ -153,19 +153,19 @@ describe('runLoopCommand', () => {
       force: false,
       headReviewed: false,
     })
-    vi.mocked(finalReviewStatus).mockClear()
+    vi.mocked(reviewStatus).mockClear()
     await runLoopCommand('claim', { force: true }, target, deps)
     expect(claimReview).toHaveBeenLastCalledWith(labelIo, DEFAULT_LABELS, {
       force: true,
       headReviewed: false,
     })
-    expect(finalReviewStatus).not.toHaveBeenCalled()
+    expect(reviewStatus).not.toHaveBeenCalled()
   })
 
-  it('declines a head the newest final review covers and reports its status', async () => {
+  it('declines a head the newest review covers and reports its status', async () => {
     const { deps, labelIo } = fakeDeps()
     const status = { current: true, verdict: 'Approve' }
-    vi.mocked(finalReviewStatus).mockResolvedValueOnce(status as never)
+    vi.mocked(reviewStatus).mockResolvedValueOnce(status as never)
     vi.mocked(claimReview).mockResolvedValueOnce({
       claimed: false,
       reason: 'head already reviewed',
@@ -212,7 +212,7 @@ describe('runLoopCommand', () => {
       await expect(runLoopCommand('settings', { owner: 'bob' }, target, deps)).resolves.toEqual({
         scope: 'bob',
         labels: BOB_LABELS,
-        checkRun: { name: 'Final review' },
+        checkRun: { name: 'Code review' },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -267,7 +267,7 @@ describe('runLoopCommand', () => {
     it('binds the check run to the head the claim read, and reads the head once for abort and skip', async () => {
       const claimHead = 's'.repeat(40)
       const { deps, run } = fakeDeps()
-      vi.mocked(finalReviewStatus).mockResolvedValueOnce({
+      vi.mocked(reviewStatus).mockResolvedValueOnce({
         current: false,
         headSha: claimHead,
       } as never)

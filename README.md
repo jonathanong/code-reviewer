@@ -9,7 +9,7 @@ change, and posts a GitHub review.
   for callers that have not moved yet.
 - `skills/`: the Claude Code skills (pillar prompts, verifier, and the standing loop).
 - `repos/`: what the reviewer knows about each reviewed repository.
-- `benchmarks/final-review/`: labeled eval cases and how to run them.
+- `benchmarks/review/`: labeled eval cases and how to run them.
 
 ## Install
 
@@ -20,7 +20,7 @@ cd code-reviewer && pnpm install
 
 As a Claude Code plugin, add the marketplace `jonathanong/code-reviewer` and install the
 `code-reviewer` plugin. The standing reviewer session runs in this checkout; see
-[`skills/final-reviewer/SKILL.md`](skills/final-reviewer/SKILL.md).
+[`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md).
 
 ## Running a review
 
@@ -84,7 +84,7 @@ without one):
 
 A malformed file, an unknown key, or a configured repository with no clone is listed under
 "Missing" in `rules/INDEX.md` and in `prepare`'s output; none of them stops the review. Set
-`FINAL_REVIEWER_CONFIG_DIR` to read the configs from another directory.
+`CODE_REVIEWER_CONFIG_DIR` to read the configs from another directory.
 
 ## Per-repository settings
 
@@ -100,7 +100,7 @@ Label names and an optional GitHub check run are set here too, per organization 
     "completed": "final-review:complete",
     "approval": "final approval"
   },
-  "checkRun": { "name": "Final review" }
+  "checkRun": { "name": "Code review" }
 }
 ```
 
@@ -117,14 +117,14 @@ Label names and an optional GitHub check run are set here too, per organization 
 
 ## Authentication and trust
 
-Calls use a GitHub App when `FINAL_REVIEWER_APP_ID` is set (with `FINAL_REVIEWER_APP_PRIVATE_KEY`
-or `FINAL_REVIEWER_APP_PRIVATE_KEY_PATH`), otherwise the local `gh` login.
+Calls use a GitHub App when `CODE_REVIEWER_APP_ID` is set (with `CODE_REVIEWER_APP_PRIVATE_KEY`
+or `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`), otherwise the local `gh` login.
 
 `claim` and `status` trust a `<!-- final-review ... -->` marker only from the identity that posts
-final reviews, so a review forged by someone else cannot decline a head or report approval. That
+reviews, so a review forged by someone else cannot decline a head or report approval. That
 identity is the authenticated GraphQL `viewer` plus the comma-separated logins in
-`FINAL_REVIEWER_TRUSTED_AUTHORS`. An App installation token cannot query `viewer`, so under App
-auth set `FINAL_REVIEWER_TRUSTED_AUTHORS=<app-slug>[bot]`; with neither, no marker is trusted and
+`CODE_REVIEWER_TRUSTED_AUTHORS`. An App installation token cannot query `viewer`, so under App
+auth set `CODE_REVIEWER_TRUSTED_AUTHORS=<app-slug>[bot]`; with neither, no marker is trusted and
 every head is re-reviewed (status never reports approval).
 
 Under local `gh` auth the reviewer posts as you, so the pull request author shares the trusted

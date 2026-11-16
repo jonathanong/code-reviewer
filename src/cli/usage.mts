@@ -1,4 +1,4 @@
-export const FINAL_REVIEW_USAGE = `code-reviewer auth
+export const REVIEW_USAGE = `code-reviewer auth
 code-reviewer settings (--repo owner/name | --owner LOGIN)
 code-reviewer queue (--owner LOGIN | --repo owner/name...)
 code-reviewer claim --repo owner/name --pr N [--force]
@@ -16,8 +16,8 @@ code-reviewer plugins [--require NAME]...
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
-  auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
-  FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
+  auth reports whether gh calls use the GitHub App (CODE_REVIEWER_APP_ID with
+  CODE_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
   post, revoke and status use the label names from repos/<owner>.json and repos/<owner>/<name>.json
   (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
@@ -29,26 +29,26 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   and abort and skip complete it as cancelled and skipped; under the gh login the result says it
   was skipped, and a check-run error is reported in the result without losing the review.
   claim swaps requested for processing (and clears completed and approval); it declines a head the
-  newest final review covers unless --force. prepare writes the
+  newest review covers unless --force. prepare writes the
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
   the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
-  change as consumed or as consumers) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
+  change as consumed or as consumers) read from --clones DIR (or CODE_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
   review runs claim, prepare, a Haiku skill selection, the planned pillars (--jobs at a time,
   default 3, each retried once), and the verifier with headless claude runs, then writes
   review.json, preview.md, report.md and report.json to --out and stops before posting. It fails
   closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
   from report.json.
   resolve resolves review threads of fixed findings.
-  Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
-  plus the comma-separated logins in FINAL_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
+  Markers in earlier reviews count only from the posting identity (the gh or App viewer)
+  plus the comma-separated logins in CODE_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
   under App auth, where viewer is unavailable).
   post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
   the header; inline comments where the diff allows, the rest in the body) and adds the "final
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
-  the label before a re-review. status exits 0 only when the newest final review approved the current
+  the label before a re-review. status exits 0 only when the newest review approved the current
   head and the label is present. bench runs each pillar prompt against labeled cases from a git-free
   snapshot of the pre-merge head and scores recall and precision; --judge grades by claim
   with a model instead of by location. bench also records the skills each run loads and, for cases
@@ -71,7 +71,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   case and per expected skill, with mean skills selected and cost by model. It does not run a
   reviewer, so it does not show that a selected skill is then loaded or applied. --cache DIR
   reuses the clone cache of an earlier bench; --score-only re-scores saved attempts. bench and bench-verifier stage the same rule sources under
-  .final-review/rules (fixtures may hold
+  .review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
   the case's repoId); --no-rules stages none and withholds the Skill tool, for control
   runs. Shared rules come only from installed plugin skills; pillar runs may load them, and each raw result

@@ -21,12 +21,12 @@ const CONFIG: AppConfig = { appId: '123', privateKey, apiUrl: 'https://api.test'
 describe('loadAppConfig', () => {
   it('returns undefined without an app id', () => {
     expect(loadAppConfig({})).toBeUndefined()
-    expect(loadAppConfig({ FINAL_REVIEWER_APP_ID: '  ' })).toBeUndefined()
+    expect(loadAppConfig({ CODE_REVIEWER_APP_ID: '  ' })).toBeUndefined()
   })
 
   it('reads the key from the environment and defaults the API url', () => {
     expect(
-      loadAppConfig({ FINAL_REVIEWER_APP_ID: ' 9 ', FINAL_REVIEWER_APP_PRIVATE_KEY: privateKey }),
+      loadAppConfig({ CODE_REVIEWER_APP_ID: ' 9 ', CODE_REVIEWER_APP_PRIVATE_KEY: privateKey }),
     ).toEqual({ appId: '9', privateKey, apiUrl: 'https://api.github.com' })
   })
 
@@ -35,9 +35,9 @@ describe('loadAppConfig', () => {
     expect(
       loadAppConfig(
         {
-          FINAL_REVIEWER_APP_ID: '9',
-          FINAL_REVIEWER_APP_PRIVATE_KEY_PATH: ' /k.pem ',
-          FINAL_REVIEWER_APP_INSTALLATION_ID: ' 77 ',
+          CODE_REVIEWER_APP_ID: '9',
+          CODE_REVIEWER_APP_PRIVATE_KEY_PATH: ' /k.pem ',
+          CODE_REVIEWER_APP_INSTALLATION_ID: ' 77 ',
           GITHUB_API_URL: 'https://ghe.test/api///',
         },
         readFile,
@@ -49,16 +49,16 @@ describe('loadAppConfig', () => {
   it('reads real files by default', () => {
     expect(() =>
       loadAppConfig({
-        FINAL_REVIEWER_APP_ID: '9',
-        FINAL_REVIEWER_APP_PRIVATE_KEY_PATH: '/nonexistent/k.pem',
+        CODE_REVIEWER_APP_ID: '9',
+        CODE_REVIEWER_APP_PRIVATE_KEY_PATH: '/nonexistent/k.pem',
       }),
     ).toThrow(/ENOENT/u)
   })
 
   it('rejects a missing or invalid key', () => {
-    expect(() => loadAppConfig({ FINAL_REVIEWER_APP_ID: '9' })).toThrow(AppAuthError)
+    expect(() => loadAppConfig({ CODE_REVIEWER_APP_ID: '9' })).toThrow(AppAuthError)
     expect(() =>
-      loadAppConfig({ FINAL_REVIEWER_APP_ID: '9', FINAL_REVIEWER_APP_PRIVATE_KEY: 'nope' }),
+      loadAppConfig({ CODE_REVIEWER_APP_ID: '9', CODE_REVIEWER_APP_PRIVATE_KEY: 'nope' }),
     ).toThrow(/no PEM private key/u)
   })
 })

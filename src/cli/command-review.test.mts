@@ -9,18 +9,18 @@ vi.mock('./command-loop.mts', () => ({
   skipCommand: vi.fn(async () => ({ skipped: true })),
   prepareCommand: vi.fn(async () => ({ headSha: 'sha' })),
 }))
-vi.mock('../final-review/post.mts', () => ({
+vi.mock('../review/post.mts', () => ({
   postFinalReview: vi.fn(async () => ({ verdict: 'Comment', reviews: [] })),
 }))
-vi.mock('../final-review/run/review.mts', () => ({
+vi.mock('../review/run/review.mts', () => ({
   runReview: vi.fn(async () => ({ ok: true, summary: { claimed: true } })),
 }))
 
-import { postFinalReview } from '../final-review/post.mts'
-import { runReview, type ReviewSteps } from '../final-review/run/review.mts'
+import { postFinalReview } from '../review/post.mts'
+import { runReview, type ReviewSteps } from '../review/run/review.mts'
 import { abortCommand, claimCommand, prepareCommand, skipCommand } from './command-loop.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
-import type { FinalReviewDeps } from './deps.mts'
+import type { ReviewDeps } from './deps.mts'
 
 afterEach(() => vi.clearAllMocks())
 
@@ -30,7 +30,7 @@ const deps = {
   pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
   exec: vi.fn(async () => ''),
   references: vi.fn(() => '/refs'),
-} as unknown as FinalReviewDeps
+} as unknown as ReviewDeps
 
 async function steps(values: Parameters<typeof reviewCommand>[0] = { out: 'o', tree: 't' }) {
   await reviewCommand(values, TARGET, deps)
