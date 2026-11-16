@@ -1,9 +1,9 @@
 ---
 name: review-loop
-description: Run the standing final-reviewer session that takes review requests by label or message and posts final reviews.
+description: Run the standing final-reviewer session that takes review requests by label or message and posts reviews.
 ---
 
-# Standing final reviewer
+# Standing code reviewer
 
 Read applicable `AGENTS.md` and their declared adapter alias, otherwise
 `.agents/skills/final-reviewer/SKILL.md` from the launch directory if present.
@@ -56,7 +56,7 @@ one, and a request for a pull request already being reviewed is noted for after 
    `claim --force`. Entries in state `requested` are queued in the order listed.
 
 Keep nothing that a restart would lose. GitHub is the source of truth: the labels hold the queue,
-and the newest final review's hidden marker holds the reviewed SHA, verdict, and effort.
+and the newest review's hidden marker holds the reviewed SHA, verdict, and effort.
 
 ## Step 2 - Wait for events
 
@@ -85,7 +85,7 @@ only `labeled` with a request label matters, so they are filtered out.
 
 ## Step 3 - Review
 
-For each queued pull request, run the [final-review](../review/SKILL.md) skill, in the
+For each queued pull request, run the [review](../review/SKILL.md) skill, in the
 background so the session stays free. Run at most three reviews at once; each one dispatches its
 own pillar subagents. The session keeps only each review's one-line results: never paste diffs,
 pillar JSON, or review bodies into it.

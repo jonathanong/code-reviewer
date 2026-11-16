@@ -84,16 +84,16 @@ function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefi
 
 type Dated = OtherNote & { at: string }
 
-function othersFrom(pull: PrConversation, finalIds: Set<string>): OtherNote[] {
+function othersFrom(pull: PrConversation, markedIds: Set<string>): OtherNote[] {
   const threads = pull.reviewThreads.nodes.flatMap((thread): Dated[] => {
     const first = thread.comments.nodes[0]
     if (thread.isResolved || first === undefined) return []
-    if (finalIds.has(first.pullRequestReview?.id ?? '')) return []
+    if (markedIds.has(first.pullRequestReview?.id ?? '')) return []
     const where = `${thread.path}:${thread.line ?? 'file'}${thread.isOutdated ? ' (outdated)' : ''}`
     return [{ author: login(first.author), where, text: squash(first.body), at: first.createdAt }]
   })
   const reviews = pull.reviews.nodes.flatMap((review): Dated[] => {
-    if (finalIds.has(review.id) || review.body.trim().length === 0) return []
+    if (markedIds.has(review.id) || review.body.trim().length === 0) return []
     const where = `review ${review.state.toLowerCase()} @${review.commit?.oid.slice(0, 7) ?? '?'}`
     return [
       {
@@ -141,11 +141,11 @@ export function buildFollowUpContext(
   const reviewedSha = latest?.[1] ?? null
   const oids = pull.commits.nodes.map((node) => node.commit.oid)
   const index = reviewedSha === null ? -1 : oids.indexOf(reviewedSha)
-  const finalIds = new Set(markedReviews.map((review) => review.id))
+  const markedIds = new Set(markedReviews.map((review) => review.id))
   const unresolved = pull.reviewThreads.nodes.flatMap((thread) => {
     const first = thread.comments.nodes[0]
     if (thread.isResolved || first === undefined) return []
-    if (!finalIds.has(first.pullRequestReview?.id ?? '')) return []
+    if (!markedIds.has(first.pullRequestReview?.id ?? '')) return []
     return priorFinding(thread, first.body) ?? []
   })
   const latestSha = latest?.[1]
@@ -178,6 +178,6 @@ export function buildFollowUpContext(
       pull.reviews.pageInfo?.hasPreviousPage === true ||
       pull.reviewThreads.pageInfo?.hasPreviousPage === true,
     unresolved: [...unresolved, ...bodyFindings],
-    others: othersFrom(pull, finalIds),
+    others: othersFrom(pull, markedIds),
   }
 }

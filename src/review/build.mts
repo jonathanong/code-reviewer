@@ -79,7 +79,7 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
 }
 
 function partHeader(headSha: string, part: number, total: number): string {
-  return `<!-- final-review-part sha=${headSha} part=${part} -->\n**Final review, part ${part} of ${total}** · \`${headSha.slice(0, 12)}\``
+  return `<!-- final-review-part sha=${headSha} part=${part} -->\n**Code review, part ${part} of ${total}** · \`${headSha.slice(0, 12)}\``
 }
 
 /**

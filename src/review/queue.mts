@@ -76,7 +76,7 @@ async function search(
 
 /**
  * The fallback intake when hook-harness is unavailable or reports a gap: open pull requests that
- * request a final review, plus ones left in progress (a restart abandoned them), oldest first.
+ * request a review, plus ones left in progress (a restart abandoned them), oldest first.
  * `labels` is one label set, so callers group repositories that share one.
  */
 export async function listQueue(

@@ -87,7 +87,7 @@ describe('renderHeader', () => {
     expect(renderHeader(input(), SHA)).toBe(
       [
         reviewMarker(SHA, 'Approve', 'medium'),
-        '## [Approve] Final review',
+        '## [Approve] Code review',
         `Reviewed \`${'a'.repeat(12)}\` at medium effort · no findings`,
       ].join('\n\n'),
     )
@@ -106,7 +106,7 @@ describe('renderHeader', () => {
       }),
       SHA,
     )
-    expect(out).toContain('## [Request Changes] Final review')
+    expect(out).toContain('## [Request Changes] Code review')
     expect(out).toContain('3 findings (2 blocking, 1 low)')
     expect(out).toContain('Overall fine.')
     expect(out).toContain(

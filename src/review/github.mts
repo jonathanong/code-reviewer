@@ -13,7 +13,7 @@ import { DEFAULT_LABELS } from './settings.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
-/** The GitHub reads and writes a final review needs, injectable for tests. */
+/** The GitHub reads and writes a review needs, injectable for tests. */
 export type ReviewIo = {
   headSha(): Promise<string>
   /** The pull request's unified diff against its base. */
@@ -94,7 +94,7 @@ export function createGhReviewIo(
       return lines(out).includes(approvalLabel)
     },
     async postReview(review) {
-      const dir = mkdtempSync(join(tmpdir(), 'final-review-'))
+      const dir = mkdtempSync(join(tmpdir(), 'review-'))
       try {
         const file = join(dir, 'review.json')
         writeFileSync(file, JSON.stringify(review))

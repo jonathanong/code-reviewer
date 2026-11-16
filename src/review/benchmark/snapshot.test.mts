@@ -266,8 +266,8 @@ describe('defaultExec', () => {
     await expect(defaultExec(process.execPath, ['-e', 'process.exit(4)'])).rejects.toThrow(
       /exited with 4$/u,
     )
-    await expect(defaultExec('final-review-missing-binary', [])).rejects.toThrow(
-      'final-review-missing-binary exited with ENOENT',
+    await expect(defaultExec('review-missing-binary', [])).rejects.toThrow(
+      'review-missing-binary exited with ENOENT',
     )
   })
 })

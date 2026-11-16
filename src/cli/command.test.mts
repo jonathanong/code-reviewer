@@ -153,7 +153,7 @@ describe('runReviewCommand', () => {
     d.configs.mockReturnValue({
       ...NO_CONFIGS,
       byOwner: new Map([
-        ['acme', parseRepoConfig('{"checkRun":{"name":"Final review"}}', 'acme.json', 'owner')],
+        ['acme', parseRepoConfig('{"checkRun":{"name":"Code review"}}', 'acme.json', 'owner')],
       ]),
     })
     d.runner.mockReturnValue(run)
@@ -208,7 +208,7 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand(['post', ...PR, '--input', 'f'], d)).resolves.toBe(2)
     await expect(runReviewCommand(['post', ...PR, '--head-sha', SHA], d)).resolves.toBe(2)
     expect(err.join('')).toBe(
-      'final-review: post needs --head-sha and --input.\nfinal-review: post needs --head-sha and --input.\n',
+      'code-reviewer: post needs --head-sha and --input.\ncode-reviewer: post needs --head-sha and --input.\n',
     )
   })
 
@@ -260,9 +260,9 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand([], d)).resolves.toBe(2)
     await expect(runReviewCommand(['wat', ...PR], d)).resolves.toBe(2)
     await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
-    expect(err.join('')).toContain('final-review: --repo and --pr are required.')
+    expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection.',
+      'code-reviewer: code-reviewer needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection.',
     )
   })
 
@@ -326,14 +326,14 @@ describe('runReviewCommand', () => {
       throw 'not an error'
     })
     await expect(runReviewCommand(['status', ...PR], d)).resolves.toBe(2)
-    expect(err.join('')).toBe('final-review: not an error\n')
+    expect(err.join('')).toBe('code-reviewer: not an error\n')
   })
 })
 
 describe('runReviewCommand default dependencies', () => {
   it('reads input from disk, builds a gh io, and delegates bench', async () => {
     const { err } = capture()
-    const dir = mkdtempSync(join(tmpdir(), 'final-review-cmd-'))
+    const dir = mkdtempSync(join(tmpdir(), 'review-cmd-'))
     try {
       const file = join(dir, 'findings.json')
       writeFileSync(file, '{"findings": 3}')

@@ -40,8 +40,8 @@ describe('parseLabels', () => {
 describe('parseCheckRun', () => {
   it('reads the name', () => {
     const problems: string[] = []
-    expect(parseCheckRun({ name: ' Final review ' }, 'a checkRun', problems)).toEqual({
-      name: 'Final review',
+    expect(parseCheckRun({ name: ' Code review ' }, 'a checkRun', problems)).toEqual({
+      name: 'Code review',
     })
     expect(parseCheckRun(undefined, 'a checkRun', problems)).toBeUndefined()
     expect(problems).toEqual([])

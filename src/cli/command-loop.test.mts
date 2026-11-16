@@ -42,7 +42,7 @@ const CONFIGS: RepoConfigs = {
       'bob',
       config(
         'bob.json',
-        { labels: { requested: 'review me' }, checkRun: { name: 'Final review' } },
+        { labels: { requested: 'review me' }, checkRun: { name: 'Code review' } },
         'owner',
       ),
     ],
@@ -162,7 +162,7 @@ describe('runLoopCommand', () => {
     expect(reviewStatus).not.toHaveBeenCalled()
   })
 
-  it('declines a head the newest final review covers and reports its status', async () => {
+  it('declines a head the newest review covers and reports its status', async () => {
     const { deps, labelIo } = fakeDeps()
     const status = { current: true, verdict: 'Approve' }
     vi.mocked(reviewStatus).mockResolvedValueOnce(status as never)
@@ -212,7 +212,7 @@ describe('runLoopCommand', () => {
       await expect(runLoopCommand('settings', { owner: 'bob' }, target, deps)).resolves.toEqual({
         scope: 'bob',
         labels: BOB_LABELS,
-        checkRun: { name: 'Final review' },
+        checkRun: { name: 'Code review' },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(

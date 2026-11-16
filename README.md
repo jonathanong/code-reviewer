@@ -100,7 +100,7 @@ Label names and an optional GitHub check run are set here too, per organization 
     "completed": "final-review:complete",
     "approval": "final approval"
   },
-  "checkRun": { "name": "Final review" }
+  "checkRun": { "name": "Code review" }
 }
 ```
 
@@ -121,7 +121,7 @@ Calls use a GitHub App when `CODE_REVIEWER_APP_ID` is set (with `CODE_REVIEWER_A
 or `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`), otherwise the local `gh` login.
 
 `claim` and `status` trust a `<!-- final-review ... -->` marker only from the identity that posts
-final reviews, so a review forged by someone else cannot decline a head or report approval. That
+reviews, so a review forged by someone else cannot decline a head or report approval. That
 identity is the authenticated GraphQL `viewer` plus the comma-separated logins in
 `CODE_REVIEWER_TRUSTED_AUTHORS`. An App installation token cannot query `viewer`, so under App
 auth set `CODE_REVIEWER_TRUSTED_AUTHORS=<app-slug>[bot]`; with neither, no marker is trusted and

@@ -1,9 +1,9 @@
 ---
 name: review
-description: Run one multi-pillar final review (first or follow-up) of a pull request and post it to GitHub.
+description: Run one multi-pillar review (first or follow-up) of a pull request and post it to GitHub.
 ---
 
-# Final review
+# Code review
 
 Read applicable `AGENTS.md` and their declared adapter alias, otherwise
 `.agents/skills/final-review/SKILL.md` from the repository root if present.
@@ -15,7 +15,7 @@ stays with the human or the triage loop.
 
 Arguments: `owner/name#number` (or a pull request URL) and an optional effort: `low`, `medium`, or
 `high`. Without one, the CLI picks the mode: light (`low`) for a follow-up and for small, docs-only, test-only or Dependabot pull requests, full (`high`) otherwise. To run as
-the standing reviewer that other sessions ask, use the [final-reviewer](../review-loop/SKILL.md)
+the standing reviewer that other sessions ask, use the [review-loop](../review-loop/SKILL.md)
 skill, which calls this one per pull request.
 
 The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer
@@ -35,7 +35,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
    message rather than label). It adds `final-review:in-progress`, then removes
    `final-review:requested`, `final-review:complete`, and a stale `final approval`. `claimed:
    false` means another run owns it or the request was withdrawn: stop.
-2. Create a private run directory: `run=$(mktemp -d "${TMPDIR:-/tmp}/final-review-<name>-<n>-XXXXXX")`.
+2. Create a private run directory: `run=$(mktemp -d "${TMPDIR:-/tmp}/review-<name>-<n>-XXXXXX")`.
 3. Check out the head as a detached worktree at `"$run/tree"` from a local clone when one exists
    (`git -C <clone> fetch origin <head> && git -C <clone> worktree add --detach "$run/tree" <head>`),
    otherwise from a blobless clone under `"$run"`.
@@ -43,8 +43,8 @@ there. Each subagent replies with one line, and its full output stays in a file.
    (`--clones` defaults to `CODE_REVIEWER_CLONE_ROOT`). It writes, without any model calls:
    - `diff.patch` and `diff/INDEX.md` with one numbered patch per file (base and head line numbers
      on every line);
-   - `context.md`: the last final review (SHA, verdict, effort), commits since, unresolved
-     final-review findings with their thread ids, and other reviewers' notes (Codex, CodeRabbit,
+   - `context.md`: the last review (SHA, verdict, effort), commits since, unresolved
+     review findings with their thread ids, and other reviewers' notes (Codex, CodeRabbit,
      Copilot, humans), squashed and truncated;
    - `rules/INDEX.md` and the files it lists: this repository's `AGENTS.md` files and skills at
      the base ref, and the instructions and skills of each repository under the clone root that this
@@ -55,7 +55,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
    - `since.patch` and `since/INDEX.md` for a follow-up whose last reviewed SHA is an ancestor;
    - `plan.json`: effort, pillars with their model tier, the verifier tier, and skipped pillars
      with reasons ([dispatch](references/dispatch.md) documents the rules).
-5. `claim` already declines a head the newest final review covers once posting finished, meaning
+5. `claim` already declines a head the newest review covers once posting finished, meaning
    the `final-review:complete` label is set (`reason: "head already reviewed"`, with that
    review's status); a partial post left by a failed run is claimed again. It swaps the request label for `complete` without
    touching `final approval`: reply with that verdict and stop. Use `--force` to review the same
@@ -113,7 +113,7 @@ findings, and replies with one line: the verdict and the review URLs.
 ## Step 4 - Report
 
 Reply to the requester with the verdict and the review link. Merging agents check
-`code-reviewer status`, which exits 0 only when the newest final review approved the
+`code-reviewer status`, which exits 0 only when the newest review approved the
 current head and the `final approval` label is present.
 
 ## Benchmarks

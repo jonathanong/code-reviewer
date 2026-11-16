@@ -4,7 +4,7 @@ import { abortedStep, postedStep, reportCheckRun, skippedStep, STARTED } from '.
 import { DEFAULT_LABELS, type ReviewSettings } from './settings.mts'
 
 const SHA = 'd'.repeat(40)
-const CONFIGURED: ReviewSettings = { labels: DEFAULT_LABELS, checkRun: { name: 'Final review' } }
+const CONFIGURED: ReviewSettings = { labels: DEFAULT_LABELS, checkRun: { name: 'Code review' } }
 
 function report(
   step: Parameters<typeof reportCheckRun>[0]['step'],
@@ -38,7 +38,7 @@ describe('reportCheckRun', () => {
     })
     expect(run.mock.calls[0]?.[0]).toContain('repos/acme/widgets/check-runs')
     expect(fields(run)).toEqual([
-      'name=Final review',
+      'name=Code review',
       `head_sha=${SHA}`,
       'status=in_progress',
       `output[title]=${STARTED.title}`,
@@ -56,7 +56,7 @@ describe('reportCheckRun', () => {
       const { run, result } = report(postedStep(verdict, ['https://r/1', 'https://r/2']))
       await expect(result).resolves.toMatchObject({ status: 'completed' })
       expect(fields(run)).toEqual([
-        'name=Final review',
+        'name=Code review',
         `head_sha=${SHA}`,
         'status=completed',
         `conclusion=${conclusion}`,

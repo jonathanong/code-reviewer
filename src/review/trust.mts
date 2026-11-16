@@ -29,7 +29,7 @@ export function isTrustedAuthor(
 }
 
 /**
- * The identity that posts final reviews: the authenticated viewer plus the allowlist. An App
+ * The identity that posts reviews: the authenticated viewer plus the allowlist. An App
  * installation token cannot query `viewer`, so under App auth the allowlist (the App's
  * `<slug>[bot]` login) is the only source; with neither, no marker is trusted.
  */

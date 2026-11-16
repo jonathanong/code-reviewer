@@ -69,13 +69,13 @@ describe('parseRepoConfig settings', () => {
   it('reads labels and a check run alongside consumes', () => {
     const text = JSON.stringify({
       labels: { requested: 'go' },
-      checkRun: { name: 'Final review' },
+      checkRun: { name: 'Code review' },
       consumes: [{ repo: 'acme/api' }],
     })
     expect(parseRepoConfig(text, FILE)).toEqual({
       consumes: [{ repo: 'acme/api', paths: [], via: '' }],
       labels: { requested: 'go' },
-      checkRun: { name: 'Final review' },
+      checkRun: { name: 'Code review' },
       problems: [],
     })
   })

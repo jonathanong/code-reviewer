@@ -59,7 +59,7 @@ export type ReviewStatus = {
   effort: string | null
   current: boolean
   labeled: boolean
-  /** True only when the newest final review approved the current head and the label is on. */
+  /** True only when the newest review approved the current head and the label is on. */
   approved: boolean
 }
 
@@ -69,7 +69,7 @@ export const MARKER_RE =
 /** Marker on the continuation parts of a review split over several posts. */
 export const PART_MARKER_RE = /<!-- final-review-part sha=([0-9a-f]{40}) part=(\d+) -->/u
 
-/** Reports whether the latest final review covers the current head, for merging agents. */
+/** Reports whether the latest review covers the current head, for merging agents. */
 export async function reviewStatus(io: ReviewIo): Promise<ReviewStatus> {
   const [headSha, reviews, labeled, trusted] = await Promise.all([
     io.headSha(),

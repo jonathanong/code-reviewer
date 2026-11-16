@@ -20,10 +20,10 @@ export function renderFollowUpContext(context: FollowUpContext): string {
     '',
     `- Head: \`${short(context.headSha)}\`, base: \`${short(context.baseSha)}\`, ${context.lines} changed lines`,
   ]
-  if (context.reviewedSha === null) lines.push('- No earlier final review.')
+  if (context.reviewedSha === null) lines.push('- No earlier review.')
   else {
     lines.push(
-      `- Last final review: \`${short(context.reviewedSha)}\` (${context.verdict}, ${context.effort} effort)`,
+      `- Last review: \`${short(context.reviewedSha)}\` (${context.verdict}, ${context.effort} effort)`,
     )
     if (context.commitsSince === null) {
       lines.push('- The reviewed SHA is not in the recent history (rewritten or very old).')
@@ -40,7 +40,7 @@ export function renderFollowUpContext(context: FollowUpContext): string {
   for (const issue of context.intent.issues) {
     lines.push('', `Closing issue #${issue.number}: ${issue.title}`, ...quote(issue.body))
   }
-  lines.push('', `## Unresolved final-review findings (${context.unresolved.length})`, '')
+  lines.push('', `## Unresolved review findings (${context.unresolved.length})`, '')
   for (const finding of context.unresolved) {
     const where =
       finding.path === null

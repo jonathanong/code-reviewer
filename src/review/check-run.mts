@@ -19,8 +19,8 @@ const CONCLUSIONS: Record<Verdict, CheckRunConclusion> = {
 }
 
 export const STARTED: CheckRunStep = {
-  title: 'Final review in progress',
-  summary: 'A final review of this head is running.',
+  title: 'Code review in progress',
+  summary: 'A review of this head is running.',
 }
 
 export function postedStep(verdict: Verdict, urls: readonly string[]): CheckRunStep {
@@ -30,13 +30,13 @@ export function postedStep(verdict: Verdict, urls: readonly string[]): CheckRunS
 export function abortedStep(): CheckRunStep {
   return {
     conclusion: 'cancelled',
-    title: 'Final review cancelled',
+    title: 'Code review cancelled',
     summary: 'The review was dropped without a verdict.',
   }
 }
 
 export function skippedStep(reason: string): CheckRunStep {
-  return { conclusion: 'skipped', title: 'Final review skipped', summary: reason }
+  return { conclusion: 'skipped', title: 'Code review skipped', summary: reason }
 }
 
 /**

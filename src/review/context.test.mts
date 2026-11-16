@@ -81,7 +81,7 @@ function pull(overrides: Partial<PrConversation> = {}): PrConversation {
 const FINDING = '**[high]** Title here\n\n<sub>correctness</sub>\n\nbody'
 
 describe('buildFollowUpContext', () => {
-  it('handles a pull request without a final review', () => {
+  it('handles a pull request without a review', () => {
     expect(build(pull())).toEqual({
       title: 'Title',
       intent: { body: 'Does a thing.', issues: [] },
@@ -119,7 +119,7 @@ describe('buildFollowUpContext', () => {
     expect(ctx.commitsSince).toBeNull()
   })
 
-  it('collects unresolved findings from final review threads only', () => {
+  it('collects unresolved findings from review threads only', () => {
     const markedReview = review({ id: 'F', body: reviewMarker(A, 'Comment', 'low') })
     const fromFinal = (overrides: Partial<ReviewThread> = {}, body = FINDING) =>
       thread(comment({ body, pullRequestReview: { id: 'F' } }), overrides)
@@ -153,7 +153,7 @@ describe('buildFollowUpContext', () => {
     ])
   })
 
-  it('carries body findings of the latest final review without a thread', () => {
+  it('carries body findings of the latest review without a thread', () => {
     const offDiff = renderBodyFinding({
       pillar: 'design',
       severity: 'medium',

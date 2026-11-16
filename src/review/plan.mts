@@ -32,7 +32,7 @@ export type PlanInput = {
 }
 
 export type ReviewPlan = {
-  /** The newest final review already covers the head; reply with it instead of reviewing. */
+  /** The newest review already covers the head; reply with it instead of reviewing. */
   upToDate: boolean
   /** `skip` posts no review; `light` runs fewer pillars with a sonnet verifier; `full` is everything. */
   mode: Mode

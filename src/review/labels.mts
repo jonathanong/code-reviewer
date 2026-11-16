@@ -54,7 +54,7 @@ export type ClaimOutcome =
  * Takes a requested review: marks it in progress and clears the request, a previous completion,
  * and a stale `final approval`. Without `force` it only claims a pull request that still carries
  * the request label, so a replayed or stale event is ignored, and it declines a head the newest
- * final review already covers (`headReviewed`) once posting finished: the marker rides on the first
+ * review already covers (`headReviewed`) once posting finished: the marker rides on the first
  * review part, so only `complete` (set after every part and the approval label) proves that. A
  * requeued retry of a partial post is therefore claimed and finishes publication.
  */
@@ -65,7 +65,7 @@ export async function claimReview(
 ) {
   const labels = await io.labels()
   if (options.force !== true && options.headReviewed === true && labels.includes(names.completed)) {
-    // The newest final review covers this head: answer the request without touching the verdict.
+    // The newest review covers this head: answer the request without touching the verdict.
     await swap(io, labels.includes(names.requested) ? [names.completed] : [], [names.requested])
     return { claimed: false, reason: 'head already reviewed', labels } satisfies ClaimOutcome
   }

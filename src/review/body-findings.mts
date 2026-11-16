@@ -6,7 +6,7 @@ const BODY_FINDING_RE =
 const LOCATION_RE = /^(.+) \(([^\s()]*[./][^\s()]*?)(?::(?:\d+-)?(\d+))?\)$/u
 
 /**
- * Parses the findings a final review posted in its body because they had no commentable diff
+ * Parses the findings a review posted in its body because they had no commentable diff
  * line (see `renderBodyFinding`). They have no thread, so they are carried as unresolved with
  * a null thread id.
  */

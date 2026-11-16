@@ -144,7 +144,7 @@ describe('stageRuleSources', () => {
       diff: '',
       repo: {
         reader: reader({
-          'skills/review/SKILL.md': skill('final-review', 'F'),
+          'skills/review/SKILL.md': skill('review', 'F'),
           'skills/review/references/verifier.md': 'verifier',
           'skills/review/references/pillars/_contract.md': 'contract',
           'skills/review/notes/other.md': 'not staged',

@@ -29,7 +29,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   and abort and skip complete it as cancelled and skipped; under the gh login the result says it
   was skipped, and a check-run error is reported in the result without losing the review.
   claim swaps requested for processing (and clears completed and approval); it declines a head the
-  newest final review covers unless --force. prepare writes the
+  newest review covers unless --force. prepare writes the
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
@@ -41,14 +41,14 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
   from report.json.
   resolve resolves review threads of fixed findings.
-  Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
+  Markers in earlier reviews count only from the posting identity (the gh or App viewer)
   plus the comma-separated logins in CODE_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
   under App auth, where viewer is unavailable).
   post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
   the header; inline comments where the diff allows, the rest in the body) and adds the "final
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
-  the label before a re-review. status exits 0 only when the newest final review approved the current
+  the label before a re-review. status exits 0 only when the newest review approved the current
   head and the label is present. bench runs each pillar prompt against labeled cases from a git-free
   snapshot of the pre-merge head and scores recall and precision; --judge grades by claim
   with a model instead of by location. bench also records the skills each run loads and, for cases

@@ -77,7 +77,7 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   if (requested !== undefined && requested !== 'low') return full(requested)
   if (context.reviewedSha !== null) return followUp(input, context.reviewedSha, reasons)
   if (requested === 'low') {
-    reasons.push('No earlier final review: high effort.')
+    reasons.push('No earlier review: high effort.')
     return full('high')
   }
   if (dependabot) {

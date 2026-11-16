@@ -149,7 +149,7 @@ describe('planReview follow-ups', () => {
   it('escalates a requested low review with no earlier review', () => {
     const result = plan({ requested: 'low' })
     expect(result).toMatchObject({ mode: 'full', effort: 'high' })
-    expect(result.reasons).toEqual(['No earlier final review: high effort.'])
+    expect(result.reasons).toEqual(['No earlier review: high effort.'])
   })
 
   it.each([undefined, { status: 'diverged', paths: [], lines: 0 }])(

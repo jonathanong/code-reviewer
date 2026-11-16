@@ -1,4 +1,4 @@
-# Final review benchmarks
+# Code review benchmarks
 
 ## Current results
 
@@ -33,7 +33,7 @@ prompt and is not re-measured, so its skill-load count no longer describes the c
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
-Labeled pull requests for benchmarking the `final-review` pillar prompts in
+Labeled pull requests for benchmarking the `review` pillar prompts in
 `skills/review/references/pillars/`.
 
 ## Cases
@@ -203,7 +203,7 @@ dependency's route, with no package import to detect (`links-declared-api-payloa
 pnpm exec code-reviewer bench \
   --cases benchmarks/review/cases.json \
   --prompts skills/review/references/pillars \
-  --out "$TMPDIR/final-review-bench" \
+  --out "$TMPDIR/review-bench" \
   --pillar design --jobs 3
 ```
 
@@ -231,9 +231,9 @@ The verifier is benchmarked on its own, without re-running pillars or dispatchin
 ```bash
 pnpm exec code-reviewer bench-verifier \
   --cases benchmarks/review/cases.json \
-  --findings-from "$TMPDIR/final-review-bench" \
+  --findings-from "$TMPDIR/review-bench" \
   --prompts skills/review/references \
-  --out "$TMPDIR/final-review-verifier" --jobs 3
+  --out "$TMPDIR/review-verifier" --jobs 3
 ```
 
 `--findings-from` is the `--out` directory of an earlier `bench` run. The command first judges any
@@ -284,7 +284,7 @@ met by any one member.
 pnpm exec code-reviewer bench-selection \
   --cases benchmarks/review/cases.json \
   --cases benchmarks/review/synthetic.json \
-  --out "$TMPDIR/final-review-selection"
+  --out "$TMPDIR/review-selection"
 ```
 
 Each attempt costs one Haiku call, with `--attempts 3` (default) per case. Attempts are saved to

@@ -31,8 +31,8 @@ describe('renderFollowUpContext', () => {
     expect(out).toContain(
       `- Head: \`${'a'.repeat(12)}\`, base: \`${'b'.repeat(12)}\`, 12 changed lines`,
     )
-    expect(out).toContain('- No earlier final review.')
-    expect(out).toContain('## Unresolved final-review findings (0)')
+    expect(out).toContain('- No earlier review.')
+    expect(out).toContain('## Unresolved review findings (0)')
     expect(out).toContain('## Intent (untrusted)')
     expect(out).toContain('Title: T')
     expect(out).toContain('## Other reviewers and comments (0)')
@@ -48,7 +48,7 @@ describe('renderFollowUpContext', () => {
         commitsSince: ['fix one', 'fix two'],
       }),
     )
-    expect(out).toContain(`- Last final review: \`${'c'.repeat(12)}\` (Approve, high effort)`)
+    expect(out).toContain(`- Last review: \`${'c'.repeat(12)}\` (Approve, high effort)`)
     expect(out).toContain('- Commits since: 2\n  - fix one\n  - fix two')
   })
 

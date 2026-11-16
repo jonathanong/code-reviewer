@@ -7,7 +7,7 @@ only step that writes the review.
 
 The run directory from `code-reviewer prepare`: `plan.json` (effort and `skipped`),
 `context.md` (the pull request title, description, and closing issues under "Intent"; the earlier
-final review; unresolved findings, with thread ids or marked as review-body findings with no
+review; unresolved findings, with thread ids or marked as review-body findings with no
 thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` when `plan.sinceSha` is set), `pillars/*.json`, and the worktree at
 `tree/`. Read files by path with offsets; do not load the whole diff.
 

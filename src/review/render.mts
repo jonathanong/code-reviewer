@@ -81,7 +81,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
   })
   return [
     reviewMarker(headSha, verdict, input.effort),
-    `## [${verdict}] Final review`,
+    `## [${verdict}] Code review`,
     `Reviewed \`${headSha.slice(0, 12)}\` at ${input.effort} effort · ${counts(input.findings)}`,
     ...(input.summary ? [input.summary] : []),
     ...(index.length > 0 ? [index.join('\n')] : []),
