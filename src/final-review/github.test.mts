@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
-import { assertPullTarget, createGhFinalReviewIo } from './github.mts'
+import { createGhFinalReviewIo } from './github.mts'
+import { assertPullTarget } from './target.mts'
 
 const target = { repo: 'acme/widgets', pr: 7 }
 
@@ -85,6 +86,26 @@ describe('createGhFinalReviewIo', () => {
     await expect(no.io.hasApprovalLabel()).resolves.toBe(false)
   })
 
+  it('uses the configured approval label', async () => {
+    const yes = setup(['final approval\n'])
+    await expect(yes.io.hasApprovalLabel()).resolves.toBe(true)
+    const calls: string[][] = []
+    const io = createGhFinalReviewIo(
+      target,
+      async (args) => {
+        calls.push(args)
+        return 'bug\nlgtm\n'
+      },
+      [],
+      'lgtm',
+    )
+    await expect(io.hasApprovalLabel()).resolves.toBe(true)
+    await io.addApprovalLabel()
+    await io.removeApprovalLabel()
+    expect(calls[1]).toContain('labels[]=lgtm')
+    expect(calls[2]?.[3]).toBe('repos/acme/widgets/issues/7/labels/lgtm')
+  })
+
   it('posts a review from a temp file and cleans it up', async () => {
     let file = ''
     let content = ''
@@ -128,14 +149,20 @@ describe('createGhFinalReviewIo', () => {
       'labels[]=final approval',
     ])
     expect(calls[1]).toEqual([
-      'pr',
-      'edit',
-      '7',
-      '-R',
-      'acme/widgets',
-      '--remove-label',
-      'final approval',
+      'api',
+      '--method',
+      'DELETE',
+      'repos/acme/widgets/issues/7/labels/final%20approval',
+      '--silent',
     ])
+  })
+
+  it('removes a label whose name has a comma as one label', async () => {
+    const calls: string[][] = []
+    const io = createGhFinalReviewIo(target, async (args) => (calls.push(args), ''), [], 'ok, ship')
+    await io.removeApprovalLabel()
+    expect(calls[0]?.[3]).toBe('repos/acme/widgets/issues/7/labels/ok%2C%20ship')
+    expect(calls[0]).not.toContain('pr')
   })
 
   it('defaults to the gh runner', () => {

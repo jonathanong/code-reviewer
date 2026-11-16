@@ -1,5 +1,5 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
-import { IN_PROGRESS_LABEL, REQUESTED_LABEL } from './labels.mts'
+import type { LabelNames } from './settings.mts'
 
 export type QueueEntry = {
   repo: string
@@ -40,8 +40,12 @@ export function scopeQualifier(owner: string, repos: readonly string[]): string 
     for (const repo of repos) if (!REPO_RE.test(repo)) throw new Error(`Invalid repo: ${repo}`)
     return repos.map((repo) => `repo:${repo}`).join(' ')
   }
-  if (!OWNER_RE.test(owner)) throw new Error('--owner must be a GitHub login.')
+  assertOwner(owner)
   return `org:${owner}`
+}
+
+export function assertOwner(owner: string): void {
+  if (!OWNER_RE.test(owner)) throw new Error('--owner must be a GitHub login.')
 }
 
 async function search(
@@ -73,16 +77,18 @@ async function search(
 /**
  * The fallback intake when hook-harness is unavailable or reports a gap: open pull requests that
  * request a final review, plus ones left in progress (a restart abandoned them), oldest first.
+ * `labels` is one label set, so callers group repositories that share one.
  */
 export async function listQueue(
   run: RunTextCommand,
   owner: string,
-  repos: readonly string[] = [],
+  repos: readonly string[],
+  labels: Pick<LabelNames, 'requested' | 'processing'>,
 ): Promise<QueueEntry[]> {
   const scope = scopeQualifier(owner, repos)
   const [requested, inProgress] = await Promise.all([
-    search(run, scope, REQUESTED_LABEL, 'requested'),
-    search(run, scope, IN_PROGRESS_LABEL, 'in-progress'),
+    search(run, scope, labels.requested, 'requested'),
+    search(run, scope, labels.processing, 'in-progress'),
   ])
   return [...inProgress, ...requested]
 }

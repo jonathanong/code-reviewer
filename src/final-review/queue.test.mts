@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { listQueue, scopeQualifier } from './queue.mts'
+import { DEFAULT_LABELS } from './settings.mts'
 
 describe('scopeQualifier', () => {
   it('uses org for an owner', () => {
@@ -47,7 +48,7 @@ describe('listQueue', () => {
         },
       ])
     })
-    const entries = await listQueue(run, 'acme')
+    const entries = await listQueue(run, 'acme', [], DEFAULT_LABELS)
     expect(entries).toEqual([
       {
         repo: 'a/b',
@@ -77,7 +78,7 @@ describe('listQueue', () => {
 
   it('scopes to repos', async () => {
     const run = vi.fn(async (_args: readonly string[]) => reply([]))
-    expect(await listQueue(run, '', ['a/b'])).toEqual([])
+    expect(await listQueue(run, '', ['a/b'], DEFAULT_LABELS)).toEqual([])
     expect(run.mock.calls[0]?.[0]).toContain(
       'q=repo:a/b is:pr is:open label:"final-review:requested" sort:updated-asc',
     )

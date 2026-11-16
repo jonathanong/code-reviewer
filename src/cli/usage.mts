@@ -1,6 +1,8 @@
 export const FINAL_REVIEW_USAGE = `code-reviewer auth
+code-reviewer settings (--repo owner/name | --owner LOGIN)
 code-reviewer queue (--owner LOGIN | --repo owner/name...)
 code-reviewer claim --repo owner/name --pr N [--force]
+code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
@@ -13,9 +15,18 @@ code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]..
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
   auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
   FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
-  labeled final-review:requested or final-review:in-progress (GraphQL fallback for hook-harness).
-  claim swaps final-review:requested for final-review:in-progress (and clears complete and final
-  approval); it declines a head the newest final review covers unless --force. prepare writes the
+  labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
+  post, revoke and status use the label names from repos/<owner>.json and repos/<owner>/<name>.json
+  (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
+  settings prints the resolved labels and optional check run for a repository or owner, so a
+  session can read the requested label for hook-harness. skip closes a pull request the plan will
+  not review: it swaps processing and requested for completed, leaves the approval label alone,
+  posts nothing, and records --reason. With checkRun configured and GitHub App auth, claim opens a
+  check run, post completes it (success, failure, neutral for Approve, Request Changes, Comment),
+  and abort and skip complete it as cancelled and skipped; under the gh login the result says it
+  was skipped, and a check-run error is reported in the result without losing the review.
+  claim swaps requested for processing (and clears completed and approval); it declines a head the
+  newest final review covers unless --force. prepare writes the
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories

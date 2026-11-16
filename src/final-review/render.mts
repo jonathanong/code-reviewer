@@ -2,9 +2,6 @@ import type { Effort, FinalReviewInput, Finding, Severity, SkippedPillar } from 
 
 export type Verdict = 'Approve' | 'Request Changes' | 'Comment'
 
-/** Label a final approval carries; agents remove it before any re-review. */
-export const FINAL_APPROVAL_LABEL = 'final approval'
-
 const SHORT_BODY_CHARS = 400
 const SHORT_BODY_LINES = 4
 

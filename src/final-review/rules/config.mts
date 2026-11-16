@@ -2,9 +2,17 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  parseCheckRun,
+  parseLabels,
+  type CheckRunSettings,
+  type LabelNames,
+} from './settings-parse.mts'
+
 /**
- * Where this repository keeps what the reviewer must know about each reviewed repository, as
- * `<owner>/<name>.json`. Reviewed repositories carry no config of their own.
+ * Where this repository keeps what the reviewer must know about reviewed repositories: one
+ * `<owner>/<name>.json` per repository, and `<owner>.json` beside that directory for the settings
+ * every repository of the owner shares. Reviewed repositories carry no config of their own.
  */
 export const DEFAULT_CONFIG_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../repos')
 
@@ -18,10 +26,18 @@ export type Consumes = {
   via: string
 }
 
-export type RepoConfig = { consumes: Consumes[]; problems: string[] }
+export type RepoConfig = {
+  consumes: Consumes[]
+  labels?: Partial<LabelNames>
+  checkRun?: CheckRunSettings
+  problems: string[]
+}
+
+/** A repository file holds every key; an owner file holds only the settings repositories share. */
+type ConfigScope = 'repo' | 'owner'
 
 const REPO_RE = /^[A-Za-z0-9-]+\/(?!\.+$)[\w.-]+$/u
-const KEYS = new Set(['consumes'])
+const KEYS = new Set(['consumes', 'labels', 'checkRun'])
 const CONSUMES_KEYS = new Set(['repo', 'paths', 'via'])
 
 type Json = Record<string, unknown>
@@ -58,8 +74,23 @@ function consumes(raw: unknown, where: string, problems: string[]): Consumes | u
   }
 }
 
+function consumesList(raw: unknown, file: string, problems: string[]): Consumes[] {
+  const list = raw ?? []
+  if (!Array.isArray(list)) {
+    problems.push(`${file}: "consumes" must be an array`)
+    return []
+  }
+  return list
+    .map((item, index) => consumes(item, `${file} consumes[${index}]`, problems))
+    .filter((item) => item !== undefined)
+}
+
 /** Parses one config file's text; errors become problems that name `file`. */
-export function parseRepoConfig(text: string, file: string): RepoConfig {
+export function parseRepoConfig(
+  text: string,
+  file: string,
+  scope: ConfigScope = 'repo',
+): RepoConfig {
   let raw: unknown
   try {
     raw = JSON.parse(text)
@@ -70,38 +101,56 @@ export function parseRepoConfig(text: string, file: string): RepoConfig {
     return { consumes: [], problems: [`${file}: must be a JSON object; ignored`] }
   }
   const problems = unknownKeys(raw, KEYS, file)
-  const list = raw.consumes ?? []
-  if (!Array.isArray(list)) {
-    return { consumes: [], problems: [...problems, `${file}: "consumes" must be an array`] }
+  const labels = parseLabels(raw.labels, `${file} labels`, problems)
+  const checkRun = parseCheckRun(raw.checkRun, `${file} checkRun`, problems)
+  if (scope === 'owner' && raw.consumes !== undefined) {
+    problems.push(`${file}: "consumes" is repo-level only; ignored`)
   }
-  const entries = list
-    .map((item, index) => consumes(item, `${file} consumes[${index}]`, problems))
-    .filter((item) => item !== undefined)
-  return { consumes: entries, problems }
+  return {
+    consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
+    ...(labels === undefined ? {} : { labels }),
+    ...(checkRun === undefined ? {} : { checkRun }),
+    problems,
+  }
 }
 
 export type RepoConfigs = {
   /** Lowercased `owner/name` to that repository's config. */
   byRepo: ReadonlyMap<string, RepoConfig>
+  /** Lowercased owner to the shared settings in `<owner>.json`. */
+  byOwner: ReadonlyMap<string, RepoConfig>
   problems: string[]
 }
 
-export const NO_CONFIGS: RepoConfigs = { byRepo: new Map(), problems: [] }
+export const NO_CONFIGS: RepoConfigs = { byRepo: new Map(), byOwner: new Map(), problems: [] }
 
-/** Reads every `<owner>/<name>.json` under `dir`; a missing directory holds no configs. */
+/** Reads every `<owner>.json` and `<owner>/<name>.json` under `dir`; a missing directory has none. */
 export function loadRepoConfigs(dir: string): RepoConfigs {
   const byRepo = new Map<string, RepoConfig>()
+  const byOwner = new Map<string, RepoConfig>()
   const problems: string[] = []
-  if (!existsSync(dir)) return { byRepo, problems }
-  const owners = readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory())
-  for (const owner of owners.map((entry) => entry.name).sort()) {
-    const files = readdirSync(join(dir, owner)).filter((name) => name.endsWith('.json'))
-    for (const name of files.sort()) {
+  if (!existsSync(dir)) return { byRepo, byOwner, problems }
+  const entries = readdirSync(dir, { withFileTypes: true })
+  const read = (file: string, scope: ConfigScope) => {
+    const config = parseRepoConfig(readFileSync(join(dir, file), 'utf8'), file, scope)
+    problems.push(...config.problems)
+    return config
+  }
+  const names = (kind: 'isFile' | 'isDirectory') =>
+    entries
+      .filter((entry) => entry[kind]())
+      .map((entry) => entry.name)
+      .sort()
+  for (const name of names('isFile').filter((file) => file.endsWith('.json'))) {
+    byOwner.set(name.slice(0, -'.json'.length).toLowerCase(), read(name, 'owner'))
+  }
+  for (const owner of names('isDirectory')) {
+    for (const name of readdirSync(join(dir, owner))
+      .filter((n) => n.endsWith('.json'))
+      .sort()) {
       const file = `${owner}/${name}`
-      const config = parseRepoConfig(readFileSync(join(dir, owner, name), 'utf8'), file)
-      byRepo.set(file.slice(0, -'.json'.length).toLowerCase(), config)
-      problems.push(...config.problems)
+      byRepo.set(file.slice(0, -'.json'.length).toLowerCase(), read(file, 'repo'))
     }
   }
-  return { byRepo, problems }
+  return { byRepo, byOwner, problems }
 }

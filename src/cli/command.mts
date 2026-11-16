@@ -6,18 +6,20 @@ import {
   numberDiff,
   parseFinalReviewInput,
   postFinalReview,
+  postedStep,
   revokeFinalApproval,
   type PullTarget,
 } from '../final-review/index.mts'
 import { checkPlugins } from '../final-review/plugins.mts'
 import { runLoopCommand } from './command-loop.mts'
+import { checkRunFor, labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type FinalReviewDeps } from './deps.mts'
 import { FINAL_REVIEW_USAGE } from './usage.mts'
 
 export type { FinalReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, plugins, bench, or bench-verifier'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, resolve, plugins, bench, or bench-verifier'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -43,6 +45,7 @@ function parse(args: string[]) {
       owner: { type: 'string' },
       force: { type: 'boolean' },
       requeue: { type: 'boolean' },
+      reason: { type: 'string' },
       out: { type: 'string' },
       effort: { type: 'string' },
       tree: { type: 'string' },
@@ -90,8 +93,14 @@ async function run(
         print(outcome)
         return 0
       }
-      const labels = await completeReview(deps.createLabelIo(pull))
-      print({ ...outcome, reviews: outcome.reviews.length, lifecycle: labels })
+      const lifecycle = await completeReview(deps.createLabelIo(pull), labelsFor(deps, pull.repo))
+      const checkRun = await checkRunFor(
+        deps,
+        pull,
+        postedStep(outcome.verdict, outcome.urls),
+        values['head-sha'],
+      )
+      print({ ...outcome, reviews: outcome.reviews.length, lifecycle, checkRun })
       return 0
     }
     case 'diff':

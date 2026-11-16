@@ -60,6 +60,11 @@ and the newest final review's hidden marker holds the reviewed SHA, verdict, and
 
 ## Step 2 - Wait for events
 
+Label names are configurable per organization and repository. Read the request label with
+`code-reviewer settings --owner <owner>` (`labels.requested`), and with `settings --repo` for each
+repository whose config overrides it; wait on every distinct request label. The examples below show
+the default, `final-review:requested`.
+
 Keep exactly one wait running, and pass its cursor back each time:
 
 - **hook-harness CLI (preferred)**: a background command, which wakes the session when it exits
@@ -76,7 +81,7 @@ Keep exactly one wait running, and pass its cursor back each time:
 For each event: ignore it when `issue` is set (an issue, not a pull request). Events replay for a
 day, so the label is the truth: `claim` re-reads it and ignores a request that is gone. On
 `gap: true`, run `queue` to sweep what was missed. Your own label changes also produce events;
-only `labeled` with `final-review:requested` matters, so they are filtered out.
+only `labeled` with a request label matters, so they are filtered out.
 
 ## Step 3 - Review
 

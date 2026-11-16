@@ -71,6 +71,20 @@ describe('createDefaultDeps', () => {
     )
   })
 
+  it('reads the configs once from the config directory and labels the approval from them', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'deps-configs-'))
+    try {
+      writeFileSync(join(dir, 'acme.json'), '{"labels":{"approval":"lgtm"}}')
+      const getAuth = vi.fn((): GhAuth => ({ mode: 'gh', runner: () => async () => 'lgtm\n' }))
+      const deps = createDefaultDeps(getAuth, { FINAL_REVIEWER_CONFIG_DIR: dir })
+      expect(deps.configs().byOwner.get('acme')?.labels).toEqual({ approval: 'lgtm' })
+      expect(deps.configs()).toBe(deps.configs())
+      await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('passes the runner through', () => {
     const { fakeRun, runner, getAuth } = fakeAuth()
     const deps = createDefaultDeps(getAuth)
