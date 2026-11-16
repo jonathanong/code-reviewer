@@ -268,7 +268,7 @@ the saved outputs as they are, without model calls.
 ## Skill selection
 
 Before the pillars run, `review` makes one tool-less Haiku call (`selectSkills`) that reads the pull
-request title, the changed-file index, and the descriptions of the installed rule skills, and names
+request title, the changed-file index, the start of each file's patch, and the descriptions of the installed rule skills, and names
 the skills the pillars must load. This eval asks one question: does that call name every skill a
 case needs? It runs the same function on the same kind of input for each case that declares
 `expectedSkills`, several times, and counts the attempts that name all of them. An any-of group is
@@ -291,9 +291,12 @@ It does not show that the reviewer then loads or applies a selected skill, that 
 helps, or that the other skills offered did no harm: it counts only the names returned. Selecting
 extra skills is not penalized; the mean number selected is reported beside the hit rate.
 
-| Date             | Commit | Cases | Attempts | Named every expected skill | Mean selected | Cost |
-| ---------------- | ------ | ----- | -------- | -------------------------- | ------------- | ---- |
-| not yet measured |        |       |          |                            |               |      |
+Agent model Haiku; no judge (the score is a set comparison). 14 mined and 10 synthetic cases,
+3 attempts each.
+
+| Date       | Commit  | Cases | Attempts | Named every expected skill | Mean selected | Cost  |
+| ---------- | ------- | ----- | -------- | -------------------------- | ------------- | ----- |
+| 2026-11-16 | c27a372 | 24    | 72       | 72 of 72                   | 9.5           | $0.22 |
 
 ## Metrics
 

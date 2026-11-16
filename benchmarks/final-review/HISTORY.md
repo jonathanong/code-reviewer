@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: skill selection measured, then given a diff excerpt
+
+Agent model Haiku, no judge, 3 attempts per case, 24 cases with `expectedSkills` (14 mined, 10
+synthetic). Both runs in one session.
+
+| Selection input                     | Commit  | Named every expected skill | Mean selected | Cost  |
+| ----------------------------------- | ------- | -------------------------- | ------------- | ----- |
+| Title and file index                | parent  | 63 of 72                   | 8.3           | $0.14 |
+| Plus the start of each file's patch | c27a372 | 72 of 72                   | 9.5           | $0.22 |
+
+All nine misses in the first run were the three `rules-content-only-*` cases whose file names say
+nothing about the topic (observability, PostgreSQL, queues). `selectSkills` now also receives up
+to 2,500 characters of each file's patch, 40,000 in total. Selection is broad: mined cases get 10
+to 19 of the 47 skills named, and the eval does not penalize that.
+
 ## 2026-11-15: skill-selection eval added
 
 No run. `bench-selection` calls `selectSkills` on each case with `expectedSkills`, `--attempts`
