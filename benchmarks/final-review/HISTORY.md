@@ -2,6 +2,25 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: correctness prompt reads lock rules from the skill
+
+Commit: this change, on `feat/review-command`. Reviewer Sonnet, judge Opus, 3 attempts per arm,
+both arms in one session. Cases: the three `lock-scope-*` synthetic cases, correctness pillar.
+Cost $0.10 per run in the new arm and $0.09 in the control.
+
+`correctness.md` no longer restates the lock rule. It tells the reviewer to load
+`skills:postgres-schema-design` when the diff takes a lock or closes a race, and names the test
+and data skills as `plugin:skill` instead of bare names with "only when relevant".
+
+| Arm        | Positives caught | Skill loaded (positives) | Skill loaded (all runs) | Blocking or high on the negative |
+| ---------- | ---------------- | ------------------------ | ----------------------- | -------------------------------- |
+| Old prompt | 6 of 6           | 0 of 6                   | 0 of 9                  | 0 of 3                           |
+| New prompt | 6 of 6           | 6 of 6                   | 7 of 9                  | 0 of 3                           |
+
+Recall is at the ceiling in both arms, so this shows the catch is now grounded in the skill, not
+that more is caught. No run in either arm asked for a wider lock. Earlier entries' correctness
+skill-load numbers are not comparable. The README table was not re-measured.
+
 ## 2026-11-15: pillar runs get the explorer subagent and isolated settings
 
 No run. Pillar prompts, tools and flags changed, so earlier pillar runs are not comparable on
