@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { diffExcerpt, splitDiff } from '../diff-files.mts'
 import { FinalReviewError, type FinalReviewInput, type Pillar } from '../finding.mts'
 import { pluginSettings } from '../plugins.mts'
 import { deriveVerdict } from '../render.mts'
@@ -72,6 +73,7 @@ async function review(
   const skillChoice = await selectSkills({
     title,
     index: read(indexPath),
+    excerpt: diffExcerpt(splitDiff(read(join(out, followUp ? 'since.patch' : 'diff.patch')))),
     skills: listRuleSkills(plugins.installs),
     settings,
     exec: steps.exec,

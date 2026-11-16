@@ -72,6 +72,10 @@ describe('selectSkills', () => {
   })
 
   it('lists every skill with its description and clips a long index', () => {
+    expect(buildSelectionPrompt('T', 'i', skills)).not.toContain('## Diff excerpt')
+    expect(buildSelectionPrompt('T', 'i', skills, '+added line')).toContain(
+      '## Diff excerpt\n\n+added line',
+    )
     const prompt = buildSelectionPrompt('T', 'x'.repeat(30_000), skills)
     expect(prompt).toContain('- skills:documentation: Decide what belongs in docs.')
     expect(prompt).toContain('Pull request title: T')

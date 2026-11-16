@@ -54,3 +54,20 @@ export function renderDiffIndex(files: readonly DiffFile[], dir: string): string
 export function renderIndexFile(files: readonly DiffFile[], dir: string): string {
   return `${NUMBERED_DIFF_LEGEND}\n\n${renderDiffIndex(files, dir)}`
 }
+
+/**
+ * The start of each file's patch, for a cheap call that only needs to see what the change is
+ * about. Each file is clipped to `perFile` characters and the whole to `total`.
+ */
+export function diffExcerpt(files: readonly DiffFile[], perFile = 2500, total = 40_000): string {
+  const parts: string[] = []
+  let used = 0
+  for (const file of files) {
+    if (used >= total) break
+    const text = file.text.length <= perFile ? file.text : `${file.text.slice(0, perFile)}\n…\n`
+    const part = text.slice(0, total - used)
+    parts.push(part)
+    used += part.length
+  }
+  return parts.join('\n')
+}

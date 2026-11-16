@@ -1,11 +1,11 @@
 import { join } from 'node:path'
 
-import { renderIndexFile, splitDiff } from '../diff-files.mts'
+import { diffExcerpt, renderIndexFile, splitDiff } from '../diff-files.mts'
 import { numberDiff } from '../numbered-diff.mts'
 import { CONTEXT_DIR, type Snapshot } from './snapshot-context.mts'
 
 /** What `review` hands the selection call: the title and the numbered changed-file index. */
-export type SelectionText = { title: string; index: string }
+export type SelectionText = { title: string; index: string; excerpt: string }
 
 /**
  * Rebuilds the selection input from a snapshot the way `prepare` writes it for a review: the
@@ -22,5 +22,6 @@ export function selectionText(
   return {
     title: first.replace(/^#\s*/u, '') || '(untitled)',
     index: renderIndexFile(files, join(context, 'diff')),
+    excerpt: diffExcerpt(files),
   }
 }
