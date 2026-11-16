@@ -23,26 +23,32 @@ Mined cases (13 real pull requests from `cases.json`):
   re-measured with it.
 - `vouchington-1144` is a ceiling case: the control catches it 3 of 3.
 - `vouchington-4154`, `vouchington-tooling-154`, `vouchington-platform-62` and
-  `vouchington-platform-66` were never caught in either arm, with or without the skill loaded.
+  `vouchington-platform-66` were never caught in either arm. One later run with the current
+  instruction did raise the `vouchington-tooling-154` defect, at medium (not scored).
+- `vouchington-platform-62` and `-66` expect "this orchestration belongs in the application, not a
+  shared package"; no installed skill states that rule, so their `skills:typescript-authoring` tag
+  is a loose fit.
 - At 3 attempts a difference of one catch is noise.
 
-Fixture cases (`synthetic.json`, rules and correctness pillars):
+Fixture cases (`synthetic.json`, rules and correctness pillars). Rows marked † come from a second
+run later the same day, after three positives were replaced and two negatives cleaned:
 
-| Group                                         | With skills   | Without      |
-| --------------------------------------------- | ------------- | ------------ |
-| Rules positives (10 cases)                    | 30 of 30      | 4 of 30      |
-| `links-declared-api-payload` (correctness)    | 3 of 3        | 0 of 3       |
-| `lock-scope-*` positives (correctness, 2)     | 6 of 6        | 6 of 6       |
-| Expected skill selected and loaded (11 cases) | 33 of 33 runs | n/a          |
-| Negatives with a high or blocking finding     | 4 of 36 runs  | 0 of 36 runs |
+| Group                                           | With skills   | Without      |
+| ----------------------------------------------- | ------------- | ------------ |
+| Rules positives, unchanged (7 cases)            | 21 of 21      | 0 of 21      |
+| Rules positives, replaced (3 cases) †           | 9 of 9        | 1 of 9       |
+| `links-declared-api-payload` (correctness)      | 3 of 3        | 0 of 3       |
+| `lock-scope-*` positives (correctness, 2)       | 6 of 6        | 6 of 6       |
+| Expected skill selected and loaded (8 cases)    | 24 of 24 runs | n/a          |
+| Expected skill selected and loaded (3 cases) †  | 9 of 9 runs   | n/a          |
+| Negatives with a high or blocking finding (4)   | 0 of 24 runs  | 0 of 24 runs |
+| Negatives with a high or blocking finding (2) † | 0 of 12 runs  | 0 of 12 runs |
 
 - The two `lock-scope-*` positives are ceiling cases.
-- The control caught `rules-test-only-whole-module-mock`, `rules-content-only-dedup-by-entity` and
-  `rules-content-only-form-body-mutation` once or twice in three attempts, so they only partly
-  discriminate and are due for replacement.
-- The four high findings on negatives are real flaws in the fixtures themselves, not the rule the
-  negative tests: a lenient `Number()` parser and an unused export in `rules-local-override`, and a
-  test that only echoes a fake in `lock-scope-written-row-only`. Those fixtures need cleaning.
+- `rules-content-only-unordered-pick` is the one replaced case the control caught (1 of 3): a model
+  without the skill also notices a `LIMIT` with no `ORDER BY`, and misses only when the judge holds
+  it to citing the rule.
+- The † rows used the current skill instruction; the others used the earlier one.
 - Reviewer cost: $0.12 a pillar run with skills.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
@@ -200,7 +206,7 @@ re-runs pillars), and the judge cache is keyed on findings only, so the new fiel
 stale result look current; the rules digest and `plugins` are unchanged.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: an installed
-`no-mistakes-rules` skill (`rules-test-only-whole-module-mock`), an installed `skills` plugin skill
+`no-mistakes-rules` skill (`rules-test-only-global-call-count`), an installed `skills` plugin skill
 (`rules-skills-sweep-until-empty`, which accepts either of two skills),
 workflow-only, manifest-only, and test-only changes (`rules-workflow-only-*`,
 `rules-manifest-only-*`, `rules-test-only-*`), `rules-content-only-*` cases whose changed file path

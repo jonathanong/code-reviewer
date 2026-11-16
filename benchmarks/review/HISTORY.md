@@ -2,6 +2,33 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: three weak fixture positives replaced, two negatives cleaned
+
+Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts per arm, one
+session, current skill instruction, the five changed cases only (reviewer cost $2.77 with, $1.04
+without).
+
+- Removed `rules-test-only-whole-module-mock`, `rules-content-only-dedup-by-entity` and
+  `rules-content-only-form-body-mutation`: the control caught each once or twice in three
+  attempts. Earlier entries that count 10 rules positives include them.
+- Added `rules-test-only-global-call-count` (testing-rules: exact call count on a patched global),
+  `rules-content-only-unordered-pick` (queue-rules: work picked without `ORDER BY`) and
+  `rules-content-only-argv-entry-check` (typescript-rules: entry module detected through
+  `process.argv[1]`). With skills 9 of 9, expected skill loaded 9 of 9; without, 1 of 9
+  (`unordered-pick`, 1 of 3: the control raised the defect in the pilot too, and the judge rejected
+  it only for not citing the rule).
+- Two tried replacements were dropped after a one-attempt pilot because the control caught them: a
+  job whose only recovery is the failed set (queue-rules) and an API key shown again after creation
+  (security-rules).
+- `rules-local-override`: `parseAmount` now rejects exponents, padding and unsafe integers, and a
+  `receipt.ts` in both trees uses the exported `formatAmount`. `lock-scope-written-row-only`: the
+  tests run against a transaction on a test database through a `test-db.mts` helper present in
+  both trees, replacing a fake that echoed `rowCount`. Both negatives: 0 findings in 12 runs with
+  skills and 12 without (4 of 12 runs had a high or blocking finding before).
+- One unscored run of `vouchington-tooling-154` (correctness, current instruction) raised the
+  unforwarded codec options at medium; the three scored attempts with the earlier instruction
+  raised nothing.
+
 ## 2026-11-16: full fixture and mined run with selection, then a firmer skill instruction
 
 Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts per arm, one

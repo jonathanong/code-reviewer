@@ -40,19 +40,19 @@
     "expected": []
   },
   {
-    "id": "rules-test-only-whole-module-mock",
-    "fixture": "fixtures/rules-test-only-whole-module-mock",
+    "id": "rules-test-only-global-call-count",
+    "fixture": "fixtures/rules-test-only-global-call-count",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],
-    "title": "test: cover withRetry",
+    "title": "test: cover fetchRate",
     "kind": "positive",
-    "reason": "A test-only change. The test replaces the whole export object of ./settings.ts with a factory that returns only retryLimit, dropping the module's other exports. That looks idiomatic; only the shared no-mistakes testing-rules forbid it, and the repository's AGENTS.md is silent.",
+    "reason": "A test-only change. The tests spy on globalThis.fetch and assert toHaveBeenCalledTimes. That looks idiomatic; only the shared no-mistakes testing-rules forbid it (\"MUST NOT patch a process-wide global and assert an exact call count; other code in the process calls it too\"), and the repository's AGENTS.md is silent.",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
-        "path": "src/retry.test.ts",
+        "path": "src/rates.test.ts",
         "lines": null,
-        "claim": "Citing the shared no-mistakes testing-rules skill (MUST NOT replace a mocked module's whole export object; spread the real module and override what you need), retry.test.ts mocks './settings.ts' with a factory that returns only retryLimit, so the module's other export (timeoutMs) is gone for the code under test. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes testing-rules skill (MUST NOT patch a process-wide global and assert an exact call count; other code in the process calls it too), rates.test.ts spies on globalThis.fetch and asserts toHaveBeenCalledTimes(1) and (2), so any other fetch in the process breaks or masks the count. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
@@ -159,36 +159,36 @@
     ]
   },
   {
-    "id": "rules-content-only-dedup-by-entity",
-    "fixture": "fixtures/rules-content-only-dedup-by-entity",
+    "id": "rules-content-only-unordered-pick",
+    "fixture": "fixtures/rules-content-only-unordered-pick",
     "expectedSkills": ["no-mistakes-rules:queue-rules"],
-    "title": "feat: sync the billing system when a member changes plan",
+    "title": "feat: claim due reminders in batches",
     "kind": "positive",
-    "reason": "The changed file's path gives no hint of the topic. The job id is keyed by member alone and completed jobs are retained for a day, so a second plan change within the day is deduped away and never synced. Only the shared no-mistakes queue-rules state this.",
+    "reason": "The changed file's path gives no hint of the topic. claimDue locks a batch of due reminders with LIMIT and FOR UPDATE SKIP LOCKED but no ORDER BY, so which reminders a run takes is arbitrary and an old one can wait indefinitely. Only the shared no-mistakes queue-rules state this (\"MUST NOT leave a non-terminal state without a timeout exit, or pick work without an `ORDER BY`\").",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
-        "path": "src/members/plans.ts",
+        "path": "src/members/reminders.ts",
         "lines": null,
-        "claim": "Citing the shared no-mistakes queue-rules skill (MUST NOT key dedup ids by entity alone; include the triggering event, because retained jobs still hold the id), the sync-plan job id is `sync-plan:${memberId}` with completed jobs retained for a day, so a later plan change for the same member within that day is dropped. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes queue-rules skill (MUST NOT pick work without an ORDER BY), claimDue selects due reminders with LIMIT and FOR UPDATE SKIP LOCKED and no ORDER BY, so the batch a run picks is arbitrary and the oldest due reminders can be passed over. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
   {
-    "id": "rules-content-only-form-body-mutation",
-    "fixture": "fixtures/rules-content-only-form-body-mutation",
-    "expectedSkills": ["no-mistakes-rules:security-rules"],
-    "title": "feat: change email from the settings page",
+    "id": "rules-content-only-argv-entry-check",
+    "fixture": "fixtures/rules-content-only-argv-entry-check",
+    "expectedSkills": ["no-mistakes-rules:typescript-rules"],
+    "title": "feat: run the member export from the command line",
     "kind": "positive",
-    "reason": "The changed file's path gives no hint of the topic. The cookie-authenticated JSON route that changes a member's email also accepts form-encoded bodies, which a cross-site HTML form can submit. Only the shared no-mistakes security-rules state this.",
+    "reason": "The changed file's path gives no hint of the topic. The module decides whether it is the entry point by comparing process.argv[1] with its own path, a common idiom. Only the shared no-mistakes typescript-rules forbid it (\"MUST NOT detect the entry module by comparing `process.argv[1]`; use the runtime's main-module check\").",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
-        "path": "src/members/profile.ts",
+        "path": "src/members/export.ts",
         "lines": null,
-        "claim": "Citing the shared no-mistakes security-rules skill (MUST NOT accept form-encoded or multipart bodies on mutating JSON routes; CSRF), handleEmailChange authenticates with a session cookie and now also parses application/x-www-form-urlencoded bodies, so another site can change a member's email with a plain form post. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes typescript-rules skill (MUST NOT detect the entry module by comparing process.argv[1]; use the runtime's main-module check), export.ts runs its command-line part when process.argv[1] equals fileURLToPath(import.meta.url) instead of using import.meta.main. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },

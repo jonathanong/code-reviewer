@@ -23,4 +23,12 @@ describe('parseAmount', () => {
     expect(thrownMessage('0')).toBe('Amount must be a positive whole number of cents, got "0"')
     expect(thrownMessage('ten')).toBe('Amount must be a positive whole number of cents, got "ten"')
   })
+
+  it('rejects exponents, padding, and values past the safe integer range', () => {
+    expect(thrownMessage('1e3')).toBe('Amount must be a positive whole number of cents, got "1e3"')
+    expect(thrownMessage(' 5 ')).toBe('Amount must be a positive whole number of cents, got " 5 "')
+    expect(thrownMessage('9007199254740993')).toBe(
+      'Amount must be a positive whole number of cents, got "9007199254740993"',
+    )
+  })
 })
