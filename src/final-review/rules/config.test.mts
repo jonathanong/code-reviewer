@@ -65,6 +65,43 @@ describe('parseRepoConfig', () => {
   })
 })
 
+describe('parseRepoConfig settings', () => {
+  it('reads labels and a check run alongside consumes', () => {
+    const text = JSON.stringify({
+      labels: { requested: 'go' },
+      checkRun: { name: 'Final review' },
+      consumes: [{ repo: 'acme/api' }],
+    })
+    expect(parseRepoConfig(text, FILE)).toEqual({
+      consumes: [{ repo: 'acme/api', paths: [], via: '' }],
+      labels: { requested: 'go' },
+      checkRun: { name: 'Final review' },
+      problems: [],
+    })
+  })
+
+  it('reports settings problems and keeps going past a bad consumes', () => {
+    const text = JSON.stringify({ consumes: 3, labels: [], checkRun: { name: '' } })
+    expect(parseRepoConfig(text, FILE)).toEqual({
+      consumes: [],
+      problems: [
+        `${FILE} labels: must be an object; ignored`,
+        `${FILE} checkRun: "name" must be a non-empty string without quotes or control characters; ignored`,
+        `${FILE}: "consumes" must be an array`,
+      ],
+    })
+  })
+
+  it('ignores consumes in an owner file and says so', () => {
+    const text = JSON.stringify({ consumes: [{ repo: 'acme/api' }], labels: { approval: 'ok' } })
+    expect(parseRepoConfig(text, 'acme.json', 'owner')).toEqual({
+      consumes: [],
+      labels: { approval: 'ok' },
+      problems: ['acme.json: "consumes" is repo-level only; ignored'],
+    })
+  })
+})
+
 describe('loadRepoConfigs', () => {
   const dirs: string[] = []
   afterEach(() => {
@@ -78,17 +115,24 @@ describe('loadRepoConfigs', () => {
     writeFileSync(join(dir, 'Acme/Web.json'), '{"consumes":[{"repo":"acme/api"}]}')
     writeFileSync(join(dir, 'Acme/bad.json'), '{')
     writeFileSync(join(dir, 'Acme/notes.md'), 'skipped')
-    writeFileSync(join(dir, 'stray.json'), '{}')
+    writeFileSync(join(dir, 'Acme.json'), '{"labels":{"requested":"go"}}')
+    writeFileSync(join(dir, 'README.md'), 'skipped')
     const configs = loadRepoConfigs(dir)
     expect([...configs.byRepo.keys()]).toEqual(['acme/web', 'acme/bad'])
     expect(configs.byRepo.get('acme/web')?.consumes).toEqual([
       { repo: 'acme/api', paths: [], via: '' },
     ])
+    expect([...configs.byOwner.keys()]).toEqual(['acme'])
+    expect(configs.byOwner.get('acme')?.labels).toEqual({ requested: 'go' })
     expect(configs.problems).toEqual(['Acme/bad.json: not valid JSON; ignored'])
   })
 
   it('holds nothing for a missing directory', () => {
-    expect(loadRepoConfigs('/nowhere/configs')).toEqual({ byRepo: new Map(), problems: [] })
+    expect(loadRepoConfigs('/nowhere/configs')).toEqual({
+      byRepo: new Map(),
+      byOwner: new Map(),
+      problems: [],
+    })
   })
 
   it('ships configs that parse cleanly', () => {

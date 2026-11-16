@@ -8,7 +8,7 @@ import {
   type ReviewFile,
   type SanitizedReview,
 } from '../review-payload/index.mts'
-import { FINAL_APPROVAL_LABEL } from './render.mts'
+import { DEFAULT_LABELS } from './settings.mts'
 import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
 /** The GitHub reads and writes a final review needs, injectable for tests. */
@@ -31,8 +31,12 @@ export type PullTarget = { repo: string; pr: number }
 
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u
 
+export function assertRepo(repo: string): void {
+  if (!REPO_RE.test(repo)) throw new Error('--repo must be owner/name.')
+}
+
 export function assertPullTarget(target: PullTarget): void {
-  if (!REPO_RE.test(target.repo)) throw new Error('--repo must be owner/name.')
+  assertRepo(target.repo)
   if (!Number.isInteger(target.pr) || target.pr <= 0)
     throw new Error('--pr must be a positive integer.')
 }
@@ -49,6 +53,7 @@ export function createGhFinalReviewIo(
   target: PullTarget,
   run: RunTextCommand = runGh,
   trustedAllowlist: readonly string[] = [],
+  approvalLabel: string = DEFAULT_LABELS.approval,
 ): FinalReviewIo {
   assertPullTarget(target)
   const { repo, pr } = target
@@ -98,7 +103,7 @@ export function createGhFinalReviewIo(
         '-q',
         '.labels[].name',
       ])
-      return lines(out).includes(FINAL_APPROVAL_LABEL)
+      return lines(out).includes(approvalLabel)
     },
     async postReview(review) {
       const dir = mkdtempSync(join(tmpdir(), 'final-review-'))
@@ -128,11 +133,11 @@ export function createGhFinalReviewIo(
         'POST',
         `repos/${repo}/issues/${pr}/labels`,
         '-f',
-        `labels[]=${FINAL_APPROVAL_LABEL}`,
+        `labels[]=${approvalLabel}`,
       ])
     },
     async removeApprovalLabel() {
-      await run(['pr', 'edit', String(pr), '-R', repo, '--remove-label', FINAL_APPROVAL_LABEL])
+      await run(['pr', 'edit', String(pr), '-R', repo, '--remove-label', approvalLabel])
     },
   }
 }

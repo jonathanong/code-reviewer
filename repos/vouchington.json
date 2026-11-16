@@ -1,0 +1,8 @@
+{
+  "labels": {
+    "requested": "final-review:requested",
+    "processing": "final-review:in-progress",
+    "completed": "final-review:complete",
+    "approval": "final approval"
+  }
+}

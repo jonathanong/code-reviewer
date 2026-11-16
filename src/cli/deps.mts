@@ -5,12 +5,18 @@ import {
   createGhLabelIo,
   createGhPrepareIo,
   parseTrustedAuthors,
+  reviewSettings,
   type FinalReviewIo,
   type LabelIo,
   type PrepareIo,
   type PullTarget,
 } from '../final-review/index.mts'
 import { parsePluginList, type Plugin } from '../final-review/plugins.mts'
+import {
+  DEFAULT_CONFIG_DIR,
+  loadRepoConfigs,
+  type RepoConfigs,
+} from '../final-review/rules/config.mts'
 import {
   createGhAuth,
   runGit,
@@ -21,6 +27,8 @@ import {
 
 export type FinalReviewDeps = {
   authMode(): GhAuth['mode']
+  /** The per-owner and per-repository settings read from this repository's `repos/` directory. */
+  configs(): RepoConfigs
   createIo(target: PullTarget): FinalReviewIo
   createLabelIo(target: PullTarget): LabelIo
   createPrepareIo(target: PullTarget): PrepareIo
@@ -40,6 +48,9 @@ export function createDefaultDeps(
 ): FinalReviewDeps {
   const trusted = parseTrustedAuthors(env.FINAL_REVIEWER_TRUSTED_AUTHORS)
   let auth: GhAuth | undefined
+  let loaded: RepoConfigs | undefined
+  const configs = () =>
+    (loaded ??= loadRepoConfigs(env.FINAL_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR))
   const resolved = () => (auth ??= getAuth())
   const forTarget = (target: PullTarget) => {
     const { owner, name } = splitRepo(target.repo)
@@ -47,7 +58,14 @@ export function createDefaultDeps(
   }
   return {
     authMode: () => resolved().mode,
-    createIo: (target) => createGhFinalReviewIo(target, forTarget(target), trusted),
+    configs,
+    createIo: (target) =>
+      createGhFinalReviewIo(
+        target,
+        forTarget(target),
+        trusted,
+        reviewSettings(configs(), target.repo).labels.approval,
+      ),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
     createPrepareIo: (target) =>
       createGhPrepareIo(target, forTarget(target), runGit, trusted, env.FINAL_REVIEWER_CLONE_ROOT),

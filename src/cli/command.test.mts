@@ -11,6 +11,7 @@ vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
 }))
 
 import type { FinalReviewIo, LabelIo, PrepareIo } from '../final-review/index.mts'
+import { NO_CONFIGS, parseRepoConfig } from '../final-review/rules/config.mts'
 import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
 import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
 import { runFinalReviewCommand, type FinalReviewDeps } from './command.mts'
@@ -47,6 +48,7 @@ function fakeLabelIo(): LabelIo {
 function deps(io: FinalReviewIo, input = '{}'): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
+    configs: vi.fn(() => NO_CONFIGS),
     createIo: vi.fn(() => io),
     createLabelIo: vi.fn(fakeLabelIo),
     createPrepareIo: vi.fn(() => ({}) as PrepareIo),
@@ -130,6 +132,52 @@ describe('runFinalReviewCommand', () => {
     expect(d.createLabelIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
   })
 
+  it('completes the configured check run when posting for real, and reports its failure', async () => {
+    const { out } = capture()
+    const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
+    const d = deps(fakeIo(), JSON.stringify({ findings: [] }))
+    d.authMode.mockReturnValue('app')
+    d.configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byOwner: new Map([
+        ['acme', parseRepoConfig('{"checkRun":{"name":"Final review"}}', 'acme.json', 'owner')],
+      ]),
+    })
+    d.runner.mockReturnValue(run)
+    const argv = ['post', ...PR, '--head-sha', SHA, '--input', 'f.json']
+    await expect(runFinalReviewCommand(argv, d)).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toMatchObject({
+      checkRun: { status: 'completed', url: 'https://example.test/check' },
+    })
+    expect(run.mock.calls[0]?.[0]).toEqual(
+      expect.arrayContaining([
+        'repos/acme/widgets/check-runs',
+        'conclusion=success',
+        'output[title]=Approve',
+        'output[summary]=https://example.test/r',
+      ]),
+    )
+    out.length = 0
+    run.mockRejectedValueOnce(new Error('403'))
+    await expect(runFinalReviewCommand(argv, d)).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toMatchObject({
+      label: 'added',
+      checkRun: { status: 'failed', error: '403' },
+    })
+  })
+
+  it('prints settings and skips a pull request', async () => {
+    const { out } = capture()
+    const d = deps(fakeIo())
+    await expect(runFinalReviewCommand(['settings', '--owner', 'acme'], d)).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toMatchObject({ scope: 'acme', checkRun: null })
+    out.length = 0
+    await expect(
+      runFinalReviewCommand(['skip', ...PR, '--reason', 'generated only'], d),
+    ).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toMatchObject({ skipped: true, reason: 'generated only' })
+  })
+
   it('runs loop subcommands without a pull request target', async () => {
     const { out } = capture()
     const d = deps(fakeIo())
@@ -198,7 +246,7 @@ describe('runFinalReviewCommand', () => {
     await expect(runFinalReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('final-review: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'final-review: final-review needs post, diff, revoke, status, auth, queue, claim, abort, prepare, resolve, plugins, bench, or bench-verifier.',
+      'final-review: final-review needs post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, resolve, plugins, bench, or bench-verifier.',
     )
   })
 

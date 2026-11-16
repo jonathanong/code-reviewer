@@ -10,7 +10,7 @@ function configs(files: Record<string, unknown>): RepoConfigs {
       parseRepoConfig(JSON.stringify(config), `${repo}.json`),
     ]),
   )
-  return { byRepo, problems: [] }
+  return { byRepo, byOwner: new Map(), problems: [] }
 }
 
 const candidate = (name: string, repo?: string): Linkable => ({

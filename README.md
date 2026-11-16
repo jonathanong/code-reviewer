@@ -50,6 +50,35 @@ A malformed file, an unknown key, or a configured repository with no clone is li
 "Missing" in `rules/INDEX.md` and in `prepare`'s output; none of them stops the review. Set
 `FINAL_REVIEWER_CONFIG_DIR` to read the configs from another directory.
 
+## Per-repository settings
+
+Label names and an optional GitHub check run are set here too, per organization in
+`repos/<owner>.json` (a file beside the `repos/<owner>/` directory) and per repository in
+`repos/<owner>/<name>.json`. A repository's keys override its organization's.
+
+```json
+{
+  "labels": {
+    "requested": "final-review:requested",
+    "processing": "final-review:in-progress",
+    "completed": "final-review:complete",
+    "approval": "final approval"
+  },
+  "checkRun": { "name": "Final review" }
+}
+```
+
+- `labels`: each key is optional and defaults to the value shown. `requested` asks for a review,
+  `processing` marks one running, `completed` marks it posted or skipped, `approval` marks an
+  approved head.
+- `checkRun`: absent means no check run. When set, and calls use the GitHub App, `claim` opens a
+  check run at the head, `post` completes it from the verdict, and `abort` and `skip` cancel or
+  skip it. Under the local `gh` login the result says the check run was skipped.
+- `consumes` is valid only in a repository file.
+
+`code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings.
+`code-reviewer skip` closes out a pull request the plan will not review.
+
 ## Authentication and trust
 
 Calls use a GitHub App when `FINAL_REVIEWER_APP_ID` is set (with `FINAL_REVIEWER_APP_PRIVATE_KEY`

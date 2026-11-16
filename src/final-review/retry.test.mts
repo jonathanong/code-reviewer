@@ -2,15 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { FinalReviewInput } from './finding.mts'
 import type { FinalReviewIo } from './github.mts'
-import {
-  abortReview,
-  claimReview,
-  completeReview,
-  COMPLETE_LABEL,
-  REQUESTED_LABEL,
-  type LabelIo,
-} from './labels.mts'
+import { abortReview, claimReview, completeReview, type LabelIo } from './labels.mts'
 import { finalReviewStatus, postFinalReview } from './post.mts'
+import { DEFAULT_LABELS } from './settings.mts'
+
+const { requested: REQUESTED_LABEL, completed: COMPLETE_LABEL } = DEFAULT_LABELS
 
 const SHA = 'c'.repeat(40)
 
@@ -63,27 +59,29 @@ describe('retry after a partial post', () => {
     const labels = labelIo([REQUESTED_LABEL])
     const limits = { maxComments: 1, maxBodyChars: 60_000 }
 
-    await claimReview(labels, { headReviewed: false })
+    await claimReview(labels, DEFAULT_LABELS, { headReviewed: false })
     await expect(postFinalReview(io, input, SHA, { limits })).rejects.toThrow('boom')
-    await abortReview(labels, { requeue: true })
+    await abortReview(labels, DEFAULT_LABELS, { requeue: true })
 
     // The first part carries the marker, so the head already looks reviewed.
     const status = await finalReviewStatus(io)
     expect(status.current).toBe(true)
 
-    const retry = await claimReview(labels, { headReviewed: status.current })
+    const retry = await claimReview(labels, DEFAULT_LABELS, { headReviewed: status.current })
     expect(retry).toMatchObject({ claimed: true })
 
     failSecond = false
     reviews.length = 0
     await postFinalReview(io, input, SHA, { limits })
     expect(reviews).toHaveLength(2)
-    await completeReview(labels)
+    await completeReview(labels, DEFAULT_LABELS)
     expect(await labels.labels()).toEqual([COMPLETE_LABEL])
 
     const again = labelIo([COMPLETE_LABEL, REQUESTED_LABEL])
-    await expect(claimReview(again, { headReviewed: true })).resolves.toMatchObject({
-      claimed: false,
-    })
+    await expect(claimReview(again, DEFAULT_LABELS, { headReviewed: true })).resolves.toMatchObject(
+      {
+        claimed: false,
+      },
+    )
   })
 })

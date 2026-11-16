@@ -14,7 +14,6 @@ export type {
   SkippedPillar,
 } from './finding.mts'
 export {
-  FINAL_APPROVAL_LABEL,
   deriveVerdict,
   renderBodyFinding,
   renderFindingBody,
@@ -24,7 +23,7 @@ export {
 export type { Verdict } from './render.mts'
 export { DEFAULT_LIMITS, buildFinalReviews, packBodies, placeFindings } from './build.mts'
 export type { BuildLimits } from './build.mts'
-export { assertPullTarget, createGhFinalReviewIo } from './github.mts'
+export { assertPullTarget, assertRepo, createGhFinalReviewIo } from './github.mts'
 export type { FinalReviewIo, PullTarget } from './github.mts'
 export { finalReviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 export type { PostOutcome, ReviewStatus } from './post.mts'
@@ -32,17 +31,13 @@ export { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 export { parseTrustedAuthors } from './trust.mts'
 export type { TrustedAuthors } from './trust.mts'
 export { MARKER_RE, PART_MARKER_RE } from './post.mts'
-export {
-  COMPLETE_LABEL,
-  IN_PROGRESS_LABEL,
-  REQUESTED_LABEL,
-  abortReview,
-  claimReview,
-  completeReview,
-  createGhLabelIo,
-} from './labels.mts'
+export { abortReview, claimReview, completeReview, createGhLabelIo, skipReview } from './labels.mts'
+export { DEFAULT_LABELS, reviewSettings, settingsProblems } from './settings.mts'
+export type { CheckRunSettings, LabelNames, ReviewSettings } from './settings.mts'
+export { STARTED, abortedStep, postedStep, reportCheckRun, skippedStep } from './check-run.mts'
+export type { CheckRunResult, CheckRunStep } from './check-run.mts'
 export type { ClaimOutcome, LabelIo } from './labels.mts'
-export { listQueue, scopeQualifier } from './queue.mts'
+export { assertOwner, listQueue, scopeQualifier } from './queue.mts'
 export type { QueueEntry } from './queue.mts'
 export { fetchConversation } from './context-query.mts'
 export type { PrConversation } from './context-query.mts'

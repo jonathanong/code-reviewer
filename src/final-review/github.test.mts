@@ -85,6 +85,26 @@ describe('createGhFinalReviewIo', () => {
     await expect(no.io.hasApprovalLabel()).resolves.toBe(false)
   })
 
+  it('uses the configured approval label', async () => {
+    const yes = setup(['final approval\n'])
+    await expect(yes.io.hasApprovalLabel()).resolves.toBe(true)
+    const calls: string[][] = []
+    const io = createGhFinalReviewIo(
+      target,
+      async (args) => {
+        calls.push(args)
+        return 'bug\nlgtm\n'
+      },
+      [],
+      'lgtm',
+    )
+    await expect(io.hasApprovalLabel()).resolves.toBe(true)
+    await io.addApprovalLabel()
+    await io.removeApprovalLabel()
+    expect(calls[1]).toContain('labels[]=lgtm')
+    expect(calls[2]).toContain('lgtm')
+  })
+
   it('posts a review from a temp file and cleans it up', async () => {
     let file = ''
     let content = ''
