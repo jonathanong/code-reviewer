@@ -2,6 +2,35 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: remaining mined cases with the current instruction; repository-rule fixture
+
+Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts, same session
+and control as the two entries below. With-skills arm only, the seven mined cases not yet run with
+the current skill instruction (reviewer cost $4.03, $0.19 a run).
+
+| Pillar      | Caught, current instruction (13 cases) | Earlier instruction | Without |
+| ----------- | -------------------------------------- | ------------------- | ------- |
+| design      | 12 of 27                               | 16 of 27            | 4 of 27 |
+| rules       | 3 of 3                                 | 3 of 3              | 0 of 3  |
+| correctness | 1 of 12                                | 1 of 12             | 0 of 12 |
+
+The current-instruction column joins this run with the six-case "no cap" arm below. Every
+selected skill was loaded in 39 of 39 runs. Loading the skills did not raise catches. Per case
+(current, earlier): `platform-57` 0, 1; `platform-60` 2, 2; `platform-62` 0, 0; `platform-66` 0,
+0; `2936` 1, 1; `tooling-154` 0 of 6, 0 of 6; `clients-38` 3, 3. The one unscored
+`tooling-154` catch noted below did not repeat in these three attempts.
+
+Case changes, no run beyond a pilot:
+
+- `vouchington-platform-57`, `-59`, `-62`, `-66` and `-67` lose
+  `expectedSkills: ["skills:typescript-authoring"]`. Their claim (a business workflow packaged
+  behind injected hooks) is stated by vouchington-platform's own `AGENTS.md`, which gained the rule
+  after these snapshots' base commits; no shared skill states it. Skill-load and grounded-recall
+  figures for design in earlier entries counted these five cases.
+- Added fixture `rules-repo-orchestration-package`: the same rule in the fixture repository's
+  `AGENTS.md`, broken by a new package. Pilot, 1 attempt per arm: caught and tied to the
+  repository rule in both, since `--no-rules` leaves the repository's `AGENTS.md` in place.
+
 ## 2026-11-16: three weak fixture positives replaced, two negatives cleaned
 
 Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts per arm, one
