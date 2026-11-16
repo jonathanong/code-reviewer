@@ -106,21 +106,36 @@ function jsonLines(stdout: string): unknown[] {
   return docs
 }
 
-type ToolUse = { type?: unknown; name?: unknown; input?: { skill?: unknown } }
+type Part = {
+  type?: unknown
+  name?: unknown
+  id?: unknown
+  input?: { skill?: unknown }
+  tool_use_id?: unknown
+  is_error?: unknown
+}
 
-/** Distinct `Skill` tool_use skill names in a stream-json event list, in first-use order. */
+/**
+ * Distinct skills a stream-json run loaded, in first-use order: each `Skill` tool_use whose
+ * tool_result came back without an error. A request that failed or got no result does not count.
+ */
 function loadedSkills(events: readonly Record<string, unknown>[]): string[] {
-  const skills = new Set<string>()
+  const requested = new Map<unknown, string>()
+  const succeeded = new Set<unknown>()
   for (const event of events) {
     const content = (event.message as { content?: unknown } | undefined)?.content
-    if (event.type !== 'assistant' || !Array.isArray(content)) continue
-    for (const part of content as ToolUse[]) {
+    if (!Array.isArray(content)) continue
+    for (const part of content as Part[]) {
       const skill = part?.input?.skill
-      if (part?.type === 'tool_use' && part.name === 'Skill' && typeof skill === 'string')
-        skills.add(skill)
+      if (event.type === 'assistant' && part?.type === 'tool_use' && part.name === 'Skill') {
+        if (typeof skill === 'string') requested.set(part.id, skill)
+      } else if (event.type === 'user' && part?.type === 'tool_result' && part.is_error !== true) {
+        succeeded.add(part.tool_use_id)
+      }
     }
   }
-  return [...skills]
+  const loaded = [...requested].filter(([id]) => succeeded.has(id)).map(([, skill]) => skill)
+  return [...new Set(loaded)]
 }
 
 export type PillarOutput = { findings: Finding[]; skills: string[] }

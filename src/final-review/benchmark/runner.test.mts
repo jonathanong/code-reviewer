@@ -100,27 +100,47 @@ describe('parsePillarOutput', () => {
     expect(parsePillarOutput(output([]), 'design')).toEqual({ findings: [], skills: [] })
   })
 
-  it('collects distinct Skill tool_use names from a stream-json run in first-use order', () => {
-    const tool = (name: string, input: unknown) => ({ type: 'tool_use', name, input })
+  it('collects distinct, successfully loaded Skill names from a stream-json run in first-use order', () => {
+    const tool = (name: string, input: unknown, id?: string) => ({
+      type: 'tool_use',
+      name,
+      input,
+      id,
+    })
+    const done = (id: string, error?: boolean) => ({
+      type: 'tool_result',
+      tool_use_id: id,
+      is_error: error,
+    })
     const assistant = (...content: unknown[]) => ({ type: 'assistant', message: { content } })
+    const user = (...content: unknown[]) => ({ type: 'user', message: { content } })
+    const testing = { skill: 'no-mistakes-rules:testing-rules' }
     const stream = [
       JSON.stringify({ type: 'system', subtype: 'init' }),
       '',
       'not json',
       JSON.stringify(
         assistant(
-          tool('Read', { file_path: 'a' }),
-          tool('Skill', { skill: 'no-mistakes-rules:testing-rules' }),
+          tool('Read', { file_path: 'a' }, 'r1'),
+          tool('Skill', testing, 's1'),
           { type: 'text', text: 'hi' },
           null,
         ),
       ),
+      JSON.stringify(user(done('r1'), done('s1'))),
       JSON.stringify(
-        assistant(tool('Skill', {}), tool('Skill', { skill: 'skills:bounded-iteration' })),
+        assistant(
+          tool('Skill', {}, 's2'),
+          tool('Skill', { skill: 'skills:bounded-iteration' }, 's3'),
+          tool('Skill', { skill: 'missing:skill' }, 's4'),
+          tool('Skill', { skill: 'never:answered' }, 's5'),
+        ),
       ),
-      JSON.stringify(assistant(tool('Skill', { skill: 'no-mistakes-rules:testing-rules' }))),
+      JSON.stringify(user(done('s2'), done('s3', false), done('s4', true))),
+      JSON.stringify(assistant(tool('Skill', testing, 's6'))),
+      JSON.stringify(user(done('s6'))),
       JSON.stringify({ type: 'assistant', message: {} }),
-      JSON.stringify({ type: 'user', message: { content: [tool('Skill', { skill: 'x:y' })] } }),
+      JSON.stringify(user(tool('Skill', { skill: 'x:y' }, 's7'), done('s7'))),
       JSON.stringify({ type: 'result', structured_output: { findings: [] } }),
     ].join('\n')
     expect(parsePillarOutput(stream, 'rules')).toEqual({

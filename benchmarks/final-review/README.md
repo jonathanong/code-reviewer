@@ -72,7 +72,8 @@ digest, so a score change can be traced to a rule change. Every staged skill's m
 ### Skill loads
 
 Pillar runs use `--output-format stream-json --verbose`. The runner reads findings from the
-result event and records the distinct skills loaded through the `Skill` tool, in first-use order,
+result event and records the distinct skills loaded through the `Skill` tool (a request counts only when its
+tool result came back without an error), in first-use order,
 as `skills` in each raw result (`skillTool` records whether the tool was available; `--no-rules`
 runs have none, so `skills` is empty). A case may declare `"expectedSkills": ["testing-rules"]`;
 a name matches a loaded skill equal to it or to its part after the last `:`, so `testing-rules`

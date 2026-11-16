@@ -271,7 +271,11 @@ describe('skill loads', () => {
     [
       JSON.stringify({
         type: 'assistant',
-        message: { content: [{ type: 'tool_use', name: 'Skill', input: { skill } }] },
+        message: { content: [{ type: 'tool_use', name: 'Skill', id: 's1', input: { skill } }] },
+      }),
+      JSON.stringify({
+        type: 'user',
+        message: { content: [{ type: 'tool_result', tool_use_id: 's1' }] },
       }),
       HIT,
     ].join('\n')
