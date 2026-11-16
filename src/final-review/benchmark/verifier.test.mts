@@ -119,6 +119,13 @@ describe('verifier run', () => {
     expect(prompt).toContain('"index": 0')
   })
 
+  it('points at the rules index only when rules are staged', () => {
+    expect(buildVerifierPrompt('V', ITEM, [finding()])).not.toContain('rules/INDEX.md')
+    expect(buildVerifierPrompt('V', ITEM, [finding()], true)).toContain(
+      '.final-review/rules/INDEX.md`',
+    )
+  })
+
   it('passes read-only tools and the schema', () => {
     const args = verifierArgs('P', 'opus', 9)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])

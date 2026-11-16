@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { Finding } from '../finding.mts'
 import type { EvalCase } from './cases.mts'
-import type { BenchDeps } from './cli.mts'
 import { gradeAll, gradeInputs, type VerifierRaw } from './verifier-grade.mts'
+import type { VerifierBenchDeps } from './verifier-snapshot.mts'
 
 const finding = (severity: Finding['severity'], title = 't'): Finding => ({
   pillar: 'design',
@@ -31,15 +31,19 @@ const OPTIONS = {
   checker: 'opus',
   maxTurns: 5,
   jobs: 1,
+  clones: 'clones',
+  noRules: false,
+  noShared: false,
 }
 
-function harness(raws: Record<string, VerifierRaw>, exec: BenchDeps['exec']) {
+function harness(raws: Record<string, VerifierRaw>, exec: VerifierBenchDeps['exec']) {
   const store = new Map(
     Object.entries(raws).map(([id, raw]) => [`o/raw/${id}.json`, JSON.stringify(raw)]),
   )
   const logs: string[] = []
   const prepared: string[] = []
-  const deps: BenchDeps = {
+  const staged: unknown[][] = []
+  const deps: VerifierBenchDeps = {
     exec,
     readFile: (path) => store.get(path) as string,
     writeFile: (path, text) => void store.set(path, text),
@@ -49,8 +53,12 @@ function harness(raws: Record<string, VerifierRaw>, exec: BenchDeps['exec']) {
       prepared.push(item.id)
       return { dir: `/snap/${item.id}`, diff: '', body: '' }
     },
+    stageRules: async (item, snapshot, clones, _git, withShared) => {
+      staged.push([item.id, snapshot.dir, clones, withShared])
+      return 'digest'
+    },
   }
-  return { deps, store, logs, prepared }
+  return { deps, store, logs, prepared, staged }
 }
 
 const input = { findings: [finding('high')], real: [], planted: [] }
@@ -89,6 +97,21 @@ describe('gradeAll', () => {
     calls.length = 0
     await gradeAll([ITEM], OPTIONS, h.deps)
     expect(calls).toEqual([])
+  })
+
+  it('stages rules into the checker snapshot unless --no-rules', async () => {
+    const output = { summary: '', findings: [finding('high')], sources: [[]] }
+    const exec = async (_command: string, _args: string[], options?: { cwd?: string }) =>
+      options?.cwd === undefined
+        ? JSON.stringify({ structured_output: { matches: [] } })
+        : JSON.stringify({ structured_output: { verdicts: [] } })
+    const staged = harness({ p1: { input, inputs: 'run', output } }, exec)
+    await gradeAll([ITEM], { ...OPTIONS, noShared: true }, staged.deps)
+    expect(staged.staged).toEqual([['p1', '/snap/p1', 'clones', false]])
+    const control = harness({ p1: { input, inputs: 'run', output } }, exec)
+    await gradeAll([ITEM], { ...OPTIONS, noRules: true }, control.deps)
+    expect(control.prepared).toEqual(['p1'])
+    expect(control.staged).toEqual([])
   })
 
   it('skips missing and failed runs, avoids snapshots with nothing to check, and logs failures', async () => {

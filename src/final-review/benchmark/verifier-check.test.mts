@@ -20,6 +20,11 @@ describe('verifier check', () => {
     expect(prompt).not.toContain('"title": "a"')
   })
 
+  it('points at the rules index only when rules are staged', () => {
+    expect(buildCheckPrompt([finding('a')], [0])).not.toContain('rules/INDEX.md')
+    expect(buildCheckPrompt([finding('a')], [0], true)).toContain('rules/INDEX.md')
+  })
+
   it('passes read-only tools and the schema', () => {
     const args = checkArgs('P', 'opus', 7)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])

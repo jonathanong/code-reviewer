@@ -3,12 +3,12 @@ import { join } from 'node:path'
 
 import type { Finding } from '../finding.mts'
 import type { EvalCase } from './cases.mts'
-import type { BenchDeps } from './cli.mts'
 import { pool } from './judge-all.mts'
 import { judgeFindings, type Assignment } from './judge.mts'
 import { checkFindings, type Check } from './verifier-check.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { VerifierOutput } from './verifier-run.mts'
+import { prepareVerifierSnapshot, type VerifierBenchDeps } from './verifier-snapshot.mts'
 
 /**
  * How the verifier's own output was graded: `added` assigns each expectation to one of the
@@ -69,6 +69,9 @@ export type GradeOptions = {
   checker: string
   maxTurns: number
   jobs: number
+  clones: string | undefined
+  noRules: boolean
+  noShared: boolean
 }
 
 async function gradeCase(
@@ -76,7 +79,7 @@ async function gradeCase(
   input: VerifierInput,
   output: VerifierOutput,
   options: GradeOptions,
-  deps: BenchDeps,
+  deps: VerifierBenchDeps,
 ): Promise<Graded> {
   const fresh = addedIndexes(output).map((at) => output.findings[at] as Finding)
   const added = await judgeFindings(item.expected, fresh, options.judge, deps.exec)
@@ -88,8 +91,7 @@ async function gradeCase(
   )
   let checks = new Map<number, Check>()
   if (strong.length > 0) {
-    const cache = join(options.findingsFrom, 'cache')
-    const { dir } = await deps.prepare(item, cache, join(options.out, 'work'), deps.exec)
+    const { dir } = await prepareVerifierSnapshot(item, options, deps)
     const run = { model: options.checker, maxTurns: options.maxTurns }
     checks = await checkFindings(dir, output.findings, strong, run, deps.exec)
   }
@@ -106,7 +108,7 @@ async function gradeCase(
 export async function gradeAll(
   cases: readonly EvalCase[],
   options: GradeOptions,
-  deps: BenchDeps,
+  deps: VerifierBenchDeps,
 ): Promise<void> {
   await pool(cases, options.jobs, async (item) => {
     const path = join(options.out, 'raw', `${item.id}.json`)

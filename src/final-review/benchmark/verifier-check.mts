@@ -1,7 +1,7 @@
 import { FinalReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { READ_ONLY_TOOLS } from './runner.mts'
-import { CONTEXT_DIR, type Exec } from './snapshot.mts'
+import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 
 /** Whether a finding's claim is true of the code at the reviewed head. */
 export type Check = { holds: boolean; reason: string }
@@ -28,12 +28,19 @@ const CHECK_SCHEMA = {
 } as const
 
 /** Asks an independent model to confirm or refute each listed finding against the code. */
-export function buildCheckPrompt(findings: readonly Finding[], indexes: readonly number[]): string {
+export function buildCheckPrompt(
+  findings: readonly Finding[],
+  indexes: readonly number[],
+  hasRules = false,
+): string {
   const listed = indexes.map((index) => ({ index, ...(findings[index] as Finding) }))
   return [
     'You audit code review findings. The working directory is a pull request head without git',
     `history. \`${CONTEXT_DIR}/pr.md\` holds the title and description, and \`${CONTEXT_DIR}/diff.patch\``,
     'the numbered diff.',
+    ...(hasRules
+      ? [`\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources that apply; read it first.`]
+      : []),
     NUMBERED_DIFF_LEGEND,
     'For each finding below, open the cited code (read line ranges, not whole large files) and',
     'decide whether its claim is true at this head. `holds` is true when the defect or mismatch it',
@@ -104,6 +111,10 @@ export async function checkFindings(
   exec: Exec,
 ): Promise<Map<number, Check>> {
   if (indexes.length === 0) return new Map()
-  const args = checkArgs(buildCheckPrompt(findings, indexes), run.model, run.maxTurns)
+  const args = checkArgs(
+    buildCheckPrompt(findings, indexes, hasRulesIndex(dir)),
+    run.model,
+    run.maxTurns,
+  )
   return parseChecks(await exec('claude', args, { cwd: dir }), indexes)
 }

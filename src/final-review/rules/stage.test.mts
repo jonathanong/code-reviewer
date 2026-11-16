@@ -185,6 +185,32 @@ describe('stageRuleSources', () => {
     expect((await stageRuleSources(out, changed)).digest).not.toBe(first.digest)
   })
 
+  it('stages nested reference files of a skill, and only those under references/', async () => {
+    const result = await stageRuleSources(out, {
+      changedPaths: [],
+      diff: '',
+      repo: {
+        reader: reader({
+          'skills/final-review/SKILL.md': skill('final-review', 'F'),
+          'skills/final-review/references/verifier.md': 'verifier',
+          'skills/final-review/references/pillars/_contract.md': 'contract',
+          'skills/final-review/notes/other.md': 'not staged',
+        }),
+        refLabel: 'base',
+      },
+      shared: [],
+      related: [],
+      missing: [],
+    })
+    expect(result.written).toEqual([
+      'rules/INDEX.md',
+      'rules/repo/skills/final-review/SKILL.md',
+      'rules/repo/skills/final-review/references/pillars/_contract.md',
+      'rules/repo/skills/final-review/references/verifier.md',
+    ])
+    expect(read('rules/repo/skills/final-review/references/pillars/_contract.md')).toBe('contract')
+  })
+
   it('reports a missing tree and sources, and omits empty sections', async () => {
     const result = await stageRuleSources(out, {
       changedPaths: [],

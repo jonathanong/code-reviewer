@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { BenchDeps } from './cli.mts'
 import { judgeInputs } from './judge-all.mts'
 import { runFinalReviewVerifierBenchCli } from './verifier-cli.mts'
 import { gradeInputs } from './verifier-grade.mts'
+import type { VerifierBenchDeps } from './verifier-snapshot.mts'
 
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
@@ -26,7 +26,7 @@ const caseJson = (id: string, kind: 'positive' | 'negative') => ({
 const CASES = [caseJson('p1', 'positive'), caseJson('n1', 'negative'), caseJson('x1', 'negative')]
 const FINDING = { pillar: 'design', severity: 'high', title: 'T', body: 'B' }
 
-function harness(exec: BenchDeps['exec']) {
+function harness(exec: VerifierBenchDeps['exec']) {
   const store = new Map<string, string>([
     ['cases.json', JSON.stringify(CASES)],
     ['refs/verifier.md', 'VERIFIER'],
@@ -46,7 +46,8 @@ function harness(exec: BenchDeps['exec']) {
     ['f/raw/design/n1.json', JSON.stringify({ findings: [FINDING] })],
   ])
   const logs: string[] = []
-  const deps: BenchDeps = {
+  const staged: unknown[][] = []
+  const deps: VerifierBenchDeps = {
     exec,
     readFile: (path) => {
       const text = store.get(path)
@@ -57,8 +58,12 @@ function harness(exec: BenchDeps['exec']) {
     exists: (path) => store.has(path),
     log: (line) => void logs.push(line),
     prepare: async (item) => ({ dir: `/snap/${item.id}`, diff: '', body: '' }),
+    stageRules: async (item, snapshot, clones, _git, withShared) => {
+      staged.push([item.id, snapshot.dir, clones, withShared])
+      return `digest-${item.id}`
+    },
   }
-  return { deps, store, logs }
+  return { deps, store, logs, staged }
 }
 
 const BASE = ['--cases', 'cases.json', '--findings-from', 'f', '--out', 'o']
@@ -103,6 +108,41 @@ describe('runFinalReviewVerifierBenchCli', () => {
     expect(markdown).toContain('| 1 | 100% | 100% → 100% | 100% | n/a (0) | 100% | 1.0 → 1.0 |')
     expect(markdown).toContain('- n1: verifier crashed')
     expect(out).toHaveBeenCalledWith(`${markdown.trimEnd()}\n`)
+  })
+
+  it('stages rules into each verifier snapshot, honoring --clones and --no-shared', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const h = harness(async () =>
+      JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
+    )
+    const args = [...BASE, '--prompts', 'refs', '--case', 'p1']
+    await runFinalReviewVerifierBenchCli([...args, '--clones', '/c', '--no-shared'], h.deps)
+    expect(h.staged).toEqual([['p1', '/snap/p1', '/c', false]])
+    const saved = JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string }
+    expect(saved.inputs).toMatch(/^[0-9a-f]{64}$/u)
+  })
+
+  it('stages nothing with --no-rules and keys the saved output on the rules digest', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const exec = vi.fn(async (_command: string, _args: string[]) =>
+      JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
+    )
+    const h = harness(exec)
+    const args = [...BASE, '--prompts', 'refs', '--case', 'p1']
+    await runFinalReviewVerifierBenchCli([...args, '--no-rules'], h.deps)
+    expect(h.staged).toEqual([])
+    const control = (JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string })
+      .inputs
+    const runs = () => exec.mock.calls.filter(([, a]) => String(a[1]).includes('VERIFIER')).length
+    expect(runs()).toBe(1)
+    await runFinalReviewVerifierBenchCli([...args, '--no-rules'], h.deps)
+    expect(runs()).toBe(1)
+    // Staging rules changes the run's inputs, so the control output is not reused.
+    await runFinalReviewVerifierBenchCli(args, h.deps)
+    expect(runs()).toBe(2)
+    expect(h.staged).toHaveLength(1)
+    const staged = (JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string }).inputs
+    expect(staged).not.toBe(control)
   })
 
   it('scores saved runs only with --score-only', async () => {
