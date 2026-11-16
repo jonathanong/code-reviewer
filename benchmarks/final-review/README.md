@@ -1,5 +1,32 @@
 # Final review benchmarks
 
+## Current results
+
+Mined cases, 2026-11-15, commit 2486bc6, reviewer Sonnet 5.5, judge Opus, 3 attempts with the
+installed rule skills and 3 without (`--no-rules`). See [HISTORY.md](HISTORY.md) for every run.
+
+| Pillar      | Cases run | Expected findings caught, with skills | Without | Runs that loaded the expected skill |
+| ----------- | --------- | ------------------------------------- | ------- | ----------------------------------- |
+| design      | 6 of 9    | 8 of 18                               | 7 of 18 | 0 of 18                             |
+| rules       | 1 of 4    | 0 of 3                                | 0 of 3  | 0 of 3                              |
+| correctness | 3 of 3    | 3 of 12                               | 1 of 8  | 0 of 9                              |
+
+- The installed skills made no measurable difference on real repositories, because the reviewer
+  almost never loaded one: 1 run of 30 loaded any skill.
+- Six case and pillar pairs (`vouchington-1077`, `1081`, `1092`, `1143`) failed in both arms: the
+  reviewer read the whole combined diff and ran out of context, at about $3 a run. Bench now points
+  the reviewer at per-file patches; these cases are not re-measured.
+- The correctness control has two attempts for each case; the third was not run.
+- At 3 attempts a difference of one catch is noise.
+
+Fixture cases (`synthetic.json`), 2026-11-15, commit 2d9a96f, reviewer and judge both Sonnet 5.5,
+3 attempts with skills and 1 without, so not comparable with the table above: rules pillar, 10
+positive and 4 negative cases, recall 100%, false alarms 0 of 4, expected skill loaded in 90% of
+runs, control recall 22%. The two cases the control caught were replaced afterwards and the
+replacements are not measured yet.
+
+Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
+
 Labeled pull requests for benchmarking the `final-review` pillar prompts in
 `skills/final-review/references/pillars/`.
 
@@ -18,8 +45,8 @@ Use a line range only when the defect lives on specific lines. Approach-level cl
 congruence, and history findings) use `"lines": null`, so any finding on the file counts: a
 reviewer may rightly raise the same concern far from where a labeler guessed.
 
-This repository is public, so `cases.json` holds only cases from public repositories. Keep cases
-from private repositories in a private location and pass that file with `--cases`.
+This repository is private. `cases.json` holds cases mined from real pull requests, most of them in
+private repositories: a run clones each repository with the `gh` login and exports the head tree.
 
 ### Fixture cases
 
@@ -45,9 +72,8 @@ that needs no clone or `gh`:
   configs refer to.
 
 Fixture cases are cached by a content hash of the fixture directory instead of a head SHA.
-`synthetic.json` holds the fixture cases (currently the `lock-scope-*` evals for the correctness
-pillar's lock-scope rule). It is separate from `cases.json` so that file keeps its mix of mined
-public pull requests and negatives at about a third; run it with `--cases
+`synthetic.json` holds the fixture cases: the `lock-scope-*` cases for the correctness pillar and
+the `rules-*` cases, one per shared rule skill. It is separate from `cases.json`; run it with `--cases
 benchmarks/final-review/synthetic.json`. A fixture must be synthetic: never copy private code.
 
 Labels are written by people or agents from the revert and fix history. Add cases by mining new

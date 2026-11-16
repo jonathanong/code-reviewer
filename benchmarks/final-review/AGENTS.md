@@ -1,0 +1,17 @@
+# Benchmark rules
+
+- Load `skills:evals` before changing a case, a fixture, a grader, or these documents.
+- Run one case with `pnpm exec code-reviewer bench --cases <file> --pillar <p> --case <id> --out <dir>`.
+  Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
+- Pilot a new case with one attempt. Before quoting a number, run 3 attempts with skills and 3 with
+  `--no-rules` in the same session, then score with `--score-only --baseline <control dir>`.
+- Do not run the whole of `cases.json` unless the owner asks: large cases cost dollars per run.
+- Give every positive case `expectedSkills` with full `plugin:skill` names when a shared rule
+  skill states its rule. Quote the rule sentence from the installed skill; do not write a case for
+  a rule no skill states.
+- Keep a fixture case only if the no-rules control misses it. Replace a case the control catches.
+- Fixtures are synthetic. Never copy code from a private repository into a fixture.
+- A mined case snapshots a real pull request. Do not rewrite its expected claim to fit a skill.
+- A change to a case, fixture, grader, pillar prompt, or bench prompt updates `README.md` and adds
+  a `HISTORY.md` entry in the same change, with or without a run.
+- Raw results stay out of the repository. Record the numbers in `HISTORY.md` before deleting them.
