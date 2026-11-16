@@ -29,7 +29,12 @@ describe('verifier check', () => {
   it('passes read-only tools and the schema', () => {
     const args = checkArgs('P', 'opus', 7)
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])
-    expect(args.at(-1)).toBe('7')
+    expect(args[args.indexOf('--max-turns') + 1]).toBe('7')
+    expect(args).toContain('--strict-mcp-config')
+    expect(args).not.toContain('--settings')
+    const settings = { enabledPlugins: { 'skills@m': true } }
+    const isolated = checkArgs('P', 'opus', 7, false, settings)
+    expect(JSON.parse(isolated[isolated.indexOf('--settings') + 1] as string)).toEqual(settings)
     expect(args).toContain('Read,Grep,Glob')
     expect(checkArgs('P', 'opus', 7, true)).toContain('Read,Grep,Glob,Skill')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string).required).toEqual([

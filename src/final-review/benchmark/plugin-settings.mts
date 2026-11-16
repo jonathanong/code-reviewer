@@ -6,6 +6,8 @@ export type BenchPlugins = {
   labels: string[]
   /** The `--settings` object for the run, or undefined when the plugins could not be listed. */
   settings: object | undefined
+  /** Every plugin off, for the judge, which needs none. */
+  noPlugins: object | undefined
 }
 
 /**
@@ -23,7 +25,11 @@ export async function benchPlugins(
     listed = parsePluginList(await exec('claude', ['plugin', 'list', '--json']), cwd)
   } catch (error) {
     log(`plugins: ${error instanceof Error ? error.message : String(error)}`)
-    return { labels: rules ? ['unknown'] : [], settings: undefined }
+    return { labels: rules ? ['unknown'] : [], settings: undefined, noPlugins: undefined }
   }
-  return { labels: rules ? pluginLabels(listed) : [], settings: pluginSettings(listed, rules) }
+  return {
+    labels: rules ? pluginLabels(listed) : [],
+    settings: pluginSettings(listed, rules),
+    noPlugins: pluginSettings(listed, false),
+  }
 }

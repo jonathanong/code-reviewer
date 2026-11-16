@@ -12,7 +12,7 @@ cost, turns or which skills loaded; recall may move too.
 - Every pillar run adds `--strict-mcp-config`, `--setting-sources user`, `--effort medium`, and
   `--settings` enabling only the rule plugins (`no-mistakes-rules`, `skills`); a `--no-rules` run
   switches every plugin off. `bench-verifier` verifier runs get the same isolation flags and
-  settings; the checker and judge calls are unchanged.
+  settings; the checker gets the rule-plugin settings and the judge gets every plugin off, with the same isolation flags.
 - The result event used for findings is now the last one that carries structured output, because a
   run with a subagent can print an early result event.
 

@@ -122,7 +122,8 @@ Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medi
 `--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
 `skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
 every plugin false. Pillars may use the `Agent` tool to dispatch an `explorer` subagent (Haiku,
-read-only tools). Verifier runs get the same isolation flags and settings.
+read-only tools). Verifier runs get the same isolation flags and settings; checker runs get the same,
+and judge runs get them with every plugin false.
 
 ### Cost and turns
 

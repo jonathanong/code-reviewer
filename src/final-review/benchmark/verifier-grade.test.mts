@@ -71,6 +71,7 @@ describe('gradeAll', () => {
     }
     const calls: string[] = []
     const h = harness({ p1: { input, inputs: 'run', output } }, async (_command, args, options) => {
+      if (args[0] === 'plugin') return '[]'
       const prompt = args[1] as string
       if (options?.cwd === undefined) {
         calls.push('judge')

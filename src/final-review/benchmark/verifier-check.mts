@@ -1,6 +1,6 @@
 import { FinalReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import { READ_ONLY_TOOLS, SKILL_TOOLS } from '../run/claude-flags.mts'
+import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
 import { parseUsage, resultEvent, type Usage } from './usage.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 
@@ -63,6 +63,7 @@ export function checkArgs(
   model: string,
   maxTurns: number,
   skills = false,
+  settings?: object,
 ): string[] {
   const tools = skills ? SKILL_TOOLS : READ_ONLY_TOOLS
   return [
@@ -82,6 +83,7 @@ export function checkArgs(
     'dontAsk',
     '--max-turns',
     String(maxTurns),
+    ...isolationArgs(settings),
   ]
 }
 
@@ -110,7 +112,7 @@ export function parseChecks(stdout: string, indexes: readonly number[]): Map<num
   return checks
 }
 
-export type CheckRun = { model: string; maxTurns: number }
+export type CheckRun = { model: string; maxTurns: number; settings?: object }
 
 /** Checks the listed findings in the snapshot; skips the call when nothing is listed. */
 export async function checkFindings(
@@ -122,7 +124,13 @@ export async function checkFindings(
 ): Promise<{ checks: Map<number, Check>; usage: Usage | null }> {
   if (indexes.length === 0) return { checks: new Map(), usage: null }
   const rules = hasRulesIndex(dir)
-  const args = checkArgs(buildCheckPrompt(findings, indexes, rules), run.model, run.maxTurns, rules)
+  const args = checkArgs(
+    buildCheckPrompt(findings, indexes, rules),
+    run.model,
+    run.maxTurns,
+    rules,
+    run.settings,
+  )
   const stdout = await exec('claude', args, { cwd: dir })
   return { checks: parseChecks(stdout, indexes), usage: parseUsage(resultEvent(stdout)) }
 }

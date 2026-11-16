@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import type { Finding, Pillar } from '../finding.mts'
 import { pool } from '../run/pool.mts'
+import { benchPlugins } from './plugin-settings.mts'
 import { casesForPillar, type EvalCase, type ExpectedFinding } from './cases.mts'
 import { judgeFindings, type Assignment, type Judged } from './judge.mts'
 import type { Exec } from './snapshot.mts'
@@ -62,6 +63,9 @@ export async function judgeAll(
   options: { out: string; model: string; jobs: number },
   deps: JudgeDeps,
 ): Promise<void> {
+  const { noPlugins } = await benchPlugins(deps.exec, process.cwd(), false, (line) =>
+    deps.log(line),
+  )
   const tasks = pillars.flatMap((pillar) =>
     casesForPillar(cases, pillar).map((item) => ({ pillar, item })),
   )
@@ -73,7 +77,13 @@ export async function judgeAll(
     if ('error' in raw || currentAssignment(raw, expected, options.model) !== undefined) return
     deps.log(`judge ${pillar} ${item.id}`)
     try {
-      const assignment = await judgeFindings(expected, raw.findings, options.model, deps.exec)
+      const assignment = await judgeFindings(
+        expected,
+        raw.findings,
+        options.model,
+        deps.exec,
+        noPlugins,
+      )
       const judged: Judged = {
         model: options.model,
         inputs: judgeInputs(expected, raw.findings),

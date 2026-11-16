@@ -39,8 +39,10 @@ function deps(files: Record<string, unknown>, exec: JudgeDeps['exec']) {
 
 describe('judgeAll', () => {
   it('judges raw results and skips missing, errored, and currently judged ones', async () => {
-    const exec = vi.fn(async () =>
-      JSON.stringify({ structured_output: { matches: [{ expected: 0, finding: 0 }] } }),
+    const exec = vi.fn(async (_command: string, args: string[]) =>
+      args[0] === 'plugin'
+        ? '[{"id":"skills@m","version":"1","enabled":true,"scope":"user"}]'
+        : JSON.stringify({ structured_output: { matches: [{ expected: 0, finding: 0 }] } }),
     )
     const cases = ['p1', 'p2', 'p3', 'p4', 'p5'].map((id) => item(id, 'positive'))
     const { value, store, logs } = deps(
@@ -65,7 +67,14 @@ describe('judgeAll', () => {
     expect(JSON.parse(store.get(path('p3')) as string).judged.assignment).toEqual([null])
     expect(JSON.parse(store.get(path('p4')) as string).judged.assignment).toEqual([0])
     expect(JSON.parse(store.get(path('p5')) as string).judged.inputs).toBe(inputs)
-    expect(exec).toHaveBeenCalledTimes(3)
+    const judgeCalls = exec.mock.calls.filter(([, args]) => args[0] === '-p')
+    expect(judgeCalls).toHaveLength(3)
+    for (const [, args] of judgeCalls) {
+      expect(args).toContain('--strict-mcp-config')
+      expect(JSON.parse(args[args.indexOf('--settings') + 1] as string)).toEqual({
+        enabledPlugins: { 'skills@m': false },
+      })
+    }
     expect(logs.sort()).toEqual(['judge design p1', 'judge design p4', 'judge design p5'])
   })
 
