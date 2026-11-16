@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { PILLARS, type Pillar } from '../finding.mts'
+import { caseSelector, defaultSelectStep, type SelectStep } from './case-selection.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
 import { pool } from '../run/pool.mts'
 import { judgeAll, type RawResult } from './judge-all.mts'
@@ -23,7 +24,11 @@ export type BenchDeps = {
 }
 
 /** The pillar bench also stages rule sources. */
-export type PillarBenchDeps = BenchDeps & { stageRules: typeof stageCaseRules; cwd(): string }
+export type PillarBenchDeps = BenchDeps & {
+  stageRules: typeof stageCaseRules
+  cwd(): string
+  selection: SelectStep
+}
 
 export const defaultBenchDeps: BenchDeps = {
   exec: defaultExec,
@@ -41,6 +46,7 @@ const defaultPillarDeps: PillarBenchDeps = {
   ...defaultBenchDeps,
   stageRules: stageCaseRules,
   cwd: () => process.cwd(),
+  selection: defaultSelectStep,
 }
 
 function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] {
@@ -71,6 +77,12 @@ async function runAll(
   )
   const snapshots = new Map<string, Snapshot>()
   const digests = new Map<string, string>()
+  // `--select` adds review's skill-selection step, so a pillar is told which skills to load.
+  const select =
+    options.select && !options.noRules
+      ? await caseSelector(options.out, settings, deps, deps.selection)
+      : undefined
+  const selected = new Map<string, string[]>()
   for (const item of new Set(pillars.flatMap((pillar) => casesForPillar(cases, pillar)))) {
     deps.log(`snapshot ${item.id}`)
     const snapshot = await deps.prepare(
@@ -82,6 +94,7 @@ async function runAll(
     snapshots.set(item.id, snapshot)
     // The digest keys a saved raw result to the rules it saw; control runs record `none`.
     digests.set(item.id, options.noRules ? NO_RULES : await deps.stageRules(item, snapshot))
+    if (select !== undefined) selected.set(item.id, await select(item, snapshot))
   }
   const contractPath = join(options.prompts, '_contract.md')
   const contract = deps.exists(contractPath) ? deps.readFile(contractPath).trim() : ''
@@ -94,7 +107,12 @@ async function runAll(
   await pool(tasks, options.jobs, async ({ pillar, pillarPrompt, item }) => {
     deps.log(`run ${pillar} ${item.id}`)
     const dir = (snapshots.get(item.id) as Snapshot).dir
-    const seen = { rules: digests.get(item.id) as string, plugins }
+    const chosen = selected.get(item.id)
+    const seen = {
+      rules: digests.get(item.id) as string,
+      plugins,
+      ...(chosen === undefined ? {} : { selected: chosen }),
+    }
     let result: RawResult
     try {
       const { model, maxTurns } = options
@@ -104,6 +122,7 @@ async function runAll(
         model,
         maxTurns,
         skills: !options.noRules,
+        ...(chosen === undefined ? {} : { selected: chosen }),
         ...(settings === undefined ? {} : { settings }),
       }
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
@@ -136,6 +155,7 @@ export async function runReviewBenchCli(
       'score-only': { type: 'boolean' },
       judge: { type: 'string' },
       'no-rules': { type: 'boolean' },
+      select: { type: 'boolean' },
       baseline: { type: 'string' },
     },
   })
@@ -158,6 +178,7 @@ export async function runReviewBenchCli(
     scoreOnly: values['score-only'] === true,
     judge: values.judge,
     noRules: values['no-rules'] === true,
+    select: values.select === true,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }
   await runAll(cases, pillars, options, deps)

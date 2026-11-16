@@ -69,6 +69,10 @@ function harness(
       return { dir: `/snap/${item.id}`, diff: '', body: '' }
     },
     cwd: () => '/work',
+    selection: {
+      skills: () => [{ name: 'skills:one', description: 'One.' }],
+      select: async () => ({ selected: ['skills:one'], available: 1, usage: null }),
+    },
     stageRules: async (item) => {
       staged.push(item.id)
       return 'digest-1'
@@ -169,6 +173,22 @@ describe('runReviewBenchCli runs', () => {
     expect(args[args.indexOf('--effort') + 1]).toBe('medium')
     expect(args).toContain('--strict-mcp-config')
     expect(h.staged).toEqual(['p1', 'n1'])
+  })
+
+  it('with --select tells each pillar which skills to load and records them', async () => {
+    stdoutSpy()
+    const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
+    const h = harness({ ...files, '/snap/p1/.review/pr.md': '# T', '/snap/n1/.review/pr.md': '' })
+    await runReviewBenchCli([...BASE, '--select'], h.deps)
+    expect(h.execCalls[0]?.args[1]).toContain('call the Skill tool for each of these skills')
+    expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).selected).toEqual([
+      'skills:one',
+    ])
+    expect(JSON.parse(h.files.get('out/selection/p1.json') as string).available).toBe(1)
+    const control = harness(files)
+    await runReviewBenchCli([...BASE, '--select', '--no-rules'], control.deps)
+    expect(control.execCalls[0]?.args[1]).not.toContain('call the Skill tool')
+    expect(control.files.has('out/selection/p1.json')).toBe(false)
   })
 
   it('records unknown plugins when they cannot be listed', async () => {
