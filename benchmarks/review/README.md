@@ -2,34 +2,48 @@
 
 ## Current results
 
-Mined cases, 2026-11-15, commit 2486bc6, reviewer Sonnet 5.5, judge Opus, 3 attempts with the
-installed rule skills and 3 without (`--no-rules`). See [HISTORY.md](HISTORY.md) for every run.
+All rows: 2026-11-16, reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts with the
+installed rule skills (`--select`) and 3 without (`--no-rules`), one session. See
+[HISTORY.md](HISTORY.md) for every run.
 
-| Pillar      | Cases run | Expected findings caught, with skills | Without | Runs that loaded the expected skill |
-| ----------- | --------- | ------------------------------------- | ------- | ----------------------------------- |
-| design      | 6 of 9    | 8 of 18                               | 7 of 18 | 0 of 18                             |
-| rules       | 1 of 4    | 0 of 3                                | 0 of 3  | 0 of 3                              |
-| correctness | 3 of 3    | 3 of 12                               | 1 of 8  | 0 of 9                              |
+Mined cases (13 real pull requests from `cases.json`):
 
-- The installed skills made no measurable difference on real repositories, because the reviewer
-  almost never loaded one: 1 run of 30 loaded any skill.
-- Six case and pillar pairs (`vouchington-1077`, `1081`, `1092`, `1143`) failed in both arms: the
-  reviewer read the whole combined diff and ran out of context, at about $3 a run. Bench now points
-  the reviewer at per-file patches; these cases are not re-measured.
-- The correctness control has two attempts for each case; the third was not run.
+| Pillar      | Cases | Expected findings caught, with skills | Without | Runs that loaded the expected skill |
+| ----------- | ----- | ------------------------------------- | ------- | ----------------------------------- |
+| design      | 9     | 16 of 27                              | 4 of 27 | 12 of 27                            |
+| rules       | 1     | 3 of 3                                | 0 of 3  | 3 of 3                              |
+| correctness | 3     | 1 of 12                               | 0 of 12 | 6 of 9                              |
+
+- This table was measured with the earlier skill instruction. Selection named the expected skill
+  in 39 of 39 runs, but a reviewer told to load 12 to 20 skills loaded 0 to 2 of them.
+- The instruction now in `skillInstruction` was then measured on the six cases with the worst
+  loading (3 attempts): every selected skill was loaded in 18 of 18 runs (2 of 18 before, for the
+  expected skill), at $0.27 a run against $0.19. Catches on the five design cases were 10 of 15
+  against 13 of 15 before, which 3 attempts cannot tell apart. The other seven cases are not
+  re-measured with it.
+- `vouchington-1144` is a ceiling case: the control catches it 3 of 3.
+- `vouchington-4154`, `vouchington-tooling-154`, `vouchington-platform-62` and
+  `vouchington-platform-66` were never caught in either arm, with or without the skill loaded.
 - At 3 attempts a difference of one catch is noise.
 
-Fixture cases (`synthetic.json`), 2026-11-15, commit 2d9a96f, reviewer and judge both Sonnet 5.5,
-3 attempts with skills and 1 without, so not comparable with the table above: rules pillar, 10
-positive and 4 negative cases, recall 100%, false alarms 0 of 4, expected skill loaded in 90% of
-runs, control recall 22%. The two cases the control caught were replaced; the
-replacements (Opus judge, 3 attempts per arm) are caught 3 of 3 with skills and 0 of 3 without.
+Fixture cases (`synthetic.json`, rules and correctness pillars):
 
-Correctness prompt change, 2026-11-16, reviewer Sonnet 5.5, judge Opus, 3 attempts per arm in one
-session, the three `lock-scope-*` fixtures only: the prompt that names
-`skills:postgres-schema-design` loaded it in 6 of 6 positive runs against 0 of 6 for the old prompt,
-and both caught 6 of 6. The correctness row in the mined table above was measured with the old
-prompt and is not re-measured, so its skill-load count no longer describes the current prompt.
+| Group                                         | With skills   | Without      |
+| --------------------------------------------- | ------------- | ------------ |
+| Rules positives (10 cases)                    | 30 of 30      | 4 of 30      |
+| `links-declared-api-payload` (correctness)    | 3 of 3        | 0 of 3       |
+| `lock-scope-*` positives (correctness, 2)     | 6 of 6        | 6 of 6       |
+| Expected skill selected and loaded (11 cases) | 33 of 33 runs | n/a          |
+| Negatives with a high or blocking finding     | 4 of 36 runs  | 0 of 36 runs |
+
+- The two `lock-scope-*` positives are ceiling cases.
+- The control caught `rules-test-only-whole-module-mock`, `rules-content-only-dedup-by-entity` and
+  `rules-content-only-form-body-mutation` once or twice in three attempts, so they only partly
+  discriminate and are due for replacement.
+- The four high findings on negatives are real flaws in the fixtures themselves, not the rule the
+  negative tests: a lenient `Number()` parser and an unused export in `rules-local-override`, and a
+  test that only echoes a fake in `lock-scope-written-row-only`. Those fixtures need cleaning.
+- Reviewer cost: $0.12 a pillar run with skills.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
@@ -123,6 +137,12 @@ non-empty array of full names, meaning any one of them satisfies it:
   `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
 
 ### Run flags
+
+`--select` runs the same Haiku skill-selection step `review` runs, once per case, and ends each
+pillar prompt with the instruction to load the skills it named, so the bench measures the prompt
+`review` really sends. The choice is saved as `<out>/selection/<case>.json` (reused when the run
+resumes) and as `selected` in each raw result. `--no-rules` ignores it. Without `--select` the
+pillar gets only the contract's general instruction to load matching skills.
 
 Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
 `--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,

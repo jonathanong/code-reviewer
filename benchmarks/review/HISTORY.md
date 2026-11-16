@@ -2,6 +2,58 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-16: full fixture and mined run with selection, then a firmer skill instruction
+
+Commit: this change. Reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts per arm, one
+session. The with-skills arm uses the new `bench --select`, which runs `review`'s selection step
+and ends the pillar prompt with the instruction to load the selected skills; earlier entries ran
+without it and are not comparable. `vouchington-1144`, `1145` and `1146` gained
+`expectedSkills: ["skills:feature-rollout"]` (its "Reachable from an entry point" rule; a loose
+fit for 1144, whose claim is broader).
+
+Fixtures (`synthetic.json`, rules and correctness; reviewer cost $9.00 with, $3.95 without,
+selection $0.14):
+
+- Rules positives 30 of 30 with, 4 of 30 without. The control caught
+  `rules-test-only-whole-module-mock` (1 of 3), `rules-content-only-dedup-by-entity` (2 of 3) and
+  `rules-content-only-form-body-mutation` (1 of 3).
+- Correctness: `links-declared-api-payload` 3 of 3 against 0 of 3; both `lock-scope-*` positives
+  6 of 6 in both arms.
+- Expected skill selected and loaded in 33 of 33 runs of the 11 tagged cases. Selection named 2
+  to 10 skills a case.
+- Negatives: a high or blocking finding in 4 of 36 runs with skills, 0 of 36 without: three on
+  `rules-local-override` (lenient `Number()` parsing twice, an unused export once) and one on
+  `lock-scope-written-row-only` (a test that echoes a fake). All are real flaws in the fixture
+  code, none is the rule the negative is about.
+
+Mined (13 cases; reviewer cost $6.55 with, $3.48 without, selection $0.17):
+
+| Pillar      | Caught with | Caught without | Expected skill selected | Expected skill loaded |
+| ----------- | ----------- | -------------- | ----------------------- | --------------------- |
+| design      | 16 of 27    | 4 of 27        | 27 of 27                | 12 of 27              |
+| rules       | 3 of 3      | 0 of 3         | 3 of 3                  | 3 of 3                |
+| correctness | 1 of 12     | 0 of 12        | 9 of 9                  | 6 of 9                |
+
+Selection named 12 to 20 skills on the larger cases and the reviewer then loaded 0 to 2; with 7 or
+fewer it loaded nearly all. The first with-skills attempt 3 died on a `git fetch` before any model
+call and was rerun whole.
+
+Skill instruction, same session, the six worst-loading cases (`vouchington-1144`, `1145`, `1146`,
+`4154`, `platform-59`, `platform-67`), design and correctness, 3 attempts each:
+
+| Arm                                    | All selected loaded | Expected selected | Expected loaded | Design caught | Cost a run |
+| -------------------------------------- | ------------------- | ----------------- | --------------- | ------------- | ---------- |
+| Old instruction                        | 0 of 18             | 18 of 18          | 2 of 18         | 13 of 15      | $0.19      |
+| New instruction, selection capped at 8 | 18 of 18            | 11 of 18          | 11 of 18        | 10 of 15      | $0.24      |
+| New instruction, no cap (kept)         | 18 of 18            | 18 of 18          | 18 of 18        | 10 of 15      | $0.27      |
+
+The new instruction ("Before reading any file, call the Skill tool once for each of these skills,
+all in your first turn ... load every one") fixes loading by itself. The cap was dropped: it
+pushed the expected skill out of the selection in 7 of 18 runs. Loading the skills did not raise
+catches on these cases; `vouchington-4154` and `platform-67` (0 of 3) are missed with the skill
+loaded. The remaining seven mined cases and the fixtures are not re-measured with the new
+instruction.
+
 ## 2026-11-16: verifier prompt no longer tells the verifier to post
 
 No run. `verifier.md` dropped its instructions to preview, post, and resolve threads, which the
