@@ -3,7 +3,7 @@ import type { RunTextCommand } from '../gh-cli/index.mts'
 /** Logins whose `final-review` markers count; compared case-insensitively. */
 export type TrustedAuthors = ReadonlySet<string>
 
-/** Parses the comma-separated `FINAL_REVIEWER_TRUSTED_AUTHORS` allowlist. */
+/** Parses the comma-separated `CODE_REVIEWER_TRUSTED_AUTHORS` allowlist. */
 export function parseTrustedAuthors(value: string | undefined): string[] {
   return (value ?? '')
     .split(',')

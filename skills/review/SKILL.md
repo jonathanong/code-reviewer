@@ -20,7 +20,7 @@ skill, which calls this one per pull request.
 
 The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer
 checkout; `help` lists the flags). Every subcommand prints a short JSON result. It authenticates as
-the GitHub App when `FINAL_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login
+the GitHub App when `CODE_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login
 (`code-reviewer auth` says which).
 
 ## Token budget
@@ -40,7 +40,7 @@ there. Each subagent replies with one line, and its full output stays in a file.
    (`git -C <clone> fetch origin <head> && git -C <clone> worktree add --detach "$run/tree" <head>`),
    otherwise from a blobless clone under `"$run"`.
 4. `code-reviewer prepare --repo <repo> --pr <n> --out "$run" --tree "$run/tree" --clones <clone root> [--effort <e>]`
-   (`--clones` defaults to `FINAL_REVIEWER_CLONE_ROOT`). It writes, without any model calls:
+   (`--clones` defaults to `CODE_REVIEWER_CLONE_ROOT`). It writes, without any model calls:
    - `diff.patch` and `diff/INDEX.md` with one numbered patch per file (base and head line numbers
      on every line);
    - `context.md`: the last final review (SHA, verdict, effort), commits since, unresolved

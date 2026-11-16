@@ -89,7 +89,7 @@ export function createGhPrepareIo(
         tree,
         baseSha,
         repoId: target.repo,
-        configDir: process.env.FINAL_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR,
+        configDir: process.env.CODE_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR,
       }),
     async history(tree, base, paths) {
       try {

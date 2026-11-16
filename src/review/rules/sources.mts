@@ -8,7 +8,7 @@ import type { StageInput } from './stage.mts'
 
 export type Sources = Pick<StageInput, 'repo' | 'repoId' | 'configs' | 'related' | 'missing'>
 
-const NO_CLONES = 'no clone root (pass --clones or set FINAL_REVIEWER_CLONE_ROOT)'
+const NO_CLONES = 'no clone root (pass --clones or set CODE_REVIEWER_CLONE_ROOT)'
 
 /** `owner/name` from a clone's origin URL (https or ssh), or undefined without a usable origin. */
 export async function originRepo(dir: string, git: RunTextCommand): Promise<string | undefined> {

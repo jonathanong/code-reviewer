@@ -20,11 +20,11 @@ Resolve these first and ask when one is missing:
 - **Owner** whose pull requests it reviews (for example `vouchington`), and optionally a
   repository list.
 - **Clone root**: where local clones of those repositories live, for review worktrees, rule
-  sources, and dependencies. Set `FINAL_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
+  sources, and dependencies. Set `CODE_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
   from each clone's `origin/HEAD`, so run `git fetch` in those clones at start.
 - **Event source**: the hook-harness CLI (`npx -y hook-harness`), its MCP server, or none.
-- **GitHub App** (optional): `FINAL_REVIEWER_APP_ID` plus `FINAL_REVIEWER_APP_PRIVATE_KEY_PATH`
-  (or `_PRIVATE_KEY`) and optionally `FINAL_REVIEWER_APP_INSTALLATION_ID` in the session
+- **GitHub App** (optional): `CODE_REVIEWER_APP_ID` plus `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`
+  (or `_PRIVATE_KEY`) and optionally `CODE_REVIEWER_APP_INSTALLATION_ID` in the session
   environment. The App needs Pull requests and Issues read and write, and Contents and Metadata
   read. Without it, the local `gh` login is used. Never search for or print keys.
 

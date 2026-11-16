@@ -28,7 +28,7 @@ export function appRunner(
   }
 }
 
-/** Picks App auth when `FINAL_REVIEWER_APP_ID` is configured, otherwise the local `gh` login. */
+/** Picks App auth when `CODE_REVIEWER_APP_ID` is configured, otherwise the local `gh` login. */
 export function createGhAuth(
   env: AppAuthEnv = process.env,
   tokensFor: typeof createInstallationTokenProvider = createInstallationTokenProvider,

@@ -16,8 +16,8 @@ code-reviewer plugins [--require NAME]...
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
-  auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
-  FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
+  auth reports whether gh calls use the GitHub App (CODE_REVIEWER_APP_ID with
+  CODE_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
   post, revoke and status use the label names from repos/<owner>.json and repos/<owner>/<name>.json
   (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
@@ -34,7 +34,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
   the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
-  change as consumed or as consumers) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
+  change as consumed or as consumers) read from --clones DIR (or CODE_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
   review runs claim, prepare, a Haiku skill selection, the planned pillars (--jobs at a time,
   default 3, each retried once), and the verifier with headless claude runs, then writes
   review.json, preview.md, report.md and report.json to --out and stops before posting. It fails
@@ -42,7 +42,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   from report.json.
   resolve resolves review threads of fixed findings.
   Markers in earlier final reviews count only from the posting identity (the gh or App viewer)
-  plus the comma-separated logins in FINAL_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
+  plus the comma-separated logins in CODE_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
   under App auth, where viewer is unavailable).
   post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
   the header; inline comments where the diff allows, the rest in the body) and adds the "final

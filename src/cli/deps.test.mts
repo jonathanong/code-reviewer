@@ -66,7 +66,7 @@ describe('createDefaultDeps', () => {
 
   it('passes the trusted-author allowlist to the gh ios', async () => {
     const { getAuth } = fakeAuth()
-    const deps = createDefaultDeps(getAuth, { FINAL_REVIEWER_TRUSTED_AUTHORS: 'App[bot], Me' })
+    const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_TRUSTED_AUTHORS: 'App[bot], Me' })
     await expect(deps.createIo(TARGET).trustedAuthors()).resolves.toEqual(
       new Set(['app[bot]', 'me']),
     )
@@ -80,7 +80,7 @@ describe('createDefaultDeps', () => {
     try {
       writeFileSync(join(dir, 'acme.json'), '{"labels":{"approval":"lgtm"}}')
       const getAuth = vi.fn((): GhAuth => ({ mode: 'gh', runner: () => async () => 'lgtm\n' }))
-      const deps = createDefaultDeps(getAuth, { FINAL_REVIEWER_CONFIG_DIR: dir })
+      const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: dir })
       expect(deps.configs().byOwner.get('acme')?.labels).toEqual({ approval: 'lgtm' })
       expect(deps.configs()).toBe(deps.configs())
       await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
@@ -99,7 +99,7 @@ describe('createDefaultDeps', () => {
   })
 
   it('defaults to the environment-based auth', () => {
-    vi.stubEnv('FINAL_REVIEWER_APP_ID', '')
+    vi.stubEnv('CODE_REVIEWER_APP_ID', '')
     expect(createDefaultDeps().authMode()).toBe('gh')
     vi.unstubAllEnvs()
   })

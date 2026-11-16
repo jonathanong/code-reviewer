@@ -56,11 +56,11 @@ export function createDefaultDeps(
   getAuth: () => GhAuth = createGhAuth,
   env: Record<string, string | undefined> = process.env,
 ): ReviewDeps {
-  const trusted = parseTrustedAuthors(env.FINAL_REVIEWER_TRUSTED_AUTHORS)
+  const trusted = parseTrustedAuthors(env.CODE_REVIEWER_TRUSTED_AUTHORS)
   let auth: GhAuth | undefined
   let loaded: RepoConfigs | undefined
   const configs = () =>
-    (loaded ??= loadRepoConfigs(env.FINAL_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR))
+    (loaded ??= loadRepoConfigs(env.CODE_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR))
   const resolved = () => (auth ??= getAuth())
   const forTarget = (target: PullTarget) => {
     const { owner, name } = splitRepo(target.repo)
@@ -78,7 +78,7 @@ export function createDefaultDeps(
       ),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
     createPrepareIo: (target) =>
-      createGhPrepareIo(target, forTarget(target), runGit, trusted, env.FINAL_REVIEWER_CLONE_ROOT),
+      createGhPrepareIo(target, forTarget(target), runGit, trusted, env.CODE_REVIEWER_CLONE_ROOT),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
     listPlugins: async () => {
