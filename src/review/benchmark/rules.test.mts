@@ -48,7 +48,7 @@ describe('stageCaseRules', () => {
     const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir }
     const digest = await stageCaseRules(item, { dir, diff: DIFF, body: '' })
     expect(digest).toMatch(/^[0-9a-f]{64}$/u)
-    const rules = (path: string) => readFileSync(join(dir, '.final-review/rules', path), 'utf8')
+    const rules = (path: string) => readFileSync(join(dir, '.review/rules', path), 'utf8')
     expect(rules('repo/AGENTS.md')).toBe('base rules')
     expect(rules('deps/lib/src/x.ts')).toBe('export {}')
     const index = rules('INDEX.md')
@@ -70,7 +70,7 @@ describe('stageCaseRules', () => {
     const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir, repoId: 'acme/web' }
     const snapshot = { dir, diff: 'diff --git a/src/a.ts b/src/a.ts\n+const a = 1\n', body: '' }
     await stageCaseRules(item, snapshot)
-    const rules = (path: string) => readFileSync(join(dir, '.final-review/rules', path), 'utf8')
+    const rules = (path: string) => readFileSync(join(dir, '.review/rules', path), 'utf8')
     expect(rules('deps/api/routes.ts')).toBe('export {}')
     expect(rules('consumers/app/src/client.ts')).toBe('fetch()')
     const index = rules('INDEX.md')
@@ -90,7 +90,7 @@ describe('stageCaseRules', () => {
       headSha: 'b'.repeat(40),
     }
     await stageCaseRules(item, { dir, diff: DIFF, body: '' })
-    const index = readFileSync(join(dir, '.final-review/rules/INDEX.md'), 'utf8')
+    const index = readFileSync(join(dir, '.review/rules/INDEX.md'), 'utf8')
     expect(index).toContain('## This repository (head (base not exported))')
     expect(index).not.toContain('## Dependencies')
   })
@@ -101,7 +101,7 @@ describe('stageCaseRules', () => {
     const dir = temp()
     const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir }
     await stageCaseRules(item, { dir, diff: DIFF, body: '' })
-    expect(readFileSync(join(dir, '.final-review/rules/INDEX.md'), 'utf8')).not.toContain(
+    expect(readFileSync(join(dir, '.review/rules/INDEX.md'), 'utf8')).not.toContain(
       '## Dependencies',
     )
   })

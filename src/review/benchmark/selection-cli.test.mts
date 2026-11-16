@@ -67,7 +67,7 @@ function harness(answer: (id: string, attempt: number) => SkillChoice) {
     log: (line) => void logs.push(line),
     prepare: async (item, cache, work) => {
       prepared.push([item.id, cache, work])
-      store.set(`/snap/${item.id}/.final-review/pr.md`, `# Title of ${item.id}\n\nbody`)
+      store.set(`/snap/${item.id}/.review/pr.md`, `# Title of ${item.id}\n\nbody`)
       return { dir: `/snap/${item.id}`, diff: DIFF, body: '' }
     },
     skills: (installs) =>

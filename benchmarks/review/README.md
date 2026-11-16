@@ -34,7 +34,7 @@ prompt and is not re-measured, so its skill-load count no longer describes the c
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
 Labeled pull requests for benchmarking the `final-review` pillar prompts in
-`skills/final-review/references/pillars/`.
+`skills/review/references/pillars/`.
 
 ## Cases
 
@@ -64,7 +64,7 @@ that needs no clone or `gh`:
   working tree, and the diff is `git diff --no-index base head` with paths shown as `a/<path>` and
   `b/<path>`.
 - `pr.md`: the title on the first line (`# ...`), then the description.
-- `context.md` (optional): copied to `.final-review/context.md`, written like the "Other reviewers
+- `context.md` (optional): copied to `.review/context.md`, written like the "Other reviewers
   and comments" section of the live run. The pillar prompt mentions that file only when present.
 
 - `repos/<name>/` (optional): dependency repositories, each with a `package.json` name, its own
@@ -80,14 +80,14 @@ that needs no clone or `gh`:
 Fixture cases are cached by a content hash of the fixture directory instead of a head SHA.
 `synthetic.json` holds the fixture cases: the `lock-scope-*` cases for the correctness pillar and
 the `rules-*` cases, one per shared rule skill. It is separate from `cases.json`; run it with `--cases
-benchmarks/final-review/synthetic.json`. A fixture must be synthetic: never copy private code.
+benchmarks/review/synthetic.json`. A fixture must be synthetic: never copy private code.
 
 Labels are written by people or agents from the revert and fix history. Add cases by mining new
 reverts and regression fixes, and keep negatives at roughly a third of the set.
 
 ### Rule sources
 
-Every run stages rule sources into `.final-review/rules/` with the same code `prepare` uses: the
+Every run stages rule sources into `.review/rules/` with the same code `prepare` uses: the
 fixture's `base/` instructions and skills (a mined case's head, since its base is not exported),
 and fixture dependencies and consumers from `repos/`. Shared rules are never staged. The pillar
 prompt points at `rules/INDEX.md`. `--no-rules` stages nothing, for control runs that check a case
@@ -133,8 +133,8 @@ and judge runs get them with every plugin false.
 
 ### Cost and turns
 
-The pillar prompt points the reviewer at `.final-review/files.md` (an index of per-file patches in
-`.final-review/diff/`) and tells it never to read the combined `diff.patch` whole, so a large pull
+The pillar prompt points the reviewer at `.review/files.md` (an index of per-file patches in
+`.review/diff/`) and tells it never to read the combined `diff.patch` whole, so a large pull
 request does not exhaust the context in one read. Each raw result records `usage` from the final
 `result` event: `costUsd`, `turns`, `durationMs`, `inputTokens`, `outputTokens`, `cacheReadTokens`,
 `cacheCreationTokens` (null for a field the event lacks). A run that exits non-zero but printed a
@@ -201,15 +201,15 @@ dependency's route, with no package import to detect (`links-declared-api-payloa
 
 ```bash
 pnpm exec code-reviewer bench \
-  --cases benchmarks/final-review/cases.json \
-  --prompts skills/final-review/references/pillars \
+  --cases benchmarks/review/cases.json \
+  --prompts skills/review/references/pillars \
   --out "$TMPDIR/final-review-bench" \
   --pillar design --jobs 3
 ```
 
 For each case, the runner exports the pull request head with `git archive`, so the tree has no
 history. It writes the title, description, and a numbered diff (base and head line numbers on every
-line) into `.final-review/` inside that tree, then
+line) into `.review/` inside that tree, then
 runs `claude -p` on Sonnet with only `Read`, `Grep`, and `Glob`. With no shell, network, or
 `gh`, the reviewer cannot look up the revert. Each pillar prompt is prefixed with the shared
 `_contract.md`.
@@ -230,9 +230,9 @@ The verifier is benchmarked on its own, without re-running pillars or dispatchin
 
 ```bash
 pnpm exec code-reviewer bench-verifier \
-  --cases benchmarks/final-review/cases.json \
+  --cases benchmarks/review/cases.json \
   --findings-from "$TMPDIR/final-review-bench" \
-  --prompts skills/final-review/references \
+  --prompts skills/review/references \
   --out "$TMPDIR/final-review-verifier" --jobs 3
 ```
 
@@ -282,8 +282,8 @@ met by any one member.
 
 ```bash
 pnpm exec code-reviewer bench-selection \
-  --cases benchmarks/final-review/cases.json \
-  --cases benchmarks/final-review/synthetic.json \
+  --cases benchmarks/review/cases.json \
+  --cases benchmarks/review/synthetic.json \
   --out "$TMPDIR/final-review-selection"
 ```
 

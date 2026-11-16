@@ -11,19 +11,15 @@ import {
   type LabelIo,
   type PrepareIo,
   type PullTarget,
-} from '../final-review/index.mts'
-import type { Exec } from '../final-review/benchmark/exec.mts'
+} from '../review/index.mts'
+import type { Exec } from '../review/benchmark/exec.mts'
 import {
   parsePluginInstalls,
   parsePluginList,
   type Plugin,
   type PluginInfo,
-} from '../final-review/plugins.mts'
-import {
-  DEFAULT_CONFIG_DIR,
-  loadRepoConfigs,
-  type RepoConfigs,
-} from '../final-review/rules/config.mts'
+} from '../review/plugins.mts'
+import { DEFAULT_CONFIG_DIR, loadRepoConfigs, type RepoConfigs } from '../review/rules/config.mts'
 import {
   createGhAuth,
   runGit,
@@ -48,7 +44,7 @@ export type FinalReviewDeps = {
   pluginInfo(): Promise<PluginInfo>
   /** Runs a binary (`claude`) and resolves its stdout. */
   exec: Exec
-  /** The directory holding the verifier and pillar prompts (`skills/final-review/references`). */
+  /** The directory holding the verifier and pillar prompts (`skills/review/references`). */
   references(): string
   runBench(args: string[]): Promise<number>
   runVerifierBench(args: string[]): Promise<number>
@@ -86,14 +82,14 @@ export function createDefaultDeps(
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
     listPlugins: async () => {
-      const { defaultExec } = await import('../final-review/benchmark/exec.mts')
+      const { defaultExec } = await import('../review/benchmark/exec.mts')
       return parsePluginList(
         await defaultExec('claude', ['plugin', 'list', '--json']),
         process.cwd(),
       )
     },
     pluginInfo: async () => {
-      const { defaultExec } = await import('../final-review/benchmark/exec.mts')
+      const { defaultExec } = await import('../review/benchmark/exec.mts')
       const listed = await defaultExec('claude', ['plugin', 'list', '--json'])
       return {
         enabled: parsePluginList(listed, process.cwd()),
@@ -101,18 +97,13 @@ export function createDefaultDeps(
       }
     },
     exec: async (command, args, options) =>
-      (await import('../final-review/benchmark/exec.mts')).defaultExec(command, args, options),
-    references: () =>
-      fileURLToPath(new URL('../../skills/final-review/references', import.meta.url)),
+      (await import('../review/benchmark/exec.mts')).defaultExec(command, args, options),
+    references: () => fileURLToPath(new URL('../../skills/review/references', import.meta.url)),
     runBench: async (args) =>
-      (await import('../final-review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
+      (await import('../review/benchmark/cli.mts')).runFinalReviewBenchCli(args),
     runVerifierBench: async (args) =>
-      (await import('../final-review/benchmark/verifier-cli.mts')).runFinalReviewVerifierBenchCli(
-        args,
-      ),
+      (await import('../review/benchmark/verifier-cli.mts')).runFinalReviewVerifierBenchCli(args),
     runSelectionBench: async (args) =>
-      (await import('../final-review/benchmark/selection-cli.mts')).runFinalReviewSelectionBenchCli(
-        args,
-      ),
+      (await import('../review/benchmark/selection-cli.mts')).runFinalReviewSelectionBenchCli(args),
   }
 }

@@ -83,10 +83,10 @@ describe('prepareSnapshot', () => {
       `${DIFF}\n`,
     )
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'files.md'), 'utf8')).toContain(
-      '`.final-review/diff/0001.patch` +0 -0 a.ts',
+      '`.review/diff/0001.patch` +0 -0 a.ts',
     )
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'files.md'), 'utf8')).toContain(
-      '.final-review/diff/0001.patch` +0 -0 a.ts',
+      '.review/diff/0001.patch` +0 -0 a.ts',
     )
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'pr.md'), 'utf8')).toBe(
       '# My title\n\nPR body\n',
@@ -151,7 +151,7 @@ describe('prepareSnapshot', () => {
   })
 })
 
-const FIXTURES = resolve(import.meta.dirname, '../../../benchmarks/final-review/fixtures')
+const FIXTURES = resolve(import.meta.dirname, '../../../benchmarks/review/fixtures')
 
 function fixtureCase(name: string): EvalCase {
   return {

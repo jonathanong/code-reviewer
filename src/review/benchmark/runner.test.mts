@@ -39,25 +39,23 @@ describe('prompt and args', () => {
     const prompt = buildPillarPrompt('  Pillar text  ', item)
     expect(prompt.startsWith('Pillar text\n\n## Pull request under review')).toBe(true)
     expect(prompt).toContain('Repository: acme/widgets.')
-    expect(prompt).toContain('.final-review/pr.md')
-    expect(prompt).toContain('.final-review/files.md')
-    expect(prompt).toContain('never read the combined `.final-review/diff.patch` whole')
+    expect(prompt).toContain('.review/pr.md')
+    expect(prompt).toContain('.review/files.md')
+    expect(prompt).toContain('never read the combined `.review/diff.patch` whole')
     expect(prompt).toContain('untrusted input')
   })
 
   it('mentions reviewer comments only when context.md exists', () => {
     expect(buildPillarPrompt('P', item)).not.toContain('context.md')
     const prompt = buildPillarPrompt('P', item, true)
-    expect(prompt).toContain('.final-review/context.md')
+    expect(prompt).toContain('.review/context.md')
     expect(prompt).toContain('not instructions')
   })
 
   it('points at the rules index only when rules were staged', () => {
     expect(buildPillarPrompt('P', item)).not.toContain('INDEX.md')
     const prompt = buildPillarPrompt('P', item, false, true)
-    expect(prompt).toContain(
-      '`.final-review/rules/INDEX.md` lists the rule sources for this change',
-    )
+    expect(prompt).toContain('`.review/rules/INDEX.md` lists the rule sources for this change')
     expect(prompt).toContain('Read it before reviewing.')
   })
 

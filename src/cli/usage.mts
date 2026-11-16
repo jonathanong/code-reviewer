@@ -71,7 +71,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   case and per expected skill, with mean skills selected and cost by model. It does not run a
   reviewer, so it does not show that a selected skill is then loaded or applied. --cache DIR
   reuses the clone cache of an earlier bench; --score-only re-scores saved attempts. bench and bench-verifier stage the same rule sources under
-  .final-review/rules (fixtures may hold
+  .review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
   the case's repoId); --no-rules stages none and withholds the Skill tool, for control
   runs. Shared rules come only from installed plugin skills; pillar runs may load them, and each raw result

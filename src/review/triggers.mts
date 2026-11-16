@@ -1,4 +1,4 @@
-/** Path classification behind pillar dispatch; see skills/final-review/references/dispatch.md. */
+/** Path classification behind pillar dispatch; see skills/review/references/dispatch.md. */
 
 const DOC_RE = /\.(?:md|mdx|markdown|txt|rst|adoc)$/iu
 const TEST_RE =

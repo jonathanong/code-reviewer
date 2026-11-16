@@ -10,7 +10,7 @@ export type RuleReader = {
   read(path: string): Promise<string | undefined>
 }
 
-const SKIPPED = new Set(['node_modules', '.git', 'target', 'coverage', '.final-review'])
+const SKIPPED = new Set(['node_modules', '.git', 'target', 'coverage', '.review'])
 
 function skipped(path: string): boolean {
   return path.split('/').some((part) => SKIPPED.has(part)) || path.includes('.claude/worktrees/')

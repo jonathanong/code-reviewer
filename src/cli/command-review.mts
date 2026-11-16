@@ -1,9 +1,9 @@
 import { resolve } from 'node:path'
 
-import { postFinalReview } from '../final-review/post.mts'
-import { rerenderReport } from '../final-review/run/report-file.mts'
-import { runReview, type ReviewResult } from '../final-review/run/review.mts'
-import type { PullTarget } from '../final-review/index.mts'
+import { postFinalReview } from '../review/post.mts'
+import { rerenderReport } from '../review/run/report-file.mts'
+import { runReview, type ReviewResult } from '../review/run/review.mts'
+import type { PullTarget } from '../review/index.mts'
 import {
   abortCommand,
   claimCommand,

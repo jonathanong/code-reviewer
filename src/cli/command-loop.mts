@@ -15,7 +15,7 @@ import {
   skippedStep,
   type Effort,
   type PullTarget,
-} from '../final-review/index.mts'
+} from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import type { FinalReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'

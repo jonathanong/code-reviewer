@@ -9,8 +9,8 @@ import {
   postedStep,
   revokeFinalApproval,
   type PullTarget,
-} from '../final-review/index.mts'
-import { checkPlugins } from '../final-review/plugins.mts'
+} from '../review/index.mts'
+import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'

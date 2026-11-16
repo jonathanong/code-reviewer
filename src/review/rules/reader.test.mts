@@ -32,7 +32,7 @@ describe('dirReader', () => {
       '.claude/worktrees/w/a.ts',
       'target/debug/x',
       'coverage/lcov.info',
-      '.final-review/rules/INDEX.md',
+      '.review/rules/INDEX.md',
       '.claude/skills/s/SKILL.md',
     ])
     const reader = dirReader(root, 'base')

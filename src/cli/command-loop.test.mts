@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../final-review/index.mts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../final-review/index.mts')>()),
+vi.mock('../review/index.mts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../review/index.mts')>()),
   listQueue: vi.fn(async () => [{ repo: 'acme/a', pr: 1 }]),
   claimReview: vi.fn(async () => ({ claimed: true })),
   abortReview: vi.fn(async () => ({ added: [] })),
@@ -21,8 +21,8 @@ import {
   resolveThreads,
   skipReview,
   type LabelNames,
-} from '../final-review/index.mts'
-import { parseRepoConfig, type RepoConfigs } from '../final-review/rules/config.mts'
+} from '../review/index.mts'
+import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import { runLoopCommand } from './command-loop.mts'
 import type { FinalReviewDeps } from './deps.mts'
 

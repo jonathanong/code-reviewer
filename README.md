@@ -9,7 +9,7 @@ change, and posts a GitHub review.
   for callers that have not moved yet.
 - `skills/`: the Claude Code skills (pillar prompts, verifier, and the standing loop).
 - `repos/`: what the reviewer knows about each reviewed repository.
-- `benchmarks/final-review/`: labeled eval cases and how to run them.
+- `benchmarks/review/`: labeled eval cases and how to run them.
 
 ## Install
 
@@ -20,7 +20,7 @@ cd code-reviewer && pnpm install
 
 As a Claude Code plugin, add the marketplace `jonathanong/code-reviewer` and install the
 `code-reviewer` plugin. The standing reviewer session runs in this checkout; see
-[`skills/final-reviewer/SKILL.md`](skills/final-reviewer/SKILL.md).
+[`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md).
 
 ## Running a review
 

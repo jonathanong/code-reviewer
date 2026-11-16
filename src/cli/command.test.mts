@@ -3,25 +3,25 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 
-vi.mock('../final-review/benchmark/cli.mts', () => ({
+vi.mock('../review/benchmark/cli.mts', () => ({
   runFinalReviewBenchCli: vi.fn(async () => 5),
 }))
-vi.mock('../final-review/run/review.mts', () => ({
+vi.mock('../review/run/review.mts', () => ({
   runReview: vi.fn(async () => ({ ok: true, summary: { claimed: true } })),
 }))
-vi.mock('../final-review/benchmark/selection-cli.mts', () => ({
+vi.mock('../review/benchmark/selection-cli.mts', () => ({
   runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
 }))
-vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
+vi.mock('../review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
-import type { FinalReviewIo, LabelIo, PrepareIo } from '../final-review/index.mts'
-import { NO_CONFIGS, parseRepoConfig } from '../final-review/rules/config.mts'
-import { runReview } from '../final-review/run/review.mts'
-import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
-import { runFinalReviewSelectionBenchCli } from '../final-review/benchmark/selection-cli.mts'
-import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
+import type { FinalReviewIo, LabelIo, PrepareIo } from '../review/index.mts'
+import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
+import { runReview } from '../review/run/review.mts'
+import { runFinalReviewBenchCli } from '../review/benchmark/cli.mts'
+import { runFinalReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
+import { runFinalReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
 import { runFinalReviewCommand, type FinalReviewDeps } from './command.mts'
 
 const SHA = 'e'.repeat(40)

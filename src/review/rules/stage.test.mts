@@ -144,10 +144,10 @@ describe('stageRuleSources', () => {
       diff: '',
       repo: {
         reader: reader({
-          'skills/final-review/SKILL.md': skill('final-review', 'F'),
-          'skills/final-review/references/verifier.md': 'verifier',
-          'skills/final-review/references/pillars/_contract.md': 'contract',
-          'skills/final-review/notes/other.md': 'not staged',
+          'skills/review/SKILL.md': skill('final-review', 'F'),
+          'skills/review/references/verifier.md': 'verifier',
+          'skills/review/references/pillars/_contract.md': 'contract',
+          'skills/review/notes/other.md': 'not staged',
         }),
         refLabel: 'base',
       },
@@ -156,11 +156,11 @@ describe('stageRuleSources', () => {
     })
     expect(result.written).toEqual([
       'rules/INDEX.md',
-      'rules/repo/skills/final-review/SKILL.md',
-      'rules/repo/skills/final-review/references/pillars/_contract.md',
-      'rules/repo/skills/final-review/references/verifier.md',
+      'rules/repo/skills/review/SKILL.md',
+      'rules/repo/skills/review/references/pillars/_contract.md',
+      'rules/repo/skills/review/references/verifier.md',
     ])
-    expect(read('rules/repo/skills/final-review/references/pillars/_contract.md')).toBe('contract')
+    expect(read('rules/repo/skills/review/references/pillars/_contract.md')).toBe('contract')
   })
 
   it('reports a missing tree and sources, and omits empty sections', async () => {

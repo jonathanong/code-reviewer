@@ -1,5 +1,5 @@
 ---
-name: final-review
+name: review
 description: Run one multi-pillar final review (first or follow-up) of a pull request and post it to GitHub.
 ---
 
@@ -15,7 +15,7 @@ stays with the human or the triage loop.
 
 Arguments: `owner/name#number` (or a pull request URL) and an optional effort: `low`, `medium`, or
 `high`. Without one, the CLI picks the mode: light (`low`) for a follow-up and for small, docs-only, test-only or Dependabot pull requests, full (`high`) otherwise. To run as
-the standing reviewer that other sessions ask, use the [final-reviewer](../final-reviewer/SKILL.md)
+the standing reviewer that other sessions ask, use the [final-reviewer](../review-loop/SKILL.md)
 skill, which calls this one per pull request.
 
 The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer
@@ -120,7 +120,7 @@ current head and the `final approval` label is present.
 
 Pillar prompts are benchmarked against labeled reverts and clean pull requests with
 `code-reviewer bench`; the verifier with `bench-verifier`. The cases and how to run them
-are in `benchmarks/final-review/`. Change a pillar or verifier prompt only together with a
+are in `benchmarks/review/`. Change a pillar or verifier prompt only together with a
 benchmark run.
 
 Consumer wrapper owns: the clone root (where local clones of the organization's repositories,

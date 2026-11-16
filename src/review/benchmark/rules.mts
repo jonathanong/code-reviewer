@@ -28,7 +28,7 @@ function fixtureRelated(fixtureDir: string): StageInput['related'] {
     }))
 }
 
-/** Stages the same rule sources `prepare` does into the snapshot's `.final-review/rules`, and returns their digest. */
+/** Stages the same rule sources `prepare` does into the snapshot's `.review/rules`, and returns their digest. */
 export async function stageCaseRules(item: EvalCase, snapshot: Snapshot): Promise<string> {
   const fixture = isFixtureCase(item)
   const repo = fixture

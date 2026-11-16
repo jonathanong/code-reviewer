@@ -3,23 +3,23 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../final-review/benchmark/cli.mts', () => ({
+vi.mock('../review/benchmark/cli.mts', () => ({
   runFinalReviewBenchCli: vi.fn(async () => 5),
 }))
-vi.mock('../final-review/benchmark/exec.mts', () => ({
+vi.mock('../review/benchmark/exec.mts', () => ({
   defaultExec: vi.fn(async () => '[{"id":"rules@m","version":"1.0.0","enabled":true}]'),
 }))
-vi.mock('../final-review/benchmark/selection-cli.mts', () => ({
+vi.mock('../review/benchmark/selection-cli.mts', () => ({
   runFinalReviewSelectionBenchCli: vi.fn(async () => 4),
 }))
-vi.mock('../final-review/benchmark/verifier-cli.mts', () => ({
+vi.mock('../review/benchmark/verifier-cli.mts', () => ({
   runFinalReviewVerifierBenchCli: vi.fn(async () => 6),
 }))
 
-import { runFinalReviewBenchCli } from '../final-review/benchmark/cli.mts'
-import { defaultExec } from '../final-review/benchmark/exec.mts'
-import { runFinalReviewSelectionBenchCli } from '../final-review/benchmark/selection-cli.mts'
-import { runFinalReviewVerifierBenchCli } from '../final-review/benchmark/verifier-cli.mts'
+import { runFinalReviewBenchCli } from '../review/benchmark/cli.mts'
+import { defaultExec } from '../review/benchmark/exec.mts'
+import { runFinalReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
+import { runFinalReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
 import type { GhAuth } from '../gh-cli/index.mts'
 import { createDefaultDeps } from './deps.mts'
 
@@ -137,7 +137,7 @@ describe('createDefaultDeps', () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await deps.exec('claude', ['-p', 'x'], { cwd: '/tree', timeoutMs: 5 })
     expect(defaultExec).toHaveBeenCalledWith('claude', ['-p', 'x'], { cwd: '/tree', timeoutMs: 5 })
-    expect(deps.references().endsWith('skills/final-review/references')).toBe(true)
+    expect(deps.references().endsWith('skills/review/references')).toBe(true)
   })
 
   it('delegates the benchmarks', async () => {

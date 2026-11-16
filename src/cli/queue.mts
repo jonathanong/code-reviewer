@@ -1,4 +1,4 @@
-import { listQueue, type QueueEntry } from '../final-review/index.mts'
+import { listQueue, type QueueEntry } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import type { FinalReviewDeps } from './deps.mts'
 import { labelsFor } from './review-settings.mts'

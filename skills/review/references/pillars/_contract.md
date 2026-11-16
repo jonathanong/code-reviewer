@@ -7,7 +7,7 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
 - A checkout of the pull request head (no write access needed), the full diff, and the title and
   description. In a re-review (the run names a since index), also the diff since the last reviewed SHA and the
   previous findings.
-- `rules/INDEX.md` (`.final-review/rules/INDEX.md` in a benchmark snapshot): the rule sources
+- `rules/INDEX.md` (`.review/rules/INDEX.md` in a benchmark snapshot): the rule sources
   staged for this change. It lists this repository's `AGENTS.md` and skills at the base ref and
   the instructions and skills of each dependency repository, with the code location of each: those the
   reviewer's config lists for this repository (an HTTP API, a schema) and those whose packages

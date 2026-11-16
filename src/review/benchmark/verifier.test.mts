@@ -121,9 +121,7 @@ describe('verifier run', () => {
 
   it('points at the rules index only when rules are staged', () => {
     expect(buildVerifierPrompt('V', ITEM, [finding()])).not.toContain('rules/INDEX.md')
-    expect(buildVerifierPrompt('V', ITEM, [finding()], true)).toContain(
-      '.final-review/rules/INDEX.md`',
-    )
+    expect(buildVerifierPrompt('V', ITEM, [finding()], true)).toContain('.review/rules/INDEX.md`')
   })
 
   it('passes read-only tools and the schema', () => {

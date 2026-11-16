@@ -12,7 +12,7 @@ export type Snapshot = {
 }
 
 /** Context files a pillar reads, kept inside the snapshot so read-only tools can reach them. */
-export const CONTEXT_DIR = '.final-review'
+export const CONTEXT_DIR = '.review'
 
 /** Writes the diff, per-file patches, index, and description the reviewer reads. */
 export function writeContext(dir: string, title: string, diff: string, body: string): void {
@@ -30,12 +30,12 @@ export function writeContext(dir: string, title: string, diff: string, body: str
   writeFileSync(join(context, 'pr.md'), `# ${title}\n\n${body.trim()}\n`)
 }
 
-/** True when the snapshot carries reviewer comments in `.final-review/context.md`. */
+/** True when the snapshot carries reviewer comments in `.review/context.md`. */
 export function hasContextNotes(dir: string): boolean {
   return existsSync(join(dir, CONTEXT_DIR, 'context.md'))
 }
 
-/** True when `.final-review/rules/INDEX.md` lists rule sources for this snapshot. */
+/** True when `.review/rules/INDEX.md` lists rule sources for this snapshot. */
 export function hasRulesIndex(dir: string): boolean {
   return existsSync(join(dir, CONTEXT_DIR, 'rules', 'INDEX.md'))
 }

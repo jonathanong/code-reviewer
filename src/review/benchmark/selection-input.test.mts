@@ -21,12 +21,10 @@ describe('selectionText', () => {
       read.push(path)
       return '# Add a column\n\nbody'
     })
-    expect(read).toEqual(['/snap/.final-review/pr.md'])
+    expect(read).toEqual(['/snap/.review/pr.md'])
     expect(text.title).toBe('Add a column')
-    expect(text.index).toBe(
-      renderIndexFile(splitDiff(numberDiff(DIFF)), '/snap/.final-review/diff'),
-    )
-    expect(text.index).toContain('`/snap/.final-review/diff/0001.patch` +1 -1 a.ts')
+    expect(text.index).toBe(renderIndexFile(splitDiff(numberDiff(DIFF)), '/snap/.review/diff'))
+    expect(text.index).toContain('`/snap/.review/diff/0001.patch` +1 -1 a.ts')
   })
 
   it('falls back to untitled when pr.md has no title', () => {
