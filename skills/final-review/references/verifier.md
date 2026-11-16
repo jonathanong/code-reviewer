@@ -15,7 +15,9 @@ thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` at lo
 
 1. **Congruence.** Perform the [congruence pillar](pillars/congruence.md) yourself, reading the title, description, and closing issues from `context.md`, not from GitHub.
 2. **Verify each finding** against the code at the reviewed head: open the cited lines and their
-   callers. Mark it confirmed, re-rated (wrong severity for the pillar's blocking bar, in either
+   callers. For a finding that cites a rule skill (`plugin:skill`), load that installed skill
+   and check the claim against its text; shared rules come only from installed plugin skills.
+   Mark it confirmed, re-rated (wrong severity for the pillar's blocking bar, in either
    direction: raise an under-rated finding as readily as you lower an over-rated one), or
    rejected (not true, out of scope, or speculative). Drop rejected findings; never post a
    finding you could not confirm in the code. Check `RIGHT` locations against the head file and

@@ -1,6 +1,6 @@
 import { FinalReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import { READ_ONLY_TOOLS } from './runner.mts'
+import { PILLAR_TOOLS, READ_ONLY_TOOLS } from './runner.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 
 /** Whether a finding's claim is true of the code at the reviewed head. */
@@ -39,7 +39,10 @@ export function buildCheckPrompt(
     `history. \`${CONTEXT_DIR}/pr.md\` holds the title and description, and \`${CONTEXT_DIR}/diff.patch\``,
     'the numbered diff.',
     ...(hasRules
-      ? [`\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources that apply; read it first.`]
+      ? [
+          `\`${CONTEXT_DIR}/rules/INDEX.md\` lists the rule sources that apply; read it first.`,
+          'Shared rules come only from installed plugin skills: when a finding cites a rule skill (`plugin:skill`), load it with the Skill tool and check the claim against its text.',
+        ]
       : []),
     NUMBERED_DIFF_LEGEND,
     'For each finding below, open the cited code (read line ranges, not whole large files) and',
@@ -54,7 +57,13 @@ export function buildCheckPrompt(
   ].join('\n\n')
 }
 
-export function checkArgs(prompt: string, model: string, maxTurns: number): string[] {
+export function checkArgs(
+  prompt: string,
+  model: string,
+  maxTurns: number,
+  skills = false,
+): string[] {
+  const tools = skills ? PILLAR_TOOLS : READ_ONLY_TOOLS
   return [
     '-p',
     prompt,
@@ -65,9 +74,9 @@ export function checkArgs(prompt: string, model: string, maxTurns: number): stri
     '--json-schema',
     JSON.stringify(CHECK_SCHEMA),
     '--tools',
-    READ_ONLY_TOOLS,
+    tools,
     '--allowedTools',
-    READ_ONLY_TOOLS,
+    tools,
     '--permission-mode',
     'dontAsk',
     '--max-turns',
@@ -111,10 +120,7 @@ export async function checkFindings(
   exec: Exec,
 ): Promise<Map<number, Check>> {
   if (indexes.length === 0) return new Map()
-  const args = checkArgs(
-    buildCheckPrompt(findings, indexes, hasRulesIndex(dir)),
-    run.model,
-    run.maxTurns,
-  )
+  const rules = hasRulesIndex(dir)
+  const args = checkArgs(buildCheckPrompt(findings, indexes, rules), run.model, run.maxTurns, rules)
   return parseChecks(await exec('claude', args, { cwd: dir }), indexes)
 }
