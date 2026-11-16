@@ -10,7 +10,8 @@ export function formatAmount(cents: number): string {
 }
 
 export function parseAmount(input: string): number {
+  if (!/^[1-9]\d*$/u.test(input)) throw new InvalidAmountError(input)
   const value = Number(input)
-  if (!Number.isInteger(value) || value <= 0) throw new InvalidAmountError(input)
+  if (!Number.isSafeInteger(value)) throw new InvalidAmountError(input)
   return value
 }
