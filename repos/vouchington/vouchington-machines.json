@@ -1,0 +1,9 @@
+{
+  "consumes": [
+    {
+      "repo": "vouchington/vouchington-tooling",
+      "via": "the vouchington-tooling npm package, its plugin marketplace, and its MCP server, configured under agents/base/",
+      "paths": ["packages/vouchington-tooling/**", ".claude-plugin/**", "plugins/**"]
+    }
+  ]
+}

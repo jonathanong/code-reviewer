@@ -4,6 +4,11 @@
       "repo": "vouchington/vouchington",
       "via": "API contracts and fixtures pinned in contracts/vouchington.json",
       "paths": ["api-contracts/**", "api-fixtures/**"]
+    },
+    {
+      "repo": "vouchington/vouchington-tooling",
+      "via": "the vouchington-tooling npm package (CLI, lint and CI scripts) pinned in package.json",
+      "paths": ["packages/vouchington-tooling/**"]
     }
   ]
 }
