@@ -23,10 +23,12 @@ export type RawResult =
       skills?: string[]
       /** False for a control run with no Skill tool; absent in older results. */
       skillTool?: boolean
+      /** Skills `--select` told the run to load; absent without it. */
+      selected?: string[]
       /** Cost, turns, and tokens of the run; absent in older results. */
       usage?: Usage
     }
-  | { error: string; rules?: string; plugins?: string[]; usage?: Usage }
+  | { error: string; rules?: string; plugins?: string[]; selected?: string[]; usage?: Usage }
 
 export type JudgeDeps = {
   exec: Exec

@@ -19,6 +19,8 @@ export type Options = {
   scoreOnly: boolean
   judge: string | undefined
   noRules: boolean
+  /** Run review's skill-selection step per case and tell each pillar which skills to load. */
+  select: boolean
   /** `--out` of an earlier `--no-rules` run of the same cases, for the paired control. */
   baseline?: string | undefined
 }

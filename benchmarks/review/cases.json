@@ -486,7 +486,8 @@
       "sha": "5529ed1c5ced47cafe1de392b36a19d12726b2d1"
     },
     "relation": "undo",
-    "confidence": "high"
+    "confidence": "high",
+    "expectedSkills": ["skills:feature-rollout"]
   },
   {
     "id": "vouchington-1146",
@@ -511,7 +512,8 @@
       "sha": "5529ed1c5ced47cafe1de392b36a19d12726b2d1"
     },
     "relation": "undo",
-    "confidence": "high"
+    "confidence": "high",
+    "expectedSkills": ["skills:feature-rollout"]
   },
   {
     "id": "vouchington-1144",
@@ -536,7 +538,8 @@
       "sha": "58d8c30e085f69bc028f01dfc3864119ffa3b15c"
     },
     "relation": "undo",
-    "confidence": "medium"
+    "confidence": "medium",
+    "expectedSkills": ["skills:feature-rollout"]
   },
   {
     "id": "vouchington-1143",
