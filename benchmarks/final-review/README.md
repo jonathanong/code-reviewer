@@ -25,6 +25,12 @@ positive and 4 negative cases, recall 100%, false alarms 0 of 4, expected skill 
 runs, control recall 22%. The two cases the control caught were replaced; the
 replacements (Opus judge, 3 attempts per arm) are caught 3 of 3 with skills and 0 of 3 without.
 
+Correctness prompt change, 2026-11-16, reviewer Sonnet 5.5, judge Opus, 3 attempts per arm in one
+session, the three `lock-scope-*` fixtures only: the prompt that names
+`skills:postgres-schema-design` loaded it in 6 of 6 positive runs against 0 of 6 for the old prompt,
+and both caught 6 of 6. The correctness row in the mined table above was measured with the old
+prompt and is not re-measured, so its skill-load count no longer describes the current prompt.
+
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
 Labeled pull requests for benchmarking the `final-review` pillar prompts in
