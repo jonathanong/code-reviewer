@@ -38,3 +38,18 @@ jobs:
       - run: pnpm run typecheck
       # Coverage thresholds are 100% and enforced by vitest.config.mts.
       - run: pnpm run test:coverage
+
+  links:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Links in Markdown resolve
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          # Offline: only links between files in this repository. Most external links here point
+          # at private repositories, which answer 404 without a token.
+          args: --no-progress --offline '*.md' 'skills/**/*.md' 'benchmarks/final-review/*.md'
+          fail: true
