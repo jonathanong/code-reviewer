@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import type { Finding } from '../finding.mts'
 import type { EvalCase } from './cases.mts'
-import { pool } from './judge-all.mts'
+import { pool } from '../run/pool.mts'
 import { judgeFindings, type Assignment } from './judge.mts'
 import { checkFindings, type Check } from './verifier-check.mts'
 import type { VerifierInput } from './verifier-input.mts'

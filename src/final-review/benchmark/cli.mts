@@ -3,9 +3,10 @@ import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { PILLARS, type Pillar } from '../finding.mts'
-import { parsePluginList, pluginLabels } from '../plugins.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
-import { judgeAll, pool, type RawResult } from './judge-all.mts'
+import { pool } from '../run/pool.mts'
+import { judgeAll, type RawResult } from './judge-all.mts'
+import { benchPlugins } from './plugin-settings.mts'
 import { runPillar } from './runner.mts'
 import { scoreAll, type Options } from './score-all.mts'
 import { NO_RULES, stageCaseRules } from './rules.mts'
@@ -42,17 +43,6 @@ const defaultPillarDeps: PillarBenchDeps = {
   cwd: () => process.cwd(),
 }
 
-/** Enabled plugins and versions, so a score change can be traced to a rule change. */
-async function installedPlugins(deps: PillarBenchDeps): Promise<string[]> {
-  try {
-    const listed = await deps.exec('claude', ['plugin', 'list', '--json'])
-    return pluginLabels(parsePluginList(listed, deps.cwd()))
-  } catch (error) {
-    deps.log(`plugins: ${error instanceof Error ? error.message : String(error)}`)
-    return ['unknown']
-  }
-}
-
 function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] {
   if (requested.length > 0) {
     return requested.map((name) => {
@@ -73,7 +63,12 @@ async function runAll(
 ): Promise<void> {
   const rawPath = (pillar: Pillar, id: string) => join(options.out, 'raw', pillar, `${id}.json`)
   if (options.scoreOnly) return
-  const plugins = options.noRules ? [] : await installedPlugins(deps)
+  const { labels: plugins, settings } = await benchPlugins(
+    deps.exec,
+    deps.cwd(),
+    !options.noRules,
+    (line) => deps.log(line),
+  )
   const snapshots = new Map<string, Snapshot>()
   const digests = new Map<string, string>()
   for (const item of new Set(pillars.flatMap((pillar) => casesForPillar(cases, pillar)))) {
@@ -103,7 +98,14 @@ async function runAll(
     let result: RawResult
     try {
       const { model, maxTurns } = options
-      const run = { pillar, pillarPrompt, model, maxTurns, skills: !options.noRules }
+      const run = {
+        pillar,
+        pillarPrompt,
+        model,
+        maxTurns,
+        skills: !options.noRules,
+        ...(settings === undefined ? {} : { settings }),
+      }
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
       result = { findings, skills, skillTool: !options.noRules, usage, ...seen }
     } catch (error) {

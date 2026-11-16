@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
 import type { Finding, Pillar } from '../finding.mts'
+import { pool } from '../run/pool.mts'
 import { casesForPillar, type EvalCase, type ExpectedFinding } from './cases.mts'
 import { judgeFindings, type Assignment, type Judged } from './judge.mts'
 import type { Exec } from './snapshot.mts'
@@ -52,19 +53,6 @@ export function currentAssignment(
   if (judged?.model !== model || judged.inputs !== judgeInputs(expected, raw.findings))
     return undefined
   return judged.assignment
-}
-
-/** Runs `work` over `items` with at most `jobs` in flight. */
-export async function pool<T>(
-  items: readonly T[],
-  jobs: number,
-  work: (item: T) => Promise<void>,
-): Promise<void> {
-  const queue = [...items]
-  const worker = async (): Promise<void> => {
-    for (let item = queue.shift(); item !== undefined; item = queue.shift()) await work(item)
-  }
-  await Promise.all(Array.from({ length: Math.max(1, jobs) }, worker))
 }
 
 /** Adds a judge assignment to every raw result that lacks a current one from this model. */

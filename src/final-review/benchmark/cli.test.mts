@@ -151,7 +151,10 @@ describe('runFinalReviewBenchCli runs', () => {
     expect(raw.rules).toBe('none')
     expect(raw.plugins).toEqual([])
     const args = h.execCalls[0]?.args ?? []
-    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob')
+    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Agent')
+    expect(JSON.parse(args[args.indexOf('--settings') + 1] as string)).toEqual({
+      enabledPlugins: { 'rules@m': false },
+    })
   })
 
   it('records the enabled plugins and gives pillars the Skill tool', async () => {
@@ -162,7 +165,9 @@ describe('runFinalReviewBenchCli runs', () => {
       'rules@m 1.2.3',
     ])
     const args = h.execCalls[0]?.args ?? []
-    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Skill')
+    expect(args[args.indexOf('--tools') + 1]).toBe('Read,Grep,Glob,Agent,Skill')
+    expect(args[args.indexOf('--effort') + 1]).toBe('medium')
+    expect(args).toContain('--strict-mcp-config')
     expect(h.staged).toEqual(['p1', 'n1'])
   })
 
@@ -181,6 +186,7 @@ describe('runFinalReviewBenchCli runs', () => {
         'unknown',
       ])
       expect(h.logs).toContain(`plugins: ${failure instanceof Error ? 'no claude' : 'plain'}`)
+      expect(h.execCalls[0]?.args).not.toContain('--settings')
     }
   })
 

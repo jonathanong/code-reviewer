@@ -26,6 +26,11 @@ const caseJson = (id: string, kind: 'positive' | 'negative') => ({
 const CASES = [caseJson('p1', 'positive'), caseJson('n1', 'negative'), caseJson('x1', 'negative')]
 const FINDING = { pillar: 'design', severity: 'high', title: 'T', body: 'B' }
 
+const PLUGINS = JSON.stringify([
+  { id: 'rules@m', version: '1.0.0', enabled: true },
+  { id: 'other@m', version: '1.0.0', enabled: true },
+])
+
 function harness(exec: VerifierBenchDeps['exec']) {
   const store = new Map<string, string>([
     ['cases.json', JSON.stringify(CASES)],
@@ -48,7 +53,8 @@ function harness(exec: VerifierBenchDeps['exec']) {
   const logs: string[] = []
   const staged: unknown[][] = []
   const deps: VerifierBenchDeps = {
-    exec,
+    exec: async (command, args, options) =>
+      args[0] === 'plugin' ? PLUGINS : exec(command, args, options),
     readFile: (path) => {
       const text = store.get(path)
       if (text === undefined) throw new Error(`ENOENT ${path}`)
@@ -204,6 +210,23 @@ describe('runFinalReviewVerifierBenchCli', () => {
     )
     await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
     expect(exec).toHaveBeenCalled()
+  })
+
+  it('runs without plugin settings when plugins cannot be listed', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const exec = vi.fn(async () =>
+      JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
+    )
+    const h = harness(exec)
+    const listing = h.deps.exec
+    h.deps.exec = async (command, args, options) => {
+      if (args[0] === 'plugin') throw new Error('no claude')
+      return listing(command, args, options)
+    }
+    await runFinalReviewVerifierBenchCli([...BASE, '--prompts', 'refs', '--case', 'p1'], h.deps)
+    expect(h.logs).toContain('plugins: no claude')
+    const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
+    expect(args).not.toContain('--settings')
   })
 
   it('records a case whose labeled pillar is not judged instead of verifying it', async () => {

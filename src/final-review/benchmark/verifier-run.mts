@@ -10,11 +10,11 @@ import {
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
 import { caseRevision, describeCase } from './fixture.mts'
-import { PILLAR_TOOLS, READ_ONLY_TOOLS } from './runner.mts'
+import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 import type { VerifierInput } from './verifier-input.mts'
 
-const VERIFIER_OUTPUT_SCHEMA = {
+export const VERIFIER_OUTPUT_SCHEMA = {
   type: 'object',
   required: ['summary', 'findings'],
   additionalProperties: false,
@@ -87,8 +87,9 @@ export function verifierArgs(
   model: string,
   maxTurns: number,
   skills = false,
+  settings?: object,
 ): string[] {
-  const tools = skills ? PILLAR_TOOLS : READ_ONLY_TOOLS
+  const tools = skills ? SKILL_TOOLS : READ_ONLY_TOOLS
   return [
     '-p',
     prompt,
@@ -106,16 +107,20 @@ export function verifierArgs(
     'dontAsk',
     '--max-turns',
     String(maxTurns),
+    ...isolationArgs(settings),
   ]
 }
 
 /** Validates the verifier's structured output; sources must name real input indexes. */
 export function parseVerifierOutput(stdout: string, inputCount: number): VerifierOutput {
-  const parsed = JSON.parse(stdout) as {
-    structured_output?: { summary?: unknown; findings?: unknown }
-  } | null
-  const structured = parsed?.structured_output
-  if (structured === undefined || !Array.isArray(structured.findings)) {
+  const parsed = JSON.parse(stdout) as { structured_output?: unknown } | null
+  return validateVerifierOutput(parsed?.structured_output, inputCount)
+}
+
+/** Validates a verifier's structured output object; shared by the benchmark and `review`. */
+export function validateVerifierOutput(value: unknown, inputCount: number): VerifierOutput {
+  const structured = value as { summary?: unknown; findings?: unknown } | undefined | null
+  if (structured === undefined || structured === null || !Array.isArray(structured.findings)) {
     throw new FinalReviewError('Verifier run returned no structured findings.')
   }
   const raw = structured.findings as Array<{ sources?: unknown } | null>
@@ -131,7 +136,13 @@ export function parseVerifierOutput(stdout: string, inputCount: number): Verifie
   return { summary: review.summary, findings: review.findings, sources }
 }
 
-export type VerifierRun = { verifierPrompt: string; model: string; maxTurns: number }
+export type VerifierRun = {
+  verifierPrompt: string
+  model: string
+  maxTurns: number
+  /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
+  settings?: object
+}
 
 /** Identifies everything a verifier output depends on, including the staged rules' digest. */
 export function verifierRunInputs(
@@ -154,8 +165,12 @@ export async function runVerifier(
 ): Promise<VerifierOutput> {
   const rules = hasRulesIndex(dir)
   const prompt = buildVerifierPrompt(run.verifierPrompt, item, findings, rules)
-  const stdout = await exec('claude', verifierArgs(prompt, run.model, run.maxTurns, rules), {
-    cwd: dir,
-  })
+  const stdout = await exec(
+    'claude',
+    verifierArgs(prompt, run.model, run.maxTurns, rules, run.settings),
+    {
+      cwd: dir,
+    },
+  )
   return parseVerifierOutput(stdout, findings.length)
 }

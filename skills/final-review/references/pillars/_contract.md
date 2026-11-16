@@ -43,6 +43,8 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
   govern this diff.
 - Stay inside your pillar's scope. Another pillar owns everything listed under "Not in scope".
 - Prefer few, real findings. An empty list is a good result when nothing meets the bar.
+- Use the `explorer` subagent for broad searches (finding callers, consumers, or where something is
+  defined) and read only the files that matter yourself.
 
 ## Output
 

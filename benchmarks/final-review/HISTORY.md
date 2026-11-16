@@ -2,6 +2,20 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-15: pillar runs get the explorer subagent and isolated settings
+
+No run. Pillar prompts, tools and flags changed, so earlier pillar runs are not comparable on
+cost, turns or which skills loaded; recall may move too.
+
+- `_contract.md` adds a paragraph telling pillars to hand broad searches to an `explorer` subagent.
+- Pillar runs get the `Agent` tool and `--agents` defining `explorer` (Haiku; Read, Grep, Glob).
+- Every pillar run adds `--strict-mcp-config`, `--setting-sources user`, `--effort medium`, and
+  `--settings` enabling only the rule plugins (`no-mistakes-rules`, `skills`); a `--no-rules` run
+  switches every plugin off. `bench-verifier` verifier runs get the same isolation flags and
+  settings; the checker and judge calls are unchanged.
+- The result event used for findings is now the last one that carries structured output, because a
+  run with a subagent can print an early result event.
+
 ## 2026-11-15: replacement rule fixtures measured
 
 Commit 87c967e. Reviewer Sonnet 5.5, judge Opus, 3 attempts with skills and 3 with `--no-rules`,

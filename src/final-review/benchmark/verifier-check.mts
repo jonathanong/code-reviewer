@@ -1,6 +1,6 @@
 import { FinalReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import { PILLAR_TOOLS, READ_ONLY_TOOLS } from './runner.mts'
+import { READ_ONLY_TOOLS, SKILL_TOOLS } from '../run/claude-flags.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 
 /** Whether a finding's claim is true of the code at the reviewed head. */
@@ -63,7 +63,7 @@ export function checkArgs(
   maxTurns: number,
   skills = false,
 ): string[] {
-  const tools = skills ? PILLAR_TOOLS : READ_ONLY_TOOLS
+  const tools = skills ? SKILL_TOOLS : READ_ONLY_TOOLS
   return [
     '-p',
     prompt,

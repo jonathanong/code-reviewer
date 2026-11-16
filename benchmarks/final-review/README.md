@@ -116,6 +116,14 @@ non-empty array of full names, meaning any one of them satisfies it:
   listed as `caught without <skill>`. `summary.json` holds the four counts (`grounded`,
   `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
 
+### Run flags
+
+Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
+`--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
+`skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
+every plugin false. Pillars may use the `Agent` tool to dispatch an `explorer` subagent (Haiku,
+read-only tools). Verifier runs get the same isolation flags and settings.
+
 ### Cost and turns
 
 The pillar prompt points the reviewer at `.final-review/files.md` (an index of per-file patches in

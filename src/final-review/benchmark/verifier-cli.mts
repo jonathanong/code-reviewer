@@ -4,7 +4,9 @@ import { parseArgs } from 'node:util'
 import { PILLARS } from '../finding.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
 import type { BenchDeps } from './cli.mts'
-import { judgeAll, pool } from './judge-all.mts'
+import { pool } from '../run/pool.mts'
+import { judgeAll } from './judge-all.mts'
+import { benchPlugins } from './plugin-settings.mts'
 import { gradeAll, gradeInputs, type VerifierRaw } from './verifier-grade.mts'
 import { collectVerifierInput, type VerifierInput } from './verifier-input.mts'
 import {
@@ -54,10 +56,14 @@ function verifierPrompt(prompts: string, deps: BenchDeps): string {
 }
 
 async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDeps): Promise<void> {
+  const { settings } = await benchPlugins(deps.exec, process.cwd(), !options.noRules, (line) =>
+    deps.log(line),
+  )
   const run: VerifierRun = {
     verifierPrompt: verifierPrompt(options.prompts, deps),
     model: options.model,
     maxTurns: options.maxTurns,
+    ...(settings === undefined ? {} : { settings }),
   }
   const tasks = cases.flatMap((item) => {
     let input: VerifierInput | null

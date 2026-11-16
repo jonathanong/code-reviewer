@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { EvalCase } from './cases.mts'
-import { currentAssignment, judgeAll, judgeInputs, pool, type JudgeDeps } from './judge-all.mts'
+import { currentAssignment, judgeAll, judgeInputs, type JudgeDeps } from './judge-all.mts'
 
 function item(id: string, kind: EvalCase['kind']): EvalCase {
   return {
@@ -36,14 +36,6 @@ function deps(files: Record<string, unknown>, exec: JudgeDeps['exec']) {
   }
   return { value, store, logs }
 }
-
-describe('pool', () => {
-  it('runs every item with at least one worker', async () => {
-    const seen: number[] = []
-    await pool([1, 2, 3], 0, async (n) => void seen.push(n))
-    expect(seen).toEqual([1, 2, 3])
-  })
-})
 
 describe('judgeAll', () => {
   it('judges raw results and skips missing, errored, and currently judged ones', async () => {
