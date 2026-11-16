@@ -28,9 +28,7 @@ describe('sharedFromClones', () => {
     expect(shared.map((item) => item.source.name)).toEqual(['no-mistakes-rules'])
     expect(shared[0]?.refLabel).toBe('default branch origin/trunk')
     expect(shared[0]?.reader.label).toBe('origin/trunk')
-    expect(missing).toEqual([
-      `vouchington-tooling: no clone at ${join(root, 'vouchington-tooling')}`,
-    ])
+    expect(missing).toEqual([`skills: no clone at ${join(root, 'skills')}`])
   })
 
   it('lists everything as missing without a clone root', async () => {
@@ -93,7 +91,7 @@ describe('clone identity', () => {
 
 describe('productionSources', () => {
   it('reads the base of the tree and the clones', async () => {
-    const root = clones(['no-mistakes', 'vouchington-tooling', 'dep'])
+    const root = clones(['no-mistakes', 'skills', 'dep'])
     const sources = await productionSources({
       git,
       clones: root,
@@ -106,11 +104,7 @@ describe('productionSources', () => {
     expect(sources.repoId).toBe('acme/self')
     expect(sources.repo?.reader.label).toBe('abcdef0123456789')
     expect(sources.shared).toHaveLength(2)
-    expect(sources.related.map((item) => item.name)).toEqual([
-      'dep',
-      'no-mistakes',
-      'vouchington-tooling',
-    ])
+    expect(sources.related.map((item) => item.name)).toEqual(['dep', 'no-mistakes', 'skills'])
     expect(sources.missing).toEqual([])
   })
 

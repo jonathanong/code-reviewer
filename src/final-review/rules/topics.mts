@@ -14,12 +14,12 @@ const TOPICS: Topic[] = [
     match: /(?:queue|job|worker|cron|schedul)/iu,
     skills: ['queue-rules', 'glide-mq', 'bounded-iteration'],
   },
-  { match: JS, skills: ['typescript-rules'] },
-  { match: /(?:\.(?:tsx|jsx)$|next\.config)/u, skills: ['react-rules'] },
-  { match: /(?:\.rs$|(?:^|\/)Cargo\.toml$)/u, skills: ['rust-rules'] },
+  { match: JS, skills: ['typescript-rules', 'typescript-authoring'] },
+  { match: /(?:\.(?:tsx|jsx)$|next\.config)/u, skills: ['react-rules', 'react-app-structure'] },
+  { match: /(?:\.rs$|(?:^|\/)Cargo\.toml$)/u, skills: ['rust-rules', 'rust-authoring'] },
   {
     match: /(?:^|\/)(?:\.github\/workflows\/|action\.ya?ml$)/u,
-    skills: ['github-actions-rules', 'github-actions-checklist', 'github-actions-authoring'],
+    skills: ['github-actions-rules', 'github-actions-authoring'],
   },
   {
     match: /(?:^|\/)(?:\.github\/|(?:vitest|jest|playwright)\.[^/]*config|vitest\.workspace)/u,
@@ -34,10 +34,10 @@ const TOPICS: Topic[] = [
     match: /(?:(?:^|\/)Dockerfile|\.tf$|\.sh$|terraform|(?:^|\/)infra\/)/iu,
     skills: ['infra-rules'],
   },
-  { match: /(?:webhook|integration)/iu, skills: ['integrations-rules'] },
-  { match: /(?:flag|rollout|migration)/iu, skills: ['rollout-rules'] },
-  { match: /(?:log|metric|alert)/iu, skills: ['observability-rules'] },
-  { match: /\.(?:swift|cs)$/u, skills: ['native-app-rules'] },
+  { match: /(?:webhook|integration)/iu, skills: ['integrations-rules', 'http-api-design'] },
+  { match: /(?:flag|rollout|migration)/iu, skills: ['rollout-rules', 'feature-rollout'] },
+  { match: /(?:log|metric|alert)/iu, skills: ['observability-rules', 'structured-logging'] },
+  { match: /\.(?:swift|cs)$/u, skills: ['native-app-rules', 'native-app-architecture'] },
   { match: /(?:auth|session|token|crypto)/iu, skills: ['security-rules'] },
 ]
 
@@ -53,7 +53,6 @@ export function suggestSkills(paths: readonly string[]): Map<string, string> {
     for (const topic of TOPICS) {
       if (topic.match.test(path)) topic.skills.forEach((skill) => add(skill, path))
     }
-    if (TEST.test(path) && JS.test(path)) add('vitest-test-authoring', path)
   }
   const first = paths[0] ?? ''
   ALWAYS.forEach((skill) => add(skill, first))

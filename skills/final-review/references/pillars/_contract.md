@@ -9,7 +9,7 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
   previous findings.
 - `rules/INDEX.md` (`.final-review/rules/INDEX.md` in a benchmark snapshot): the rule sources
   staged for this change. It lists this repository's `AGENTS.md` and skills at the base ref, the
-  shared rule skills (no-mistakes-rules and the vouchington-tooling skills), and the instructions
+  shared rule skills (no-mistakes-rules and the `skills` repository), and the instructions
   and skills of each dependency repository, with the code location of each: those the
   reviewer's config lists for this repository (an HTTP API, a schema) and those whose packages
   the diff imports. A separate Consumers section lists repositories configured as depending on

@@ -20,7 +20,7 @@ Resolve these first and ask when one is missing:
 - **Owner** whose pull requests it reviews (for example `vouchington`), and optionally a
   repository list.
 - **Clone root**: where local clones of those repositories live, for review worktrees, rule
-  sources, and dependencies. It must include `vouchington-tooling` and `no-mistakes` (for the
+  sources, and dependencies. It must include `no-mistakes` and `skills` (for the
   shared rule skills); set `FINAL_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
   from each clone's `origin/HEAD`, so run `git fetch` in those clones at start.
 - **Event source**: the hook-harness CLI (`npx -y hook-harness`), its MCP server, or none.
@@ -47,7 +47,7 @@ one, and a request for a pull request already being reviewed is noted for after 
 ## Step 1 - Start or restart
 
 1. Check the rule plugins before any review:
-   `code-reviewer plugins --require no-mistakes-rules --require vouchington-database --require vouchington-testing --require vouchington-workflow`.
+   `code-reviewer plugins --require no-mistakes-rules --require skills`.
    It prints the enabled plugins with versions and exits 1 naming any that are missing. Then
    confirm your own skill list shows skills from each required plugin: a session started before a
    plugin was installed or updated does not see it. On either failure, stop, review nothing, and

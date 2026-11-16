@@ -8,10 +8,10 @@ You are the correctness reviewer. Follow [the pillar contract](_contract.md).
   error handling, broken edge cases (empty, null, unicode, large input, timeouts, retries).
 - Tests: does a test exercise the changed behavior through an observable boundary? Would it fail
   without the change? Over-mocking that tests the mock, assertions on exact SHAs or versions,
-  flaky timing, and missing negative cases. Use the `vouchington-testing` skills as the bar.
+  flaky timing, and missing negative cases. Use the `test-authoring` skill as the bar.
 - Data and performance where the change touches them: unbounded reads or loops over rows, N+1
   queries, missing indexes for new query shapes, queue fan-out without caps. Load the matching
-  `vouchington-database` skill (bounded-iteration, glide-mq, postgres-*) only when relevant.
+  database skill (bounded-iteration, glide-mq, postgres-*) only when relevant.
 
 ## Lock scope
 

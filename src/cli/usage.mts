@@ -19,7 +19,7 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; shared skills from the
-  vouchington-tooling and no-mistakes clones' default branches; the rules of cloned repositories
+  no-mistakes and skills clones' default branches; the rules of cloned repositories
   the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
   change as consumed or as consumers) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
   resolve resolves review threads of fixed findings.
