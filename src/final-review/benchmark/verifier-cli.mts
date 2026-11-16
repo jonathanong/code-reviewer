@@ -29,9 +29,7 @@ type Options = {
   jobs: number
   judge: string
   checker: string
-  clones: string | undefined
   noRules: boolean
-  noShared: boolean
 }
 
 function readRaw(path: string, deps: BenchDeps): VerifierRaw | undefined {
@@ -142,9 +140,7 @@ export async function runFinalReviewVerifierBenchCli(
       'score-only': { type: 'boolean' },
       judge: { type: 'string' },
       checker: { type: 'string' },
-      clones: { type: 'string' },
       'no-rules': { type: 'boolean' },
-      'no-shared': { type: 'boolean' },
     },
   })
   const { cases: casesPath, out } = values
@@ -167,9 +163,7 @@ export async function runFinalReviewVerifierBenchCli(
     jobs: Number(values.jobs ?? '3'),
     judge: values.judge ?? 'sonnet',
     checker: values.checker ?? 'opus',
-    clones: values.clones ?? process.env.FINAL_REVIEWER_CLONE_ROOT,
     noRules: values['no-rules'] === true,
-    noShared: values['no-shared'] === true,
   }
   if (!scoreOnly) {
     await judgeAll(

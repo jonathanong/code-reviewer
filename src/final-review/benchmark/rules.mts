@@ -1,11 +1,9 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { runGit, type RunTextCommand } from '../../gh-cli/index.mts'
 import { splitDiff } from '../diff-files.mts'
 import { loadRepoConfigs } from '../rules/config.mts'
 import { dirReader } from '../rules/reader.mts'
-import { sharedFromClones } from '../rules/sources.mts'
 import { stageRuleSources, type StageInput } from '../rules/stage.mts'
 import { isFixtureCase, type EvalCase } from './cases.mts'
 import { CONTEXT_DIR, type Snapshot } from './snapshot-context.mts'
@@ -30,21 +28,8 @@ function fixtureRelated(fixtureDir: string): StageInput['related'] {
     }))
 }
 
-/**
- * Stages the same rule sources `prepare` does into the snapshot's `.final-review/rules`, and
- * returns their digest. `withShared` false leaves out the shared clones.
- */
-export async function stageCaseRules(
-  item: EvalCase,
-  snapshot: Snapshot,
-  clones: string | undefined,
-  git: RunTextCommand = runGit,
-  withShared = true,
-): Promise<string> {
-  // Without shared sources, a run measures installed plugin skills alone.
-  const { shared, missing } = withShared
-    ? await sharedFromClones(clones, git)
-    : { shared: [], missing: [] }
+/** Stages the same rule sources `prepare` does into the snapshot's `.final-review/rules`, and returns their digest. */
+export async function stageCaseRules(item: EvalCase, snapshot: Snapshot): Promise<string> {
   const fixture = isFixtureCase(item)
   const repo = fixture
     ? { reader: dirReader(join(item.fixtureDir, 'base'), 'base'), refLabel: 'base' }
@@ -55,9 +40,8 @@ export async function stageCaseRules(
     repo,
     ...(fixture && item.repoId !== undefined ? { repoId: item.repoId } : {}),
     ...(fixture ? { configs: loadRepoConfigs(join(item.fixtureDir, 'configs')) } : {}),
-    shared,
     related: fixture ? fixtureRelated(item.fixtureDir) : [],
-    missing,
+    missing: [],
   })
   return result.digest
 }

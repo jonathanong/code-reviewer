@@ -16,7 +16,7 @@ export type PrepareOptions = {
   requested?: Effort
   /** A checkout with history at the base, for the history trigger. */
   tree?: string
-  /** A directory of local clones (no-mistakes, skills, dependency repositories). */
+  /** A directory of local clones (dependency and consumer repositories). */
   clones?: string
 }
 
@@ -28,8 +28,8 @@ export type PrepareSummary = {
   plan: ReviewPlan
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
-  /** The rule sources staged under `out/rules`: suggested skills, linked repos, unavailable sources. */
-  rules: { suggested: string[]; related: string[]; consumers: string[]; missing: string[] }
+  /** The rule sources staged under `out/rules`: linked repos, unavailable sources. */
+  rules: { related: string[]; consumers: string[]; missing: string[] }
 }
 
 type Write = (path: string, text: string) => void
@@ -115,7 +115,6 @@ export async function prepareReview(
     plan,
     written,
     rules: {
-      suggested: staged.suggested,
       related: staged.related,
       consumers: staged.consumers,
       missing: staged.missing,

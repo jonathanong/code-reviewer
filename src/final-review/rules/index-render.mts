@@ -7,12 +7,9 @@ type Linked = { heading: string; label: string; code: string; staged: Staged }
 
 export type IndexInput = {
   repo?: { label: string; staged: Staged }
-  shared: { name: string; label: string; staged: Staged }[]
   deps: Linked[]
   /** Repositories that consume what this change touches; their rules do not govern this diff. */
   consumers: Linked[]
-  /** Suggested skill name to the first changed path that suggested it. */
-  suggested: ReadonlyMap<string, string>
   missing: string[]
 }
 
@@ -24,9 +21,9 @@ function truncate(text: string): string {
   return text.length <= MAX_DESCRIPTION ? text : `${text.slice(0, MAX_DESCRIPTION - 3)}...`
 }
 
-function skillLine(skill: SkillInfo, where?: string): string {
+function skillLine(skill: SkillInfo): string {
   const description = skill.description === '' ? '' : ` — ${truncate(skill.description)}`
-  return `- ${skill.path}: ${skill.name}${description}${where === undefined ? '' : ` (${where})`}`
+  return `- ${skill.path}: ${skill.name}${description}`
 }
 
 function list(title: string, lines: string[]): string[] {
@@ -37,20 +34,13 @@ function bullets(paths: string[]): string[] {
   return paths.map((path) => `- ${path}`)
 }
 
-function body(staged: Staged, suggested?: ReadonlyMap<string, string>): string[] {
-  const hit = (skill: SkillInfo) => suggested?.has(skill.name) === true
-  const lines = (skills: SkillInfo[]) =>
-    skills.map((skill) => skillLine(skill, suggested?.get(skill.name)))
-  const skills =
-    suggested === undefined
-      ? list('Skills', lines(staged.skills))
-      : [
-          ...list('Suggested for this change', lines(staged.skills.filter(hit))),
-          ...list('Other', lines(staged.skills.filter((skill) => !hit(skill)))),
-        ]
+function body(staged: Staged): string[] {
   return [
     ...list('Instructions', bullets(staged.instructions)),
-    ...skills,
+    ...list(
+      'Skills',
+      staged.skills.map((skill) => skillLine(skill)),
+    ),
     ...list('References', bullets(staged.references)),
   ]
 }
@@ -65,13 +55,6 @@ export function renderIndex(input: IndexInput): string {
     input.repo === undefined
       ? []
       : section(`## This repository (${input.repo.label})`, [body(input.repo.staged)])
-  const shared = section(
-    '## Shared skills',
-    input.shared.map((source) => [
-      `### ${source.name} (${source.label})`,
-      ...body(source.staged, input.suggested),
-    ]),
-  )
   const linked = (items: Linked[]) =>
     items.map((dep) => [
       `### ${dep.heading} (${dep.label})`,
@@ -87,10 +70,9 @@ export function renderIndex(input: IndexInput): string {
   return [
     '# Rule sources',
     '',
-    'Paths are relative to this file. Read the instructions that apply and the suggested skills; open other skills only when their description matches the change.',
+    'Paths are relative to this file. Read the instructions that apply; open skills only when their description matches the change.',
     '',
     ...repo,
-    ...shared,
     ...deps,
     ...consumers,
     ...missing,

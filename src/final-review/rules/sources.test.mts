@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { cloneCandidates, originRepo, productionSources, sharedFromClones } from './sources.mts'
+import { cloneCandidates, originRepo, productionSources } from './sources.mts'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -20,24 +20,6 @@ function clones(repos: string[], plain: string[] = []): string {
 }
 
 const git = vi.fn(async (args: string[]) => (args.includes('--abbrev-ref') ? 'origin/trunk\n' : ''))
-
-describe('sharedFromClones', () => {
-  it('reads each existing clone at its default branch and lists the missing ones', async () => {
-    const root = clones(['no-mistakes'])
-    const { shared, missing } = await sharedFromClones(root, git)
-    expect(shared.map((item) => item.source.name)).toEqual(['no-mistakes-rules'])
-    expect(shared[0]?.refLabel).toBe('default branch origin/trunk')
-    expect(shared[0]?.reader.label).toBe('origin/trunk')
-    expect(missing).toEqual([`skills: no clone at ${join(root, 'skills')}`])
-  })
-
-  it('lists everything as missing without a clone root', async () => {
-    const { shared, missing } = await sharedFromClones(undefined, git)
-    expect(shared).toEqual([])
-    expect(missing).toHaveLength(2)
-    expect(missing[0]).toContain('FINAL_REVIEWER_CLONE_ROOT')
-  })
-})
 
 describe('cloneCandidates', () => {
   it('returns git clones except the pull request repo, sorted, with a code hint', async () => {
@@ -103,12 +85,11 @@ describe('productionSources', () => {
     expect(sources.repo?.refLabel).toBe('base abcdef0')
     expect(sources.repoId).toBe('acme/self')
     expect(sources.repo?.reader.label).toBe('abcdef0123456789')
-    expect(sources.shared).toHaveLength(2)
     expect(sources.related.map((item) => item.name)).toEqual(['dep', 'no-mistakes', 'skills'])
     expect(sources.missing).toEqual([])
   })
 
-  it('skips shared and related without clones and the repo without a tree', async () => {
+  it('skips related without clones and the repo without a tree', async () => {
     const sources = await productionSources({
       git,
       clones: undefined,
@@ -119,10 +100,8 @@ describe('productionSources', () => {
     })
     expect(sources.repo).toBeUndefined()
     expect(sources.repoId).toBe('acme/self')
-    expect(sources.shared).toEqual([])
     expect(sources.related).toEqual([])
-    expect(sources.missing).toHaveLength(3)
-    expect(sources.missing.at(-1)).toContain('dependencies: skipped')
+    expect(sources.missing).toEqual([expect.stringContaining('dependencies: skipped')])
   })
 
   it('loads the configs and reports their problems as missing', async () => {

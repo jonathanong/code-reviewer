@@ -31,9 +31,7 @@ const OPTIONS = {
   checker: 'opus',
   maxTurns: 5,
   jobs: 1,
-  clones: 'clones',
   noRules: false,
-  noShared: false,
 }
 
 function harness(raws: Record<string, VerifierRaw>, exec: VerifierBenchDeps['exec']) {
@@ -53,8 +51,8 @@ function harness(raws: Record<string, VerifierRaw>, exec: VerifierBenchDeps['exe
       prepared.push(item.id)
       return { dir: `/snap/${item.id}`, diff: '', body: '' }
     },
-    stageRules: async (item, snapshot, clones, _git, withShared) => {
-      staged.push([item.id, snapshot.dir, clones, withShared])
+    stageRules: async (item, snapshot) => {
+      staged.push([item.id, snapshot.dir])
       return 'digest'
     },
   }
@@ -106,8 +104,8 @@ describe('gradeAll', () => {
         ? JSON.stringify({ structured_output: { matches: [] } })
         : JSON.stringify({ structured_output: { verdicts: [] } })
     const staged = harness({ p1: { input, inputs: 'run', output } }, exec)
-    await gradeAll([ITEM], { ...OPTIONS, noShared: true }, staged.deps)
-    expect(staged.staged).toEqual([['p1', '/snap/p1', 'clones', false]])
+    await gradeAll([ITEM], OPTIONS, staged.deps)
+    expect(staged.staged).toEqual([['p1', '/snap/p1']])
     const control = harness({ p1: { input, inputs: 'run', output } }, exec)
     await gradeAll([ITEM], { ...OPTIONS, noRules: true }, control.deps)
     expect(control.prepared).toEqual(['p1'])

@@ -62,7 +62,7 @@
     "expectedSkills": ["bounded-iteration"],
     "title": "feat: purge expired sessions every 15 minutes",
     "kind": "positive",
-    "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the shared skills repository requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
+    "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the installed skills plugin requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
     "expected": [
       {
         "pillar": "rules",

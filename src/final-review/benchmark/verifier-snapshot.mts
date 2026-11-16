@@ -15,9 +15,7 @@ export const defaultVerifierDeps: VerifierBenchDeps = {
 export type SnapshotOptions = {
   findingsFrom: string
   out: string
-  clones: string | undefined
   noRules: boolean
-  noShared: boolean
 }
 
 /**
@@ -31,8 +29,6 @@ export async function prepareVerifierSnapshot(
 ): Promise<{ dir: string; rules: string }> {
   const cache = join(options.findingsFrom, 'cache')
   const snapshot = await deps.prepare(item, cache, join(options.out, 'work'), deps.exec)
-  const rules = options.noRules
-    ? NO_RULES
-    : await deps.stageRules(item, snapshot, options.clones, undefined, !options.noShared)
+  const rules = options.noRules ? NO_RULES : await deps.stageRules(item, snapshot)
   return { dir: snapshot.dir, rules }
 }

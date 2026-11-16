@@ -32,12 +32,9 @@ const base: Pick<EvalCase, 'title' | 'kind' | 'reason' | 'expected'> = {
   reason: '',
   expected: [],
 }
-const git = async () => {
-  throw new Error('no git')
-}
 
 describe('stageCaseRules', () => {
-  it('stages the fixture base, its repos/ dependencies with code, and notes missing clones', async () => {
+  it('stages the fixture base, its repos/ dependencies with code and stages no shared skills', async () => {
     const fixtureDir = temp()
     put(fixtureDir, {
       'base/AGENTS.md': 'base rules',
@@ -49,7 +46,7 @@ describe('stageCaseRules', () => {
     })
     const dir = temp()
     const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir }
-    const digest = await stageCaseRules(item, { dir, diff: DIFF, body: '' }, undefined, git)
+    const digest = await stageCaseRules(item, { dir, diff: DIFF, body: '' })
     expect(digest).toMatch(/^[0-9a-f]{64}$/u)
     const rules = (path: string) => readFileSync(join(dir, '.final-review/rules', path), 'utf8')
     expect(rules('repo/AGENTS.md')).toBe('base rules')
@@ -58,7 +55,7 @@ describe('stageCaseRules', () => {
     expect(index).toContain('## This repository (base)')
     expect(index).toContain('Code: deps/lib/')
     expect(index).not.toContain('### other')
-    expect(index).toContain('no-mistakes-rules: no clone root')
+    expect(index).not.toContain('no-mistakes-rules')
   })
 
   it('stages the dependencies and consumers that the fixture configs link to its repoId', async () => {
@@ -72,28 +69,13 @@ describe('stageCaseRules', () => {
     const dir = temp()
     const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir, repoId: 'acme/web' }
     const snapshot = { dir, diff: 'diff --git a/src/a.ts b/src/a.ts\n+const a = 1\n', body: '' }
-    await stageCaseRules(item, snapshot, undefined, git)
+    await stageCaseRules(item, snapshot)
     const rules = (path: string) => readFileSync(join(dir, '.final-review/rules', path), 'utf8')
     expect(rules('deps/api/routes.ts')).toBe('export {}')
     expect(rules('consumers/app/src/client.ts')).toBe('fetch()')
     const index = rules('INDEX.md')
     expect(index).toContain('### api: consumed via HTTP API (fixture)')
     expect(index).toContain('### app: consumes this repository; this change touches src/a.ts')
-  })
-
-  it('leaves the shared clones out when asked', async () => {
-    const fixtureDir = temp()
-    put(fixtureDir, {
-      'base/AGENTS.md': 'base rules',
-      'base/skills/a/SKILL.md': '---\nname: a\n---',
-      'base/skills/a/references/more.md': 'more',
-    })
-    const dir = temp()
-    const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir }
-    await stageCaseRules(item, { dir, diff: DIFF, body: '' }, '/nowhere', git, false)
-    const index = readFileSync(join(dir, '.final-review/rules/INDEX.md'), 'utf8')
-    expect(index).toContain('repo/skills/a/references/more.md')
-    expect(index).not.toContain('no-mistakes-rules')
   })
 
   it('stages the exported head for a repo case and has no related repositories', async () => {
@@ -107,7 +89,7 @@ describe('stageCaseRules', () => {
       baseSha: 'a'.repeat(40),
       headSha: 'b'.repeat(40),
     }
-    await stageCaseRules(item, { dir, diff: DIFF, body: '' }, undefined, git)
+    await stageCaseRules(item, { dir, diff: DIFF, body: '' })
     const index = readFileSync(join(dir, '.final-review/rules/INDEX.md'), 'utf8')
     expect(index).toContain('## This repository (head (base not exported))')
     expect(index).not.toContain('## Dependencies')
@@ -118,7 +100,7 @@ describe('stageCaseRules', () => {
     put(fixtureDir, { 'base/a.md': 'x' })
     const dir = temp()
     const item: EvalCase = { ...base, id: 'f', fixture: 'f', fixtureDir }
-    await stageCaseRules(item, { dir, diff: DIFF, body: '' }, undefined, git)
+    await stageCaseRules(item, { dir, diff: DIFF, body: '' })
     expect(readFileSync(join(dir, '.final-review/rules/INDEX.md'), 'utf8')).not.toContain(
       '## Dependencies',
     )

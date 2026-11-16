@@ -11,10 +11,10 @@ rule skills (see the contract), never from the pull request head.
   to each changed file, and its skills, all at the **base** ref. A pull request can edit its own
   rules; if it does, review the rule change itself as a finding target, but judge the rest of the
   diff by the base rules.
-- **Shared rule skills**: the no-mistakes-rules skills (MUST NOT / SHOULD NOT lists by topic) and
-  the `skills` repository's design and procedure skills (testing, database and queues, CI,
-  dependencies, language and API design). Read every suggested skill; open the others only when
-  their description matches the change.
+- **Shared rule skills**: the installed `no-mistakes-rules` and `skills` plugin skills (MUST NOT /
+  SHOULD NOT lists by topic; design and procedure skills for testing, database and queues, CI,
+  dependencies, language and API design). Load each one whose description matches the change with
+  the Skill tool; they are not staged in `rules/`.
 - **Dependencies**: when the change calls into or configures a dependency repository listed in
   the index, read that repository's instructions and skills and check the change against what
   they require of callers (contracts, naming, registration, call order, required options).
@@ -51,7 +51,7 @@ Other severities:
 
 ## Method
 
-Read `rules/INDEX.md`, then the applicable instructions, the suggested skills, and the rules of any
-dependency the change uses. List the rule sources you read (path and ref), then check each changed
+Read `rules/INDEX.md`, then the applicable instructions and the rules of any dependency the
+change uses. Load the installed plugin skills whose descriptions match the change. List the rule sources you read (path and ref), then check each changed
 file against them. Cite the rule's source (repository, file, and a short quote) in every finding
 body.

@@ -58,8 +58,8 @@ function harness(exec: VerifierBenchDeps['exec']) {
     exists: (path) => store.has(path),
     log: (line) => void logs.push(line),
     prepare: async (item) => ({ dir: `/snap/${item.id}`, diff: '', body: '' }),
-    stageRules: async (item, snapshot, clones, _git, withShared) => {
-      staged.push([item.id, snapshot.dir, clones, withShared])
+    stageRules: async (item, snapshot) => {
+      staged.push([item.id, snapshot.dir])
       return `digest-${item.id}`
     },
   }
@@ -110,14 +110,14 @@ describe('runFinalReviewVerifierBenchCli', () => {
     expect(out).toHaveBeenCalledWith(`${markdown.trimEnd()}\n`)
   })
 
-  it('stages rules into each verifier snapshot, honoring --clones and --no-shared', async () => {
+  it('stages rules into each verifier snapshot', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness(async () =>
       JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
     )
     const args = [...BASE, '--prompts', 'refs', '--case', 'p1']
-    await runFinalReviewVerifierBenchCli([...args, '--clones', '/c', '--no-shared'], h.deps)
-    expect(h.staged).toEqual([['p1', '/snap/p1', '/c', false]])
+    await runFinalReviewVerifierBenchCli(args, h.deps)
+    expect(h.staged).toEqual([['p1', '/snap/p1']])
     const saved = JSON.parse(h.store.get('o/raw/p1.json') as string) as { inputs: string }
     expect(saved.inputs).toMatch(/^[0-9a-f]{64}$/u)
   })

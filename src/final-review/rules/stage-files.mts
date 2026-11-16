@@ -5,19 +5,18 @@ import type { RuleReader } from './reader.mts'
 /** Staged file path (relative to the output directory) to its text. */
 export type Files = Map<string, string>
 
-/** Copies `paths` into `rules/<dest>/`, dropping `strip` from each; returns what was staged. */
+/** Copies `paths` into `rules/<dest>/`; returns what was staged. */
 export async function copy(
   files: Files,
   reader: RuleReader,
   dest: string,
   paths: readonly string[],
-  strip = '',
 ): Promise<Map<string, string>> {
   const staged = new Map<string, string>()
   for (const path of paths) {
     const text = await reader.read(path)
     if (text === undefined) continue
-    const rel = `${dest}/${path.slice(strip.length)}`
+    const rel = `${dest}/${path}`
     files.set(`rules/${rel}`, text)
     staged.set(rel, text)
   }

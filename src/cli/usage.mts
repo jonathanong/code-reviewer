@@ -9,8 +9,8 @@ code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
 code-reviewer plugins [--require NAME]...
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--clones DIR] [--no-rules] [--no-shared]
-code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--clones DIR] [--no-rules] [--no-shared]
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules]
+code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
   auth reports whether gh calls use the GitHub App (FINAL_REVIEWER_APP_ID with
   FINAL_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
   labeled final-review:requested or final-review:in-progress (GraphQL fallback for hook-harness).
@@ -18,8 +18,7 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   approval); it declines a head the newest final review covers unless --force. prepare writes the
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
-  (this repository's AGENTS.md and skills at the base when --tree is given; shared skills from the
-  no-mistakes and skills clones' default branches; the rules of cloned repositories
+  (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
   the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
   change as consumed or as consumers) read from --clones DIR (or FINAL_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
   resolve resolves review threads of fixed findings.
@@ -40,11 +39,10 @@ code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DI
   also planted under a second pillar), and scores real findings kept, label recall, severity
   agreement, duplicates merged, and other blocking and high findings confirmed by --checker;
   --prompts is the skill's references directory. bench and bench-verifier stage the same rule sources under
-  .final-review/rules (--clones DIR, default FINAL_REVIEWER_CLONE_ROOT; fixtures may hold
+  .final-review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
   the case's repoId); --no-rules stages none and withholds the Skill tool, for control
-  runs; --no-shared stages only the repository and dependency rules, so shared rules come from
-  installed plugin skills alone. Pillar runs may load installed skills, and each raw result
+  runs. Shared rules come only from installed plugin skills; pillar runs may load them, and each raw result
   records the enabled plugins and versions. plugins prints the enabled Claude Code plugins and
   exits 1 when a --require name is not among them.
 
