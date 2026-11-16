@@ -82,6 +82,9 @@ Expected findings caught per attempt (with skills, then control):
   attempt of both arms with `claude exited with 1` after reading the combined diff, at about $3
   each. Cause: the bench prompt told the reviewer to read the whole diff.
 - `vouchington-platform-59` and `-60` are ceiling cases: the control catches them every time.
+- Loose tag: `vouchington-2936` is tagged `skills:postgres-schema-design`, which says never to use
+  advisory locks; the mined claim is about the casing of an advisory-lock key. The other 13 tags
+  name the skill whose rules cover the mined claim's topic; none is backed by a quoted sentence.
 - A mined case is a full repository snapshot with its own `AGENTS.md` and docs, so `--no-rules`
   removes only the installed skills, not the repository's own rules.
 

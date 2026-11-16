@@ -7,8 +7,10 @@
   `--no-rules` in the same session, then score with `--score-only --baseline <control dir>`.
 - Do not run the whole of `cases.json` unless the owner asks: large cases cost dollars per run.
 - Give every positive case `expectedSkills` with full `plugin:skill` names when a shared rule
-  skill states its rule. Quote the rule sentence from the installed skill; do not write a case for
-  a rule no skill states.
+  skill states its rule. Do not write a case for a rule no skill states.
+- A fixture case quotes the rule sentence from the installed skill in its `reason`. A mined case
+  keeps its original claim and only names the skill: its tag is a judgment about which skill covers
+  a real finding, so say in `HISTORY.md` when a tag is a loose fit.
 - Keep a fixture case only if the no-rules control misses it. Replace a case the control catches.
 - Fixtures are synthetic. Never copy code from a private repository into a fixture.
 - A mined case snapshots a real pull request. Do not rewrite its expected claim to fit a skill.
