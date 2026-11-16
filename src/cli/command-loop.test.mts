@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../final-review/index.mts', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../final-review/index.mts')>()),
-  listQueue: vi.fn(async () => ['queued']),
+  listQueue: vi.fn(async () => [{ repo: 'acme/a', pr: 1 }]),
   claimReview: vi.fn(async () => ({ claimed: true })),
   abortReview: vi.fn(async () => ({ added: [] })),
   skipReview: vi.fn(async () => ({ added: ['done'], removed: ['busy'] })),
@@ -82,7 +82,7 @@ describe('runLoopCommand', () => {
   it('lists the queue for --owner', async () => {
     const { deps, run, runner } = fakeDeps()
     await expect(runLoopCommand('queue', { owner: 'acme' }, target, deps)).resolves.toEqual([
-      'queued',
+      { repo: 'acme/a', pr: 1 },
     ])
     expect(runner).toHaveBeenCalledWith('acme')
     expect(listQueue).toHaveBeenCalledWith(run, 'acme', [], DEFAULT_LABELS)
@@ -99,6 +99,24 @@ describe('runLoopCommand', () => {
     const { deps, run } = fakeDeps()
     await runLoopCommand('queue', { owner: 'Bob' }, target, deps)
     expect(listQueue).toHaveBeenCalledWith(run, 'Bob', [], BOB_LABELS)
+  })
+
+  it('also searches repositories of an owner whose files change the search labels', async () => {
+    const { deps, run, runner } = fakeDeps()
+    const entry = (repo: string, pr: number) => ({ repo, pr })
+    vi.mocked(listQueue)
+      .mockResolvedValueOnce([entry('acme/a', 1), entry('acme/a', 1), entry('Acme/B', 9)] as never)
+      .mockResolvedValueOnce([entry('acme/b', 2), entry('acme/b', 2)] as never)
+    await expect(runLoopCommand('queue', { owner: 'acme' }, target, deps)).resolves.toEqual([
+      entry('acme/a', 1),
+      entry('acme/b', 2),
+    ])
+    expect(listQueue).toHaveBeenCalledWith(run, 'acme', [], DEFAULT_LABELS)
+    expect(listQueue).toHaveBeenCalledWith(run, 'acme', ['acme/b'], {
+      ...DEFAULT_LABELS,
+      processing: 'busy',
+    })
+    expect(runner).toHaveBeenCalledWith('acme', 'b')
   })
 
   it('groups several repos per owner and label set and concatenates results', async () => {
@@ -244,6 +262,19 @@ describe('runLoopCommand', () => {
         ['status=completed', 'conclusion=cancelled'],
         ['status=completed', 'conclusion=skipped'],
       ])
+    })
+
+    it('binds the check run to the head the claim read, and reads the head once for abort and skip', async () => {
+      const claimHead = 's'.repeat(40)
+      const { deps, run } = fakeDeps()
+      vi.mocked(finalReviewStatus).mockResolvedValueOnce({
+        current: false,
+        headSha: claimHead,
+      } as never)
+      await runLoopCommand('claim', {}, () => BOB, deps)
+      await runLoopCommand('abort', {}, () => BOB, deps)
+      const heads = run.mock.calls.map(([args]) => args.find((a) => a.startsWith('head_sha=')))
+      expect(heads).toEqual([`head_sha=${claimHead}`, `head_sha=${'h'.repeat(40)}`])
     })
 
     it('does not start one for a declined claim', async () => {

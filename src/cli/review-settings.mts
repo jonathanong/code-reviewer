@@ -13,11 +13,15 @@ export function labelsFor(deps: FinalReviewDeps, repo: string): LabelNames {
   return reviewSettings(deps.configs(), repo).labels
 }
 
-/** Writes the check run `step` for the pull request's repository, if one is configured. */
+/**
+ * Writes the check run `step` for the pull request's repository, if one is configured, on `headSha`
+ * when the caller already holds the head it reviewed; otherwise on the head read once now.
+ */
 export function checkRunFor(
   deps: FinalReviewDeps,
   target: PullTarget,
   step: CheckRunStep,
+  headSha?: string,
 ): Promise<CheckRunResult | undefined> {
   const { owner, name } = splitRepo(target.repo)
   return reportCheckRun({
@@ -25,7 +29,8 @@ export function checkRunFor(
     mode: deps.authMode(),
     run: deps.runner(owner, name),
     repo: target.repo,
-    headSha: () => deps.createIo(target).headSha(),
+    headSha: () =>
+      headSha === undefined ? deps.createIo(target).headSha() : Promise.resolve(headSha),
     step,
   })
 }

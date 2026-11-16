@@ -94,7 +94,12 @@ async function run(
         return 0
       }
       const lifecycle = await completeReview(deps.createLabelIo(pull), labelsFor(deps, pull.repo))
-      const checkRun = await checkRunFor(deps, pull, postedStep(outcome.verdict, outcome.urls))
+      const checkRun = await checkRunFor(
+        deps,
+        pull,
+        postedStep(outcome.verdict, outcome.urls),
+        values['head-sha'],
+      )
       print({ ...outcome, reviews: outcome.reviews.length, lifecycle, checkRun })
       return 0
     }

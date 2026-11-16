@@ -7,7 +7,6 @@ import {
   assertRepo,
   claimReview,
   finalReviewStatus,
-  listQueue,
   prepareReview,
   resolveThreads,
   reviewSettings,
@@ -15,11 +14,11 @@ import {
   skipReview,
   skippedStep,
   type Effort,
-  type LabelNames,
   type PullTarget,
 } from '../final-review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import type { FinalReviewDeps } from './deps.mts'
+import { listQueueFor } from './queue.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
 
 export type LoopValues = {
@@ -71,32 +70,8 @@ export async function runLoopCommand(
       return { mode: deps.authMode() }
     case 'settings':
       return settings(values, deps)
-    case 'queue': {
-      const repos = values.repo ?? []
-      if (repos.length === 0) {
-        if (values.owner === undefined || values.owner === '') {
-          throw new Error('queue needs --owner or --repo.')
-        }
-        return listQueue(deps.runner(values.owner), values.owner, [], labelsFor(deps, values.owner))
-      }
-      // Each owner has its own installation, so list per owner with that owner's token, and per
-      // label set because the search names the labels.
-      const groups = new Map<string, { owner: string; labels: LabelNames; repos: string[] }>()
-      for (const repo of repos) {
-        const { owner } = splitRepo(repo)
-        const labels = labelsFor(deps, repo)
-        const key = JSON.stringify([owner, labels.requested, labels.processing])
-        const group = groups.get(key) ?? { owner, labels, repos: [] }
-        groups.set(key, { ...group, repos: [...group.repos, repo] })
-      }
-      const entries = await Promise.all(
-        [...groups.values()].map(({ owner, labels, repos: group }) => {
-          const only = group.length === 1 ? splitRepo(group[0] as string).name : undefined
-          return listQueue(deps.runner(owner, only), owner, group, labels)
-        }),
-      )
-      return entries.flat()
-    }
+    case 'queue':
+      return listQueueFor(deps, values.owner, values.repo ?? [])
     case 'claim': {
       const force = values.force === true
       const status = force ? undefined : await finalReviewStatus(deps.createIo(target()))
@@ -109,7 +84,7 @@ export async function runLoopCommand(
         },
       )
       if (!outcome.claimed) return status === undefined ? outcome : { ...outcome, status }
-      return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED) }
+      return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED, status?.headSha) }
     }
     case 'abort': {
       const labels = await abortReview(

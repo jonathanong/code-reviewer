@@ -8,7 +8,9 @@ import {
   type ReviewFile,
   type SanitizedReview,
 } from '../review-payload/index.mts'
+import { createGhLabelIo } from './labels.mts'
 import { DEFAULT_LABELS } from './settings.mts'
+import { assertPullTarget, type PullTarget } from './target.mts'
 import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
 /** The GitHub reads and writes a final review needs, injectable for tests. */
@@ -25,20 +27,6 @@ export type FinalReviewIo = {
   postReview(review: SanitizedReview): Promise<string>
   addApprovalLabel(): Promise<void>
   removeApprovalLabel(): Promise<void>
-}
-
-export type PullTarget = { repo: string; pr: number }
-
-const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u
-
-export function assertRepo(repo: string): void {
-  if (!REPO_RE.test(repo)) throw new Error('--repo must be owner/name.')
-}
-
-export function assertPullTarget(target: PullTarget): void {
-  assertRepo(target.repo)
-  if (!Number.isInteger(target.pr) || target.pr <= 0)
-    throw new Error('--pr must be a positive integer.')
 }
 
 function lines(text: string): string[] {
@@ -137,7 +125,8 @@ export function createGhFinalReviewIo(
       ])
     },
     async removeApprovalLabel() {
-      await run(['pr', 'edit', String(pr), '-R', repo, '--remove-label', approvalLabel])
+      // One label per request: `gh pr edit --remove-label` splits a name on commas.
+      await createGhLabelIo(target, run).remove(approvalLabel)
     },
   }
 }

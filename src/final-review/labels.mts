@@ -1,5 +1,5 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
-import { assertPullTarget, type PullTarget } from './github.mts'
+import { assertPullTarget, type PullTarget } from './target.mts'
 import type { LabelNames } from './settings.mts'
 
 /** Label reads and writes for one pull request, injectable for tests. */

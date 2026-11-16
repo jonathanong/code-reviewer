@@ -1,5 +1,5 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
-import { assertPullTarget, type PullTarget } from './github.mts'
+import { assertPullTarget, type PullTarget } from './target.mts'
 
 export type Author = { login: string } | null
 

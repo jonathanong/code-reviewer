@@ -135,7 +135,9 @@ describe('runFinalReviewCommand', () => {
   it('completes the configured check run when posting for real, and reports its failure', async () => {
     const { out } = capture()
     const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
-    const d = deps(fakeIo(), JSON.stringify({ findings: [] }))
+    const io = fakeIo()
+    io.headSha.mockResolvedValueOnce(SHA).mockResolvedValue('f'.repeat(40))
+    const d = deps(io, JSON.stringify({ findings: [] }))
     d.authMode.mockReturnValue('app')
     d.configs.mockReturnValue({
       ...NO_CONFIGS,
@@ -151,14 +153,17 @@ describe('runFinalReviewCommand', () => {
     })
     expect(run.mock.calls[0]?.[0]).toEqual(
       expect.arrayContaining([
+        `head_sha=${SHA}`,
         'repos/acme/widgets/check-runs',
         'conclusion=success',
         'output[title]=Approve',
         'output[summary]=https://example.test/r',
       ]),
     )
+    expect(io.headSha).toHaveBeenCalledOnce()
     out.length = 0
     run.mockRejectedValueOnce(new Error('403'))
+    io.headSha.mockResolvedValueOnce(SHA)
     await expect(runFinalReviewCommand(argv, d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({
       label: 'added',
