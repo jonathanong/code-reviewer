@@ -46,7 +46,7 @@ one, and a request for a pull request already being reviewed is noted for after 
 ## Step 1 - Start or restart
 
 1. Check the rule plugins before any review:
-   `code-reviewer plugins --require no-mistakes-rules --require skills`.
+   `code-reviewer plugins --require no-mistakes-rules --require jong-skills`.
    It prints the enabled plugins with versions and exits 1 naming any that are missing. Then
    confirm your own skill list shows skills from each required plugin: a session started before a
    plugin was installed or updated does not see it. On either failure, stop, review nothing, and
