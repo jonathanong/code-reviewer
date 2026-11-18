@@ -28,7 +28,7 @@
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
     "code-reviewer": "link:.",
-    "eslint-plugin-no-mistakes": "^0.109.38",
+    "eslint-plugin-no-mistakes": "^0.109.40",
     "github-actionlint": "^1.7.12",
     "oxfmt": "^0.78.0",
     "oxlint": "^1.93.0",
