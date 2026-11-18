@@ -22,7 +22,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["skills:typescript-authoring"]
+    "expectedSkills": ["jong-skills:typescript-authoring"]
   },
   {
     "id": "vouchington-1092",
@@ -47,7 +47,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["skills:postgres-schema-design"]
+    "expectedSkills": ["jong-skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-platform-69",
@@ -131,7 +131,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["skills:postgres-schema-design"]
+    "expectedSkills": ["jong-skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-1077",
@@ -163,7 +163,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["skills:postgres-schema-design"]
+    "expectedSkills": ["jong-skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-tooling-154",
@@ -275,7 +275,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["skills:postgres-schema-design"]
+    "expectedSkills": ["jong-skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-4154",
@@ -300,7 +300,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["skills:postgres-node-performance-tuning"]
+    "expectedSkills": ["jong-skills:postgres-node-performance-tuning"]
   },
   {
     "id": "vouchington-2806",
@@ -373,7 +373,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["skills:dependabot"]
+    "expectedSkills": ["jong-skills:dependabot"]
   },
   {
     "id": "vouchington-clients-130",
@@ -462,7 +462,7 @@
     },
     "relation": "undo",
     "confidence": "high",
-    "expectedSkills": ["skills:feature-rollout"]
+    "expectedSkills": ["jong-skills:feature-rollout"]
   },
   {
     "id": "vouchington-1146",
@@ -488,7 +488,7 @@
     },
     "relation": "undo",
     "confidence": "high",
-    "expectedSkills": ["skills:feature-rollout"]
+    "expectedSkills": ["jong-skills:feature-rollout"]
   },
   {
     "id": "vouchington-1144",
@@ -514,7 +514,7 @@
     },
     "relation": "undo",
     "confidence": "medium",
-    "expectedSkills": ["skills:feature-rollout"]
+    "expectedSkills": ["jong-skills:feature-rollout"]
   },
   {
     "id": "vouchington-1143",
@@ -540,7 +540,7 @@
     },
     "relation": "rework",
     "confidence": "high",
-    "expectedSkills": ["skills:postgres-schema-design"]
+    "expectedSkills": ["jong-skills:postgres-schema-design"]
   },
   {
     "id": "vouchington-402",

@@ -48,7 +48,7 @@ function claude(routes: Routes = {}): Exec {
     if (args[args.indexOf('--tools') + 1] === '') {
       return (
         routes.select?.() ??
-        result({ skills: ['skills:documentation', 'no-mistakes-rules:git-rules'] }, 0.01)
+        result({ skills: ['jong-skills:documentation', 'no-mistakes-rules:git-rules'] }, 0.01)
       )
     }
     if (prompt.includes('VERIFIER prompt text')) {
@@ -116,9 +116,9 @@ function setup(
       reviews: [{ event: 'COMMENT', commit_id: SHA, body: 'Body.', comments: [] }],
     })) as never,
     plugins: vi.fn(async () => ({
-      enabled: [{ id: 'skills@m', version: '1' }],
+      enabled: [{ id: 'jong-skills@m', version: '1' }],
       installs: [
-        { name: 'skills', installPath: fixture('plugins/skills') },
+        { name: 'jong-skills', installPath: fixture('plugins/skills') },
         { name: 'no-mistakes-rules', installPath: fixture('plugins/no-mistakes-rules') },
       ],
     })),
@@ -164,7 +164,7 @@ describe('runReview', () => {
       expect(readFileSync(join(out, file), 'utf8').length).toBeGreaterThan(0)
     }
     expect(readJson(out, 'skills.json').selected).toEqual([
-      'skills:documentation',
+      'jong-skills:documentation',
       'no-mistakes-rules:git-rules',
     ])
     expect(readFileSync(join(out, 'preview.md'), 'utf8')).toContain('Body.')

@@ -67,7 +67,7 @@
   {
     "id": "rules-skills-sweep-until-empty",
     "fixture": "fixtures/rules-skills-sweep-until-empty",
-    "expectedSkills": [["skills:bounded-iteration", "no-mistakes-rules:queue-rules"]],
+    "expectedSkills": [["jong-skills:bounded-iteration", "no-mistakes-rules:queue-rules"]],
     "title": "feat: purge expired sessions every 15 minutes",
     "kind": "positive",
     "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the installed skills plugin requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",

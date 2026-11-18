@@ -22,13 +22,13 @@ const caseJson = (id: string, expectedSkills?: unknown) => ({
 })
 
 const CASES = [
-  caseJson('s1', ['skills:one']),
-  caseJson('s2', [['skills:one', 'skills:two'], 'skills:three']),
+  caseJson('s1', ['jong-skills:one']),
+  caseJson('s2', [['jong-skills:one', 'jong-skills:two'], 'jong-skills:three']),
   caseJson('plain'),
 ]
 
 const PLUGINS = JSON.stringify([
-  { id: 'skills@m', version: '1', enabled: true, scope: 'user', installPath: '/p/skills' },
+  { id: 'jong-skills@m', version: '1', enabled: true, scope: 'user', installPath: '/p/skills' },
   { id: 'other@m', version: '1', enabled: true, scope: 'user', installPath: '/p/other' },
 ])
 
@@ -45,8 +45,8 @@ const choice = (selected: string[], extra: Partial<SkillChoice> = {}): SkillChoi
 function harness(answer: (id: string, attempt: number) => SkillChoice) {
   const store = new Map<string, string>([
     ['cases.json', JSON.stringify(CASES)],
-    ['more.json', JSON.stringify([caseJson('s3', ['skills:one'])])],
-    ['dupes.json', JSON.stringify([caseJson('s1', ['skills:one'])])],
+    ['more.json', JSON.stringify([caseJson('s3', ['jong-skills:one'])])],
+    ['dupes.json', JSON.stringify([caseJson('s1', ['jong-skills:one'])])],
   ])
   const logs: string[] = []
   const prepared: unknown[][] = []
@@ -117,8 +117,8 @@ describe('runReviewSelectionBenchCli', () => {
     const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness((id, attempt) =>
       id === 's1'
-        ? choice(attempt === 1 ? ['skills:one'] : ['skills:two'])
-        : choice(['skills:two', 'skills:three']),
+        ? choice(attempt === 1 ? ['jong-skills:one'] : ['jong-skills:two'])
+        : choice(['jong-skills:two', 'jong-skills:three']),
     )
     const args = ['--cases', 'cases.json', '--cases', 'more.json', '--out', 'o', '--attempts', '2']
     await expect(runReviewSelectionBenchCli([...args, '--jobs', '1'], h.deps)).resolves.toBe(0)
@@ -129,22 +129,22 @@ describe('runReviewSelectionBenchCli', () => {
       title: 'Title of s1',
       cwd: '/snap/s1',
       skills: [
-        { name: 'skills:one', description: '' },
+        { name: 'jong-skills:one', description: '' },
         { name: 'other:one', description: '' },
       ],
-      settings: { enabledPlugins: { 'skills@m': true, 'other@m': false } },
+      settings: { enabledPlugins: { 'jong-skills@m': true, 'other@m': false } },
     })
     expect((h.selected[0] as { index: string }).index).toContain('0001.patch` +1 -1 a.ts')
     expect(JSON.parse(h.store.get('o/raw/s1/2.json') as string)).toMatchObject({
-      selected: ['skills:two'],
+      selected: ['jong-skills:two'],
     })
     expect(h.store.has('o/raw/plain/1.json')).toBe(false)
     const markdown = h.store.get('o/summary.md') as string
-    expect(markdown).toContain('| s1 | skills:one | 1 of 2 | skills:one x1 | 1.0 | 0 |')
+    expect(markdown).toContain('| s1 | jong-skills:one | 1 of 2 | jong-skills:one x1 | 1.0 | 0 |')
     expect(markdown).toContain(
-      '| s2 | skills:one \\| skills:two; skills:three | 2 of 2 |  | 2.0 | 0 |',
+      '| s2 | jong-skills:one \\| jong-skills:two; jong-skills:three | 2 of 2 |  | 2.0 | 0 |',
     )
-    expect(markdown).toContain('| skills:one \\| skills:two | 2 of 2 | 100% |')
+    expect(markdown).toContain('| jong-skills:one \\| jong-skills:two | 2 of 2 | 100% |')
     const line = JSON.parse(String(out.mock.calls[0]?.[0])) as Record<string, unknown>
     expect(line).toMatchObject({
       summary: 'o/summary.md',
@@ -184,7 +184,7 @@ describe('runReviewSelectionBenchCli', () => {
   it('rescoring with --score-only makes no model calls and flags attempts never run', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness(() => choice([]))
-    h.store.set('o/raw/s1/1.json', JSON.stringify(choice(['skills:one'])))
+    h.store.set('o/raw/s1/1.json', JSON.stringify(choice(['jong-skills:one'])))
     await runReviewSelectionBenchCli([...BASE, '--case', 's1', '--score-only'], h.deps)
     expect(h.prepared).toEqual([])
     expect(h.selected).toEqual([])
@@ -196,7 +196,7 @@ describe('runReviewSelectionBenchCli', () => {
 
   it('reuses the cache directory from --cache', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
-    const h = harness(() => choice(['skills:one']))
+    const h = harness(() => choice(['jong-skills:one']))
     await runReviewSelectionBenchCli(
       [...BASE, '--case', 's1', '--attempts', '1', '--cache', 'shared'],
       h.deps,
@@ -209,10 +209,10 @@ describe('runReviewSelectionBenchCli', () => {
     const dir = mkdtempSync(join(tmpdir(), 'bench-selection-'))
     try {
       const cases = join(dir, 'cases.json')
-      writeFileSync(cases, JSON.stringify([caseJson('s1', ['skills:one'])]))
+      writeFileSync(cases, JSON.stringify([caseJson('s1', ['jong-skills:one'])]))
       const out = join(dir, 'nested', 'out')
       mkdirSync(join(out, 'raw', 's1'), { recursive: true })
-      writeFileSync(join(out, 'raw', 's1', '1.json'), JSON.stringify(choice(['skills:one'])))
+      writeFileSync(join(out, 'raw', 's1', '1.json'), JSON.stringify(choice(['jong-skills:one'])))
       await expect(
         runReviewSelectionBenchCli([
           '--cases',

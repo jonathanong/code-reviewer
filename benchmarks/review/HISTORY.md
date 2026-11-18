@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-17: rule plugin renamed to `jong-skills`; no run
+
+Commit: this change. No run. The `skills` plugin (jonathanong/skills) moved to
+jonathanong/harness-plugins and is now installed as `jong-skills@harness-plugins`, so its skills
+load as `jong-skills:<name>`. `RULE_PLUGINS`, the pillar prompts that name a skill to load, and
+every `expectedSkills` tag in `cases.json` and `synthetic.json` now use the new name. Earlier
+entries keep the old `skills:` names as they were measured.
+
+Nothing is re-measured. The README table is still the 2026-11-16 closing run, taken with
+`skills` 0480fabddb14. A run on this commit needs `jong-skills` installed; with only the old
+plugin installed, selection offers no `jong-skills:` skill and every tagged case scores as not
+loaded. The new plugin also carries rule changes made since that run (among them advisory locks
+going from "never" to "avoid"), so the next run is not comparable with the closing run on the
+cases those rules touch (`vouchington-2936` first).
+
 ## 2026-11-16: first measured verifier run
 
 Commit: this change. `bench-verifier`, verifier Opus, labels judged by Sonnet, 3 attempts, on the
