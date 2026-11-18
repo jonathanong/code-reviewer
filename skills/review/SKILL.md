@@ -61,7 +61,7 @@ rather than label, or to review a head that is already reviewed. The command:
 3. On a skip plan, posts a short skip review on the head with the reason (so `status` passes),
    closes the request, and writes a short report; go to Step 5.
 4. Picks the rule skills for the change with one Haiku call, runs the planned pillars as headless
-   runs that load only the `no-mistakes-rules` and `skills` plugins, then runs the verifier.
+   runs that load only the `no-mistakes-rules` and `jong-skills` plugins, then runs the verifier.
 5. Writes `review.json` (what `post` takes), `preview.md` (the review as it would be posted), and
    `report.md` with the pull request summary, the verdict, every pillar's findings including the
    ones the verifier dropped and why, the skills each pillar loaded, and the cost by model.
@@ -124,5 +124,5 @@ are in `benchmarks/review/`. Change a pillar or verifier prompt only together wi
 benchmark run.
 
 Consumer wrapper owns: the clone root (where local clones of the organization's repositories,
-including `no-mistakes` and `skills`, live), the repositories searched for blast
+including `no-mistakes` and `harness-plugins`, live), the repositories searched for blast
 radius, extra rule sources, and model tier overrides.

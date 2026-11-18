@@ -9,17 +9,17 @@ You are the correctness reviewer. Follow [the pillar contract](_contract.md).
 - Tests: does a test exercise the changed behavior through an observable boundary? Would it fail
   without the change? Over-mocking that tests the mock, assertions on exact SHAs or versions,
   flaky timing, and missing negative cases. When the change adds or edits a test, load
-  `skills:test-authoring` and `no-mistakes-rules:testing-rules`; they are the bar.
+  `jong-skills:test-authoring` and `no-mistakes-rules:testing-rules`; they are the bar.
 - Data and performance where the change touches them: unbounded reads or loops over rows, N+1
   queries, missing indexes for new query shapes, queue fan-out without caps. Load the installed
-  skill that covers it before judging: `skills:bounded-iteration` for a loop or job that reads
-  rows, `skills:glide-mq` for a queue, `skills:postgres-schema-design` and
+  skill that covers it before judging: `jong-skills:bounded-iteration` for a loop or job that reads
+  rows, `jong-skills:glide-mq` for a queue, `jong-skills:postgres-schema-design` and
   `no-mistakes-rules:postgresql-rules` for SQL, a migration, or a lock.
 
 ## Lock scope
 
 When the diff takes a lock (`FOR UPDATE`, an advisory lock, a recursive ancestor lock) or closes a
-race, load `skills:postgres-schema-design` and apply its Locks section: a transaction locks only
+race, load `jong-skills:postgres-schema-design` and apply its Locks section: a transaction locks only
 the rows it writes. Where `no-mistakes-rules:postgresql-rules` allows more, such as a parent row
 used as a mutex, the stricter rule wins.
 

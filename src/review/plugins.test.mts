@@ -52,17 +52,17 @@ describe('checkPlugins', () => {
 describe('pluginSettings', () => {
   const plugins = [
     { id: 'no-mistakes-rules@no-mistakes', version: '1' },
-    { id: 'skills@jonathanong-skills', version: '1' },
+    { id: 'jong-skills@harness-plugins', version: '1' },
     { id: 'skills-extra@m', version: '1' },
     { id: 'superpowers@official', version: '1' },
   ]
 
   it('keeps only the rule plugins on', () => {
-    expect(RULE_PLUGINS).toEqual(['no-mistakes-rules', 'skills'])
+    expect(RULE_PLUGINS).toEqual(['no-mistakes-rules', 'jong-skills'])
     expect(pluginSettings(plugins)).toEqual({
       enabledPlugins: {
         'no-mistakes-rules@no-mistakes': true,
-        'skills@jonathanong-skills': true,
+        'jong-skills@harness-plugins': true,
         'skills-extra@m': false,
         'superpowers@official': false,
       },
@@ -83,14 +83,16 @@ describe('pluginSettings', () => {
 describe('parsePluginInstalls', () => {
   it('keeps enabled user-scope plugins that have an install path', () => {
     const listed = JSON.stringify([
-      { id: 'skills@m', scope: 'user', enabled: true, installPath: '/cache/skills' },
+      { id: 'jong-skills@m', scope: 'user', enabled: true, installPath: '/cache/skills' },
       { id: 'off@m', scope: 'user', enabled: false, installPath: '/cache/off' },
       { id: 'proj@m', scope: 'project', enabled: true, installPath: '/cache/proj' },
       { id: 'bare@m', scope: 'user', enabled: true },
       { scope: 'user', enabled: true, installPath: '/x' },
       null,
     ])
-    expect(parsePluginInstalls(listed)).toEqual([{ name: 'skills', installPath: '/cache/skills' }])
+    expect(parsePluginInstalls(listed)).toEqual([
+      { name: 'jong-skills', installPath: '/cache/skills' },
+    ])
   })
 
   it('rejects output that is not a list', () => {

@@ -54,7 +54,7 @@ pillar fails, the review fails closed instead of approving unchecked code.
 
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
-plugins (`no-mistakes-rules`, `skills`). That keeps fixed context near 17k tokens instead of
+plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of
 about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 

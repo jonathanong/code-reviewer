@@ -4,7 +4,8 @@
 
 One run: 2026-11-16, at the commit that added this table, reviewer Sonnet 5.5, selection Haiku,
 judge Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`).
-Rule plugins: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14. Reviewer and selection cost
+Rule plugins: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14 (since renamed `jong-skills`;
+not re-measured under the new name). Reviewer and selection cost
 $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
@@ -147,7 +148,7 @@ runs have none, so `skills` is empty). A case may declare
 name (a bare name is rejected when the cases load), and only a loaded skill with exactly that name
 satisfies it, so a same-named skill from a stale plugin does not. An entry may instead be a
 non-empty array of full names, meaning any one of them satisfies it:
-`[["skills:bounded-iteration", "no-mistakes-rules:queue-rules"]]`; a missing group is listed as
+`[["jong-skills:bounded-iteration", "no-mistakes-rules:queue-rules"]]`; a missing group is listed as
 `a | b`. The expectation applies to the pillars of the case's
 `expected` findings, and to every pillar run for a negative case. The summary adds:
 
@@ -169,7 +170,7 @@ pillar gets only the contract's general instruction to load matching skills.
 
 Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
 `--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
-`skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
+`jong-skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
 every plugin false. Pillars may use the `Agent` tool to dispatch an `explorer` subagent (Haiku,
 read-only tools). Verifier runs get the same isolation flags and settings; checker runs get the same,
 and judge runs get them with every plugin false.
@@ -223,7 +224,7 @@ re-runs pillars), and the judge cache is keyed on findings only, so the new fiel
 stale result look current; the rules digest and `plugins` are unchanged.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: an installed
-`no-mistakes-rules` skill (`rules-test-only-global-call-count`), an installed `skills` plugin skill
+`no-mistakes-rules` skill (`rules-test-only-global-call-count`), an installed `jong-skills` plugin skill
 (`rules-skills-sweep-until-empty`, which accepts either of two skills),
 workflow-only, manifest-only, and test-only changes (`rules-workflow-only-*`,
 `rules-manifest-only-*`, `rules-test-only-*`), `rules-content-only-*` cases whose changed file path

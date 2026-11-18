@@ -12,7 +12,7 @@ import {
 
 const path = (name: string) => fileURLToPath(new URL(`./fixtures/plugins/${name}`, import.meta.url))
 const INSTALLS: PluginInstall[] = [
-  { name: 'skills', installPath: path('skills') },
+  { name: 'jong-skills', installPath: path('skills') },
   { name: 'no-mistakes-rules', installPath: path('no-mistakes-rules') },
   { name: 'other', installPath: path('other') },
 ]
@@ -23,19 +23,19 @@ const answer = (skills: unknown) =>
 describe('listRuleSkills', () => {
   it('reads name and description from the rule plugins only, naming each plugin:skill', () => {
     expect(listRuleSkills(INSTALLS)).toEqual([
+      { name: 'jong-skills:bare', description: '' },
+      { name: 'jong-skills:documentation', description: 'Decide what belongs in docs.' },
       { name: 'no-mistakes-rules:git-rules', description: 'Rules for git and pull requests.' },
       {
         name: 'no-mistakes-rules:typescript-rules',
         description: 'MUST NOT rules for TypeScript and Node.js. Use when writing TS.',
       },
-      { name: 'skills:bare', description: '' },
-      { name: 'skills:documentation', description: 'Decide what belongs in docs.' },
     ])
   })
 
   it('offers nothing for a plugin that is not installed or has no skills directory', () => {
     expect(listRuleSkills([])).toEqual([])
-    expect(listRuleSkills([{ name: 'skills', installPath: path('missing') }])).toEqual([])
+    expect(listRuleSkills([{ name: 'jong-skills', installPath: path('missing') }])).toEqual([])
   })
 })
 
@@ -45,11 +45,11 @@ describe('selectSkills', () => {
 
   it('asks Haiku with no tools and keeps only offered names, once each', async () => {
     const exec = vi.fn(async () =>
-      answer(['skills:documentation', 'made:up', 'skills:documentation', 7]),
+      answer(['jong-skills:documentation', 'made:up', 'jong-skills:documentation', 7]),
     )
-    const settings = { enabledPlugins: { 'skills@m': true } }
+    const settings = { enabledPlugins: { 'jong-skills@m': true } }
     const choice = await selectSkills({ ...base, settings, exec })
-    expect(choice.selected).toEqual(['skills:documentation'])
+    expect(choice.selected).toEqual(['jong-skills:documentation'])
     expect(choice.available).toBe(4)
     expect(choice.usage?.costUsd).toBe(0.01)
     expect(choice.error).toBeUndefined()
@@ -77,7 +77,7 @@ describe('selectSkills', () => {
       '## Diff excerpt\n\n+added line',
     )
     const prompt = buildSelectionPrompt('T', 'x'.repeat(30_000), skills)
-    expect(prompt).toContain('- skills:documentation: Decide what belongs in docs.')
+    expect(prompt).toContain('- jong-skills:documentation: Decide what belongs in docs.')
     expect(prompt).toContain('Pull request title: T')
     expect(prompt.length).toBeLessThan(26_000)
   })
@@ -103,11 +103,11 @@ describe('selectSkills', () => {
     const flaky = async () => {
       calls += 1
       if (calls === 1) throw new ExecError('claude exited with 1', 1, '', undefined)
-      return answer(['skills:documentation'])
+      return answer(['jong-skills:documentation'])
     }
     const choice = await selectSkills({ ...base, exec: flaky })
     expect(choice.error).toBeUndefined()
-    expect(choice.selected).toEqual(['skills:documentation'])
+    expect(choice.selected).toEqual(['jong-skills:documentation'])
   })
 
   it('records an answer without a skills list', async () => {

@@ -40,7 +40,7 @@ export function checkPlugins(
 }
 
 /** The plugins whose skills hold the shared review rules; a headless run switches every other off. */
-export const RULE_PLUGINS = ['no-mistakes-rules', 'skills'] as const
+export const RULE_PLUGINS = ['no-mistakes-rules', 'jong-skills'] as const
 
 /** The `--settings` value for a headless run: only the rule plugins stay on, or none for a control. */
 export function pluginSettings(
