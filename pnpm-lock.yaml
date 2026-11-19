@@ -18,8 +18,8 @@ importers:
         specifier: link:.
         version: 'link:'
       eslint-plugin-no-mistakes:
-        specifier: ^0.109.38
-        version: 0.109.38(eslint@10.14.0)(typescript@7.0.2)
+        specifier: ^0.109.40
+        version: 0.109.40(eslint@10.14.0)(typescript@7.0.2)
       github-actionlint:
         specifier: ^1.7.12
         version: 1.7.12
@@ -756,8 +756,8 @@ packages:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
 
-  eslint-plugin-no-mistakes@0.109.38:
-    resolution: {integrity: sha512-JuZZbMmJlqVMX3O+XUtAOddo//ZUei+vGyaPbCYwx40Wv2pdAwxMH5xpoFKYWwf0OvpzvLBMj+EjaV+b8C6sYg==}
+  eslint-plugin-no-mistakes@0.109.40:
+    resolution: {integrity: sha512-J84EV07FK3ywg0pbRLHx78JJ9lje4gDWmtdK9T+YAYp0iUrVEjDFuNnEchN94jrKY/W8h+RwwJjExkg1L+eVdw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
     peerDependencies:
       '@typescript-eslint/parser': '>=8'
@@ -1702,7 +1702,7 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-plugin-no-mistakes@0.109.38(eslint@10.14.0)(typescript@7.0.2):
+  eslint-plugin-no-mistakes@0.109.40(eslint@10.14.0)(typescript@7.0.2):
     dependencies:
       eslint: 10.14.0
     optionalDependencies:
