@@ -1,4 +1,3 @@
-import { EventEmitter } from 'node:events'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -7,76 +6,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../cli/command-review.mts', () => ({ reviewCommand: vi.fn() }))
 
 import { reviewCommand } from '../cli/command-review.mts'
-import type { ReviewDeps } from '../cli/deps.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
-import { recordReview } from '../tracker/record.mts'
-import { runCommand, type RunEnv, type RunValues } from './command.mts'
-import { HEAD, fakeDeps, marker, type FakeOptions } from './fake-deps.mts'
-import { stageRun, type RunOverrides } from './fixture-run.mts'
+import type { RunValues } from './command.mts'
+import { HEAD, marker, type FakeOptions } from './fake-deps.mts'
+import { COUNTS, PULL, runWith, setup as makeFake, type Fake, type Review } from './harness.mts'
 import type { RunLine } from './output.mts'
-
-const PULL: RunValues = { repo: ['acme/widgets'], pr: '4' }
-const COUNTS = { blocking: 0, high: 0, medium: 0, low: 0 }
 
 let root: string
 let stdout: string[]
 
-type Review = { overrides?: RunOverrides; claimed?: boolean; ok?: boolean; error?: string }
+const setup = (options: Partial<FakeOptions> = {}, review: Review = {}) =>
+  makeFake(root, options, review)
 
-/** Stands in for the headless run: writes the run's files and takes the claim like `review` does. */
-function fakeReview(deps: ReviewDeps, review: Review = {}) {
-  vi.mocked(reviewCommand).mockImplementation(async (values, pull, used) => {
-    const { out } = values as { out: string }
-    if (review.claimed === false) return { ok: true, summary: { claimed: false, reason: 'lost' } }
-    const labelIo = deps.createLabelIo(pull)
-    await labelIo.add(['final-review:in-progress'])
-    if ((await labelIo.labels()).includes('final-review:requested')) {
-      await labelIo.remove('final-review:requested')
-    }
-    await used.exec('claude', [], {})
-    if (review.ok === false) {
-      await labelIo.remove('final-review:in-progress')
-      return { ok: false, summary: { claimed: true, error: review.error ?? 'every pillar failed' } }
-    }
-    stageRun(out, review.overrides)
-    const summary = {
-      claimed: true,
-      mode: 'full',
-      verdict: 'Approve',
-      findings: COUNTS,
-      costUsd: 2.1,
-      review: join(out, 'review.json'),
-      headSha: HEAD,
-    }
-    recordReview(deps.tracker(), { ...pull, out, startedAt: 'now', ok: true, summary })
-    return { ok: true, summary }
-  })
-}
-
-function setup(options: Partial<FakeOptions> = {}, review: Review = {}) {
-  const fake = fakeDeps({ stateDir: join(root, 'state'), ...options })
-  fakeReview(fake.deps, review)
-  const git = vi.fn(async (args: string[]) =>
-    args.includes('get-url') ? 'https://github.com/acme/widgets.git' : '',
-  )
-  const signals = new EventEmitter()
-  const env: RunEnv = {
-    env: {},
-    tmp: join(root, 'tmp'),
-    git,
-    remote: (repo) => `https://example.test/${repo}.git`,
-    signals,
-  }
-  return { ...fake, env, git, signals }
-}
-
-async function run(
-  fake: ReturnType<typeof setup>,
-  values: RunValues = PULL,
-): Promise<{ code: number; line: RunLine }> {
-  const code = await runCommand(values, fake.deps, fake.env)
-  expect(stdout).toHaveLength(1)
-  return { code, line: JSON.parse(stdout[0] as string) as RunLine }
+async function run(fake: Fake, values: RunValues = PULL): Promise<{ code: number; line: RunLine }> {
+  const { code, lines } = await runWith(fake, stdout, values)
+  expect(lines).toHaveLength(1)
+  return { code, line: lines[0] as RunLine }
 }
 
 beforeEach(() => {
@@ -96,7 +41,7 @@ afterEach(() => {
 })
 
 /** Dropping the in-progress label fails, as when GitHub is unreachable after the review. */
-function breakRelease(fake: ReturnType<typeof setup>) {
+function breakRelease(fake: Fake) {
   vi.mocked(fake.labelIo.remove).mockImplementation(async (name) => {
     if (name === 'final-review:in-progress') throw new Error('labels are down')
     fake.labels.splice(fake.labels.indexOf(name), 1)
@@ -169,12 +114,6 @@ describe('runCommand posting', () => {
     const fake = setup()
     await run(fake, { ...PULL, jobs: '2', effort: 'low' })
     expect(vi.mocked(reviewCommand).mock.calls[0]?.[0]).toMatchObject({ jobs: '2', effort: 'low' })
-  })
-
-  it('prints a null review url when GitHub returned none', async () => {
-    const fake = setup()
-    vi.mocked(fake.io.postReview).mockResolvedValue(undefined as unknown as string)
-    expect((await run(fake)).line.reviewUrl).toBeNull()
   })
 
   it('reports a skip plan as posted with the Skipped verdict', async () => {

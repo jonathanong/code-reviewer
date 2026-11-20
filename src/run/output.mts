@@ -29,6 +29,10 @@ export type RunLine = {
   findings: Counts | null
   questions: number | null
   reviewUrl: string | null
+  /** The ids of the reviews `post` read back from the pull request, one per part. */
+  reviewIds: number[]
+  /** The second check on an approval, when the review ran one. */
+  approvalCheck: 'upheld' | 'changed' | 'failed' | null
   costUsd: number | null
   tokens: { input: number; output: number } | null
   mode: string | null
@@ -55,6 +59,8 @@ const BLANK: Omit<RunLine, 'outcome' | 'exitCode'> = {
   findings: null,
   questions: null,
   reviewUrl: null,
+  reviewIds: [],
+  approvalCheck: null,
   costUsd: null,
   tokens: null,
   mode: null,

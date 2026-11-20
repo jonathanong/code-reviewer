@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import type { ReviewInput } from '../review/finding.mts'
 import { isDependabot } from '../review/mode.mts'
+import { APPROVAL_CHECK } from '../review/skipped.mts'
 import { readStackFile } from '../review/stack-file.mts'
 import {
   isDependencyFile,
@@ -39,6 +40,9 @@ function partialFailures(report: ReportData): string[] {
     ...(evidence?.error === undefined ? [] : ['evidence run failed']),
     ...sources,
     ...(report.verifier === null ? ['verifier did not run'] : []),
+    ...(report.skipped.some((entry) => entry.pillar === APPROVAL_CHECK)
+      ? ['the approval was not double-checked']
+      : []),
   ]
 }
 

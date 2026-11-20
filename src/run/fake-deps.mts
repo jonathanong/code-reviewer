@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { vi, type Mock } from 'vitest'
 
 import type { ReviewDeps } from '../cli/deps.mts'
+import type { ListedReview } from '../review/github.mts'
 import type { LabelIo, PrepareIo, ReviewIo } from '../review/index.mts'
 import { parseRepoConfig, NO_CONFIGS, type RepoConfigs } from '../review/rules/config.mts'
 import { createTrackerIo } from '../tracker/io.mts'
@@ -26,6 +27,8 @@ export type FakeOptions = {
   loginError?: string
   files?: Array<{ path: string; lines: number }>
   postFails?: boolean
+  /** The post succeeds but the review list never shows it. */
+  unconfirmed?: boolean
   trackerPostedFails?: boolean
 }
 
@@ -39,17 +42,29 @@ export function fakeDeps(options: FakeOptions) {
       labels.splice(labels.indexOf(name), 1)
     }),
   }
+  const listed: ListedReview[] = (options.reviews ?? []).map((body, index) => ({
+    id: index + 1,
+    url: `https://github.example/review/old-${index + 1}`,
+    body,
+    author: APP,
+  }))
   const io: Mocked<ReviewIo> = {
     headSha: vi.fn(async () => HEAD),
     diff: vi.fn(),
     listFiles: vi.fn(async () => []),
-    listReviews: vi.fn(async () => (options.reviews ?? []).map((body) => ({ body, author: APP }))),
+    listReviews: vi.fn(async () => listed),
+    changesRequested: vi.fn(async () => []),
+    dismissReview: vi.fn(),
     pullAuthor: vi.fn(async () => 'dev'),
     trustedAuthors: vi.fn(async () => new Set([APP])),
     hasApprovalLabel: vi.fn(async () => false),
-    postReview: vi.fn(async () => {
+    postReview: vi.fn(async (review) => {
       if (options.postFails === true) throw new Error('GitHub is down')
-      return 'https://github.example/review/1'
+      const id = listed.length + 1
+      const url = `https://github.example/review/${id}`
+      // A review that lands is what the read-back finds; `unconfirmed` leaves it out.
+      if (options.unconfirmed !== true) listed.push({ id, url, body: review.body, author: APP })
+      return url
     }),
     addApprovalLabel: vi.fn(async () => undefined),
     removeApprovalLabel: vi.fn(),

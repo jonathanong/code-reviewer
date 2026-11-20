@@ -26,6 +26,9 @@ export type Stage = {
   base: Partial<RunLine>
 }
 
+/** What `post` says when a review may have landed but the read-back could not show it. */
+const MAY_HAVE_POSTED = /may have posted|is not on the pull request/u
+
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 /** Where a run keeps its files: the state directory outlives the temporary tree and a reboot. */
@@ -60,6 +63,7 @@ function reviewFields(
     costUsd: summary.costUsd as number,
     tokens: facts.tokens,
     mode: summary.mode as string,
+    approvalCheck: (summary.approvalCheck ?? null) as RunLine['approvalCheck'],
   }
 }
 
@@ -99,24 +103,37 @@ export async function finish(
     const { outcome, printed } = await postCommand(values, pull, deps)
     const explain = writeExplain(deps, out)
     const tracked = (printed as { trackerProblem?: string }).trackerProblem
-    const extra = [tracked, explain.problem].filter((p) => p !== undefined)
+    // The review is out and the labels have moved, so an unconfirmed read-back is a warning to
+    // look at the pull request, not a reason to undo anything.
+    const unconfirmed = outcome.confirmed
+      ? []
+      : ['the review was not confirmed on the pull request']
+    const extra = [tracked, explain.problem, ...unconfirmed].filter((p) => p !== undefined)
     return runLine('posted', RUN_EXIT.posted, {
       ...fields,
       verdict: outcome.verdict,
       event: outcome.event,
-      reviewUrl: outcome.urls[0] ?? null,
+      // `post` always sends at least one review.
+      reviewUrl: outcome.urls[0] as string,
+      reviewIds: outcome.reviewIds,
       explainPath: explain.path,
       problems: [...problems, ...extra],
-      attention: [...problems, ...extra],
+      attention: [...new Set([...problems, ...extra, ...outcome.warnings])],
     })
   } catch (error) {
     const leftover = await release(pull, deps, false)
-    const reason = `the review is ready but was not posted: ${message(error)}`
+    // `post` throws this when a part may have landed and the read-back could not say. The claim
+    // is still released, without a requeue; the unposted review in `runDir` keeps a later run a
+    // no-op, so nothing reviews this head again. The post command is withheld until a human looks.
+    const unsure = MAY_HAVE_POSTED.test(message(error))
+    const reason = unsure
+      ? `the review may or may not have posted; look at the pull request before posting again: ${message(error)}`
+      : `the review is ready but was not posted: ${message(error)}`
     const problems = leftover === undefined ? [] : [leftover]
     return runLine('error', RUN_EXIT.failed, {
       ...stage.base,
       reason,
-      postCommand: command,
+      postCommand: unsure ? null : command,
       problems,
       attention: [reason, ...problems],
     })

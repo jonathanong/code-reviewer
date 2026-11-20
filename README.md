@@ -225,10 +225,13 @@ commands use.
 
 `repo`, `pr`, `headSha`, `outcome`, `exitCode`, `verdict`, `event` (the posted review event),
 `held` (the rules that matched), `findings` (counts by severity), `questions`, `reviewUrl`,
-`costUsd`, `tokens`, `mode`, `tree` (`worktree` or `clone`), `runDir`, `explainPath`,
+`reviewIds` (the reviews `post` read back, one per part), `approvalCheck` (`upheld`, `changed` or
+`failed`, when the review ran the second check on an approval), `costUsd`, `tokens`, `mode`, `tree` (`worktree` or `clone`), `runDir`, `explainPath`,
 `postCommand`, `attention`, `problems` and `reason`. Fields that do not apply are `null`, or `[]`
 for lists. `attention` is a list of short reasons a person should look; it is empty when a clean
-review was posted.
+review was posted. A posted review's `attention` also carries the warnings `post` printed: a
+duplicate review, an earlier request for changes left undismissed, or a review it could not
+confirm.
 
 `explainPath` is a Markdown file `run` always writes with the output of `explain`, for posted and
 held runs alike, so the review can be read or attached to a document. `run` talks to no document
@@ -244,7 +247,7 @@ switched off in machine config. `--post hold` holds every run (`held` lists `pos
 | `unclear-intent`   | The review has open questions.                                                                                                |
 | `large-change`     | The change is over `largeChange.files` files or `largeChange.lines` changed lines, or the diff or conversation was cut short. |
 | `risky-change`     | The change touches paths the dispatcher sends to the security pillar.                                                         |
-| `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked.                                                             |
+| `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked, or the approval's second check did not complete.            |
 | `not-app-identity` | Calls use the local `gh` login and not the GitHub App.                                                                        |
 | `text-too-long`    | Posted text is over three times its target, which `post` would refuse.                                                        |
 
@@ -253,6 +256,18 @@ in `queue`. It leaves the review in `runDir` and the tracker row at `reviewed`, 
 later `run` of the same head a no-op rather than a loop. With `--post auto`, a held review is
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
 (`code-reviewer post ... --input RUNDIR/review.json`). `run --force` reviews the head again.
+
+### When the post is not certain
+
+If `post` submitted the review but could not read it back, `run` still reports `posted` (the
+labels moved and the tracker row was written) and lists the problem in `problems` and `attention`:
+look at the pull request. If `post` throws because the review may or may not have landed, `run`
+exits 13 with a `reason` that says so, releases the claim without requeueing, and leaves
+`postCommand` null. The review stays unposted in `runDir` with a `reviewed` tracker row, so a
+later `run` of the same head is a no-op (11) and cannot start a second review of it. A person
+checks the pull request, then posts with `post` or reviews again with `--force`.
+
+GitHub retry warnings stay on stderr, after the JSON line; stdout is still exactly one line.
 
 ### Config
 

@@ -125,7 +125,9 @@ one win. It exits:
 - 11 `noop`: nothing to do; `reason` says why. Take no action.
 - 12 `error`: a precondition failed (a missing plugin, a settings problem, no auth, a bad flag).
   Stop dispatching and tell the human `reason`.
-- 13 `error`: the run failed and released its claim. Say so with `reason`; retry once at most.
+- 13 `error`: the run failed and released its claim. Say so with `reason`; retry once at most. When
+  `reason` says the review may or may not have posted, do not retry: tell the human to look at the
+  pull request first.
 
 Anything in `attention` goes to the human even when the review was posted.
 
