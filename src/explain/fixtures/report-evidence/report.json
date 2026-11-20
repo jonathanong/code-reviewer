@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "repo": "acme/widgets",
+  "pr": 8,
+  "title": "Tidy imports",
+  "url": "https://github.com/acme/widgets/pull/8",
+  "headSha": "5555555555555555555555555555555555555555",
+  "mode": "light",
+  "pullRequestSummary": "",
+  "summary": "Imports only.",
+  "verdict": "Approve",
+  "findings": [
+    { "pillar": "rules", "severity": "low", "title": "Order imports", "body": "Sort them." }
+  ],
+  "pillars": [
+    {
+      "pillar": "rules",
+      "model": "haiku",
+      "skills": [],
+      "usage": { "costUsd": 0.05 },
+      "failedAttempts": [],
+      "findings": []
+    }
+  ],
+  "skipped": [{ "pillar": "security", "reason": "No security trigger paths changed." }],
+  "skillSelection": { "selected": [], "available": 0, "usage": null },
+  "verifier": null,
+  "evidence": {
+    "sources": [{ "name": "metrics", "status": "checked", "queries": [] }],
+    "findings": [],
+    "claims": [],
+    "error": "the run failed twice",
+    "model": "sonnet",
+    "usage": null,
+    "failedAttempts": []
+  },
+  "usageByModel": []
+}

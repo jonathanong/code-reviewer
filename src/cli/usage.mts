@@ -13,6 +13,8 @@ code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
 code-reviewer plugins [--require NAME]...
+code-reviewer tracker [--repo owner/name]... [--since ISO_DATE] [--state reviewed|posted|skipped|failed] [--format json|csv|markdown]
+code-reviewer explain (--run DIR | --repo owner/name --pr N)
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
@@ -45,6 +47,12 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
   from report.json.
   resolve resolves review threads of fixed findings.
+  review and post also append a row to the machine-local tracker, reviews.jsonl in the state home
+  ($XDG_STATE_HOME/code-reviewer, default ~/.local/state/code-reviewer, or CODE_REVIEWER_STATE_DIR).
+  tracker prints the folded rows, one per pull request head, filtered by --repo, --since and --state.
+  explain prints a Markdown explainer of one review for a reader who has not read the code, from the
+  files in its run directory; it makes no model call. A tracker error is reported as trackerProblem
+  and never fails a review or a post.
   Markers in earlier reviews count only from the reviewer's own identity: the gh viewer, or under
   App auth the App's <app-slug>[bot] from GET /app. If that lookup fails nothing is trusted, and
   reviews from every other author are read as ordinary notes, never as a prior review.

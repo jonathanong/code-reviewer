@@ -36,6 +36,12 @@ const deps = {
   pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
   exec: vi.fn(async () => ''),
   references: vi.fn(() => '/refs'),
+  tracker: vi.fn(() => ({
+    dir: '/state',
+    read: () => undefined,
+    append: () => undefined,
+    now: () => new Date('2026-05-06T07:08:09.000Z'),
+  })),
 } as unknown as ReviewDeps
 
 async function steps(values: Parameters<typeof reviewCommand>[0] = { out: 'o', tree: 't' }) {

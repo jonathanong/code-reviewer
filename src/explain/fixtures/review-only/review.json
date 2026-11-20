@@ -1,0 +1,16 @@
+{
+  "effort": "low",
+  "summary": "A small, safe change.",
+  "skipped": [],
+  "findings": [
+    {
+      "pillar": "design",
+      "severity": "medium",
+      "title": "Name does not match behavior",
+      "body": "",
+      "path": "src/a.mts"
+    },
+    { "pillar": "design", "severity": "bogus", "title": "Dropped: unknown severity", "body": "x" },
+    { "pillar": "design", "severity": "low", "body": "Dropped: no title" }
+  ]
+}

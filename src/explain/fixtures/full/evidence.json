@@ -1,0 +1,26 @@
+{
+  "sources": [
+    { "name": "production-logs", "status": "checked", "queries": [] },
+    {
+      "name": "metrics",
+      "status": "blocked",
+      "reason": "No credentials were configured.",
+      "queries": []
+    },
+    { "name": "tickets", "status": "blocked", "queries": [] },
+    { "name": "docs", "status": "not-applicable", "queries": [] }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "effect": "contradicts",
+      "note": "The logs show every update restarts the worker."
+    },
+    { "id": "F2", "effect": "none", "note": "" },
+    { "id": "F3", "effect": "supports", "note": "Two tenants requested widget 7 within a minute." }
+  ],
+  "claims": [],
+  "model": "sonnet",
+  "usage": { "costUsd": 0.2 },
+  "failedAttempts": []
+}

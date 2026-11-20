@@ -1,0 +1,40 @@
+{
+  "effort": "high",
+  "summary": "The change speeds up widget lookups with a cache, but the cache key ignores the tenant, so one tenant can read another's widgets.",
+  "skipped": [
+    { "pillar": "security", "reason": "The run failed twice: timed out after 30 minutes" },
+    { "pillar": "history", "reason": "No history trigger paths changed." }
+  ],
+  "findings": [
+    {
+      "pillar": "correctness",
+      "severity": "high",
+      "title": "Cached widgets are never invalidated",
+      "body": "Updating a widget leaves the old copy in the cache until the process restarts, so readers see stale data.\n\nEvict the entry in `updateWidget`.",
+      "path": "src/cache.mts",
+      "line": 24,
+      "startLine": 10
+    },
+    {
+      "pillar": "design",
+      "severity": "low",
+      "title": "Typo in the cache log message",
+      "body": "Fixed in #5: the message is reworded there.",
+      "path": "src/cache.mts",
+      "line": 3
+    },
+    {
+      "pillar": "security",
+      "severity": "blocking",
+      "title": "The cache key ignores the tenant",
+      "body": "Two tenants asking for widget 7 share one cache entry, so the second tenant receives the first tenant's data.\n\nInclude the tenant id in the key:\n\n```suggestion\nconst key = `${tenantId}:${widgetId}`\n```",
+      "path": "src/cache.mts",
+      "line": 42
+    }
+  ],
+  "questions": [
+    "Should the cache be shared between processes?",
+    { "question": "Who clears it on deploy?" },
+    7
+  ]
+}

@@ -9,6 +9,7 @@ const BASE = 'b'.repeat(40)
 function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
   return {
     title: 'T',
+    author: 'octocat',
     intent: { body: '', issues: [] },
     headSha: HEAD,
     baseSha: BASE,
