@@ -9,7 +9,8 @@ import {
 import type { Usage } from '../benchmark/usage.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
-import { CLAUDE_EFFORT, SKILL_TOOLS, pillarArgs } from './claude-flags.mts'
+import { CLAUDE_EFFORT, SKILL_TOOLS, pillarArgs, withWebFetch } from './claude-flags.mts'
+import { referenceDomains, referencesBlock, type WebReferences } from './references-prompt.mts'
 import { runFileLines, type RunDir } from './pillar-prompt.mts'
 import { stackLines } from './stack-prompt.mts'
 import { readStream } from './stream-output.mts'
@@ -45,12 +46,15 @@ export type VerifierInput = {
   skipped: readonly SkippedPillar[]
   /** Thread ids of the unresolved earlier findings; the only ids the verifier may report fixed. */
   threads: readonly string[]
+  /** Web references the verifier may fetch; none by default. */
+  web?: WebReferences
 }
 
 export function buildVerifierRunPrompt(input: VerifierInput): string {
   const listed = input.findings.map((finding, index) => ({ index, ...finding }))
   return [
     input.verifierPrompt.trim(),
+    ...referencesBlock(input.web),
     '## This run',
     'This is a headless run. Do not post anything, run commands, dispatch subagents, or write files:',
     'the Output section above is handled by the caller. Return the verified findings and the summary',
@@ -134,7 +138,7 @@ export async function runReviewVerifier(
     prompt: buildVerifierRunPrompt(input),
     model: options.model,
     maxTurns: REVIEW_MAX_TURNS,
-    tools: SKILL_TOOLS,
+    ...withWebFetch(SKILL_TOOLS, referenceDomains(input.web)),
     effort: CLAUDE_EFFORT[options.mode],
     schema: REVIEW_VERIFIER_SCHEMA,
     explorer: false,

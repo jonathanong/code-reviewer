@@ -7,6 +7,7 @@ import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
 import type { PluginInfo } from '../plugins.mts'
+import type { ReferenceSource } from '../rules/references-parse.mts'
 import type { EvidenceSetup } from './evidence-types.mts'
 import type { PillarResult } from './types.mts'
 
@@ -23,6 +24,8 @@ export type ReviewSteps = {
   plugins(): Promise<PluginInfo>
   /** The machine-configured evidence sources for the repository and the reader for their guides. */
   evidence(): Promise<EvidenceSetup>
+  /** The machine-configured web references for the repository; none when absent. */
+  webReferences?: readonly ReferenceSource[]
   exec: Exec
   /** Directory holding `verifier.md` and `pillars/`. */
   references: string

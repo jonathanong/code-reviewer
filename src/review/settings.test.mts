@@ -5,6 +5,7 @@ import {
   DEFAULT_LABELS,
   repoSettings,
   resolveEvidence,
+  resolveReferences,
   reviewSettings,
   settingLayers,
   settingsProblems,
@@ -159,6 +160,36 @@ describe('resolveEvidence', () => {
 
   it('has none without a machine list', () => {
     expect(resolveEvidence(NO_CONFIGS, 'acme/web')).toEqual({ sources: [], from: null })
+  })
+})
+
+describe('resolveReferences', () => {
+  const source = (name: string) => ({ name, description: 'Docs.', domains: ['docs.example.com'] })
+  const configs: RepoConfigs = {
+    byOwner: new Map([['acme', { consumes: [], references: [source('owner')], problems: [] }]]),
+    byRepo: new Map([
+      ['acme/web', { consumes: [], references: [source('repo')], problems: [] }],
+      ['acme/off', { consumes: [], references: [], problems: [] }],
+      ['acme/plain', { consumes: [], problems: [] }],
+    ]),
+    problems: [],
+  }
+
+  it('takes the repository list over the owner list, replacing it whole', () => {
+    expect(resolveReferences(configs, 'acme/web')).toEqual({
+      sources: [source('repo')],
+      from: 'machine repo',
+    })
+  })
+
+  it('falls back to the owner list, and lets a repository switch references off with []', () => {
+    expect(resolveReferences(configs, 'Acme/plain').from).toBe('machine owner')
+    expect(resolveReferences(configs, 'acme').sources).toEqual([source('owner')])
+    expect(resolveReferences(configs, 'acme/off')).toEqual({ sources: [], from: 'machine repo' })
+  })
+
+  it('has none without a machine list', () => {
+    expect(resolveReferences(NO_CONFIGS, 'acme/web')).toEqual({ sources: [], from: null })
   })
 })
 

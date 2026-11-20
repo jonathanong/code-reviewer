@@ -1,5 +1,6 @@
 import type { RepoConfig, RepoConfigs } from './rules/config.mts'
 import type { EvidenceSource } from './rules/evidence-parse.mts'
+import type { ReferenceSource } from './rules/references-parse.mts'
 import type { TargetConfig } from './rules/target-config.mts'
 import type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
 
@@ -102,6 +103,27 @@ export function resolveEvidence(configs: RepoConfigs, scope: string): EvidenceSe
   ) ?? [null, undefined]
   return {
     sources: config?.evidence ?? [],
+    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
+  }
+}
+
+export type ReferenceSettings = {
+  sources: ReferenceSource[]
+  /** The machine layer whose list applies; null when none sets one. */
+  from: 'machine repo' | 'machine owner' | null
+}
+
+/**
+ * The web references for `owner/name` (or `owner`): the highest machine layer that sets the key.
+ * The reviewed repository's own file is never consulted, so a pull request's repository cannot
+ * grant the reviewer network access.
+ */
+export function resolveReferences(configs: RepoConfigs, scope: string): ReferenceSettings {
+  const [layer, config] = candidates(configs, scope, undefined).find(
+    ([, candidate]) => candidate?.references !== undefined,
+  ) ?? [null, undefined]
+  return {
+    sources: config?.references ?? [],
     from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
   }
 }

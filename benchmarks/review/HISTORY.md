@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: correctness, security and verifier runs may fetch configured references (no run)
+
+When a machine config lists `references`, the correctness pillar, the security pillar and the
+verifier get `WebFetch` allowed for the listed domains only, a References block in their prompt,
+and `--setting-sources ''` (no settings file, as for the history pillar's shell). Their prompts and
+flags are unchanged when none is configured, which is every bench run: `bench` is not wired to
+references and never passes domains, so the benchmark prompts and tools are identical to before.
+No run was made; scores are not re-measured, and a real review with references may behave
+differently from the bench.
+
 ## 2026-11-19: the contract and verifier prompts gained a stack block (no run)
 
 `pillars/_contract.md` gained a Stacks section and `verifier.md` a Stacks step: judge each finding

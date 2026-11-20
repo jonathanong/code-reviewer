@@ -11,6 +11,7 @@ import { writeReportFiles } from './report-file.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { runPillars } from './pillars.mts'
+import { webReferences } from './references-prompt.mts'
 import { listRuleSkills, selectSkills } from './select-skills.mts'
 import { runReviewVerifier } from './verify.mts'
 
@@ -83,6 +84,7 @@ async function review(
     hasRules: existsSync(join(out, 'rules', 'INDEX.md')),
     stack,
   }
+  const web = webReferences(steps.references, steps.webReferences)
   const pillarsDir = join(steps.references, 'pillars')
   const results = await runPillars({
     pillars: plan.pillars,
@@ -94,6 +96,7 @@ async function review(
     readPillar: (pillar: Pillar) => read(join(pillarsDir, `${pillar}.md`)),
     skills: skillChoice.selected,
     settings,
+    ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
   // A review with no pillar answer would approve unchecked code, so it fails instead.
@@ -112,6 +115,7 @@ async function review(
       findings,
       skipped,
       threads: threadIdsOf(out),
+      ...(web === undefined ? {} : { web }),
     },
     { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
   )

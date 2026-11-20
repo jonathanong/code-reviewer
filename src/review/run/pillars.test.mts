@@ -94,6 +94,59 @@ describe('runPillars', () => {
     )
   })
 
+  describe('web references', () => {
+    const web = {
+      sources: [{ name: 'aws', description: 'AWS docs', domains: ['docs.aws.amazon.com'] }],
+      guidance: 'WEB RULES',
+    }
+    const ALL: PillarsInput['pillars'] = [
+      { pillar: 'rules', model: 'sonnet' },
+      { pillar: 'correctness', model: 'sonnet' },
+      { pillar: 'security', model: 'sonnet' },
+      { pillar: 'history', model: 'haiku' },
+    ]
+    const argsOf = async (overrides: Partial<PillarsInput>) => {
+      const exec = vi.fn(async (_command: string, _args: string[]) => answer([]))
+      await runPillars(setup(exec, { pillars: ALL, ...overrides }).input)
+      return exec
+    }
+    const normal = (exec: ReturnType<typeof vi.fn>) =>
+      JSON.stringify(exec.mock.calls).replace(/pillars-[A-Za-z0-9]+/gu, 'RUN')
+    const flag = (call: unknown, name: string) => {
+      const args = (call as [string, string[]])[1]
+      return args[args.indexOf(name) + 1]
+    }
+
+    it('gives only correctness and security the block, WebFetch for the domains, and no settings file', async () => {
+      const exec = await argsOf({ web })
+      for (const pillar of ['correctness', 'security']) {
+        const [call] = forPillar(exec, pillar)
+        expect(promptOf(call as unknown[])).toContain(
+          `PILLAR ${pillar}\n\n## References\n\nYou have the WebFetch tool for these hosts only`,
+        )
+        expect(promptOf(call as unknown[])).toContain('WEB RULES')
+        expect(flag(call, '--tools')).toBe('Read,Grep,Glob,Agent,Skill,WebFetch')
+        expect(flag(call, '--allowedTools')).toBe(
+          'Read,Grep,Glob,Agent,Skill,WebFetch(domain:docs.aws.amazon.com)',
+        )
+        expect(flag(call, '--setting-sources')).toBe('')
+      }
+      for (const pillar of ['rules', 'history']) {
+        const [call] = forPillar(exec, pillar)
+        expect(promptOf(call as unknown[])).not.toContain('References')
+        expect(flag(call, '--allowedTools')).not.toContain('WebFetch')
+      }
+      expect(flag(forPillar(exec, 'rules')[0], '--setting-sources')).toBe('user')
+    })
+
+    it('changes no prompt or flag when none is configured', async () => {
+      const plain = await argsOf({})
+      const empty = await argsOf({ web: { sources: [], guidance: 'X' } })
+      expect(normal(empty)).toBe(normal(plain))
+      expect(normal(plain)).not.toContain('WebFetch')
+    })
+  })
+
   it('keeps the cost of an answer that fails validation', async () => {
     let tries = 0
     const exec = vi.fn(async (_command: string, args: string[]) => {

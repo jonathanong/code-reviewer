@@ -9,6 +9,7 @@ import {
   reviewStatus,
   prepareReview,
   resolveEvidence,
+  resolveReferences,
   resolveThreads,
   reviewSettings,
   settingLayers,
@@ -58,12 +59,17 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   const configs = deps.configs()
   const target = repo === undefined ? undefined : await deps.targetConfig(repo)
   const evidence = resolveEvidence(configs, scope)
+  const references = resolveReferences(configs, scope)
   return {
     scope,
     ...reviewSettings(configs, scope, target?.config),
     from: settingLayers(configs, scope, target?.config),
     // Names only: a source's env values and commands stay out of any output.
     evidence: { sources: evidence.sources.map((source) => source.name), from: evidence.from },
+    references: {
+      sources: references.sources.map(({ name, domains }) => ({ name, domains })),
+      from: references.from,
+    },
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

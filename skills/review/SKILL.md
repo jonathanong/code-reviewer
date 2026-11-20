@@ -83,6 +83,9 @@ rather than label, or to review a head that is already reviewed. The command:
    `report.md` and writes `evidence.json`. It never changes a severity or the verdict. A source
    reported `blocked` in `report.md` (denied command, missing credentials, unreadable guide)
    was not checked: say so when you relay the review.
+   When the machine config lists `references`, the correctness and security pillars and the
+   verifier also get `WebFetch`, allowed only for the listed domains, to check a specific claim
+   against the documentation ([web-references](references/web-references.md)).
 
 It prints one line:
 `{claimed, mode, verdict, findings, costUsd, report, review, headSha, fixedThreadIds}`. It
