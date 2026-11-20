@@ -2,6 +2,35 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: `vouchington-2936` re-measured after the lock rule was reworded
+
+Commit: the one before the snapshot change above (runs used the export without history).
+Reviewer Sonnet 5.5, selection Haiku, judge Opus, correctness pillar, 3 attempts with `--select`
+and 3 with `--no-rules` in one session. Rule plugins: `jong-skills` 8cad1e4eb680 (its
+`postgres-schema-design` now says to avoid advisory locks, where 0480fabddb14 said never to use
+them) and `no-mistakes-rules` 0.109.97 (was 0.109.60). Reviewer cost $0.69.
+
+| Case               | With skills | Without |
+| ------------------ | ----------- | ------- |
+| `vouchington-2936` | 0 of 3      | 0 of 3  |
+
+All three runs with skills loaded `jong-skills:postgres-schema-design`. In the 2026-11-16 run every
+attempt objected to the advisory lock itself. Here none does: two attempts raise nothing, and one
+reviews the lock key (single-key hash form, unbounded wait) without finding that batch ids
+differing only in letter case take different locks. The rewording removed the wrong finding; it did
+not produce the expected one, which neither rule plugin describes. Both plugins changed since the
+earlier run, so the difference is not attributable to the lock wording alone.
+
+Also on 2026-11-19, `bench-selection` over both case files with the renamed plugin (22 tagged
+cases, 3 attempts, $0.18): the expected skill was selected in 65 of 66 attempts. The miss was
+`no-mistakes-rules:queue-rules` on one attempt of `rules-content-only-unordered-pick`.
+
+## 2026-11-19: `review` stops when skill selection fails; no run
+
+Commit: this change. No run. `review` used to continue with no rule skills when the Haiku
+selection call failed twice or no rule skill was installed; it now stops with an error and posts
+nothing. `bench --select` is unchanged and still records such an attempt as run without skills.
+
 ## 2026-11-19: mined cases are git checkouts with history; no run
 
 Commit: this change. No run. A mined case's tree was an export with no `.git`; it is now a git

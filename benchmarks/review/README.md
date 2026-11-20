@@ -26,6 +26,11 @@ Mined cases (8 real pull requests from `cases.json`):
   `vouchington-2936` every run objects to the advisory lock itself, citing the lock rules, and
   never reviews the lock key the case expects. `vouchington-4154` expects a low-severity index
   note inside a 54-file change.
+- `vouchington-2936` was run again on 2026-11-19 with `jong-skills` 8cad1e4eb680 (lock rule
+  reworded from "never" to "avoid") and `no-mistakes-rules` 0.109.97, on the snapshots without
+  history: still 0 of 3 in both arms. No run objects to the lock existing any more; one of three
+  reviews the lock key but not the letter-case defect the case expects. This row is from that
+  run, not the 2026-11-16 one.
 - `vouchington-1144` is a ceiling case: the control catches it 3 of 3.
 - One `vouchington-1146` run had no skills: the Haiku selection call failed, the review ran
   without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).

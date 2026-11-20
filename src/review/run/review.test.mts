@@ -321,15 +321,38 @@ describe('runReview', () => {
     expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain('--thread T1`')
   })
 
-  it('titles a pull request without a title and runs without plugin info', async () => {
-    const { out, steps, options } = setup(
-      { plugins: vi.fn(async () => ({ enabled: [], installs: [] })) },
-      PLAN,
-      (dir) => writeFileSync(join(dir, 'context.json'), '{}'),
+  it('titles a pull request without a title', async () => {
+    const { out, steps, options } = setup({}, PLAN, (dir) =>
+      writeFileSync(join(dir, 'context.json'), '{}'),
     )
     const outcome = await runReview(steps, options)
     expect(outcome.ok).toBe(true)
     expect(readJson(out, 'report.json').title).toBe('(untitled)')
+  })
+
+  it('runs no pillar and aborts when no rule skill is installed', async () => {
+    const exec = vi.fn(claude())
+    const { out, steps, calls, options } = setup({
+      exec,
+      plugins: vi.fn(async () => ({ enabled: [], installs: [] })),
+    })
+    const outcome = await runReview(steps, options)
+    expect(outcome.ok).toBe(false)
+    expect(outcome.summary.error).toBe(
+      'Skill selection failed, so no review was run: No rule skills are installed.',
+    )
     expect(readJson(out, 'skills.json').error).toBe('No rule skills are installed.')
+    expect(exec).not.toHaveBeenCalled()
+    expect(calls).toEqual(['abort'])
+  })
+
+  it('stops when the selection call fails twice', async () => {
+    const select = vi.fn(() => 'not json')
+    const { steps, calls, options } = setup({ exec: claude({ select }) })
+    const outcome = await runReview(steps, options)
+    expect(outcome.ok).toBe(false)
+    expect(String(outcome.summary.error)).toContain('Skill selection failed, so no review was run')
+    expect(select).toHaveBeenCalledTimes(2)
+    expect(calls).toEqual(['abort'])
   })
 })
