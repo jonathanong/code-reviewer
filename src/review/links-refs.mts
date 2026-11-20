@@ -17,8 +17,10 @@ const DEPENDS =
 const withoutCode = (text: string) =>
   text.replace(/```[\s\S]*?```/gu, ' ').replace(/`[^`\n]*`/gu, ' ')
 
-function refsOf(text: string, selfRepo: string): Ref[] {
-  const hits: { index: number; ref: Ref }[] = []
+type Hit = { index: number; ref: Ref }
+
+function hitsOf(text: string, selfRepo: string): Hit[] {
+  const hits: Hit[] = []
   for (const match of text.matchAll(URL_REF)) {
     hits.push({ index: match.index, ref: { repo: match[1] as string, number: Number(match[2]) } })
   }
@@ -30,7 +32,18 @@ function refsOf(text: string, selfRepo: string): Ref[] {
   for (const match of local.matchAll(LOCAL_REF)) {
     hits.push({ index: match.index, ref: { repo: selfRepo, number: Number(match[1]) } })
   }
-  return hits.sort((left, right) => left.index - right.index).map(({ ref }) => ref)
+  return hits.sort((left, right) => left.index - right.index)
+}
+
+const refsOf = (text: string, selfRepo: string) => hitsOf(text, selfRepo).map(({ ref }) => ref)
+
+/** How far back from a reference its precondition phrase may start, within one sentence. */
+const GOVERNS = 80
+
+/** Whether a precondition phrase leads up to the reference at `index`, in the same sentence. */
+function governed(line: string, index: number): boolean {
+  const sentence = line.slice(0, index).split(/[.;!?]\s/u).at(-1) as string
+  return DEPENDS.test(sentence.slice(-GOVERNS))
 }
 
 function unique(refs: readonly Ref[], skip: (ref: Ref) => boolean): Ref[] {
@@ -49,13 +62,18 @@ export function extractRefs(text: string, self: Ref): Ref[] {
   return unique(refsOf(withoutCode(text), self.repo), (ref) => refKey(ref) === refKey(self))
 }
 
-/** The references on a line that says this change needs them: "depends on", "after", and so on. */
+/**
+ * The references a precondition phrase leads up to: "depends on #1 and #2", "after #3". A phrase
+ * elsewhere on the line does not count, so "refs #4; the jobs require handlers" names nothing.
+ */
 export function dependencyRefs(text: string, self: Ref): Ref[] {
-  const lines = withoutCode(text)
-    .split(/\r?\n/u)
-    .filter((line) => DEPENDS.test(line))
+  const lines = withoutCode(text).split(/\r?\n/u)
   return unique(
-    lines.flatMap((line) => refsOf(line, self.repo)),
+    lines.flatMap((line) =>
+      hitsOf(line, self.repo)
+        .filter(({ index }) => governed(line, index))
+        .map(({ ref }) => ref),
+    ),
     (ref) => refKey(ref) === refKey(self),
   )
 }

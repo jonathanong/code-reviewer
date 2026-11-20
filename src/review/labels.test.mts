@@ -154,6 +154,15 @@ describe('completeReview', () => {
     })
     expect(io.calls).toEqual([`add:${COMPLETE_LABEL}`, `remove:${IN_PROGRESS_LABEL}`])
   })
+
+  it('clears the request a held review put back', async () => {
+    const io = fakeIo([REQUESTED_LABEL])
+    expect(await completeReview(io, DEFAULT_LABELS)).toEqual({
+      added: [COMPLETE_LABEL],
+      removed: [REQUESTED_LABEL],
+    })
+    expect([...io.set]).toEqual([COMPLETE_LABEL])
+  })
 })
 
 describe('abortReview', () => {

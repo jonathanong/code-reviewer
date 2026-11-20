@@ -201,8 +201,9 @@ checkout, is treated as the pull request's own and reviewed in full, with the re
 ### Dependencies
 
 `prepare` reads the pull request description and the full commit messages (`git log`, with the
-headlines as the fallback) for lines that make another pull request or issue a precondition
-("depends on", "requires", "after #N", "blocked by", cross-repository references and URLs), adds the
+headlines as the fallback) for phrases that make another pull request or issue a precondition
+("depends on", "requires", "after #N", "blocked by", cross-repository references and URLs; the
+phrase has to lead up to the reference in the same sentence, not merely share its line), adds the
 pull requests below this one in its stack, and asks GitHub once for the state of each (open, merged,
 closed). The result is `dependencies.json`, written only when something was found. A reference to a
 private repository from a public one is not read; its state is `unknown` and `problems` says why.
@@ -294,7 +295,8 @@ A held run releases the claim and puts the request label back, so the pull reque
 in `queue`. It leaves the review in `runDir` and the tracker row at `reviewed`, which makes a
 later `run` of the same head a no-op rather than a loop. With `--post auto`, a held review is
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
-(`code-reviewer post ... --input RUNDIR/review.json`). `run --force` reviews the head again.
+(`code-reviewer post ... --input RUNDIR/review.json`), which clears the request label along with
+the in-progress one. `run --force` reviews the head again.
 
 ### When the post is not certain
 
