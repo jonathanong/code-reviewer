@@ -99,28 +99,30 @@ separate headless run, not a subagent, so the session keeps only the one JSON li
 never paste diffs, pillar output, or review bodies into the session.
 
 A skip (`mode: "skip"`) is finished when the command exits (it posted a skip review that makes
-`status` pass): record it in the document and move on.
+`status` pass): note it in the document and move on.
 
-## Step 4 - Record, then ask before posting
+## Step 4 - Explain, then ask before posting
 
-Keep one document per session: a Claude Doc when the docs connector is available, otherwise a
-Markdown file in the session scratchpad. Its purpose is that the human understands each change
-and can check that their rules were applied, and that there is a history of what every pillar
-said.
+The human has to understand each verdict and check that their rules were applied, so give them
+`code-reviewer explain --run "$run"`: plain Markdown built from the run's files (what the change
+does, the verdict and its one reason, each finding with where it is and what would fix it, open
+questions, what was and was not checked, the cost). It makes no model call. `report.md` stays on
+disk for every pillar's raw findings, the dropped ones, the skills loaded and the cost by model.
 
-When a review finishes, append its `report.md` as one section: the pull request summary, the
-verdict, the verified findings, the Evidence section when there is one, every pillar's raw findings with the ones the verifier dropped
-and why, the skills each pillar loaded, and the cost. Start a new document after about 25 pull
-requests, or one per organization when the session reviews several, and link the new one from the
-old.
+When the session has a document connector (a first-party Claude Docs capability), keep one
+document per review session with a section per pull request, filled from `explain` and headed
+"draft" until it is posted. Start a new document after about 25 pull requests, or one per
+organization, and link it from the old one. Without a connector, show the explainer inline.
 
 Then tell the human the pull request, the verdict, the count of findings by severity, any
-evidence source reported `blocked` (the review went on without it), and the document link, and ask whether to post. Post only on their answer, unless they have said that
+evidence source reported `blocked` (the review went on without it), and the document link (or
+the explainer itself), and ask whether to post. When they ask for sign-off, give them that link.
+Post only on their answer, unless they have said that
 kind of review may be posted unattended. While waiting, keep reviewing the queue; a review that
 waits for an answer does not count toward the three.
 
-- Yes: `code-reviewer post` as in the review skill, then add the review link to the section.
-- Changes: edit `review.json` as told, show `post --dry-run`, and ask again.
+- Yes: `code-reviewer post` as in the review skill, then change the section's heading from "draft" to "posted" and add the review link.
+- Changes: edit `review.json` as told, run `explain` again to refresh the section, show `post --dry-run`, and ask again.
 - No: `code-reviewer abort` and note it in the section.
 - The head moved while waiting: say so, check out the new head in the worktree, and review again with `--force` (see the `review` skill, Step 4).
 
