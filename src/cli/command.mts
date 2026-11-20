@@ -1,30 +1,21 @@
 import { parseArgs } from 'node:util'
 
-import {
-  completeReview,
-  reviewStatus,
-  numberDiff,
-  parseReviewInput,
-  postFinalReview,
-  postedStep,
-  revokeFinalApproval,
-  type PullTarget,
-} from '../review/index.mts'
+import { reviewStatus, numberDiff, revokeFinalApproval, type PullTarget } from '../review/index.mts'
 import { takeRetryCount } from '../gh-cli/index.mts'
 import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
-import { checkRunFor, labelsFor } from './review-settings.mts'
+import { postCommand } from './command-post.mts'
+import { labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type ReviewDeps } from './deps.mts'
 import { explainCommand, trackerCommand } from './command-tracker.mts'
-import { postOptions } from './post-options.mts'
-import { recordPosted } from '../tracker/record.mts'
+import { runCommand, usageFailure } from '../run/command.mts'
 import { REVIEW_USAGE } from './usage.mts'
 
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, tracker, explain, bench, bench-verifier, or bench-selection'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -65,6 +56,7 @@ function parse(args: string[]) {
       state: { type: 'string' },
       format: { type: 'string' },
       run: { type: 'string' },
+      post: { type: 'string' },
     },
   }).values
 }
@@ -102,6 +94,7 @@ async function run(
     print(reportCommand(values))
     return 0
   }
+  if (subcommand === 'run') return runCommand(values, deps)
   if (subcommand === 'review') {
     const result = await reviewCommand(values, target(values), deps)
     print(result.summary)
@@ -115,40 +108,9 @@ async function run(
   const pull = target(values)
   const io = deps.createIo(pull)
   switch (subcommand) {
-    case 'post': {
-      if (values['head-sha'] === undefined || values.input === undefined) {
-        throw new Error('post needs --head-sha and --input.')
-      }
-      const input = parseReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
-      const dryRun = values['dry-run'] === true
-      const outcome = await postFinalReview(io, input, values['head-sha'], {
-        dryRun,
-        ...postOptions(values, (path) => deps.readFile(path), values.input, values['head-sha']),
-      })
-      if (dryRun) {
-        print(outcome)
-        return 0
-      }
-      const lifecycle = await completeReview(
-        deps.createLabelIo(pull),
-        await labelsFor(deps, pull.repo),
-      )
-      const checkRun = await checkRunFor(
-        deps,
-        pull,
-        postedStep(outcome.verdict, outcome.urls),
-        values['head-sha'],
-      )
-      const tracked = recordPosted(deps.tracker(), {
-        ...pull,
-        headSha: values['head-sha'],
-        input: values.input,
-        findings: input.findings,
-        outcome,
-      })
-      print({ ...outcome, reviews: outcome.reviews.length, lifecycle, checkRun, ...tracked })
+    case 'post':
+      print((await postCommand(values, pull, deps)).printed)
       return 0
-    }
     case 'diff':
       process.stdout.write(numberDiff(await io.diff()))
       return 0
@@ -179,9 +141,10 @@ export async function runReviewCommand(
   try {
     return await run(args[0], args.slice(1), deps)
   } catch (error) {
-    process.stderr.write(
-      `code-reviewer: ${error instanceof Error ? error.message : String(error)}\n`,
-    )
+    const reason = error instanceof Error ? error.message : String(error)
+    // A caller of `run` reads one JSON line and the exit code, even for a bad flag.
+    if (args[0] === 'run') return usageFailure(reason)
+    process.stderr.write(`code-reviewer: ${reason}\n`)
     return 2
   } finally {
     const retries = takeRetryCount()

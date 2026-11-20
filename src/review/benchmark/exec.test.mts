@@ -19,6 +19,15 @@ describe('defaultExec', () => {
     expect(process.env.EVIDENCE_TEST_VAR).toBeUndefined()
   })
 
+  it('kills a run when its signal aborts', async () => {
+    const controller = new AbortController()
+    const hang = defaultExec('node', ['-e', 'setTimeout(() => {}, 60000)'], {
+      signal: controller.signal,
+    })
+    controller.abort()
+    await expect(hang).rejects.toBeInstanceOf(ExecError)
+  })
+
   it('kills a run that outlives its timeout and reports an ExecError', async () => {
     const hang = defaultExec('node', ['-e', 'setTimeout(() => {}, 60000)'], { timeoutMs: 100 })
     await expect(hang).rejects.toBeInstanceOf(ExecError)

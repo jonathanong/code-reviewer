@@ -1,0 +1,110 @@
+import { readFileSync } from 'node:fs'
+import { vi, type Mock } from 'vitest'
+
+import type { ReviewDeps } from '../cli/deps.mts'
+import type { LabelIo, PrepareIo, ReviewIo } from '../review/index.mts'
+import { parseRepoConfig, NO_CONFIGS, type RepoConfigs } from '../review/rules/config.mts'
+import { createTrackerIo } from '../tracker/io.mts'
+import type { TrackerIo } from '../tracker/types.mts'
+
+type Mocked<T> = {
+  [K in keyof T]: T[K] extends (...args: infer A) => infer R ? Mock<(...args: A) => R> : never
+}
+
+export const HEAD = 'a'.repeat(40)
+export const APP = 'reviewer[bot]'
+
+export type FakeOptions = {
+  stateDir: string
+  labels?: string[]
+  /** Review bodies by the trusted App, oldest first. */
+  reviews?: string[]
+  plugins?: string[]
+  /** Machine config problems to report, as a config file text that fails to parse. */
+  ownerConfig?: unknown
+  authMode?: 'app' | 'gh'
+  loginError?: string
+  files?: Array<{ path: string; lines: number }>
+  postFails?: boolean
+  trackerPostedFails?: boolean
+}
+
+/** Dependencies for `run`: GitHub and `claude` are fakes; the tracker and files are real, under `stateDir`. */
+export function fakeDeps(options: FakeOptions) {
+  const labels = [...(options.labels ?? [])]
+  const labelIo: Mocked<LabelIo> = {
+    labels: vi.fn(async () => [...labels]),
+    add: vi.fn(async (names) => void labels.push(...names)),
+    remove: vi.fn(async (name) => {
+      labels.splice(labels.indexOf(name), 1)
+    }),
+  }
+  const io: Mocked<ReviewIo> = {
+    headSha: vi.fn(async () => HEAD),
+    diff: vi.fn(),
+    listFiles: vi.fn(async () => []),
+    listReviews: vi.fn(async () => (options.reviews ?? []).map((body) => ({ body, author: APP }))),
+    pullAuthor: vi.fn(async () => 'dev'),
+    trustedAuthors: vi.fn(async () => new Set([APP])),
+    hasApprovalLabel: vi.fn(async () => false),
+    postReview: vi.fn(async () => {
+      if (options.postFails === true) throw new Error('GitHub is down')
+      return 'https://github.example/review/1'
+    }),
+    addApprovalLabel: vi.fn(async () => undefined),
+    removeApprovalLabel: vi.fn(),
+  }
+  const real = createTrackerIo({ CODE_REVIEWER_STATE_DIR: options.stateDir })
+  const tracker: TrackerIo = {
+    ...real,
+    append: (path, text) => {
+      if (options.trackerPostedFails === true && text.includes('"state":"posted"')) {
+        throw new Error('disk full')
+      }
+      real.append(path, text)
+    },
+  }
+  const configs: RepoConfigs =
+    options.ownerConfig === undefined
+      ? NO_CONFIGS
+      : {
+          ...NO_CONFIGS,
+          byOwner: new Map([
+            ['acme', parseRepoConfig(JSON.stringify(options.ownerConfig), 'acme.json', 'owner')],
+          ]),
+          problems: parseRepoConfig(JSON.stringify(options.ownerConfig), 'acme.json', 'owner')
+            .problems,
+        }
+  const plugins = (options.plugins ?? ['no-mistakes-rules', 'jong-skills']).map((name) => ({
+    id: `${name}@market`,
+    version: '1.0.0',
+  }))
+  const deps: Mocked<ReviewDeps> = {
+    authMode: vi.fn(() => options.authMode ?? 'app'),
+    authIdentity: vi.fn(async () =>
+      options.loginError === undefined ? { login: APP } : { loginError: options.loginError },
+    ),
+    configs: vi.fn(() => configs),
+    targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
+    createIo: vi.fn(() => io),
+    createLabelIo: vi.fn(() => labelIo),
+    createPrepareIo: vi.fn(
+      () => ({ files: async () => options.files ?? [] }) as unknown as PrepareIo,
+    ),
+    guideReader: vi.fn(),
+    runner: vi.fn(),
+    readFile: vi.fn((path) => readFileSync(path, 'utf8')),
+    tracker: vi.fn(() => tracker),
+    listPlugins: vi.fn(async () => plugins),
+    pluginInfo: vi.fn(),
+    exec: vi.fn(async () => ''),
+    references: vi.fn(),
+    runBench: vi.fn(),
+    runVerifierBench: vi.fn(),
+    runSelectionBench: vi.fn(),
+  }
+  return { deps, io, labels, labelIo }
+}
+
+export const marker = (verdict: string, sha = HEAD) =>
+  `<!-- final-review sha=${sha} verdict=${verdict} effort=high -->`

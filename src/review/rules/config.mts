@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
 import { parseReferences, type ReferenceSource } from './references-parse.mts'
+import { parseRun, type RunConfig } from './run-parse.mts'
 import {
   REPO_RE,
   parseCheckRun,
@@ -47,6 +48,8 @@ export type RepoConfig = {
   references?: ReferenceSource[]
   /** Machine config only: `false` switches off the second check on an approval. */
   approvalCheck?: boolean
+  /** Machine config only: it decides what the reviewer posts unattended. */
+  run?: RunConfig
   problems: string[]
 }
 
@@ -56,7 +59,15 @@ export type RepoConfig = {
  */
 type ConfigScope = 'repo' | 'owner' | 'target'
 
-const KEYS = new Set(['consumes', 'labels', 'checkRun', 'evidence', 'references', 'approvalCheck'])
+const KEYS = new Set([
+  'consumes',
+  'labels',
+  'checkRun',
+  'evidence',
+  'references',
+  'approvalCheck',
+  'run',
+])
 const CONSUMES_KEYS = new Set(['repo', 'paths', 'via'])
 
 type Json = Record<string, unknown>
@@ -145,6 +156,10 @@ export function parseRepoConfig(
     scope === 'target'
       ? undefined
       : parseSwitch(raw.approvalCheck, `${file} approvalCheck`, problems)
+  if (scope === 'target' && raw.run !== undefined) {
+    problems.push(`${file}: run settings are machine-only; ignored`)
+  }
+  const run = scope === 'target' ? undefined : parseRun(raw.run, `${file} run`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
@@ -152,6 +167,7 @@ export function parseRepoConfig(
     ...(evidence === undefined ? {} : { evidence }),
     ...(references === undefined ? {} : { references }),
     ...(approvalCheck === undefined ? {} : { approvalCheck }),
+    ...(run === undefined ? {} : { run }),
     problems,
   }
 }

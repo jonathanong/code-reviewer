@@ -6,7 +6,13 @@ export type Exec = (
   command: string,
   args: string[],
   /** `env` is added to this process's environment for the child only. */
-  options?: { cwd?: string; timeoutMs?: number; env?: Record<string, string> },
+  options?: {
+    cwd?: string
+    timeoutMs?: number
+    env?: Record<string, string>
+    /** Kills the child and rejects when aborted. */
+    signal?: AbortSignal
+  },
 ) => Promise<string>
 
 const execFileAsync = promisify(execFile)
@@ -36,6 +42,7 @@ export const defaultExec: Exec = async (command, args, options = {}) => {
       ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
       ...(options.timeoutMs === undefined ? {} : { timeout: options.timeoutMs }),
       ...(options.env === undefined ? {} : { env: { ...process.env, ...options.env } }),
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
       encoding: 'utf8',
       maxBuffer: 256 * 1024 * 1024,
     })
