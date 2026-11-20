@@ -42,7 +42,10 @@ const GOVERNS = 80
 
 /** Whether a precondition phrase leads up to the reference at `index`, in the same sentence. */
 function governed(line: string, index: number): boolean {
-  const sentence = line.slice(0, index).split(/[.;!?]\s/u).at(-1) as string
+  const sentence = line
+    .slice(0, index)
+    .split(/[.;!?]\s/u)
+    .at(-1) as string
   return DEPENDS.test(sentence.slice(-GOVERNS))
 }
 
