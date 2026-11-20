@@ -14,7 +14,9 @@ the reviewer could read history, so they are not comparable with a run made now.
 verifier prompts also gained a Stacks section after the last run (no bench case is stacked, so the
 Stack block of a run prompt never appears); no score was re-measured for it. The verifier prompt
 and output schema later gained open questions and a derived verdict; see the 2026-11-19 entry in
-[HISTORY.md](HISTORY.md). No verifier row is re-measured for it.
+[HISTORY.md](HISTORY.md). No verifier row is re-measured for it. The contract's definition of `blocking` was also tightened
+and the verifier re-decides severity; no pillar or verifier row is re-measured for that, and
+severity agreement is not comparable with earlier rows.
 
 Mined cases (8 real pull requests from `cases.json`):
 

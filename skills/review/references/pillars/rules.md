@@ -39,13 +39,14 @@ allowance in no-mistakes `postgresql-rules`; never cite that allowance to approv
 ## Blocking bar
 
 A rule this repository states as mandatory (must, never, always, required, or enforced by CI) is
-broken and the pull request does not explain an exception. Name the rule's file and quote it
-briefly.
+broken in code that runs and the pull request does not explain an exception. Name the rule's file
+and quote it briefly. A mandatory rule that a linter or CI check already enforces is `high` at
+most: the author will see the failure.
 
 Other severities:
 
 - A shared skill's MUST NOT, or a dependency's mandatory rule for callers, broken without a stated
-  reason: `high` (`blocking` only when the effect alone meets a blocking bar, such as data loss).
+  reason: `high` (`blocking` only when the effect alone meets the contract's blocking conditions, such as data loss).
 - A SHOULD NOT without a stated reason, style preferences, and "should" guidance: `medium` or
   `low`.
 

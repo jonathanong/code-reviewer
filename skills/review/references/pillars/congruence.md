@@ -23,4 +23,6 @@ Whether the behavior is correct or well designed. Only whether it is described t
 ## Blocking bar
 
 The description states behavior the code does not have, omits a breaking change, or closes an
-issue the change does not resolve. Vague or incomplete descriptions are `medium` or `low`.
+issue the change does not resolve. These, and vague or incomplete descriptions, are `medium` at most:
+a title or description problem is never blocking. A defect the description reveals is another
+pillar's finding, rated by the contract.

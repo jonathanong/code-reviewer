@@ -37,8 +37,8 @@ description.
 ## Blocking bar
 
 A concrete input or state produces a wrong result, a crash, data loss, or a hang, and you can
-state that scenario. Missing tests block only when the change alters behavior and nothing
-verifies it. Otherwise use `high` or lower.
+state that scenario. A missing test is never blocking; when the change alters behavior and
+nothing verifies it, it is `high` at most. Otherwise use `high` or lower.
 
 ## Method
 

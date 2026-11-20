@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: `blocking` is rarer and the verifier re-decides severity (no run)
+
+`pillars/_contract.md` now defines `blocking` by four conditions that must all hold (code that
+runs, a path someone takes, introduced or made reachable by this pull request, a fix that needs a
+decision rather than a mechanical edit), with special cases: a wrong path behind a flag that ships
+off blocks only if it would stop the flag being turned on, a guard that fails open on an
+irreversible or money-moving action blocks, untested but correct-looking code does not, and a
+title or description problem is `medium` at most. The pillar bars were reconciled: correctness
+(a missing test is never blocking), congruence (`medium` at most), and rules (a rule a linter or CI
+check enforces is `high` at most). `verifier.md` decides severity anew rather than re-rating the
+pillar's, and a merged finding takes the severity the verifier decides, not the strongest. Every
+pillar prompt includes the contract, so every `bench` pillar row and every `bench-verifier` row,
+including severity agreement, is no longer comparable with earlier entries. Recall of expected
+findings is not expected to move, since a finding still counts when rated `high`; severity
+agreement on `blocking` cases may fall by design. No run was made.
+
 ## 2026-11-19: the verifier may return open questions, which make the verdict Comment (no run)
 
 `verifier.md` gained a Questions step (ask only what the code and context cannot settle and whose

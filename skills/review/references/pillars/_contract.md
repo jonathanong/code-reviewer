@@ -96,12 +96,25 @@ Return only JSON:
 - `path`, `line`, `side`, and `startLine` are optional. Use RIGHT-side head line numbers unless
   the finding is about a deleted line (LEFT). Omit `line` for file-level findings and omit
   `path` for pull-request-level findings.
-- `blocking` means the pull request must not merge as is. Use it only when the pillar's blocking
-  bar is met. Otherwise: `high` (should fix before merge), `medium` (worth fixing), `low` (nit or
-  follow-up).
-- Rate by the effect when the code is used as declared, not by how likely that use is. An option,
-  parameter, or field the API accepts but ignores produces a wrong result for every caller who
-  sets it, even when the default path works. A pre-release or unpublished version does not lower
-  severity: a wrong boundary or contract costs the same to unwind once a consumer adopts it.
+- `blocking` means the pull request must not merge until someone decides what to do, and it is
+  rare. A finding is blocking only if all four hold:
+  1. it is in code that runs, not a comment, doc, name, or dead path;
+  2. its trigger is a path someone actually takes;
+  3. this pull request introduced it or makes it reachable;
+  4. the fix needs a decision, not a mechanical edit the author can already see. A red test, a
+     lint failure, and a lockfile or migration-order conflict are not blocking.
+
+  The pillar's blocking bar names the kind of defect that can qualify; it never waives these four.
+  When unsure, rate lower. Otherwise: `high` (should fix before merge), `medium` (worth fixing),
+  `low` (nit or follow-up).
+
+- Blocking special cases. A wrong path behind a flag that ships off is still reported, and is
+  blocking only if it would stop the flag being turned on. A guard on an irreversible or
+  money-moving action that fails open is blocking. Code that looks correct but has no test is not
+  blocking. A title or description problem is `medium` at most.
+- A declared use is a path someone takes. An option, parameter, or field the API accepts but
+  ignores produces a wrong result for every caller who sets it, even when the default path works.
+  A pre-release or unpublished version does not lower severity: a wrong boundary or contract costs
+  the same to unwind once a consumer adopts it.
 - Put a GitHub `suggestion` block in the body only for an exact, minimal replacement of the
   commented lines.

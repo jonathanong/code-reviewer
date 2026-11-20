@@ -17,17 +17,17 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 2. **Verify each finding** against the code at the reviewed head: open the cited lines and their
    callers. For a finding that cites a rule skill (`plugin:skill`), load that installed skill
    and check the claim against its text; shared rules come only from installed plugin skills.
-   Mark it confirmed, re-rated (wrong severity for the pillar's blocking bar, in either
-   direction: raise an under-rated finding as readily as you lower an over-rated one), or
-   rejected (not true, out of scope, or speculative). Drop rejected findings; never post a
-   finding you could not confirm in the code. Check `RIGHT` locations against the head file and
+   Mark it confirmed or rejected (not true, out of scope, or speculative), and decide its
+   severity yourself from the [pillar contract](pillars/_contract.md); do not inherit the pillar's
+   rating. Raise an under-rated finding as readily as you lower an over-rated one. Drop rejected
+   findings; never post a finding you could not confirm in the code. Check `RIGHT` locations against the head file and
    `LEFT` locations against the base side of the numbered diff (deleted code is not in the head).
    If the cited line does not hold the code the finding describes, correct `line` and `startLine`
    to the lines on the same side that do (pillars sometimes cite diff offsets), or drop the
    location. Read the cited ranges with an offset and limit, and grep the diff and large files
    instead of reading them whole, so a large pull request fits in context.
 3. **Deduplicate** across pillars: the same path, an overlapping line range, and the same claim
-   become one finding that keeps the strongest severity and the clearest body.
+   become one finding that keeps the clearest body and the severity you decide for the merged claim.
 4. **Re-review** (when `plan.sinceSha` or `plan.push` is set): for each previous finding, decide fixed, still present, or no
    longer applicable, using the unresolved findings and thread ids in `context.md`. Keep only
    the still-present ones (once) and the new ones. After posting, resolve the threads of fixed
@@ -66,8 +66,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 
 ## Severity
 
-Severity follows the [pillar contract](pillars/_contract.md) and the blocking bar of the finding's
-pillar.
+Severity follows the [pillar contract](pillars/_contract.md), decided anew for each finding.
+`blocking` needs all four of its conditions: code that runs, a path someone takes, introduced or
+made reachable by this pull request, and a fix that needs a decision. Request Changes is rare. When
+a finding is real but misses a condition, rate it `high` or lower.
 
 ## Verdict
 
