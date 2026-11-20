@@ -8,6 +8,7 @@ import type { Finding } from '../finding.mts'
 import { buildReport, costBreakdown, flattenFindings, type ReportInput } from './report.mts'
 import { rerenderReport, writeReportFiles } from './report-file.mts'
 import { renderReport } from './report-render.mts'
+import type { EvidenceReport } from './evidence-types.mts'
 import type { PillarResult } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
 
@@ -201,6 +202,112 @@ describe('usage by model', () => {
 
   it('has no models for a review whose usage lacks them', () => {
     expect(buildReport(INPUT).usageByModel.flatMap((step) => step.models)).toEqual([])
+  })
+})
+
+const EVIDENCE: EvidenceReport = {
+  model: 'sonnet',
+  sources: [
+    {
+      name: 'aws',
+      status: 'checked',
+      queries: [
+        {
+          command: 'aws logs x',
+          result: '0 events',
+          control: { command: 'aws logs y', result: '12 events' },
+        },
+      ],
+    },
+    { name: 'dd', status: 'blocked', reason: 'AccessDenied', queries: [] },
+  ],
+  findings: [{ id: 'F1', effect: 'contradicts', note: 'Never seen.' }],
+  claims: [{ claim: 'Called daily', effect: 'supports', note: '' }],
+  usage: usage(0.5, 4),
+  failedAttempts: [
+    { error: 'bad', usage: usage(0.1, 1) },
+    { error: 'crash', usage: null },
+  ],
+}
+
+describe('evidence in the report', () => {
+  const data = buildReport({ ...INPUT, evidence: EVIDENCE })
+
+  it('adds the evidence run and its failed attempts to the cost', () => {
+    expect(costBreakdown(data).evidence).toBeCloseTo(0.6)
+    expect(costBreakdown(data).total).toBeCloseTo(costBreakdown(buildReport(INPUT)).total + 0.6)
+    expect(data.usageByModel.map((step) => step.name)).toContain('evidence')
+    expect(data.evidence).toBe(EVIDENCE)
+  })
+
+  it('renders each source, query with control, finding note, and claim', () => {
+    const text = renderReport(data)
+    expect(text).toContain('### Evidence')
+    expect(text).toContain('#### aws: checked')
+    expect(text).toContain('Query `aws logs x`\n\n> 0 events')
+    expect(text).toContain('Control `aws logs y`\n\n> 12 events')
+    expect(text).toContain('#### dd: blocked\n\nAccessDenied')
+    expect(text).toContain('- F1 Off by one: contradicts. Never seen.')
+    expect(text).toContain('- `Called daily`: supports\n')
+    expect(
+      renderReport(
+        buildReport({
+          ...INPUT,
+          evidence: {
+            ...EVIDENCE,
+            claims: [{ claim: 'Rare', effect: 'contradicts', note: 'Seen twice.' }],
+          },
+        }),
+      ),
+    ).toContain('- `Rare`: contradicts. Seen twice.')
+    expect(text).toContain('including 2 failed attempt(s)')
+    expect(text).toContain(', evidence $0.6000)')
+  })
+
+  it('says no run was made, and shows a failure, an empty result, and a backtick safely', () => {
+    const idle: EvidenceReport = {
+      ...EVIDENCE,
+      usage: null,
+      failedAttempts: [],
+      error: 'it broke',
+      sources: [
+        {
+          name: 'aws',
+          status: 'checked',
+          queries: [{ command: 'echo `x`', result: '' }],
+        },
+      ],
+      findings: [],
+      claims: [],
+    }
+    const text = renderReport(buildReport({ ...INPUT, evidence: idle }))
+    expect(text).toContain('No evidence run was made.')
+    expect(text).toContain('Failed: it broke')
+    expect(text).toContain("Query `echo 'x'`\n\n> (empty)")
+    expect(text).not.toContain('Findings:\n- F')
+  })
+
+  it('omits the failed-attempt count for a clean run and the note for a bare finding', () => {
+    const clean: EvidenceReport = {
+      ...EVIDENCE,
+      failedAttempts: [],
+      findings: [{ id: 'F1', effect: 'none', note: '' }],
+    }
+    const text = renderReport(buildReport({ ...INPUT, evidence: clean }))
+    expect(text).toContain('Run: sonnet, $0.5000.')
+    expect(text).toContain('- F1 Off by one: none\n')
+  })
+
+  it('reports a run whose attempts all failed as a run, not as no run', () => {
+    const failed: EvidenceReport = { ...EVIDENCE, usage: null, error: 'both failed' }
+    const text = renderReport(buildReport({ ...INPUT, evidence: failed }))
+    expect(text).not.toContain('No evidence run was made.')
+    expect(text).toContain('including 2 failed attempt(s)')
+  })
+
+  it('shows no evidence section or cost without evidence', () => {
+    expect(renderReport(buildReport(INPUT))).not.toContain('Evidence')
+    expect(costBreakdown(buildReport(INPUT)).evidence).toBe(0)
   })
 })
 

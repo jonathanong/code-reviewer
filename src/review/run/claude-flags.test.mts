@@ -40,6 +40,11 @@ describe('pillarArgs', () => {
     expect(args).not.toContain('--add-dir')
   })
 
+  it('loads no settings file when the run has a shell', () => {
+    const shell = pillarArgs({ prompt: 'P', model: 'haiku', maxTurns: 3, tools: 'Read,Bash' })
+    expect(value(shell, '--setting-sources')).toBe('')
+  })
+
   it('defines the haiku explorer subagent with read-only tools', () => {
     expect(JSON.parse(value(args, '--agents') as string)).toEqual(EXPLORER_AGENTS)
     expect(EXPLORER_AGENTS.explorer.model).toBe('haiku')
@@ -83,6 +88,7 @@ describe('tool sets', () => {
 describe('isolationArgs', () => {
   it('adds --settings only when settings are known', () => {
     expect(isolationArgs()).toEqual(['--strict-mcp-config', '--setting-sources', 'user'])
+    expect(isolationArgs(undefined, true)).toEqual(['--strict-mcp-config', '--setting-sources', ''])
     expect(isolationArgs({ enabledPlugins: {} }).slice(3)).toEqual([
       '--settings',
       '{"enabledPlugins":{}}',

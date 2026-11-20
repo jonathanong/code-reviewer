@@ -48,7 +48,19 @@ const CONFIGS: RepoConfigs = {
       'bob',
       config(
         'bob.json',
-        { labels: { requested: 'review me' }, checkRun: { name: 'Code review' } },
+        {
+          labels: { requested: 'review me' },
+          checkRun: { name: 'Code review' },
+          evidence: [
+            {
+              name: 'aws',
+              description: 'Production logs.',
+              guide: { file: '/guides/aws.md' },
+              commands: ['aws logs filter-log-events'],
+              env: { AWS_PROFILE: 'secret-profile-name' },
+            },
+          ],
+        },
         'owner',
       ),
     ],
@@ -281,6 +293,7 @@ describe('runLoopCommand', () => {
           },
           checkRun: 'machine owner',
         },
+        evidence: { sources: ['aws'], from: 'machine owner' },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -297,6 +310,7 @@ describe('runLoopCommand', () => {
             },
             checkRun: null,
           },
+          evidence: { sources: [], from: null },
           problems: [],
         },
       )
@@ -318,9 +332,20 @@ describe('runLoopCommand', () => {
             },
             checkRun: 'repository file',
           },
+          evidence: { sources: [], from: null },
           problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
         },
       )
+    })
+
+    it('prints evidence source names only, never commands or env values', async () => {
+      const { deps } = fakeDeps()
+      const printed = JSON.stringify(
+        await runLoopCommand('settings', { owner: 'bob' }, target, deps),
+      )
+      expect(printed).toContain('"aws"')
+      expect(printed).not.toContain('secret-profile-name')
+      expect(printed).not.toContain('filter-log-events')
     })
 
     it('reads no repository file for an owner', async () => {

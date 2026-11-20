@@ -2,7 +2,9 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
 import {
+  REPO_RE,
   parseCheckRun,
   parseLabels,
   type CheckRunSettings,
@@ -34,14 +36,18 @@ export type RepoConfig = {
   consumes: Consumes[]
   labels?: Partial<LabelNames>
   checkRun?: CheckRunSettings
+  /** Machine config only; a reviewed repository's own file never sets it. */
+  evidence?: EvidenceSource[]
   problems: string[]
 }
 
-/** A repository file holds every key; an owner file holds only the settings repositories share. */
-type ConfigScope = 'repo' | 'owner'
+/**
+ * A repository file holds every key; an owner file holds only the settings repositories share; the
+ * reviewed repository's own file (`target`) holds everything but `evidence`.
+ */
+type ConfigScope = 'repo' | 'owner' | 'target'
 
-const REPO_RE = /^[A-Za-z0-9-]+\/(?!\.+$)[\w.-]+$/u
-const KEYS = new Set(['consumes', 'labels', 'checkRun'])
+const KEYS = new Set(['consumes', 'labels', 'checkRun', 'evidence'])
 const CONSUMES_KEYS = new Set(['repo', 'paths', 'via'])
 
 type Json = Record<string, unknown>
@@ -110,10 +116,17 @@ export function parseRepoConfig(
   if (scope === 'owner' && raw.consumes !== undefined) {
     problems.push(`${file}: "consumes" is repo-level only; ignored`)
   }
+  // Evidence sources grant shell commands on this machine, so only machine files may set them.
+  if (scope === 'target' && raw.evidence !== undefined) {
+    problems.push(`${file}: evidence sources are machine-only; ignored`)
+  }
+  const evidence =
+    scope === 'target' ? undefined : parseEvidence(raw.evidence, `${file} evidence`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
     ...(checkRun === undefined ? {} : { checkRun }),
+    ...(evidence === undefined ? {} : { evidence }),
     problems,
   }
 }

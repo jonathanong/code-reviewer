@@ -60,10 +60,16 @@ plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k 
 about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 
+A run that has a shell (the history pillar and the evidence run) passes `--setting-sources ''`
+instead, so no settings file is loaded. User settings can allow commands of their own, or allow
+every sandboxed command, and either would widen the run's allow-list. Such a run can execute its
+listed prefixes and the read-only commands Claude Code always permits (`echo`, `ls`, `git log` and
+the like); a chained or substituted command is denied whole.
+
 ## Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -107,6 +113,47 @@ without one):
 A malformed file, an unknown key, or a configured repository with no clone is listed under
 "Missing" in `rules/INDEX.md` and in `prepare`'s output; none of them stops the review.
 
+### `evidence`
+
+Evidence sources let a review check findings against real data, such as production logs, instead
+of guessing. They are machine-only: `evidence` in a repository's own `.code-reviewer.json` is
+ignored with a problem, because that file is controlled by whoever can merge to the default
+branch and a source grants command access and credentials. A repository file's list replaces its
+owner file's list whole; `[]` switches evidence off for that repository.
+
+```json
+{
+  "evidence": [
+    {
+      "name": "aws",
+      "description": "Production logs and metrics.",
+      "guide": { "repo": "acme/infra", "path": "docs/production-data.md" },
+      "commands": ["aws logs filter-log-events", "aws logs start-query"],
+      "env": { "AWS_PROFILE": "readonly" }
+    }
+  ]
+}
+```
+
+- `name`: a simple identifier, unique in the list.
+- `description`: one line on what the source can answer; the run uses it to skip sources that
+  cannot bear on a change.
+- `guide`: how to query the source. `{ "repo", "path" }` is read from that repository's clone under
+  the clone root at its remote default branch (never the working tree, never a pull request);
+  `{ "file" }` is a path on this machine, `~/` allowed.
+- `commands`: command prefixes of at least two words, each allowed as `Bash(<prefix>:*)`; beyond
+  them the run has only the read-only commands Claude Code always permits. Grant read-only prefixes: a prefix is only as safe as the CLI's subcommand.
+- `env` (optional): variables set for the run. Values are never printed, logged, or put in a
+  prompt, report, or `settings` output; only names are.
+
+After the verifier, one extra headless Sonnet run gets the verified findings, the sources, their
+guides, and `Read`, `Grep`, `Glob` and the allowed commands. It writes `evidence.json` and an
+Evidence section in `report.md`, and appends one `Evidence (...)` line to a supported or
+contradicted finding in `review.json`. It never drops a finding or changes a severity or the
+verdict, its cost is in the cost tables, and a failed run or blocked source is reported while the
+review goes on. A source is `checked` only with the commands it ran; an empty result needs a
+control query. Evidence is not part of `bench`.
+
 ### `labels` and `checkRun`
 
 Label names and an optional GitHub check run are set in the same files; an owner file cannot set
@@ -133,7 +180,7 @@ Label names and an optional GitHub check run are set in the same files; an owner
   context is the configured name (`via` in the result says which).
 - `consumes` is valid only in a repository file.
 
-`code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings.
+`code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings, including the names of the evidence sources and the layer they came from.
 `code-reviewer skip` closes out a pull request the plan will not review: it posts one COMMENT
 review on the head with a `verdict=Skipped` marker, then swaps the labels. `status` exits 0 for
 a skipped head while its completed label stands (it never counts as approval and the approval label is not added), `claim`

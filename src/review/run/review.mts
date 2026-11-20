@@ -7,6 +7,7 @@ import { pluginSettings } from '../plugins.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
+import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { runPillars } from './pillars.mts'
 import { listRuleSkills, selectSkills } from './select-skills.mts'
@@ -119,11 +120,24 @@ async function review(
     { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
+  // Never throws: a failed evidence run is reported, and the review goes on without it.
+  const { evidence, findings: verified } = await applyEvidence({
+    setup: () => steps.evidence(),
+    readPrompt: () => read(join(steps.references, 'evidence.md')),
+    out,
+    title,
+    pullRequestSummary: output.pullRequestSummary,
+    findings: output.findings,
+    mode,
+    tree,
+    settings,
+    exec: steps.exec,
+  })
   const input: ReviewInput = {
     effort: plan.effort,
     summary: output.summary,
     skipped,
-    findings: output.findings,
+    findings: verified,
   }
   writeJson(join(out, 'review.json'), input)
   const outcome = await steps.preview(input, headSha)
@@ -132,15 +146,16 @@ async function review(
     ...base,
     mode,
     reasons: plan.reasons,
-    verdict: deriveVerdict(output.findings),
+    verdict: deriveVerdict(verified),
     skipped,
     skillSelection: skillChoice,
     pillars: results,
-    verifier: { model: plan.verifierModel, output },
+    verifier: { model: plan.verifierModel, output: { ...output, findings: verified } },
+    evidence,
   })
   const report = writeReportFiles(out, data)
   const counts = { ...ZERO_FINDINGS }
-  for (const finding of output.findings) counts[finding.severity] += 1
+  for (const finding of verified) counts[finding.severity] += 1
   return {
     ok: true,
     summary: {

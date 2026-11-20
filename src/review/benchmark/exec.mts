@@ -5,7 +5,8 @@ import { promisify } from 'node:util'
 export type Exec = (
   command: string,
   args: string[],
-  options?: { cwd?: string; timeoutMs?: number },
+  /** `env` is added to this process's environment for the child only. */
+  options?: { cwd?: string; timeoutMs?: number; env?: Record<string, string> },
 ) => Promise<string>
 
 const execFileAsync = promisify(execFile)
@@ -34,6 +35,7 @@ export const defaultExec: Exec = async (command, args, options = {}) => {
     const { stdout } = await execFileAsync(command, args, {
       ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
       ...(options.timeoutMs === undefined ? {} : { timeout: options.timeoutMs }),
+      ...(options.env === undefined ? {} : { env: { ...process.env, ...options.env } }),
       encoding: 'utf8',
       maxBuffer: 256 * 1024 * 1024,
     })

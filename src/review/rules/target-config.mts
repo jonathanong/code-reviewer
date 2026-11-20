@@ -58,7 +58,7 @@ export async function readTargetConfig(
   try {
     const text = await read()
     if (text === undefined) return { config: undefined, problems: [] }
-    const config = parseRepoConfig(text, file)
+    const config = parseRepoConfig(text, file, 'target')
     return { config, problems: config.problems }
   } catch (error) {
     const reason = (error instanceof Error ? error.message : String(error)).split('\n')[0]

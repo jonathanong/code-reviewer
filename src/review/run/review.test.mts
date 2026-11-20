@@ -39,7 +39,12 @@ const result = (structured: unknown, cost: number) =>
     structured_output: structured,
   })
 
-type Routes = { pillar?: (name: string) => string; verifier?: () => string; select?: () => string }
+type Routes = {
+  pillar?: (name: string) => string
+  verifier?: () => string
+  select?: () => string
+  evidence?: () => string
+}
 
 /** Routes a fake `claude` call by what it is for: skill selection, verifier, or a pillar. */
 function claude(routes: Routes = {}): Exec {
@@ -49,6 +54,21 @@ function claude(routes: Routes = {}): Exec {
       return (
         routes.select?.() ??
         result({ skills: ['jong-skills:documentation', 'no-mistakes-rules:git-rules'] }, 0.01)
+      )
+    }
+    if (prompt.includes('EVIDENCE prompt text')) {
+      return (
+        routes.evidence?.() ??
+        result(
+          {
+            sources: [
+              { name: 'aws', status: 'checked', queries: [{ command: 'aws logs x', result: '0' }] },
+            ],
+            findings: [{ id: 'F1', effect: 'contradicts', note: 'Never seen in logs.' }],
+            claims: [],
+          },
+          0.5,
+        )
       )
     }
     if (prompt.includes('VERIFIER prompt text')) {
@@ -122,6 +142,7 @@ function setup(
         { name: 'no-mistakes-rules', installPath: fixture('plugins/no-mistakes-rules') },
       ],
     })),
+    evidence: vi.fn(async () => ({ sources: [], readGuide: async () => '' })),
     exec: claude(),
     references: fixture('references'),
     ...overrides,
@@ -328,6 +349,54 @@ describe('runReview', () => {
     const outcome = await runReview(steps, options)
     expect(outcome.ok).toBe(true)
     expect(readJson(out, 'report.json').title).toBe('(untitled)')
+  })
+
+  it('makes no evidence run and writes no evidence.json when no source is configured', async () => {
+    const { out, steps, options } = setup()
+    await runReview(steps, options)
+    expect(readJson(out, 'report.json').evidence).toBeUndefined()
+    expect(readFileSync(join(out, 'report.md'), 'utf8')).not.toContain('### Evidence')
+    expect(() => readFileSync(join(out, 'evidence.json'))).toThrow()
+  })
+
+  describe('with an evidence source', () => {
+    const source = {
+      name: 'aws',
+      description: 'Logs.',
+      guide: { file: '/g.md' },
+      commands: ['aws logs filter-log-events'],
+      env: {},
+    }
+    const withEvidence = (routes: Routes = {}) =>
+      setup({
+        evidence: vi.fn(async () => ({ sources: [source], readGuide: async () => 'guide' })),
+        exec: claude(routes),
+      })
+
+    it('runs after the verifier, annotates the finding, and adds the cost', async () => {
+      const { out, steps, options } = withEvidence()
+      const outcome = await runReview(steps, options)
+      expect(outcome.ok).toBe(true)
+      expect(outcome.summary.costUsd).toBe(2.01)
+      const review = readJson(out, 'review.json')
+      expect(review.findings[0].body).toBe('b\n\nEvidence (aws, contradicts): Never seen in logs.')
+      expect(review.findings[0].severity).toBe('high')
+      expect(readJson(out, 'evidence.json').sources[0].status).toBe('checked')
+      expect(readJson(out, 'report.json').evidence.sources[0].name).toBe('aws')
+      const markdown = readFileSync(join(out, 'report.md'), 'utf8')
+      expect(markdown).toContain('### Evidence')
+      expect(markdown).toContain('evidence $0.5000')
+    })
+
+    it('keeps the review when the evidence run fails, and says so in the report', async () => {
+      const { out, steps, options } = withEvidence({ evidence: () => 'not json' })
+      const outcome = await runReview(steps, options)
+      expect(outcome.ok).toBe(true)
+      expect(readJson(out, 'review.json').findings[0].body).toBe('b')
+      expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain(
+        'Failed: Evidence run did not print JSON.',
+      )
+    })
   })
 
   it('runs no pillar and aborts when no rule skill is installed', async () => {

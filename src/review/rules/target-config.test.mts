@@ -62,6 +62,24 @@ describe('readTargetConfig', () => {
     expect(result.problems).toEqual(['a/b/.code-reviewer.json: unknown key "x" ignored'])
   })
 
+  it('never takes evidence sources from the repository file', async () => {
+    const text = JSON.stringify({
+      evidence: [
+        {
+          name: 'aws',
+          description: 'Logs.',
+          guide: { file: '/g.md' },
+          commands: ['aws logs filter-log-events'],
+        },
+      ],
+    })
+    const result = await readTargetConfig(async () => text, 'a/b')
+    expect(result.config?.evidence).toBeUndefined()
+    expect(result.problems).toEqual([
+      'a/b/.code-reviewer.json: evidence sources are machine-only; ignored',
+    ])
+  })
+
   it('has no config and no problem when the file is absent', async () => {
     await expect(readTargetConfig(async () => undefined, 'a/b')).resolves.toEqual({
       config: undefined,

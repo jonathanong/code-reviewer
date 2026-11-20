@@ -10,18 +10,21 @@ export type CheckRunSettings = { name: string }
 
 const LABEL_KEYS = ['requested', 'processing', 'completed', 'approval'] as const
 
-type Json = Record<string, unknown>
+export type Json = Record<string, unknown>
 
-function isRecord(value: unknown): value is Json {
+export function isRecord(value: unknown): value is Json {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
+
+/** An `owner/name` repository id. */
+export const REPO_RE = /^[A-Za-z0-9-]+\/(?!\.+$)[\w.-]+$/u
 
 /** A label or check name: non-blank, and free of quotes (the queue search quotes it) and controls. */
 function isName(value: unknown): value is string {
   return typeof value === 'string' && /^[^"\p{Cc}]+$/u.test(value) && value.trim().length > 0
 }
 
-function unknownKeys(record: Json, known: readonly string[], where: string): string[] {
+export function unknownKeys(record: Json, known: readonly string[], where: string): string[] {
   return Object.keys(record)
     .filter((key) => !known.includes(key))
     .map((key) => `${where}: unknown key "${key}" ignored`)

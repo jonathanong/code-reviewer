@@ -45,6 +45,7 @@ describe('review index', () => {
       'renderHeader',
       'repoSettings',
       'reportCheckRun',
+      'resolveEvidence',
       'resolveThreads',
       'reviewMarker',
       'reviewSettings',

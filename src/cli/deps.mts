@@ -21,6 +21,7 @@ import {
   type PluginInfo,
 } from '../review/plugins.mts'
 import { loadRepoConfigs, machineConfigDir, type RepoConfigs } from '../review/rules/config.mts'
+import { createGuideReader, type GuideReader } from '../review/rules/evidence-guide.mts'
 import {
   apiFileReader,
   readTargetConfig,
@@ -46,6 +47,8 @@ export type ReviewDeps = {
   createIo(target: PullTarget): ReviewIo
   createLabelIo(target: PullTarget): LabelIo
   createPrepareIo(target: PullTarget): PrepareIo
+  /** Reads evidence guides from clones under `clones`, else `CODE_REVIEWER_CLONE_ROOT`. */
+  guideReader(clones: string | undefined): GuideReader
   /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
   runner(owner: string, repo?: string): RunTextCommand
   readFile(path: string): string
@@ -110,6 +113,8 @@ export function createDefaultDeps(
         env.CODE_REVIEWER_CLONE_ROOT,
         configDir,
       ),
+    guideReader: (clones) =>
+      createGuideReader({ clones: clones ?? env.CODE_REVIEWER_CLONE_ROOT, git: runGit }),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
     listPlugins: async () => {

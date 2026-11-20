@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { postFinalReview } from '../review/post.mts'
 import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
-import type { PullTarget } from '../review/index.mts'
+import { resolveEvidence, type PullTarget } from '../review/index.mts'
 import {
   abortCommand,
   claimCommand,
@@ -49,6 +49,11 @@ export async function reviewCommand(
       preview: (input, headSha) =>
         postFinalReview(deps.createIo(target), input, headSha, { dryRun: true }),
       plugins: () => deps.pluginInfo(),
+      // Machine config only: the reviewed repository's own file cannot add a source.
+      evidence: async () => ({
+        sources: resolveEvidence(deps.configs(), target.repo).sources,
+        readGuide: deps.guideReader(resolved.clones),
+      }),
       exec: deps.exec,
       references: deps.references(),
     },

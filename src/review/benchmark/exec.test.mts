@@ -12,6 +12,13 @@ describe('defaultExec', () => {
     expect(await defaultExec('node', ['-e', 'process.stdout.write("hi")'])).toBe('hi')
   })
 
+  it('adds env to the child only', async () => {
+    const read = ['-e', 'process.stdout.write(process.env.EVIDENCE_TEST_VAR ?? "unset")']
+    expect(await defaultExec('node', read, { env: { EVIDENCE_TEST_VAR: 'set' } })).toBe('set')
+    expect(await defaultExec('node', read)).toBe('unset')
+    expect(process.env.EVIDENCE_TEST_VAR).toBeUndefined()
+  })
+
   it('kills a run that outlives its timeout and reports an ExecError', async () => {
     const hang = defaultExec('node', ['-e', 'setTimeout(() => {}, 60000)'], { timeoutMs: 100 })
     await expect(hang).rejects.toBeInstanceOf(ExecError)
