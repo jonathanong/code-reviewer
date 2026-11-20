@@ -19,7 +19,7 @@ const row = (number: number, headRef: string, baseRef: string, headRepo = 'a/b')
 /** Routes `repos/<repo>/pulls` to that repository's open pull requests. */
 function run(pulls: Record<string, string[]>) {
   return vi.fn(async (args: readonly string[]) => {
-    const repo = /repos\/([^/]+\/[^/]+)\/pulls/u.exec(args[2] ?? '')?.[1] as string
+    const repo = /repos\/([^/]+\/[^/]+)\/pulls/u.exec(args[1] ?? '')?.[1] as string
     const lines = pulls[repo]
     if (lines === undefined) throw new Error('boom')
     return lines.join('\n')
@@ -36,6 +36,24 @@ describe('groupStacks', () => {
     expect(grouped[0]?.stack).toEqual({ root: 10, position: 1, size: 3 })
     expect(grouped[1]?.stack).toEqual({ root: 10, position: 3, size: 3 })
     expect(grouped[2]?.stack).toBeUndefined()
+  })
+
+  it('gives every member of a branching stack the same size and order', async () => {
+    const pulls = [row(10, 'x', 'main'), row(11, 'y', 'x'), row(12, 'z', 'x'), row(13, 'w', 'y')]
+    const entries = [entry('a/b', 12), entry('a/b', 13), entry('a/b', 11), entry('a/b', 10)]
+    const grouped = await groupStacks(run({ 'a/b': pulls }), entries)
+    expect(grouped.map((item) => item.pr)).toEqual([10, 11, 13, 12])
+    expect(grouped.map((item) => item.stack)).toEqual(
+      [1, 2, 3, 4].map((position) => ({ root: 10, position, size: 4 })),
+    )
+  })
+
+  it('falls back to its own walk for a member beyond the root walk cap', async () => {
+    const wide = Array.from({ length: 22 }, (_, at) => row(11 + at, `c${at}`, 'x'))
+    const grouped = await groupStacks(run({ 'a/b': [row(10, 'x', 'main'), ...wide] }), [
+      entry('a/b', 32),
+    ])
+    expect(grouped[0]?.stack).toEqual({ root: 10, position: 2, size: 2 })
   })
 
   it('keeps flat rows in order around a stack', async () => {

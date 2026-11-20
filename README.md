@@ -72,9 +72,11 @@ A pull request whose base is another open pull request's head belongs to a stack
 the open pull requests of the repository (up to ten hops each way) and, for a stacked pull
 request, writes `stack.json` and, for each later member, `stack/<number>/INDEX.md` with one numbered patch per
 changed file beside it (taken from
-the local `--tree` with git, from the API otherwise), and adds a `stack` summary to `plan.json`.
+the local `--tree` with git, from the API otherwise; a later member whose diff exceeds 20 MB, or
+that the API refuses, gets no index and is recorded as `diffSkipped` in `stack.json`), and adds a `stack` summary to `plan.json`.
 Pillars and the verifier judge each finding against the top of the stack: a defect a later member
-fixes stays as a `low` finding whose body starts with `Fixed in #N:`. `report.md` and `report.json`
+fixes stays, when it reaches the verifier, as a `low` finding whose body starts with `Fixed in #N:`
+(a pillar may also leave such a defect out). `report.md` and `report.json`
 show the members, the position, and the root base, noting an off-base stack (root base is not the
 default branch) or a stale base (no open pull request has it as head). `queue` rows of a stacked
 pull request carry `stack: {root, position, size}` and are ordered bottom-up. A flat pull request

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -272,5 +272,15 @@ describe('prepareReview', () => {
     expect(summary.plan.stack).toBeUndefined()
     expect(existsSync(join(out, 'stack.json'))).toBe(false)
     expect(summary.mode).toBe('full')
+  })
+
+  it('removes the stack of an earlier run in the same directory', async () => {
+    mkdirSync(join(out, 'stack', '9'), { recursive: true })
+    writeFileSync(join(out, 'stack.json'), '{}')
+    const io = fakeIo()
+    io.stackInput.mockRejectedValue(new Error('rate limited'))
+    await prepareReview(io, { out })
+    expect(existsSync(join(out, 'stack.json'))).toBe(false)
+    expect(existsSync(join(out, 'stack'))).toBe(false)
   })
 })

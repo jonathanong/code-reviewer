@@ -28,16 +28,28 @@ describe('fetchOpenPulls', () => {
     const pulls = await fetchOpenPulls(run, 'o/r')
     expect(pulls.map((pull) => pull.number)).toEqual([1, 5])
     expect(pulls[0]).toEqual({ number: 1, title: 'T', headRef: 'a', baseRef: 'main', headSha: 's' })
-    expect(run.mock.calls[0]?.[0].slice(0, 3)).toEqual([
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(run.mock.calls[0]?.[0].slice(0, 2)).toEqual([
       'api',
-      '--paginate',
-      'repos/o/r/pulls?state=open&per_page=100',
+      'repos/o/r/pulls?state=open&per_page=100&page=1',
     ])
   })
 
-  it('reads at most 500 pull requests', async () => {
-    const many = Array.from({ length: 520 }, (_, at) => line({ number: at + 1 })).join('\n')
-    expect(await fetchOpenPulls(async () => many, 'o/r')).toHaveLength(500)
+  it('reads pages until one is short', async () => {
+    const page = (from: number, count: number) =>
+      Array.from({ length: count }, (_, at) => line({ number: from + at })).join('\n')
+    const run = vi.fn(async (args: readonly string[]) =>
+      args[1]?.endsWith('page=1') ? page(1, 100) : page(101, 3),
+    )
+    expect(await fetchOpenPulls(run, 'o/r')).toHaveLength(103)
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops requesting pages once 500 pull requests are kept', async () => {
+    const full = Array.from({ length: 100 }, (_, at) => line({ number: at + 1 })).join('\n')
+    const run = vi.fn(async (_args: readonly string[]) => full)
+    expect(await fetchOpenPulls(run, 'o/r')).toHaveLength(500)
+    expect(run).toHaveBeenCalledTimes(5)
   })
 })
 

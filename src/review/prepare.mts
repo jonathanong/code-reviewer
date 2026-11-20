@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { renderFollowUpContext } from './context-render.mts'
@@ -54,6 +54,9 @@ export async function prepareReview(
   write: Write = (path, text) => writeFileSync(path, text),
 ): Promise<PrepareSummary> {
   mkdirSync(options.out, { recursive: true })
+  // A rerun into the same directory must not leave the stack of an earlier run behind.
+  rmSync(join(options.out, 'stack.json'), { force: true })
+  rmSync(join(options.out, 'stack'), { recursive: true, force: true })
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(options.tree),

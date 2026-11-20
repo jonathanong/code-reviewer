@@ -1,7 +1,7 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import type { QueueEntry } from './queue.mts'
 import { fetchOpenPulls } from './stack-gh.mts'
-import { walkStack } from './stack.mts'
+import { walkStack, type StackWalk } from './stack.mts'
 
 type Annotated = QueueEntry & { stack: NonNullable<QueueEntry['stack']> }
 
@@ -24,7 +24,12 @@ async function annotate(
     const walk = walkStack(entry.pr, pulls)
     if (walk === undefined || walk.members.length === 1) return entry
     const root = (walk.members[0] as { number: number }).number
-    return { ...entry, stack: { root, position: walk.index + 1, size: walk.members.length } }
+    // Every member of a stack reads the root's walk, so a branching stack gets one size and order.
+    const canonical = (walkStack(root, pulls) as StackWalk).members
+    const at = canonical.findIndex((member) => member.number === entry.pr)
+    const [position, size] =
+      at === -1 ? [walk.index + 1, walk.members.length] : [at + 1, canonical.length]
+    return { ...entry, stack: { root, position, size } }
   })
 }
 

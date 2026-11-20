@@ -71,7 +71,7 @@ describe('listQueue', () => {
     ])
     // Two label searches, then one open-pull-request read for the repository that has entries.
     expect(run).toHaveBeenCalledTimes(3)
-    expect(run.mock.calls.filter(([args]) => args[2]?.startsWith('repos/a/b/pulls'))).toHaveLength(
+    expect(run.mock.calls.filter(([args]) => args[1]?.startsWith('repos/a/b/pulls'))).toHaveLength(
       1,
     )
     const qs = run.mock.calls.map(([args]) => qOf(args)).filter((q) => q !== '')
