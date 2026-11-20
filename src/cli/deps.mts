@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import {
   createGhReviewIo,
@@ -13,6 +13,7 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import type { Exec } from '../review/benchmark/exec.mts'
+import { pluginRoot } from '../plugin-root.mts'
 import {
   parsePluginInstalls,
   parsePluginList,
@@ -98,7 +99,7 @@ export function createDefaultDeps(
     },
     exec: async (command, args, options) =>
       (await import('../review/benchmark/exec.mts')).defaultExec(command, args, options),
-    references: () => fileURLToPath(new URL('../../skills/review/references', import.meta.url)),
+    references: () => join(pluginRoot(), 'skills/review/references'),
     runBench: async (args) => (await import('../review/benchmark/cli.mts')).runReviewBenchCli(args),
     runVerifierBench: async (args) =>
       (await import('../review/benchmark/verifier-cli.mts')).runReviewVerifierBenchCli(args),
