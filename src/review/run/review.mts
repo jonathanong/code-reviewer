@@ -1,10 +1,9 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { diffExcerpt, splitDiff } from '../diff-files.mts'
 import { ReviewError, type ReviewInput, type Pillar } from '../finding.mts'
 import { pluginSettings } from '../plugins.mts'
-import { readStackFile } from '../stack-file.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
@@ -21,6 +20,7 @@ import {
   skipResult,
   message,
   read,
+  runDir,
   threadIdsOf,
   titleOf,
   writeJson,
@@ -62,11 +62,11 @@ async function review(
   const plugins = await steps.plugins()
   const settings = pluginSettings(plugins.enabled)
   const followUp = plan.sinceSha !== null
-  const indexPath = join(out, followUp ? 'since' : 'diff', 'INDEX.md')
+  const source = followUp ? 'since' : 'diff'
   const skillChoice = await selectSkills({
     title,
-    index: read(indexPath),
-    excerpt: diffExcerpt(splitDiff(read(join(out, followUp ? 'since.patch' : 'diff.patch')))),
+    index: read(join(out, source, 'INDEX.md')),
+    excerpt: diffExcerpt(splitDiff(read(join(out, `${source}.patch`)))),
     skills: listRuleSkills(plugins.installs),
     settings,
     exec: steps.exec,
@@ -77,13 +77,7 @@ async function review(
   if (skillChoice.error !== undefined) {
     throw new ReviewError(`Skill selection failed, so no review was run: ${skillChoice.error}`)
   }
-  const stack = readStackFile(out)
-  const run = {
-    out,
-    sinceSha: plan.sinceSha,
-    hasRules: existsSync(join(out, 'rules', 'INDEX.md')),
-    stack,
-  }
+  const run = runDir(out, plan.sinceSha)
   const web = webReferences(steps.references, steps.webReferences)
   const pillarsDir = join(steps.references, 'pillars')
   const results = await runPillars({
@@ -152,7 +146,8 @@ async function review(
     pillars: results,
     verifier: { model: plan.verifierModel, output: { ...output, findings: verified } },
     evidence,
-    stack,
+    stack: run.stack,
+    push: run.push,
   })
   const report = writeReportFiles(out, data)
   const counts = { ...ZERO_FINDINGS }

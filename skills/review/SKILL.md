@@ -38,6 +38,17 @@ the top of the stack: a defect a later member fixes is kept as a `low` finding t
 a base that no open pull request has as head is stale; `report.md` says so and the review still
 runs. Members are reviewed and posted one at a time, bottom-up.
 
+## Pushes that only merge the base
+
+For a pull request that was already reviewed, `prepare` classifies what was pushed since (git in
+the `--tree` checkout) and writes `push.json`. When every new commit merges the base, or history
+was rewritten with the pull request's own change unchanged, the re-review is light: it judges the
+merge resolutions (or the range-diff) and whether what came in from the base breaks the change,
+using `merges/INDEX.md`, `incoming/INDEX.md` and `range-diff.txt`. A substantive push keeps its
+usual mode, and its pillars and verifier still read the resolutions. `report.md` names the push
+kind and the merges checked; a `problems` entry means git could not answer and the push was
+treated as substantive.
+
 ## Token budget
 
 The session that runs this skill only orchestrates. One headless command does the review and

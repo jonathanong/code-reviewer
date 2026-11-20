@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PrConversation } from './context-query.mts'
 import type { SinceDiff } from './plan.mts'
 import { prepareReview } from './prepare.mts'
+import type { PushInspection } from './push-types.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import type { StackMember } from './stack.mts'
 import { reviewMarker } from './render.mts'
@@ -52,6 +53,19 @@ function conversation(
   }
 }
 
+function inspection(rest: Partial<PushInspection>): PushInspection {
+  return {
+    kind: 'substantive',
+    reason: 'The new commits are not all merges.',
+    reviewedSha: OLD,
+    headSha: HEAD,
+    merges: [],
+    mergesTotal: 0,
+    problems: [],
+    ...rest,
+  }
+}
+
 type Overrides = {
   reviewed?: string | null
   since?: SinceDiff
@@ -59,9 +73,18 @@ type Overrides = {
   author?: PrConversation['author']
   lines?: number
   paths?: string[]
+  push?: PushInspection
 }
 
-function fakeIo({ reviewed = null, since, history = [], author, lines, paths }: Overrides = {}) {
+function fakeIo({
+  reviewed = null,
+  since,
+  history = [],
+  author,
+  lines,
+  paths,
+  push,
+}: Overrides = {}) {
   return {
     headSha: vi.fn(async () => HEAD),
     trusted: vi.fn(async () => new Set(['bot'])),
@@ -76,6 +99,7 @@ function fakeIo({ reviewed = null, since, history = [], author, lines, paths }: 
     compare: vi.fn(async () => since ?? { status: 'ahead', paths: ['src/a.ts'], lines: 4 }),
     compareDiff: vi.fn(async () => PATCH),
     treeHead: vi.fn(async () => HEAD),
+    push: vi.fn(async () => push ?? inspection({})),
     history: vi.fn(async () => history),
     ruleSources: vi.fn(async () => ({ related: [], missing: ['x: none'] })),
     stackInput: vi.fn(async () => ({ pr: 7, pulls: [] as StackMember[], defaultBranch: 'main' })),
@@ -282,5 +306,117 @@ describe('prepareReview', () => {
     await prepareReview(io, { out })
     expect(existsSync(join(out, 'stack.json'))).toBe(false)
     expect(existsSync(join(out, 'stack'))).toBe(false)
+  })
+
+  describe('the push since the last review', () => {
+    const CLEAN = {
+      kind: 'base-merges-only' as const,
+      reason: 'Every new commit merges the base.',
+      merges: [{ sha: 'm'.repeat(40), resolution: '', truncated: false }],
+      mergesTotal: 1,
+      incoming: { from: BASE, to: HEAD, diff: PATCH },
+    }
+
+    it('does not ask git for a first review, an unmoved head, or without a checkout', async () => {
+      const first = fakeIo()
+      await prepareReview(first, { out, tree: '/tree' })
+      const unmoved = fakeIo({ reviewed: HEAD })
+      await prepareReview(unmoved, { out, tree: '/tree' })
+      const flat = fakeIo({ reviewed: OLD })
+      const summary = await prepareReview(flat, { out })
+      for (const io of [first, unmoved, flat]) expect(io.push).not.toHaveBeenCalled()
+      expect(summary.push).toBeUndefined()
+      expect(existsSync(join(out, 'push.json'))).toBe(false)
+    })
+
+    it('routes a push of clean base merges to a light review of what came in', async () => {
+      const io = fakeIo({ reviewed: OLD, push: inspection(CLEAN), lines: 4 })
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(io.push).toHaveBeenCalledWith('/tree', {
+        reviewedSha: OLD,
+        headSha: HEAD,
+        baseSha: BASE,
+      })
+      expect(summary.push).toMatchObject({ kind: 'base-merges-only', merges: 1, resolved: 0 })
+      expect(summary.plan).toMatchObject({
+        mode: 'light',
+        push: 'base-merges-only',
+        sinceSha: null,
+      })
+      expect(summary.plan.pillars.map(({ pillar }) => pillar)).toEqual(['correctness'])
+      expect(summary.written).toEqual(
+        expect.arrayContaining(['push.json', 'merges/INDEX.md', 'incoming/INDEX.md']),
+      )
+      expect(JSON.parse(read('push.json'))).toMatchObject({ kind: 'base-merges-only' })
+      expect(existsSync(join(out, 'incoming', '0001.patch'))).toBe(true)
+    })
+
+    it('adds the security pillar for a resolution that touches a trigger path', async () => {
+      const resolved = {
+        ...CLEAN,
+        merges: [
+          {
+            sha: 'm'.repeat(40),
+            resolution:
+              'diff --git a/src/auth.ts b/src/auth.ts\n--- a/src/auth.ts\n+++ b/src/auth.ts\n@@ -1 +1 @@\n-x\n+y\n',
+            truncated: false,
+          },
+        ],
+      }
+      const io = fakeIo({ reviewed: OLD, push: inspection(resolved) })
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(summary.push).toMatchObject({ resolved: 1, resolvedPaths: ['src/auth.ts'] })
+      expect(summary.plan.pillars.map(({ pillar }) => pillar)).toEqual(['correctness', 'security'])
+      expect(existsSync(join(out, 'merges', `${'m'.repeat(12)}.patch`))).toBe(true)
+    })
+
+    it('routes a same-change rebase to light and writes its range-diff', async () => {
+      const io = fakeIo({
+        reviewed: OLD,
+        since: { status: 'diverged', paths: [], lines: 0 },
+        push: inspection({
+          kind: 'rebase-same-change',
+          reason: 'same',
+          rangeDiff: '1: a < -: b x\n',
+          incoming: { from: BASE, to: HEAD, diff: PATCH },
+        }),
+      })
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(summary.plan).toMatchObject({ mode: 'light', push: 'rebase-same-change' })
+      expect(summary.written).toContain('range-diff.txt')
+      expect(read('range-diff.txt')).toContain('a < -: b')
+    })
+
+    it('keeps a substantive push as it was, with its resolutions written', async () => {
+      const io = fakeIo({
+        reviewed: OLD,
+        push: inspection({
+          merges: [{ sha: 'm'.repeat(40), resolution: '', truncated: false }],
+          mergesTotal: 1,
+        }),
+      })
+      const plain = await prepareReview(fakeIo({ reviewed: OLD }), { out })
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(summary.plan).toEqual(plain.plan)
+      expect(summary.push).toMatchObject({ kind: 'substantive', merges: 1 })
+      expect(summary.written).toContain('merges/INDEX.md')
+    })
+
+    it('reports what git could not answer as a problem', async () => {
+      const io = fakeIo({ reviewed: OLD, push: inspection({ problems: ['no checkout'] }) })
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(summary.problems).toEqual(['no checkout'])
+    })
+
+    it('removes the push of an earlier run in the same directory', async () => {
+      await prepareReview(fakeIo({ reviewed: OLD, push: inspection(CLEAN) }), {
+        out,
+        tree: '/tree',
+      })
+      await prepareReview(fakeIo(), { out })
+      for (const name of ['push.json', 'merges', 'incoming']) {
+        expect(existsSync(join(out, name))).toBe(false)
+      }
+    })
   })
 })

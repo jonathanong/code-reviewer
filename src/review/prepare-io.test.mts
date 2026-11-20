@@ -30,6 +30,19 @@ describe('createGhPrepareIo', () => {
     expect(run).toHaveBeenCalledWith(['pr', 'diff', '7', '-R', 'o/r', '--color', 'never'])
   })
 
+  it('classifies the push with git in the checkout', async () => {
+    const { io, git } = setup()
+    git.mockRejectedValue(new Error('no such commit'))
+    const shas = { reviewedSha: 'r', baseSha: 'b', headSha: 'h' }
+    const push = await io.push('/tree', shas)
+    expect(push).toMatchObject({ kind: 'substantive', reviewedSha: 'r', headSha: 'h' })
+    expect(git.mock.calls.map(([args]) => args.slice(0, 3))).toContainEqual([
+      '-C',
+      '/tree',
+      'cat-file',
+    ])
+  })
+
   it('reads the conversation through graphql', async () => {
     const pull = { title: 'T' }
     const run = vi.fn(async (_args: readonly string[]) =>

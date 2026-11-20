@@ -1,5 +1,6 @@
 import type { Effort } from './finding.mts'
 import type { PlanInput } from './plan.mts'
+import type { LightPush } from './push-types.mts'
 import {
   isDependencyFile,
   isGenerated,
@@ -15,6 +16,8 @@ export type ModeChoice = {
   effort: Effort
   /** The last reviewed SHA when only the diff since it is reviewed; null otherwise. */
   sinceSha: string | null
+  /** The push kind when the light re-review covers merges or a rewrite instead of a diff since a SHA. */
+  push?: LightPush
   skipReason?: string
 }
 
@@ -39,6 +42,14 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
     return full('high')
   }
   if (context.truncated) return escalate('The review conversation is longer than the digest reads:')
+  if (input.push !== undefined) {
+    reasons.push(
+      input.push.kind === 'base-merges-only'
+        ? 'The push since the earlier review only merges the base: light review of the merge resolutions and of what came in.'
+        : "History was rewritten since the earlier review but the pull request's own change is the same: light review of the range-diff and of what came in.",
+    )
+    return { mode: 'light', effort: 'low', sinceSha: null, push: input.push.kind }
+  }
   if (since === undefined || since.status !== 'ahead') {
     return escalate('The reviewed SHA is not an ancestor of the head:')
   }

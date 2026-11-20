@@ -47,6 +47,9 @@ rows of one stack are adjacent and bottom-up. Review only the members that were 
 order, and post one at a time, bottom-up. The other members of the stack are read-only context for
 `prepare`: never review, label, or post on a member that was not requested.
 
+A re-review after a push that only merges the base, or only rewrites history, runs light with no
+change to how you queue, review or post; `report.md` says which kind of push it was.
+
 ## Step 1 - Start or restart
 
 1. Check the rule plugins before any review:
