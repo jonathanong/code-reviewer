@@ -193,7 +193,9 @@ replaces its owner file's list whole; `[]` switches references off for that repo
 - `name`: a simple identifier, unique in the list.
 - `description`: one line on what the site documents.
 - `domains`: at least one lowercase hostname, no scheme, port, path, wildcard or bare top-level
-  domain. A host matches exactly; its subdomains are not included.
+  domain. A host matches exactly; its subdomains are not included. Claude Code also lets the
+  fetch tool reach a built-in set of public documentation hosts (for example `docs.python.org`
+  and `developer.mozilla.org`) without a rule, so the list bounds every other host, not those.
 
 When references are configured, the correctness pillar, the security pillar and the verifier get
 the `WebFetch` tool with one `WebFetch(domain:<host>)` allow rule per domain under `dontAsk`, no
