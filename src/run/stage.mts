@@ -7,7 +7,7 @@ import type { ReviewDeps } from '../cli/deps.mts'
 import { resolveRun } from '../review/index.mts'
 import type { RunSettings } from '../review/rules/run-parse.mts'
 import { changeFacts, runFacts, type RunFacts } from './facts.mts'
-import { release, postText, writeExplain } from './finish.mts'
+import { release, postText, worthALook, writeExplain } from './finish.mts'
 import { holdRules, type Held } from './hold.mts'
 import { RUN_EXIT, runLine, type Counts, type RunLine } from './output.mts'
 import type { Preflight, RunFlags } from './preflight.mts'
@@ -119,15 +119,7 @@ export async function finish(
       reviewIds: outcome.reviewIds,
       explainPath: explain.path,
       problems: [...problems, ...extra],
-      // Wording warnings are for whoever tunes the reviewer; they are not a reason to look at this
-      // pull request, so they stay out of `attention`.
-      attention: [
-        ...new Set([
-          ...problems,
-          ...extra,
-          ...outcome.warnings.filter((warning) => !outcome.textWarnings.includes(warning)),
-        ]),
-      ],
+      attention: [...new Set([...problems, ...extra, ...worthALook(outcome)])],
     })
   } catch (error) {
     const leftover = await release(pull, deps, false)

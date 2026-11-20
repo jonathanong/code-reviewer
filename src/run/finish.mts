@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { PullTarget } from '../review/index.mts'
+import type { PostOutcome, PullTarget } from '../review/index.mts'
 import { abortCommand } from '../cli/command-loop.mts'
 import { explainCommand } from '../cli/command-tracker.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
@@ -47,4 +47,12 @@ export function writeExplain(
   } catch (error) {
     return { path: null, problem: `could not write the explainer: ${message(error)}` }
   }
+}
+
+/**
+ * The post warnings a person should look at. Wording warnings are for whoever tunes the reviewer,
+ * not a reason to open this pull request, so they stay out of `attention`.
+ */
+export function worthALook(outcome: Pick<PostOutcome, 'warnings' | 'textWarnings'>): string[] {
+  return outcome.warnings.filter((warning) => !outcome.textWarnings.includes(warning))
 }
