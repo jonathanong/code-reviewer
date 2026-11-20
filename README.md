@@ -270,8 +270,11 @@ guides, and `Read`, `Grep`, `Glob` and the allowed commands. It writes `evidence
 Evidence section in `report.md`, and appends one `Evidence (...)` line to a supported or
 contradicted finding in `review.json`. It never drops a finding or changes a severity or the
 verdict, its cost is in the cost tables, and a failed run or blocked source is reported while the
-review goes on. A source is `checked` only with the commands it ran; an empty result needs a
-control query. Evidence is not part of `bench`.
+review goes on. A source is `checked` only with the commands it ran. An empty result is evidence
+of absence only if a control query (the same query loosened so it must return something, such as
+a known-present value or a wider window) returns something; when the control is empty too, the
+run reports the evidence as inconclusive (effect `none`: `report.md` keeps the note, and no
+Evidence line is added to the finding). Evidence is not part of `bench`.
 
 ### `references`
 

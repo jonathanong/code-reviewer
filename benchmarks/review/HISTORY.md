@@ -2,6 +2,13 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: an empty evidence result needs a working control query (no run)
+
+`references/evidence.md` step 4 now spells out the control rule (loosen the same query so it must
+return something; if the control is also empty the evidence is inconclusive, effect `none`).
+Only the evidence run reads this file; `bench` never runs it, so no benchmark prompt, case or
+score is affected. No run was made and the new wording is not measured live.
+
 ## 2026-11-19: premise challenge and a prevention note on findings (no run)
 
 `pillars/_contract.md` gained a Premise section (a reviewer may challenge whether the change should

@@ -24,11 +24,18 @@ is a checkout of the pull request head.
    denied command, missing credentials, or an unreadable guide; if a command you need is not
    allowed, record the source as blocked for that question. Never report a result from memory or
    from the guide.
-4. An empty result is not evidence of absence. Before you conclude that nothing was found, run a
-   control query on the same source that should return something (the same query over a wider
-   scope or a known-present value) and record it as the query's `control`.
+4. **Control before absence.** An empty result ("no rows", "no log lines", a zero count) is
+   evidence of absence only if the query could have matched. A wrong time window, a wrong field or
+   log group name, or missing access all look like "nothing there". Before you conclude anything
+   from an empty result, run a control on the same source: the same query loosened so that it must
+   return something if the source and your access work (a known-present value, a wider time
+   window, the filter removed), and record it as the query's `control`. If the control returns
+   something, the empty result stands as evidence of absence, but only within what the original
+   query covered. If the control is also empty, the query shows nothing: report the evidence as
+   inconclusive (effect `none`, and say "inconclusive" in the note), and never `supports` or
+   `contradicts` on it. A query that returned rows needs no control.
 5. For each finding and claim you could test, give the effect: `supports` when the data confirms
-   the claim, `contradicts` when it refutes it, `none` when the data says nothing either way.
+   the claim, `contradicts` when it refutes it, `none` when the data says nothing either way, including when an empty result had an empty control.
 
 ## Rules
 
