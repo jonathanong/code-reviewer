@@ -11,6 +11,7 @@ import {
   isolationArgs,
   pillarArgs,
   pillarToolFlags,
+  withWebFetch,
 } from './claude-flags.mts'
 
 const value = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
@@ -103,6 +104,56 @@ describe('pillarToolFlags', () => {
       tools: PILLAR_TOOLS_NO_SKILLS,
       allowedTools: PILLAR_TOOLS_NO_SKILLS,
     })
+  })
+
+  it('is unchanged without domains, for every pillar', () => {
+    expect(pillarToolFlags('correctness')).toEqual({
+      tools: PILLAR_TOOLS,
+      allowedTools: PILLAR_TOOLS,
+    })
+    expect(pillarToolFlags('correctness', true, [])).toEqual(pillarToolFlags('correctness'))
+    expect(withWebFetch('Read', [])).toEqual({ tools: 'Read', allowedTools: 'Read' })
+  })
+
+  it('gives the security pillar the same WebFetch rules as correctness', () => {
+    expect(pillarToolFlags('security', true, ['a.example.com'])).toEqual(
+      pillarToolFlags('correctness', true, ['a.example.com']),
+    )
+    expect(pillarToolFlags('security')).toEqual({ tools: PILLAR_TOOLS, allowedTools: PILLAR_TOOLS })
+  })
+
+  it('gives only the correctness and security pillars WebFetch, allowed per domain', () => {
+    expect(pillarToolFlags('correctness', true, ['a.example.com', 'b.example.com'])).toEqual({
+      tools: `${PILLAR_TOOLS},WebFetch`,
+      allowedTools: `${PILLAR_TOOLS},WebFetch(domain:a.example.com),WebFetch(domain:b.example.com)`,
+    })
+    expect(pillarToolFlags('correctness', false, ['a.example.com']).tools).toBe(
+      `${PILLAR_TOOLS_NO_SKILLS},WebFetch`,
+    )
+    for (const pillar of ['rules', 'design', 'history', 'blast-radius', 'congruence'] as const) {
+      expect(pillarToolFlags(pillar, true, ['a.example.com']).tools).not.toContain('WebFetch')
+      expect(pillarToolFlags(pillar, true, ['a.example.com']).allowedTools).not.toContain(
+        'WebFetch',
+      )
+    }
+  })
+
+  it('never offers WebFetch without a domain rule, and lists each domain once', () => {
+    const flags = withWebFetch(SKILL_TOOLS, ['a.example.com', 'a.example.com'])
+    expect(flags.allowedTools).toBe(`${SKILL_TOOLS},WebFetch(domain:a.example.com)`)
+    expect(flags.allowedTools.split(',')).not.toContain('WebFetch')
+  })
+
+  it('loads no settings file when the run has WebFetch, so no user rule widens the domains', () => {
+    const web = pillarArgs({
+      prompt: 'P',
+      model: 'sonnet',
+      maxTurns: 3,
+      ...withWebFetch(PILLAR_TOOLS, ['a.example.com']),
+    })
+    expect(value(web, '--setting-sources')).toBe('')
+    expect(value(web, '--permission-mode')).toBe('dontAsk')
+    expect(isolationArgs({}, true)).toContain('')
   })
 
   it('limits the history pillar shell to git log and git show', () => {

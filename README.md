@@ -60,7 +60,7 @@ plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k 
 about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 
-A run that has a shell (the history pillar and the evidence run) passes `--setting-sources ''`
+A run that has a shell (the history pillar and the evidence run) or a web tool (see `references`) passes `--setting-sources ''`
 instead, so no settings file is loaded. User settings can allow commands of their own, or allow
 every sandboxed command, and either would widen the run's allow-list. Such a run can execute its
 listed prefixes and the read-only commands Claude Code always permits (`echo`, `ls`, `git log` and
@@ -85,7 +85,7 @@ is unchanged.
 ## Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -169,6 +169,39 @@ contradicted finding in `review.json`. It never drops a finding or changes a sev
 verdict, its cost is in the cost tables, and a failed run or blocked source is reported while the
 review goes on. A source is `checked` only with the commands it ran; an empty result needs a
 control query. Evidence is not part of `bench`.
+
+### `references`
+
+References let a review check the code against external documentation, such as AWS API
+parameter names, limits, IAM actions, CLI flags and config keys. They are machine-only, like
+`evidence`: `references` in a repository's own `.code-reviewer.json` is ignored with a problem,
+because it grants network access while the run holds private code. A repository file's list
+replaces its owner file's list whole; `[]` switches references off for that repository.
+
+```json
+{
+  "references": [
+    {
+      "name": "aws",
+      "description": "AWS service documentation",
+      "domains": ["docs.aws.amazon.com"]
+    }
+  ]
+}
+```
+
+- `name`: a simple identifier, unique in the list.
+- `description`: one line on what the site documents.
+- `domains`: at least one lowercase hostname, no scheme, port, path, wildcard or bare top-level
+  domain. A host matches exactly; its subdomains are not included.
+
+When references are configured, the correctness pillar, the security pillar and the verifier get
+the `WebFetch` tool with one `WebFetch(domain:<host>)` allow rule per domain under `dontAsk`, no
+`WebSearch`, and a References block in their prompt with the rules in
+[`skills/review/references/web-references.md`](skills/review/references/web-references.md). The
+other pillars are unchanged. These runs, like runs with a shell, pass `--setting-sources ''` so
+no user setting can widen the allow-list. With no references every prompt and flag is unchanged.
+`bench` does not use references. `code-reviewer settings` lists the configured names and domains.
 
 ### `labels` and `checkRun`
 

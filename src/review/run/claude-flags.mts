@@ -44,6 +44,9 @@ export const PILLAR_TOOLS_NO_SKILLS = `${READ_ONLY_TOOLS},Agent`
 const HISTORY_TOOLS_NO_SKILLS = `${PILLAR_TOOLS_NO_SKILLS},Bash`
 const HISTORY_ALLOWED_TOOLS_NO_SKILLS = `${PILLAR_TOOLS_NO_SKILLS},Bash(git log:*),Bash(git show:*)`
 
+/** The pillars that may look things up in the configured web references. */
+export const WEB_PILLARS: readonly Pillar[] = ['correctness', 'security']
+
 /**
  * The `--tools` and `--allowedTools` of a pillar run, shared by `review` and `bench` so a bench
  * run grants exactly what a real review does. `skills: false` is a control run without Skill.
@@ -51,6 +54,7 @@ const HISTORY_ALLOWED_TOOLS_NO_SKILLS = `${PILLAR_TOOLS_NO_SKILLS},Bash(git log:
 export function pillarToolFlags(
   pillar: Pillar,
   skills = true,
+  domains: readonly string[] = [],
 ): { tools: string; allowedTools: string } {
   if (pillar === 'history') {
     return skills
@@ -58,7 +62,24 @@ export function pillarToolFlags(
       : { tools: HISTORY_TOOLS_NO_SKILLS, allowedTools: HISTORY_ALLOWED_TOOLS_NO_SKILLS }
   }
   const tools = skills ? PILLAR_TOOLS : PILLAR_TOOLS_NO_SKILLS
-  return { tools, allowedTools: tools }
+  // Only the correctness and security pillars look things up on the web.
+  return WEB_PILLARS.includes(pillar)
+    ? withWebFetch(tools, domains)
+    : { tools, allowedTools: tools }
+}
+
+/**
+ * Adds `WebFetch` to a tool list, allowed for `domains` only: `--tools` offers the tool and
+ * `--allowedTools` grants one `WebFetch(domain:<host>)` rule per host, so `dontAsk` denies every
+ * other fetch. With no domains the list is unchanged and the run has no web tool at all.
+ */
+export function withWebFetch(
+  tools: string,
+  domains: readonly string[],
+): { tools: string; allowedTools: string } {
+  if (domains.length === 0) return { tools, allowedTools: tools }
+  const rules = [...new Set(domains)].map((host) => `WebFetch(domain:${host})`)
+  return { tools: `${tools},WebFetch`, allowedTools: [tools, ...rules].join(',') }
 }
 
 /**
@@ -96,14 +117,15 @@ export const EXPLORER_AGENTS = {
  * plugins are known, only the rule plugins on (`settings` is the `pluginSettings` object), which
  * leaves the rule skills as the run's only skills and keeps the fixed context small.
  *
- * A run with a shell passes `shell` and loads no settings file at all: user settings can allow
- * commands of their own, or allow every sandboxed command, and either widens the allow-list.
+ * A run with a shell or a web tool passes `isolated` and loads no settings file at all: user
+ * settings can allow commands or fetches of their own, or allow everything sandboxed, and either
+ * widens the allow-list, for a web tool into a way to send the run's private code out in a URL.
  */
-export function isolationArgs(settings?: object, shell = false): string[] {
+export function isolationArgs(settings?: object, isolated = false): string[] {
   return [
     '--strict-mcp-config',
     '--setting-sources',
-    shell ? '' : 'user',
+    isolated ? '' : 'user',
     ...(settings === undefined ? [] : ['--settings', JSON.stringify(settings)]),
   ]
 }
@@ -146,7 +168,10 @@ export function pillarArgs(options: PillarArgsOptions): string[] {
     'dontAsk',
     '--max-turns',
     String(options.maxTurns),
-    ...isolationArgs(options.settings, tools.split(',').includes('Bash')),
+    ...isolationArgs(
+      options.settings,
+      tools.split(',').some((tool) => tool === 'Bash' || tool === 'WebFetch'),
+    ),
     '--effort',
     options.effort ?? CLAUDE_EFFORT.full,
     ...(options.explorer === false ? [] : ['--agents', JSON.stringify(EXPLORER_AGENTS)]),

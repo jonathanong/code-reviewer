@@ -175,6 +175,32 @@ describe('runReviewVerifier', () => {
     expect(REVIEW_VERIFIER_SCHEMA.required).toEqual(['summary', 'findings', 'pullRequestSummary'])
   })
 
+  it('adds the References block and WebFetch for the listed domains only when configured', async () => {
+    const web = {
+      sources: [{ name: 'aws', description: 'AWS docs', domains: ['docs.aws.amazon.com'] }],
+      guidance: 'WEB RULES',
+    }
+    const exec = vi.fn(async () => stream({ summary: 's', pullRequestSummary: 'p', findings: [] }))
+    const input = { ...INPUT, findings: [], web }
+    await runReviewVerifier(input, { model: 'opus', mode: 'full', tree: '/t', exec })
+    const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
+    const value = (flag: string) => args[args.indexOf(flag) + 1]
+    expect(value('--tools')).toBe('Read,Grep,Glob,Skill,WebFetch')
+    expect(value('--allowedTools')).toBe(
+      'Read,Grep,Glob,Skill,WebFetch(domain:docs.aws.amazon.com)',
+    )
+    expect(value('--setting-sources')).toBe('')
+    expect(value('-p')).toContain('## References')
+    expect(value('-p')).toContain('- aws: AWS docs (docs.aws.amazon.com)')
+    expect(value('-p')).toContain('WEB RULES')
+  })
+
+  it('is byte-identical to a run without references when the list is empty', () => {
+    const plain = buildVerifierRunPrompt(INPUT)
+    expect(buildVerifierRunPrompt({ ...INPUT, web: { sources: [], guidance: 'X' } })).toBe(plain)
+    expect(plain).not.toContain('References')
+  })
+
   it('omits plugin settings when unknown', async () => {
     const exec = vi.fn(async () => stream({ summary: 's', findings: [] }))
     await runReviewVerifier(

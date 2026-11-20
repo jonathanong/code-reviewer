@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
+import { parseReferences, type ReferenceSource } from './references-parse.mts'
 import {
   REPO_RE,
   parseCheckRun,
@@ -41,6 +42,8 @@ export type RepoConfig = {
   checkRun?: CheckRunSettings
   /** Machine config only; a reviewed repository's own file never sets it. */
   evidence?: EvidenceSource[]
+  /** Machine config only: it grants network access, so a reviewed repository's file never sets it. */
+  references?: ReferenceSource[]
   problems: string[]
 }
 
@@ -50,7 +53,7 @@ export type RepoConfig = {
  */
 type ConfigScope = 'repo' | 'owner' | 'target'
 
-const KEYS = new Set(['consumes', 'labels', 'checkRun', 'evidence'])
+const KEYS = new Set(['consumes', 'labels', 'checkRun', 'evidence', 'references'])
 const CONSUMES_KEYS = new Set(['repo', 'paths', 'via'])
 
 type Json = Record<string, unknown>
@@ -125,11 +128,18 @@ export function parseRepoConfig(
   }
   const evidence =
     scope === 'target' ? undefined : parseEvidence(raw.evidence, `${file} evidence`, problems)
+  // References grant network access while the run holds private code, so only machine files set them.
+  if (scope === 'target' && raw.references !== undefined) {
+    problems.push(`${file}: references are machine-only; ignored`)
+  }
+  const references =
+    scope === 'target' ? undefined : parseReferences(raw.references, `${file} references`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
     ...(checkRun === undefined ? {} : { checkRun }),
     ...(evidence === undefined ? {} : { evidence }),
+    ...(references === undefined ? {} : { references }),
     problems,
   }
 }

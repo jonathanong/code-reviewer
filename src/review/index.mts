@@ -25,6 +25,7 @@ export {
   DEFAULT_LABELS,
   repoSettings,
   resolveEvidence,
+  resolveReferences,
   reviewSettings,
   settingLayers,
   settingsProblems,
@@ -33,6 +34,7 @@ export type {
   CheckRunSettings,
   EvidenceSettings,
   LabelNames,
+  ReferenceSettings,
   ReviewSettings,
   SettingLayers,
 } from './settings.mts'

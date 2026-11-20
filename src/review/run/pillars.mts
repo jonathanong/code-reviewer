@@ -5,8 +5,9 @@ import type { Exec } from '../benchmark/exec.mts'
 import { describeFailure, parseUsage, resultEvent } from '../benchmark/usage.mts'
 import type { Pillar } from '../finding.mts'
 import type { Model } from '../plan.mts'
-import { CLAUDE_EFFORT, pillarArgs, pillarToolFlags } from './claude-flags.mts'
+import { CLAUDE_EFFORT, WEB_PILLARS, pillarArgs, pillarToolFlags } from './claude-flags.mts'
 import { buildPillarRunPrompt, type RunDir } from './pillar-prompt.mts'
+import { referenceDomains, referencesBlock, type WebReferences } from './references-prompt.mts'
 import { pool } from './pool.mts'
 import { parsePillarOutput } from './stream-output.mts'
 import {
@@ -27,6 +28,8 @@ export type PillarsInput = {
   readPillar(pillar: Pillar): string
   skills: readonly string[]
   settings?: object
+  /** Web references; only the correctness and security pillars get them. */
+  web?: WebReferences
   exec: Exec
 }
 
@@ -34,9 +37,10 @@ async function runOne(
   input: PillarsInput,
   { pillar, model }: { pillar: Pillar; model: Model },
 ): Promise<PillarResult> {
+  const web = WEB_PILLARS.includes(pillar) ? input.web : undefined
   const prompt = buildPillarRunPrompt({
     contract: input.contract,
-    pillarText: input.readPillar(pillar),
+    pillarText: [input.readPillar(pillar), ...referencesBlock(web)].join('\n\n'),
     run: input.run,
     skills: input.skills,
   })
@@ -46,7 +50,7 @@ async function runOne(
     maxTurns: REVIEW_MAX_TURNS,
     effort: CLAUDE_EFFORT[input.mode],
     addDirs: [input.run.out],
-    ...pillarToolFlags(pillar),
+    ...pillarToolFlags(pillar, true, referenceDomains(web)),
     ...(input.settings === undefined ? {} : { settings: input.settings }),
   })
   const failedAttempts: FailedAttempt[] = []

@@ -111,7 +111,8 @@ describe('reviewCommand', () => {
       commands: ['aws logs get-query-results'],
       env: {},
     }
-    configs.mockReturnValueOnce({
+    // The web references read the configs first, when the command is wired.
+    configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
       ...NO_CONFIGS,
       byRepo: new Map([['acme/widgets', { consumes: [], evidence: [source], problems: [] }]]),
     })
@@ -121,6 +122,19 @@ describe('reviewCommand', () => {
     expect(guideReader).toHaveBeenCalledWith(resolve('c'))
     expect(setup.readGuide).toBe(guide)
     expect((await wired.evidence()).sources).toEqual([])
+  })
+
+  it('wires the web references from the machine config only', async () => {
+    const reference = { name: 'aws', description: 'Docs.', domains: ['docs.aws.amazon.com'] }
+    configs.mockReturnValueOnce({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], references: [reference], problems: [] }]]),
+    })
+    expect((await steps()).wired.webReferences).toEqual([reference])
+  })
+
+  it('has no web references without a machine list', async () => {
+    expect((await steps()).wired.webReferences).toEqual([])
   })
 
   it('previews with a dry run', async () => {

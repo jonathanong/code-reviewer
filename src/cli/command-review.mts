@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { postFinalReview } from '../review/post.mts'
 import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
-import { resolveEvidence, type PullTarget } from '../review/index.mts'
+import { resolveEvidence, resolveReferences, type PullTarget } from '../review/index.mts'
 import {
   abortCommand,
   claimCommand,
@@ -54,6 +54,8 @@ export async function reviewCommand(
         sources: resolveEvidence(deps.configs(), target.repo).sources,
         readGuide: deps.guideReader(resolved.clones),
       }),
+      // Machine config only, for the same reason: a fetch can carry the run's private code out.
+      webReferences: resolveReferences(deps.configs(), target.repo).sources,
       exec: deps.exec,
       references: deps.references(),
     },

@@ -150,6 +150,35 @@ describe('parseRepoConfig evidence', () => {
   })
 })
 
+describe('parseRepoConfig references', () => {
+  const references = [{ name: 'aws', description: 'AWS docs.', domains: ['docs.aws.amazon.com'] }]
+
+  it('reads references from a repository file and an owner file', () => {
+    const text = JSON.stringify({ references })
+    expect(parseRepoConfig(text, FILE).references).toEqual(references)
+    expect(parseRepoConfig(text, 'acme.json', 'owner').references).toEqual(references)
+  })
+
+  it('names the file in a references problem', () => {
+    const text = JSON.stringify({ references: [{ ...references[0], domains: ['https://x.com'] }] })
+    expect(parseRepoConfig(text, FILE).problems).toEqual([
+      expect.stringContaining(`${FILE} references[0]: every domain must be`),
+    ])
+  })
+
+  it('ignores references in the reviewed repository own file and says they are machine-only', () => {
+    const parsed = parseRepoConfig(
+      JSON.stringify({ references }),
+      'acme/web/.code-reviewer.json',
+      'target',
+    )
+    expect(parsed).toEqual({
+      consumes: [],
+      problems: ['acme/web/.code-reviewer.json: references are machine-only; ignored'],
+    })
+  })
+})
+
 describe('loadRepoConfigs', () => {
   const dirs: string[] = []
   afterEach(() => {

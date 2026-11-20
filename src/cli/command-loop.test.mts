@@ -60,6 +60,13 @@ const CONFIGS: RepoConfigs = {
               env: { AWS_PROFILE: 'secret-profile-name' },
             },
           ],
+          references: [
+            {
+              name: 'aws-docs',
+              description: 'AWS documentation.',
+              domains: ['docs.aws.amazon.com'],
+            },
+          ],
         },
         'owner',
       ),
@@ -299,6 +306,10 @@ describe('runLoopCommand', () => {
           checkRun: 'machine owner',
         },
         evidence: { sources: ['aws'], from: 'machine owner' },
+        references: {
+          sources: [{ name: 'aws-docs', domains: ['docs.aws.amazon.com'] }],
+          from: 'machine owner',
+        },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -316,6 +327,7 @@ describe('runLoopCommand', () => {
             checkRun: null,
           },
           evidence: { sources: [], from: null },
+          references: { sources: [], from: null },
           problems: [],
         },
       )
@@ -338,6 +350,7 @@ describe('runLoopCommand', () => {
             checkRun: 'repository file',
           },
           evidence: { sources: [], from: null },
+          references: { sources: [], from: null },
           problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
         },
       )
