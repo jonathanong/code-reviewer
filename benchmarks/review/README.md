@@ -114,7 +114,7 @@ that needs no clone or `gh`:
   fixture's configs list as consumed by the case's `repoId` (matched by directory name), and one
   configured as consuming that `repoId` is staged as a consumer.
 - `configs/<owner>/<name>.json` (optional): reviewer configs for the fixture, in the format of
-  this repository's `repos/` directory.
+  the machine config directory.
 - `"repoId": "owner/name"` (optional, on the case): the fixture repository's name, which the
   configs refer to.
 

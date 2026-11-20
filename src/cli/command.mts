@@ -105,7 +105,10 @@ async function run(
         print(outcome)
         return 0
       }
-      const lifecycle = await completeReview(deps.createLabelIo(pull), labelsFor(deps, pull.repo))
+      const lifecycle = await completeReview(
+        deps.createLabelIo(pull),
+        await labelsFor(deps, pull.repo),
+      )
       const checkRun = await checkRunFor(
         deps,
         pull,
@@ -126,7 +129,9 @@ async function run(
       // A skip stands only while its completed label does: a new request or claim removes it.
       const skipped =
         found.skipped &&
-        (await deps.createLabelIo(pull).labels()).includes(labelsFor(deps, pull.repo).completed)
+        (await deps.createLabelIo(pull).labels()).includes(
+          (await labelsFor(deps, pull.repo)).completed,
+        )
       const status = { ...found, skipped }
       print(status)
       return status.approved || status.skipped ? 0 : 1

@@ -97,7 +97,7 @@ describe('createGhReviewIo', () => {
         return 'bug\nlgtm\n'
       },
       [],
-      'lgtm',
+      async () => 'lgtm',
     )
     await expect(io.hasApprovalLabel()).resolves.toBe(true)
     await io.addApprovalLabel()
@@ -159,7 +159,12 @@ describe('createGhReviewIo', () => {
 
   it('removes a label whose name has a comma as one label', async () => {
     const calls: string[][] = []
-    const io = createGhReviewIo(target, async (args) => (calls.push(args), ''), [], 'ok, ship')
+    const io = createGhReviewIo(
+      target,
+      async (args) => (calls.push(args), ''),
+      [],
+      async () => 'ok, ship',
+    )
     await io.removeApprovalLabel()
     expect(calls[0]?.[3]).toBe('repos/acme/widgets/issues/7/labels/ok%2C%20ship')
     expect(calls[0]).not.toContain('pr')

@@ -33,7 +33,7 @@ export type RepoCase = CaseBase & {
 export type FixtureCase = CaseBase & {
   fixture: string
   fixtureDir: string
-  /** The fixture repository's `owner/name`, for config files in `repos/` that name it. */
+  /** The fixture repository's `owner/name`, for config files that name it. */
   repoId?: string
 }
 

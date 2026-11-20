@@ -57,7 +57,7 @@ rather than label, or to review a head that is already reviewed. The command:
 2. Prepares the run directory with no model calls: the numbered diff and one patch per file,
    `context.md` (the last review, unresolved findings, other reviewers' notes), `rules/INDEX.md`
    (this repository's `AGENTS.md` and skills at the base ref, and those of the repositories that
-   this reviewer's `repos/` configs or the diff's imports link to the change), and `plan.json`.
+   the reviewer's configs or the diff's imports link to the change), and `plan.json`.
 3. On a skip plan, posts a short skip review on the head with the reason (so `status` passes),
    closes the request, and writes a short report; go to Step 5.
 4. Picks the rule skills for the change with one Haiku call, runs the planned pillars as headless

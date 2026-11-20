@@ -22,8 +22,15 @@ export type { TrustedAuthors } from './trust.mts'
 export { MARKER_RE, PART_MARKER_RE } from './post.mts'
 export { abortReview, claimReview, completeReview, createGhLabelIo } from './labels.mts'
 export { skipPullRequest } from './skip.mts'
-export { DEFAULT_LABELS, reviewSettings, settingsProblems } from './settings.mts'
-export type { CheckRunSettings, LabelNames, ReviewSettings } from './settings.mts'
+export {
+  DEFAULT_LABELS,
+  repoSettings,
+  reviewSettings,
+  settingLayers,
+  settingsProblems,
+} from './settings.mts'
+export type { CheckRunSettings, LabelNames, ReviewSettings, SettingLayers } from './settings.mts'
+export type { TargetConfig } from './rules/target-config.mts'
 export { STARTED, abortedStep, postedStep, reportCheckRun, skippedStep } from './check-run.mts'
 export type { CheckRunResult, CheckRunStep } from './check-run.mts'
 export type { ClaimOutcome, LabelIo } from './labels.mts'

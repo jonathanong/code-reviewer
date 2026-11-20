@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { splitRepo, type RunTextCommand } from '../../gh-cli/index.mts'
 import { loadRepoConfigs } from './config.mts'
 import { defaultRef, gitReader } from './reader.mts'
+import { readTargetConfig, withTargetConsumes, type TargetFileReader } from './target-config.mts'
 import type { StageInput } from './stage.mts'
 
 export type Sources = Pick<StageInput, 'repo' | 'repoId' | 'configs' | 'related' | 'missing'>
@@ -67,14 +68,21 @@ export async function productionSources(args: {
   baseSha: string
   /** The reviewed repository as `owner/name`. */
   repoId: string
-  /** The directory of per-repository configs. */
+  /** The machine config directory. */
   configDir: string
+  /** Reads the reviewed repository's `.code-reviewer.json` from its default branch. */
+  targetFile: TargetFileReader
 }): Promise<Sources> {
   const { git, clones, tree, baseSha, repoId } = args
-  const configs = loadRepoConfigs(args.configDir)
-  const missing = [...configs.problems]
+  const machine = loadRepoConfigs(args.configDir)
+  const target = await readTargetConfig(args.targetFile, repoId)
+  const configs = withTargetConsumes(machine, repoId, target.config)
   const related = clones === undefined ? [] : await cloneCandidates(clones, git, repoId)
-  if (clones === undefined) missing.push(`dependencies: skipped (${NO_CLONES})`)
+  const missing = [
+    ...machine.problems,
+    ...target.problems,
+    ...(clones === undefined ? [`dependencies: skipped (${NO_CLONES})`] : []),
+  ]
   const repo =
     tree === undefined
       ? {}

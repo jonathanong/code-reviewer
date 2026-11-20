@@ -1,6 +1,6 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { fetchConversation, type PrConversation } from './context-query.mts'
-import { DEFAULT_CONFIG_DIR } from './rules/config.mts'
+import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhReviewIo } from './github.mts'
 import type { PullTarget } from './target.mts'
@@ -40,7 +40,8 @@ export function createGhPrepareIo(
   run: RunTextCommand,
   git: RunTextCommand,
   trustedAllowlist: readonly string[] = [],
-  cloneRoot?: string,
+  cloneRoot: string | undefined,
+  configDir: string,
 ): PrepareIo {
   const io = createGhReviewIo(target, run, trustedAllowlist)
   const compareUrl = (base: string, head: string) =>
@@ -89,7 +90,11 @@ export function createGhPrepareIo(
         tree,
         baseSha,
         repoId: target.repo,
-        configDir: process.env.CODE_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR,
+        configDir,
+        targetFile:
+          tree === undefined
+            ? apiFileReader(run, target.repo)
+            : gitFileReader(tree, git, apiFileReader(run, target.repo)),
       }),
     async history(tree, base, paths) {
       try {

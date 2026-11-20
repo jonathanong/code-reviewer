@@ -57,6 +57,19 @@ const CONFIGS: RepoConfigs = {
   problems: ['bob.json: bad'],
 }
 
+/** acme/c keeps its own file: it renames the requested label and sets a check run. */
+const targetConfig = vi.fn(async (repo: string) =>
+  repo === 'acme/c'
+    ? {
+        config: parseRepoConfig(
+          '{"labels":{"requested":"please review"},"checkRun":{"name":"Own"}}',
+          'acme/c/.code-reviewer.json',
+        ),
+        problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
+      }
+    : { config: undefined, problems: [] },
+)
+
 function fakeDeps(mode: 'app' | 'gh' = 'app') {
   const labelIo = { labels: vi.fn(), add: vi.fn(), remove: vi.fn() }
   const prepareIo = {} as ReturnType<ReviewDeps['createPrepareIo']>
@@ -66,6 +79,7 @@ function fakeDeps(mode: 'app' | 'gh' = 'app') {
   const deps = {
     authMode: vi.fn(() => mode),
     configs: vi.fn(() => CONFIGS),
+    targetConfig,
     createLabelIo,
     createIo: vi.fn(() => ({ headSha: async () => 'h'.repeat(40) })),
     createPrepareIo: vi.fn(() => prepareIo),
@@ -143,6 +157,16 @@ describe('runLoopCommand', () => {
       ...DEFAULT_LABELS,
       processing: 'busy',
     })
+  })
+
+  it('searches a named repository with the labels of its own file, reading only that file', async () => {
+    const { deps, run } = fakeDeps()
+    await runLoopCommand('queue', { repo: ['acme/c'] }, target, deps)
+    expect(listQueue).toHaveBeenCalledWith(run, 'acme', ['acme/c'], {
+      ...DEFAULT_LABELS,
+      requested: 'please review',
+    })
+    expect(targetConfig.mock.calls).toEqual([['acme/c']])
   })
 
   it('needs an owner or a repo for the queue', async () => {
@@ -248,6 +272,15 @@ describe('runLoopCommand', () => {
         scope: 'bob',
         labels: BOB_LABELS,
         checkRun: { name: 'Code review' },
+        from: {
+          labels: {
+            requested: 'machine owner',
+            processing: 'default',
+            completed: 'default',
+            approval: 'default',
+          },
+          checkRun: 'machine owner',
+        },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -255,9 +288,45 @@ describe('runLoopCommand', () => {
           scope: 'acme/b',
           labels: { ...DEFAULT_LABELS, processing: 'busy' },
           checkRun: null,
+          from: {
+            labels: {
+              requested: 'default',
+              processing: 'machine repo',
+              completed: 'default',
+              approval: 'default',
+            },
+            checkRun: null,
+          },
           problems: [],
         },
       )
+    })
+
+    it('layers the repository file under the machine files and says where each value came from', async () => {
+      const { deps } = fakeDeps()
+      await expect(runLoopCommand('settings', { repo: ['acme/c'] }, target, deps)).resolves.toEqual(
+        {
+          scope: 'acme/c',
+          labels: { ...DEFAULT_LABELS, requested: 'please review' },
+          checkRun: { name: 'Own' },
+          from: {
+            labels: {
+              requested: 'repository file',
+              processing: 'default',
+              completed: 'default',
+              approval: 'default',
+            },
+            checkRun: 'repository file',
+          },
+          problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
+        },
+      )
+    })
+
+    it('reads no repository file for an owner', async () => {
+      const { deps } = fakeDeps()
+      await runLoopCommand('settings', { owner: 'bob' }, target, deps)
+      expect(targetConfig).not.toHaveBeenCalled()
     })
 
     it('needs exactly one valid --repo or --owner', async () => {

@@ -19,6 +19,7 @@ function clones(repos: string[], plain: string[] = []): string {
   return root
 }
 
+const none = async () => undefined
 const git = vi.fn(async (args: string[]) => (args.includes('--abbrev-ref') ? 'origin/trunk\n' : ''))
 
 describe('cloneCandidates', () => {
@@ -81,6 +82,7 @@ describe('productionSources', () => {
       baseSha: 'abcdef0123456789',
       repoId: 'acme/self',
       configDir: '/nowhere/configs',
+      targetFile: none,
     })
     expect(sources.repo?.refLabel).toBe('base abcdef0')
     expect(sources.repoId).toBe('acme/self')
@@ -97,6 +99,7 @@ describe('productionSources', () => {
       baseSha: 'a'.repeat(40),
       repoId: 'acme/self',
       configDir: '/nowhere/configs',
+      targetFile: none,
     })
     expect(sources.repo).toBeUndefined()
     expect(sources.repoId).toBe('acme/self')
@@ -114,8 +117,49 @@ describe('productionSources', () => {
       baseSha: 'a'.repeat(40),
       repoId: 'acme/self',
       configDir: dir,
+      targetFile: none,
     })
     expect(sources.configs?.byRepo.get('acme/web')?.consumes).toHaveLength(1)
     expect(sources.missing).toContain('acme/web.json: unknown key "x" ignored')
+  })
+
+  it('adds the consumes of the repository file unless the machine config sets its own', async () => {
+    const dir = clones([], ['acme'])
+    writeFileSync(join(dir, 'acme/web.json'), '{"consumes":[{"repo":"acme/api"}]}')
+    const args = {
+      git,
+      clones: undefined,
+      tree: undefined,
+      baseSha: 'a'.repeat(40),
+      configDir: dir,
+      targetFile: async () => '{"consumes":[{"repo":"acme/lib"}],"x":1}',
+    }
+    const fromTarget = await productionSources({ ...args, repoId: 'acme/self' })
+    expect(fromTarget.configs?.byRepo.get('acme/self')?.consumes.map((c) => c.repo)).toEqual([
+      'acme/lib',
+    ])
+    expect(fromTarget.missing).toContain('acme/self/.code-reviewer.json: unknown key "x" ignored')
+    const machine = await productionSources({ ...args, repoId: 'Acme/Web' })
+    expect(machine.configs?.byRepo.get('acme/web')?.consumes.map((c) => c.repo)).toEqual([
+      'acme/api',
+    ])
+  })
+
+  it('degrades to the machine configs when the repository file cannot be read', async () => {
+    const sources = await productionSources({
+      git,
+      clones: undefined,
+      tree: undefined,
+      baseSha: 'a'.repeat(40),
+      repoId: 'acme/self',
+      configDir: '/nowhere/configs',
+      targetFile: async () => {
+        throw new Error('HTTP 500')
+      },
+    })
+    expect(sources.configs?.byRepo.size).toBe(0)
+    expect(sources.missing).toContain(
+      'acme/self/.code-reviewer.json: could not be read (HTTP 500); ignored',
+    )
   })
 })

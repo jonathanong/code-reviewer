@@ -6,7 +6,7 @@ import {
   createGhLabelIo,
   createGhPrepareIo,
   parseTrustedAuthors,
-  reviewSettings,
+  repoSettings,
   type ReviewIo,
   type LabelIo,
   type PrepareIo,
@@ -20,7 +20,12 @@ import {
   type Plugin,
   type PluginInfo,
 } from '../review/plugins.mts'
-import { DEFAULT_CONFIG_DIR, loadRepoConfigs, type RepoConfigs } from '../review/rules/config.mts'
+import { loadRepoConfigs, machineConfigDir, type RepoConfigs } from '../review/rules/config.mts'
+import {
+  apiFileReader,
+  readTargetConfig,
+  type TargetConfig,
+} from '../review/rules/target-config.mts'
 import {
   createGhAuth,
   runGit,
@@ -31,8 +36,13 @@ import {
 
 export type ReviewDeps = {
   authMode(): GhAuth['mode']
-  /** The per-owner and per-repository settings read from this repository's `repos/` directory. */
+  /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
+  /**
+   * The `.code-reviewer.json` on `repo`'s default branch, read through the GitHub API at most once
+   * per repository; a missing file is no config and a failed read is a problem, not an error.
+   */
+  targetConfig(repo: string): Promise<TargetConfig>
   createIo(target: PullTarget): ReviewIo
   createLabelIo(target: PullTarget): LabelIo
   createPrepareIo(target: PullTarget): PrepareIo
@@ -60,8 +70,20 @@ export function createDefaultDeps(
   const trusted = parseTrustedAuthors(env.CODE_REVIEWER_TRUSTED_AUTHORS)
   let auth: GhAuth | undefined
   let loaded: RepoConfigs | undefined
-  const configs = () =>
-    (loaded ??= loadRepoConfigs(env.CODE_REVIEWER_CONFIG_DIR ?? DEFAULT_CONFIG_DIR))
+  const configDir = machineConfigDir(env)
+  const configs = () => (loaded ??= loadRepoConfigs(configDir))
+  const targets = new Map<string, Promise<TargetConfig>>()
+  const targetConfig = (repo: string) => {
+    const key = repo.toLowerCase()
+    const cached = targets.get(key)
+    if (cached !== undefined) return cached
+    const read = readTargetConfig(async () => {
+      const { owner, name } = splitRepo(repo)
+      return apiFileReader(resolved().runner(owner, name), repo)()
+    }, repo)
+    targets.set(key, read)
+    return read
+  }
   const resolved = () => (auth ??= getAuth())
   const forTarget = (target: PullTarget) => {
     const { owner, name } = splitRepo(target.repo)
@@ -70,16 +92,24 @@ export function createDefaultDeps(
   return {
     authMode: () => resolved().mode,
     configs,
+    targetConfig,
     createIo: (target) =>
       createGhReviewIo(
         target,
         forTarget(target),
         trusted,
-        reviewSettings(configs(), target.repo).labels.approval,
+        async () => (await repoSettings({ configs, targetConfig }, target.repo)).labels.approval,
       ),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
     createPrepareIo: (target) =>
-      createGhPrepareIo(target, forTarget(target), runGit, trusted, env.CODE_REVIEWER_CLONE_ROOT),
+      createGhPrepareIo(
+        target,
+        forTarget(target),
+        runGit,
+        trusted,
+        env.CODE_REVIEWER_CLONE_ROOT,
+        configDir,
+      ),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
     listPlugins: async () => {

@@ -1,4 +1,4 @@
-import { listQueue, type QueueEntry } from '../review/index.mts'
+import { listQueue, type LabelNames, type QueueEntry } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from './deps.mts'
 import { labelsFor } from './review-settings.mts'
@@ -8,13 +8,11 @@ import { labelsFor } from './review-settings.mts'
  * set (the search names the labels).
  */
 async function listRepos(deps: ReviewDeps, repos: readonly string[]): Promise<QueueEntry[]> {
-  const groups = new Map<
-    string,
-    { owner: string; labels: ReturnType<typeof labelsFor>; repos: string[] }
-  >()
-  for (const repo of repos) {
+  const groups = new Map<string, { owner: string; labels: LabelNames; repos: string[] }>()
+  const resolved = await Promise.all(repos.map((repo) => labelsFor(deps, repo)))
+  for (const [index, repo] of repos.entries()) {
     const { owner } = splitRepo(repo)
-    const labels = labelsFor(deps, repo)
+    const labels = resolved[index] as LabelNames
     const key = JSON.stringify([owner, labels.requested, labels.processing])
     const group = groups.get(key) ?? { owner, labels, repos: [] }
     groups.set(key, { ...group, repos: [...group.repos, repo] })
@@ -31,7 +29,9 @@ async function listRepos(deps: ReviewDeps, repos: readonly string[]): Promise<Qu
 /**
  * The review queue for `--repo` entries, or for every repository of `owner`. An owner search uses
  * the owner's labels, so repositories whose own file changes `requested` or `processing` are
- * searched separately with their labels and left out of the owner-wide results.
+ * searched separately with their labels and left out of the owner-wide results. Only repositories
+ * with a machine config are checked for overrides; a repository's own file is read when it is
+ * named with `--repo`.
  */
 export async function listQueueFor(
   deps: ReviewDeps,
@@ -40,14 +40,13 @@ export async function listQueueFor(
 ): Promise<QueueEntry[]> {
   if (repos.length > 0) return listRepos(deps, repos)
   if (owner === undefined || owner === '') throw new Error('queue needs --owner or --repo.')
-  const base = labelsFor(deps, owner)
+  const base = await labelsFor(deps, owner)
   const prefix = `${owner.toLowerCase()}/`
-  const overridden = [...deps.configs().byRepo.keys()].filter((repo) => {
-    const labels = labelsFor(deps, repo)
-    return (
-      repo.startsWith(prefix) &&
-      (labels.requested !== base.requested || labels.processing !== base.processing)
-    )
+  const configured = [...deps.configs().byRepo.keys()].filter((repo) => repo.startsWith(prefix))
+  const configuredLabels = await Promise.all(configured.map((repo) => labelsFor(deps, repo)))
+  const overridden = configured.filter((_repo, index) => {
+    const labels = configuredLabels[index] as LabelNames
+    return labels.requested !== base.requested || labels.processing !== base.processing
   })
   const [ownerWide, scoped] = await Promise.all([
     listQueue(deps.runner(owner), owner, [], base),
