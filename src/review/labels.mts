@@ -83,9 +83,13 @@ export async function claimReview(
   return { claimed: true, ...outcome } satisfies ClaimOutcome
 }
 
-/** Marks the review posted. The approval label is handled by `postFinalReview`. */
+/**
+ * Marks the review posted. The approval label is handled by `postFinalReview`. The request is
+ * cleared too: a held review puts it back, and `post` only runs for the current head, so a request
+ * still present is the one this review answers.
+ */
 export async function completeReview(io: LabelIo, names: LabelNames) {
-  return swap(io, [names.completed], [names.processing])
+  return swap(io, [names.completed], [names.processing, names.requested])
 }
 
 /**

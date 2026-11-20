@@ -85,6 +85,15 @@ describe('dependencyRefs', () => {
     expect(dependencyRefs('depends on nothing', SELF)).toEqual([])
     expect(dependencyRefs('afterwards see #5', SELF)).toEqual([])
   })
+
+  it('ignores a keyword that does not lead up to the reference', () => {
+    expect(dependencyRefs('Refs #5: the retained jobs require handlers.', SELF)).toEqual([])
+    expect(dependencyRefs('This requires care. See #5.', SELF)).toEqual([])
+    expect(dependencyRefs(`Requires ${'much '.repeat(20)}thought, see #5`, SELF)).toEqual([])
+    expect(dependencyRefs('Tracked in #4; depends on #5.', SELF)).toEqual([
+      { repo: 'acme/widgets', number: 5 },
+    ])
+  })
 })
 
 describe('names', () => {
