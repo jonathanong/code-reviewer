@@ -19,6 +19,25 @@ describe('parseRun', () => {
     })
   })
 
+  it('reads riskyPaths, an empty list included, and leaves it out when absent', () => {
+    expect(parsed({ riskyPaths: ['**/*.tf'] }).run?.riskyPaths).toEqual(['**/*.tf'])
+    expect(parsed({ riskyPaths: [] }).run?.riskyPaths).toEqual([])
+    expect(parsed({}).run).not.toHaveProperty('riskyPaths')
+  })
+
+  it('reports riskyPaths that is not a list or has a bad entry, keeping the good ones', () => {
+    expect(parsed({ riskyPaths: 'a' }).problems).toEqual([
+      'acme.json run riskyPaths: must be a list of glob patterns',
+    ])
+    const { run, problems } = parsed({ riskyPaths: ['a', '', ' ', 3] })
+    expect(run?.riskyPaths).toEqual(['a'])
+    expect(problems).toEqual([
+      'acme.json run riskyPaths: entry 1 must be a non-empty string',
+      'acme.json run riskyPaths: entry 2 must be a non-empty string',
+      'acme.json run riskyPaths: entry 3 must be a non-empty string',
+    ])
+  })
+
   it('has no run for an absent key', () => {
     expect(parsed(undefined)).toEqual({ run: undefined, problems: [] })
   })
@@ -76,6 +95,18 @@ describe('resolveRun', () => {
     ]),
     problems: [],
   }
+
+  it('resolves riskyPaths from the highest layer, and an empty list stays empty', () => {
+    const risky = (json: string) => ({
+      ...configs,
+      byRepo: new Map([['acme/a', parseRepoConfig(json, 'acme/a.json')]]),
+    })
+    expect(resolveRun(risky('{"run":{"riskyPaths":[]}}'), 'acme/a').riskyPaths).toEqual([])
+    expect(resolveRun(risky('{"run":{"riskyPaths":["*.tf"]}}'), 'acme/a').riskyPaths).toEqual([
+      '*.tf',
+    ])
+    expect(resolveRun(configs, 'acme/a').riskyPaths).toBeUndefined()
+  })
 
   it('uses the defaults when no machine file sets run', () => {
     expect(resolveRun({ ...configs, byOwner: new Map(), byRepo: new Map() }, 'acme/b')).toEqual(

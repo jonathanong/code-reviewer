@@ -5,12 +5,8 @@ import type { ReviewInput } from '../review/finding.mts'
 import { isDependabot } from '../review/mode.mts'
 import { APPROVAL_CHECK } from '../review/skipped.mts'
 import { readStackFile } from '../review/stack-file.mts'
-import {
-  isDependencyFile,
-  reviewableLines,
-  securityTriggers,
-  type ChangedFile,
-} from '../review/triggers.mts'
+import { isDependencyFile, reviewableLines, type ChangedFile } from '../review/triggers.mts'
+import { riskyPaths } from './risky.mts'
 import type { ReportData } from '../review/run/report.mts'
 
 /** What the finished run's files say about how far to trust the review. */
@@ -71,15 +67,22 @@ export function runFacts(out: string): RunFacts {
 }
 
 /**
- * The size of the change and the paths the dispatcher treats as security-sensitive. A Dependabot
+ * The size of the change and the paths a human should read the review for (see `riskyPaths`). A Dependabot
  * pull request edits manifests and workflows by design, so those paths do not count for it; GraphQL
  * reports its login without the `[bot]` suffix, which is why the author is taken as a bot here.
  */
-export function changeFacts(files: readonly ChangedFile[], author: string | null) {
-  const hits = securityTriggers(files.map((file) => file.path))
+export function changeFacts(
+  files: readonly ChangedFile[],
+  author: string | null,
+  riskyPatterns?: readonly string[],
+) {
+  const hits = riskyPaths(
+    files.map((file) => file.path),
+    riskyPatterns,
+  )
   return {
     files: files.length,
     lines: reviewableLines(files),
-    securityPaths: isDependabot(author, true) ? hits.filter((p) => !isDependencyFile(p)) : hits,
+    riskyPaths: isDependabot(author, true) ? hits.filter((p) => !isDependencyFile(p)) : hits,
   }
 }

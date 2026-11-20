@@ -197,6 +197,19 @@ describe('runCommand holding', () => {
     expect(line.attention.join(' ')).toContain('src/auth/login.ts')
   })
 
+  it('does not hold a manifest and a workflow test, and holds a workflow file', async () => {
+    const quiet = [
+      { path: 'package.json', lines: 2 },
+      { path: '.github/workflows/__tests__/ci.test.mts', lines: 9 },
+    ]
+    expect((await run(setup({ files: quiet }))).code).toBe(0)
+    stdout.length = 0
+    const workflow = [{ path: '.github/workflows/ci.yml', lines: 3 }]
+    const { line } = await run(setup({ files: workflow, stateDir: join(root, 'other') }))
+    expect(line.held).toEqual(['risky-change'])
+    expect(line.attention).toEqual(['risky-change: touches .github/workflows/ci.yml'])
+  })
+
   it('holds a failed pillar and a cut-short review, and lists them as problems', async () => {
     const report = {
       pillars: [{ pillar: 'security', error: 'x', failedAttempts: [], findings: [] }],

@@ -83,6 +83,14 @@ describe('run reading the post outcome', () => {
     expect(lines[0]?.attention.join(' ')).toContain('could not be confirmed')
   })
 
+  it('keeps a wording warning out of attention on a posted review', async () => {
+    const fake = setup({}, { overrides: { review: { summary: 'Fine. '.repeat(260) } } })
+    const { code, lines } = await runWith(fake, stdout)
+    expect(code).toBe(0)
+    expect(vi.mocked(fake.io.postReview).mock.calls[0]?.[0].body.length).toBeGreaterThan(1200)
+    expect(lines[0]?.attention).toEqual([])
+  })
+
   it.each([
     ['a submitted review missing from the list', true],
     ['a failed post that cannot be checked for', false],

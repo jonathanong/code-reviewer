@@ -15,7 +15,12 @@ export type HoldRule = (typeof HOLD_RULES)[number]
 /** A change over either limit is large. */
 export type LargeChange = { files: number; lines: number }
 
-export type RunSettings = { rules: Record<HoldRule, boolean>; largeChange: LargeChange }
+export type RunSettings = {
+  rules: Record<HoldRule, boolean>
+  largeChange: LargeChange
+  /** Globs that replace the default risky paths; `undefined` keeps the default. */
+  riskyPaths?: string[] | undefined
+}
 
 /** The line limit is ten times what the dispatcher calls a small pull request. */
 export const DEFAULT_RUN: RunSettings = {
@@ -33,6 +38,7 @@ export const DEFAULT_RUN: RunSettings = {
 export type RunConfig = {
   rules?: Partial<Record<HoldRule, boolean>>
   largeChange?: Partial<LargeChange>
+  riskyPaths?: string[]
 }
 
 function isCount(value: unknown): value is number {
@@ -73,6 +79,20 @@ function parseLarge(raw: unknown, where: string, problems: string[]) {
   return large
 }
 
+function parseRisky(raw: unknown, where: string, problems: string[]): string[] | undefined {
+  if (raw === undefined) return undefined
+  if (!Array.isArray(raw)) {
+    problems.push(`${where} riskyPaths: must be a list of glob patterns`)
+    return undefined
+  }
+  const globs: string[] = []
+  raw.forEach((entry: unknown, index) => {
+    if (typeof entry === 'string' && entry.trim() !== '') globs.push(entry)
+    else problems.push(`${where} riskyPaths: entry ${index} must be a non-empty string`)
+  })
+  return globs
+}
+
 /** Parses the `run` key. Every problem is reported; `run` refuses to start while any stands. */
 export function parseRun(raw: unknown, where: string, problems: string[]): RunConfig | undefined {
   if (raw === undefined) return undefined
@@ -80,8 +100,10 @@ export function parseRun(raw: unknown, where: string, problems: string[]): RunCo
     problems.push(`${where}: must be an object`)
     return undefined
   }
-  problems.push(...unknownKeys(raw, ['rules', 'largeChange'], where))
+  problems.push(...unknownKeys(raw, ['rules', 'largeChange', 'riskyPaths'], where))
+  const riskyPaths = parseRisky(raw.riskyPaths, where, problems)
   return {
+    ...(riskyPaths === undefined ? {} : { riskyPaths }),
     rules: parseRules(raw.rules, where, problems),
     largeChange: parseLarge(raw.largeChange, where, problems),
   }

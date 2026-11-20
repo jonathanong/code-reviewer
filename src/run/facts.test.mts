@@ -75,15 +75,24 @@ describe('changeFacts', () => {
     { path: 'pnpm-lock.yaml', lines: 900 },
   ]
 
-  it('counts files and reviewable lines and lists the security paths', () => {
+  it('counts files and reviewable lines and lists the risky paths, not manifests', () => {
     expect(changeFacts(files, 'octocat')).toEqual({
       files: 3,
       lines: 32,
-      securityPaths: ['src/auth/login.ts', 'package.json', 'pnpm-lock.yaml'],
+      riskyPaths: ['src/auth/login.ts'],
     })
   })
 
-  it('does not count the dependency files a Dependabot pull request edits', () => {
-    expect(changeFacts(files, 'dependabot').securityPaths).toEqual(['src/auth/login.ts'])
+  it('does not count the workflow files a Dependabot pull request edits', () => {
+    const bump = [{ path: '.github/workflows/ci.yml', lines: 2 }, ...files]
+    expect(changeFacts(bump, 'octocat').riskyPaths).toEqual([
+      '.github/workflows/ci.yml',
+      'src/auth/login.ts',
+    ])
+    expect(changeFacts(bump, 'dependabot').riskyPaths).toEqual(['src/auth/login.ts'])
+  })
+
+  it('takes the configured globs in place of the defaults', () => {
+    expect(changeFacts(files, 'octocat', ['*.json']).riskyPaths).toEqual(['package.json'])
   })
 })

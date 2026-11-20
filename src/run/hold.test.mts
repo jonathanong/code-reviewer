@@ -8,7 +8,7 @@ const CLEAN: HoldFacts = {
   files: 3,
   lines: 40,
   truncated: [],
-  securityPaths: [],
+  riskyPaths: [],
   partial: [],
   authMode: 'app',
   tooLong: [],
@@ -37,13 +37,19 @@ describe('holdRules', () => {
     expect(held).toEqual([{ rule: 'large-change', why: 'cut short: diff skipped' }])
   })
 
-  it('holds on security paths and names at most five', () => {
-    const securityPaths = ['a', 'b', 'c', 'd', 'e', 'f'].map((name) => `${name}/auth.ts`)
-    const [held] = holdRules({ ...CLEAN, securityPaths }, DEFAULT_RUN)
+  it('holds on risky paths and names at most five, then how many more', () => {
+    const riskyPaths = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((name) => `${name}/auth.ts`)
+    const [held] = holdRules({ ...CLEAN, riskyPaths }, DEFAULT_RUN)
     expect(held).toEqual({
       rule: 'risky-change',
-      why: 'touches security paths: a/auth.ts, b/auth.ts, c/auth.ts, d/auth.ts, e/auth.ts',
+      why: 'touches a/auth.ts, b/auth.ts, c/auth.ts, d/auth.ts, e/auth.ts and 2 more',
     })
+  })
+
+  it('names every path when there are five or fewer', () => {
+    expect(holdRules({ ...CLEAN, riskyPaths: ['a/auth.ts'] }, DEFAULT_RUN)[0]?.why).toBe(
+      'touches a/auth.ts',
+    )
   })
 
   it('holds on a partial failure and on the local gh login', () => {
@@ -56,7 +62,7 @@ describe('holdRules', () => {
   })
 
   it('lists every matching rule in a fixed order', () => {
-    expect(names({ authMode: 'gh', questions: 1, files: 99, securityPaths: ['x'] })).toEqual([
+    expect(names({ authMode: 'gh', questions: 1, files: 99, riskyPaths: ['x'] })).toEqual([
       'unclear-intent',
       'large-change',
       'risky-change',

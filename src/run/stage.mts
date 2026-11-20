@@ -5,8 +5,9 @@ import { reviewCommand } from '../cli/command-review.mts'
 import { postCommand } from '../cli/command-post.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
 import { resolveRun } from '../review/index.mts'
+import type { RunSettings } from '../review/rules/run-parse.mts'
 import { changeFacts, runFacts, type RunFacts } from './facts.mts'
-import { release, postText, writeExplain } from './finish.mts'
+import { release, postText, worthALook, writeExplain } from './finish.mts'
 import { holdRules, type Held } from './hold.mts'
 import { RUN_EXIT, runLine, type Counts, type RunLine } from './output.mts'
 import type { Preflight, RunFlags } from './preflight.mts'
@@ -42,12 +43,10 @@ function decide(
   facts: RunFacts,
   change: ReturnType<typeof changeFacts>,
   tooLong: string[],
+  settings: RunSettings,
 ): Held[] {
   if (stage.flags.post === 'hold') return [{ rule: 'post-hold', why: '--post hold' }]
-  return holdRules(
-    { ...facts, ...change, tooLong, authMode: stage.deps.authMode() },
-    resolveRun(stage.deps.configs(), stage.flags.pull.repo),
-  )
+  return holdRules({ ...facts, ...change, tooLong, authMode: stage.deps.authMode() }, settings)
 }
 
 function reviewFields(
@@ -82,7 +81,9 @@ export async function finish(
     const files = await deps.createPrepareIo(pull).files()
     const values = { 'head-sha': pre.headSha, input }
     const preview = await postCommand({ ...values, 'dry-run': true }, pull, deps)
-    const held = decide(stage, facts, changeFacts(files, facts.author), preview.outcome.tooLong)
+    const settings = resolveRun(deps.configs(), pull.repo)
+    const change = changeFacts(files, facts.author, settings.riskyPaths)
+    const held = decide(stage, facts, change, preview.outcome.tooLong, settings)
     signal.throwIfAborted()
     const fields = reviewFields(stage, summary, facts)
     const problems = [...facts.partial, ...facts.truncated]
@@ -118,7 +119,7 @@ export async function finish(
       reviewIds: outcome.reviewIds,
       explainPath: explain.path,
       problems: [...problems, ...extra],
-      attention: [...new Set([...problems, ...extra, ...outcome.warnings])],
+      attention: [...new Set([...problems, ...extra, ...worthALook(outcome)])],
     })
   } catch (error) {
     const leftover = await release(pull, deps, false)
