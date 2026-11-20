@@ -95,6 +95,16 @@ describe('runReview with dependencies', () => {
     expect(report.dependencies).toEqual(expected)
   })
 
+  it('tells only the verifier about linked issues, and not at all without issues.json', async () => {
+    const issues = [{ ref: 'acme/lib#2', state: 'open', title: 'Add retries', body: 'x' }]
+    const withIssues = await run({ 'issues.json': issues })
+    expect(withIssues.prompts.filter((prompt) => prompt.includes('## Linked issues'))).toHaveLength(
+      1,
+    )
+    const without = await run()
+    for (const prompt of without.prompts) expect(prompt).not.toContain('Linked issues')
+  })
+
   it('records only what the verifier implied when prepare found nothing', async () => {
     const { prompts, review } = await run()
     for (const prompt of prompts) expect(prompt).not.toContain('Known dependencies')

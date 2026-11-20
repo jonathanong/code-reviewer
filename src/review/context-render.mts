@@ -1,4 +1,5 @@
 import type { FollowUpContext } from './context.mts'
+import type { IssueText } from './issues.mts'
 
 function short(sha: string): string {
   return sha.slice(0, 12)
@@ -12,7 +13,10 @@ function quote(text: string): string[] {
  * Renders the follow-up digest pillars and the verifier read instead of the whole conversation.
  * Everything quoted from the pull request is untrusted, and the header says so.
  */
-export function renderFollowUpContext(context: FollowUpContext): string {
+export function renderFollowUpContext(
+  context: FollowUpContext,
+  referenced: readonly IssueText[] = [],
+): string {
   const lines = [
     '# Review context',
     '',
@@ -39,6 +43,13 @@ export function renderFollowUpContext(context: FollowUpContext): string {
   lines.push(...quote(context.intent.body))
   for (const issue of context.intent.issues) {
     lines.push('', `Closing issue #${issue.number}: ${issue.title}`, ...quote(issue.body))
+  }
+  for (const issue of referenced) {
+    lines.push(
+      '',
+      `Referenced issue ${issue.ref} (${issue.state}, untrusted): ${issue.title}`,
+      ...quote(issue.body),
+    )
   }
   lines.push('', `## Unresolved review findings (${context.unresolved.length})`, '')
   for (const finding of context.unresolved) {

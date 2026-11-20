@@ -33,9 +33,27 @@ describe('lookupLinked', () => {
     expect([...found]).toEqual([
       ['a/b#1', { kind: 'pull', state: 'open', restricted: false }],
       ['c/d#2', { kind: 'pull', state: 'merged', restricted: false }],
-      ['c/d#3', { kind: 'issue', state: 'closed', restricted: false }],
+      ['c/d#3', { kind: 'issue', state: 'closed', restricted: false, title: '', body: '' }],
     ])
     expect(problems).toEqual([])
+  })
+
+  it('reads an issue title and body, and none for a pull request', async () => {
+    const run = async () =>
+      reply({
+        self: { isPrivate: false },
+        r0: {
+          isPrivate: false,
+          issueOrPullRequest: { __typename: 'Issue', state: 'OPEN', title: 'T', body: 'B' },
+        },
+        r1: open,
+      })
+    const { found } = await lookupLinked(run, 'a/b', [
+      { repo: 'a/b', number: 1 },
+      { repo: 'a/b', number: 2 },
+    ])
+    expect(found.get('a/b#1')).toMatchObject({ title: 'T', body: 'B' })
+    expect(found.get('a/b#2')).not.toHaveProperty('title')
   })
 
   it('marks a private repository referenced from a public one as restricted', async () => {

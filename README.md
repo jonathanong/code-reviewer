@@ -212,6 +212,17 @@ state. The list appears as `dependencies` in `review.json` and `report.json`, as
 section in the posted review only for dependencies that have not merged, and in `explain`. It is
 informational: it never changes the verdict.
 
+### Linked issues
+
+`context.md` has always quoted the issues a pull request closes. `prepare` now also reads the other
+issues the description refers to (`See #4`, `owner/repo#9`, an issue URL; at most eight, each body
+cut to 1500 characters) with one GraphQL call, quotes them in `context.md` as "Referenced issue …
+(untrusted)", and writes `issues.json` only when it read any. The verifier performs the congruence
+pillar and is told to hold the change to what each issue asks. A pull request, an issue that cannot
+be read, and an issue in a private repository named from a public one are left out, the last two
+with a note in `problems`. Issue text is untrusted data. A pull request that links no issue gets
+the same `context.md` and prompts as before.
+
 ## Unattended runs: `run`
 
 ```bash

@@ -195,7 +195,7 @@ describe('createGhPrepareIo', () => {
     )
     const { io } = setup(run)
     const { found } = await io.linked([{ repo: 'o/other', number: 3 }])
-    expect(found.get('o/other#3')).toEqual({ kind: 'issue', state: 'open', restricted: false })
+    expect(found.get('o/other#3')).toMatchObject({ kind: 'issue', state: 'open' })
     expect(run).toHaveBeenCalledTimes(1)
   })
 

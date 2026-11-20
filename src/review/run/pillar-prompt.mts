@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { CarriedFile } from '../carried-file.mts'
 import type { Dependency } from '../dependency.mts'
+import type { IssueText } from '../issues.mts'
 import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
 import { carriedLines } from './carried-prompt.mts'
@@ -23,6 +24,8 @@ export type RunDir = {
   carried?: CarriedFile | undefined
   /** What `prepare` found this pull request depends on, from `dependencies.json`. */
   dependencies?: Dependency[] | undefined
+  /** The issues the description refers to, from `issues.json`. */
+  issues?: IssueText[] | undefined
 }
 
 /** Absolute paths of the run directory files, one bullet each. */

@@ -7,6 +7,9 @@ export type Linked = {
   state: 'open' | 'merged' | 'closed'
   /** In a private repository while the repository under review is public: not read. */
   restricted: boolean
+  /** An issue's own words, untrusted; absent for a pull request. */
+  title?: string
+  body?: string
 }
 
 export type LinkedLookup = {
@@ -18,6 +21,8 @@ type Node = {
   __typename?: string
   state?: string
   merged?: boolean
+  title?: string
+  body?: string
 } | null
 
 type Alias = { isPrivate?: boolean; issueOrPullRequest?: Node } | null
@@ -30,7 +35,7 @@ function buildQuery(self: string, refs: readonly Ref[]): string {
   const [owner, name] = split(self)
   const body = refs.map((ref, index) => {
     const [refOwner, refName] = split(ref.repo)
-    return `r${index}: repository(owner: "${refOwner}", name: "${refName}") { isPrivate issueOrPullRequest(number: ${ref.number}) { __typename ... on Issue { state } ... on PullRequest { state merged } } }`
+    return `r${index}: repository(owner: "${refOwner}", name: "${refName}") { isPrivate issueOrPullRequest(number: ${ref.number}) { __typename ... on Issue { state title body } ... on PullRequest { state merged } } }`
   })
   return `query { self: repository(owner: "${owner}", name: "${name}") { isPrivate } ${body.join(' ')} }`
 }
@@ -90,6 +95,7 @@ export async function lookupLinked(
       kind: node.__typename === 'PullRequest' ? 'pull' : 'issue',
       state,
       restricted,
+      ...(node.__typename === 'Issue' ? { title: node.title ?? '', body: node.body ?? '' } : {}),
     })
   })
   const missing = asked.filter((ref) => !found.has(refKey(ref)))

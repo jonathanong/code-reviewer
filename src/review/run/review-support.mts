@@ -9,6 +9,7 @@ import type { PrepareSummary } from '../prepare.mts'
 import { carriedNotes } from '../carried-note.mts'
 import { readCarriedFile } from '../carried-file.mts'
 import { mergeDependencies, readDependencies, type Dependency } from '../dependency.mts'
+import { readIssues } from '../issues.mts'
 import { readPushFile } from '../push-file.mts'
 import { readStackFile } from '../stack-file.mts'
 import type { PluginInfo } from '../plugins.mts'
@@ -69,6 +70,7 @@ export function runDir(out: string, sinceSha: string | null): RunDir {
     push: readPushFile(out),
     carried: readCarriedFile(out),
     dependencies: readDependencies(out),
+    issues: readIssues(out),
   }
 }
 

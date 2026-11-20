@@ -11,6 +11,8 @@ import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
 import { clearCarried } from './carried-file.mts'
 import { clearDependencies } from './dependency.mts'
+import { clearIssues } from './issues.mts'
+import { prepareIssues } from './links-issues.mts'
 import { prepareLinks } from './links-prepare.mts'
 import { prepareCarried } from './carried-prepare.mts'
 import {
@@ -77,6 +79,7 @@ export async function prepareReview(
   clearPush(options.out)
   clearCarried(options.out)
   clearDependencies(options.out)
+  clearIssues(options.out)
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(options.tree),
@@ -95,9 +98,10 @@ export async function prepareReview(
   }
   const context = buildFollowUpContext(conversation, trusted)
   const written = writeDiff(options.out, 'diff', patch, write)
-  write(join(options.out, 'context.md'), renderFollowUpContext(context))
+  const linkedIssues = await prepareIssues(io, options.out, write, conversation)
+  write(join(options.out, 'context.md'), renderFollowUpContext(context, linkedIssues.issues))
   write(join(options.out, 'context.json'), `${JSON.stringify(context, null, 2)}\n`)
-  written.push('context.md', 'context.json')
+  written.push('context.md', 'context.json', ...linkedIssues.written)
   let since: SinceDiff | undefined
   if (context.reviewedSha !== null && context.reviewedSha !== headSha) {
     since = await io.compare(context.reviewedSha, headSha)
@@ -156,6 +160,7 @@ export async function prepareReview(
     ...(push?.problems ?? []),
     ...carried.problems,
     ...links.problems,
+    ...linkedIssues.problems,
   ]
   const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)

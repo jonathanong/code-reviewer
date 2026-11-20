@@ -208,6 +208,46 @@ describe('prepareReview', () => {
     expect(existsSync(join(out, 'stack'))).toBe(false)
   })
 
+  describe('linked issues', () => {
+    it('writes issues.json and quotes the issues in context.md, with problems', async () => {
+      const io = fakeIo()
+      const pull = conversation(null)
+      pull.body = 'Fixes #3. See #5 and #6.'
+      pull.closingIssuesReferences.nodes = [{ number: 3, title: 'Closing', body: 'c' }]
+      io.conversation.mockResolvedValue(pull)
+      io.linked.mockResolvedValue({
+        found: new Map([
+          [
+            'o/r#5',
+            { kind: 'issue', state: 'open', restricted: false, title: 'Asks', body: 'Wants X' },
+          ],
+        ]),
+        problems: ['Could not read o/r#6.'],
+      })
+      const summary = await prepareReview(io, { out })
+      expect(JSON.parse(read('issues.json'))).toEqual([
+        { ref: 'o/r#5', state: 'open', title: 'Asks', body: 'Wants X' },
+      ])
+      expect(read('context.md')).toContain(
+        'Referenced issue o/r#5 (open, untrusted): Asks\n> Wants X',
+      )
+      expect(io.linked.mock.calls[0]?.[0]).toEqual([
+        { repo: 'o/r', number: 5 },
+        { repo: 'o/r', number: 6 },
+      ])
+      expect(summary.written).toContain('issues.json')
+      expect(summary.problems).toContain('Could not read o/r#6.')
+    })
+
+    it('removes a stale issues.json and leaves context.md as it was without references', async () => {
+      writeFileSync(join(out, 'issues.json'), '[]')
+      const summary = await prepareReview(fakeIo(), { out })
+      expect(existsSync(join(out, 'issues.json'))).toBe(false)
+      expect(summary.written).not.toContain('issues.json')
+      expect(read('context.md')).not.toContain('Referenced issue')
+    })
+  })
+
   describe('dependencies', () => {
     it('writes dependencies.json from the description, commits and stack, and lists it', async () => {
       const io = fakeIo()

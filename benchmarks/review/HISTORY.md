@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: the congruence pillar now checks referenced issues (no run)
+
+`pillars/congruence.md` says to hold the change to what each referenced or closing issue asks, and
+`_contract.md` lists `issues.json`. The per-run Linked issues block and the "Referenced issue"
+quotes in `context.md` appear only when the description refers to an issue other than a closing
+one, which bench cases do not do, so the benchmark prompts differ from before only by the added
+reference text. The congruence rows are not comparable with earlier entries until re-measured. No
+run was made.
+
 ## 2026-11-19: the contract and verifier prompts gained a dependencies rule (no run)
 
 `pillars/_contract.md` gained a Dependencies section and `verifier.md` a step and an output field
