@@ -8,6 +8,7 @@ import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
 import { carriedNotes } from '../carried-note.mts'
 import { readCarriedFile } from '../carried-file.mts'
+import { mergeDependencies, readDependencies, type Dependency } from '../dependency.mts'
 import { readPushFile } from '../push-file.mts'
 import { readStackFile } from '../stack-file.mts'
 import type { PluginInfo } from '../plugins.mts'
@@ -67,6 +68,7 @@ export function runDir(out: string, sinceSha: string | null): RunDir {
     stack: readStackFile(out),
     push: readPushFile(out),
     carried: readCarriedFile(out),
+    dependencies: readDependencies(out),
   }
 }
 
@@ -119,7 +121,13 @@ export function skipResult(mode: Mode, headSha: string, report: string): ReviewR
   }
 }
 
-/** The notes `review.json` carries: what `prepare` found that is true of the pull request itself. */
-export function contextNotes(run: RunDir): string[] {
-  return run.carried === undefined ? [] : carriedNotes(run.carried)
+/** What the pull request depends on: what `prepare` found, then what the verifier added. */
+export function reviewDependencies(run: RunDir, implied: readonly Dependency[]): Dependency[] {
+  return mergeDependencies(run.dependencies ?? [], implied)
+}
+
+/** The `notes` field of `review.json`, absent when `prepare` found nothing true of the pull request itself. */
+export function noteFields(run: RunDir): { notes?: string[] } {
+  const notes = run.carried === undefined ? [] : carriedNotes(run.carried)
+  return notes.length === 0 ? {} : { notes }
 }

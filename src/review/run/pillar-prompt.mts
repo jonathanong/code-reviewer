@@ -2,6 +2,7 @@ import { join } from 'node:path'
 
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { CarriedFile } from '../carried-file.mts'
+import type { Dependency } from '../dependency.mts'
 import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
 import { carriedLines } from './carried-prompt.mts'
@@ -20,6 +21,8 @@ export type RunDir = {
   push?: PushFile | undefined
   /** The commits already elsewhere, from `carried.json`; absent when none were proved. */
   carried?: CarriedFile | undefined
+  /** What `prepare` found this pull request depends on, from `dependencies.json`. */
+  dependencies?: Dependency[] | undefined
 }
 
 /** Absolute paths of the run directory files, one bullet each. */

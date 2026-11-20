@@ -2,6 +2,8 @@ import type { ReviewSide } from '../review-payload/index.mts'
 import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
+import type { Dependency } from './dependency.mts'
+import { parseDependency, parseNotes } from './finding-extras.mts'
 
 export const PILLARS = [
   'rules',
@@ -44,6 +46,8 @@ export type ReviewInput = {
   questions: Question[]
   /** Informational notes about the pull request itself; they never change the verdict. */
   notes?: string[]
+  /** What this pull request needs first; informational, never part of the verdict. */
+  dependencies?: Dependency[]
 }
 
 export class ReviewError extends Error {
@@ -55,11 +59,11 @@ export class ReviewError extends Error {
 
 type Json = Record<string, unknown>
 
-function isRecord(value: unknown): value is Json {
+export function isRecord(value: unknown): value is Json {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function oneOf<T extends string>(values: readonly T[], value: unknown, field: string): T {
+export function oneOf<T extends string>(values: readonly T[], value: unknown, field: string): T {
   const found = values.find((candidate) => candidate === value)
   if (found === undefined) {
     throw new ReviewError(`${field} must be one of ${values.join(', ')}.`)
@@ -67,7 +71,7 @@ function oneOf<T extends string>(values: readonly T[], value: unknown, field: st
   return found
 }
 
-function text(record: Json, field: string, where: string): string {
+export function text(record: Json, field: string, where: string): string {
   const value = record[field]
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new ReviewError(`${where}.${field} must be a non-empty string.`)
@@ -149,20 +153,6 @@ function list(record: Json, field: string): unknown[] {
   return value
 }
 
-const MAX_NOTES = 10
-const MAX_NOTE_CHARS = 600
-
-function parseNotes(raw: unknown): string[] {
-  if (raw === undefined) return []
-  if (!Array.isArray(raw)) throw new ReviewError('notes must be an array.')
-  return raw.slice(0, MAX_NOTES).map((entry: unknown, index) => {
-    if (typeof entry !== 'string' || entry.trim().length === 0) {
-      throw new ReviewError(`notes[${index}] must be a non-empty string.`)
-    }
-    return entry.trim().slice(0, MAX_NOTE_CHARS)
-  })
-}
-
 /**
  * Validates the verifier's collected findings and questions; malformed input fails closed. An
  * optional `verdict` must equal the one the findings and questions give.
@@ -170,6 +160,7 @@ function parseNotes(raw: unknown): string[] {
 export function parseReviewInput(raw: unknown): ReviewInput {
   if (!isRecord(raw)) throw new ReviewError('Input must be a JSON object.')
   const notes = parseNotes(raw.notes)
+  const dependencies = list(raw, 'dependencies').slice(0, 15).map(parseDependency)
   const review: ReviewInput = {
     effort: raw.effort === undefined ? 'high' : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
@@ -177,6 +168,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
     findings: list(raw, 'findings').map(parseFinding),
     questions: list(raw, 'questions').map(parseQuestion),
     ...(notes.length === 0 ? {} : { notes }),
+    ...(dependencies.length === 0 ? {} : { dependencies }),
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')

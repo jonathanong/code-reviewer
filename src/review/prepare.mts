@@ -10,6 +10,8 @@ import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
 import { clearCarried } from './carried-file.mts'
+import { clearDependencies } from './dependency.mts'
+import { prepareLinks } from './links-prepare.mts'
 import { prepareCarried } from './carried-prepare.mts'
 import {
   carriedSummary,
@@ -74,6 +76,7 @@ export async function prepareReview(
   rmSync(join(options.out, 'stack'), { recursive: true, force: true })
   clearPush(options.out)
   clearCarried(options.out)
+  clearDependencies(options.out)
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(options.tree),
@@ -126,6 +129,15 @@ export async function prepareReview(
     ...(open === undefined ? {} : { open }),
   })
   if (carried.file !== undefined) written.push('carried.json')
+  const links = await prepareLinks(io, options.out, write, {
+    ...(options.tree === undefined ? {} : { tree: options.tree }),
+    baseSha: context.baseSha,
+    headSha,
+    body: conversation.body,
+    headlines: conversation.commits.nodes.map((node) => node.commit.messageHeadline),
+    ...(stack === undefined ? {} : { stack }),
+  })
+  written.push(...links.written)
   const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files),
@@ -143,6 +155,7 @@ export async function prepareReview(
     ...(problem === undefined ? [] : [problem]),
     ...(push?.problems ?? []),
     ...carried.problems,
+    ...links.problems,
   ]
   const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)

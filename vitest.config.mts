@@ -8,7 +8,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.mts'],
-      exclude: ['src/**/*.test.mts', 'src/**/index.mts'],
+      exclude: ['src/**/*.test.mts', 'src/**/*-fake-io.mts', 'src/**/index.mts'],
       thresholds: { lines: 100, functions: 100, statements: 100, branches: 100 },
     },
   },

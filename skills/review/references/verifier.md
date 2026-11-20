@@ -71,7 +71,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    location is a carried commit's change or a file listed as changed only by carried commits, and
    apply the pillar contract's Carried changes rule to the rest. Never report the carried situation
    itself as a finding.
-10. **Summarize** in two to four sentences a human can act on: what the change does, whether it
+10. **Dependencies.** Apply the pillar contract's Dependencies rule: list in `dependencies` each
+    thing outside this checkout that must land first and the diff shows (not the ones already in the
+    Known dependencies block), never as a finding, and never as a reason for Request Changes.
+11. **Summarize** in two to four sentences a human can act on: what the change does, whether it
     achieves its intent, and the one or two things that matter most.
 
 ## Severity
@@ -107,6 +110,14 @@ Copy `skipped` from `plan.json` (plus any pillar that failed), then write `revie
   "effort": "high",
   "summary": "Two to four sentences.",
   "skipped": [{ "pillar": "security", "reason": "No security trigger paths changed." }],
+  "dependencies": [
+    {
+      "on": "orders service /v2 route",
+      "kind": "api",
+      "state": "unknown",
+      "why": "The client calls it."
+    }
+  ],
   "findings": [
     {
       "pillar": "correctness",

@@ -4,122 +4,8 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CarriedInspection } from './carried-file.mts'
-import type { PrConversation } from './context-query.mts'
-import type { SinceDiff } from './plan.mts'
 import { prepareReview } from './prepare.mts'
-import type { PushInspection } from './push-types.mts'
-import type { PrepareIo } from './prepare-io.mts'
-import type { StackMember } from './stack.mts'
-import { reviewMarker } from './render.mts'
-
-const HEAD = 'a'.repeat(40)
-const BASE = 'c'.repeat(40)
-const OLD = 'b'.repeat(40)
-const PATCH =
-  'diff --git a/src/a.ts b/src/a.ts\n--- a/src/a.ts\n+++ b/src/a.ts\n@@ -1 +1 @@\n-x\n+y\n'
-
-function conversation(
-  reviewedSha: string | null,
-  author: PrConversation['author'] = { login: 'dev', __typename: 'User' },
-  lines = 300,
-): PrConversation {
-  return {
-    title: 'T',
-    author,
-    body: '',
-    closingIssuesReferences: { nodes: [] },
-    headRefOid: HEAD,
-    baseRefOid: BASE,
-    baseRefName: 'main',
-    additions: lines,
-    deletions: 0,
-    reviews: {
-      nodes:
-        reviewedSha === null
-          ? []
-          : [
-              {
-                id: 'r1',
-                author: { login: 'bot' },
-                state: 'COMMENTED',
-                body: reviewMarker(reviewedSha, 'Comment', 'high'),
-                submittedAt: null,
-                commit: { oid: reviewedSha },
-              },
-            ],
-    },
-    reviewThreads: { nodes: [] },
-    comments: { nodes: [] },
-    commits: { nodes: [] },
-  }
-}
-
-const noneCarried: CarriedInspection = {
-  commits: [],
-  commitsInRange: 0,
-  files: [],
-  filesTotal: 0,
-  defaultBranch: 'main',
-  base: 'default',
-  problems: [],
-}
-
-function inspection(rest: Partial<PushInspection>): PushInspection {
-  return {
-    kind: 'substantive',
-    reason: 'The new commits are not all merges.',
-    reviewedSha: OLD,
-    headSha: HEAD,
-    merges: [],
-    mergesTotal: 0,
-    problems: [],
-    ...rest,
-  }
-}
-
-type Overrides = {
-  reviewed?: string | null
-  since?: SinceDiff
-  history?: string[]
-  author?: PrConversation['author']
-  lines?: number
-  paths?: string[]
-  push?: PushInspection
-}
-
-function fakeIo({
-  reviewed = null,
-  since,
-  history = [],
-  author,
-  lines,
-  paths,
-  push,
-}: Overrides = {}) {
-  return {
-    headSha: vi.fn(async () => HEAD),
-    trusted: vi.fn(async () => new Set(['bot'])),
-    diff: vi.fn(async () => PATCH),
-    files: vi.fn(async () =>
-      (paths ?? ['src/a.ts']).map((path, index) => ({
-        path,
-        lines: index === 0 ? (lines ?? 300) : 0,
-      })),
-    ),
-    conversation: vi.fn(async () => conversation(reviewed, author, lines)),
-    compare: vi.fn(async () => since ?? { status: 'ahead', paths: ['src/a.ts'], lines: 4 }),
-    compareDiff: vi.fn(async () => PATCH),
-    treeHead: vi.fn(async () => HEAD),
-    push: vi.fn(async () => push ?? inspection({})),
-    history: vi.fn(async () => history),
-    ruleSources: vi.fn(async () => ({ related: [], missing: ['x: none'] })),
-    stackInput: vi.fn(async () => ({ pr: 7, pulls: [] as StackMember[], defaultBranch: 'main' })),
-    memberDiff: vi.fn(async () => PATCH),
-    carried: vi.fn(async () => noneCarried),
-    mergedPull: vi.fn(async (_ref: string): Promise<number | undefined> => undefined),
-  } satisfies PrepareIo
-}
+import { BASE, HEAD, OLD, PATCH, conversation, fakeIo, inspection } from './prepare-fake-io.mts'
 
 let out: string
 beforeEach(() => {
@@ -320,6 +206,34 @@ describe('prepareReview', () => {
     await prepareReview(io, { out })
     expect(existsSync(join(out, 'stack.json'))).toBe(false)
     expect(existsSync(join(out, 'stack'))).toBe(false)
+  })
+
+  describe('dependencies', () => {
+    it('writes dependencies.json from the description, commits and stack, and lists it', async () => {
+      const io = fakeIo()
+      const pull = conversation(null)
+      pull.body = 'Depends on #12.'
+      pull.commits.nodes = [{ commit: { messageHeadline: 'Requires #20' } }] as never
+      io.conversation.mockResolvedValue(pull)
+      io.linked.mockResolvedValue({
+        found: new Map([['o/r#12', { kind: 'pull', state: 'open', restricted: false }]]),
+        problems: ['One lookup note.'],
+      })
+      const summary = await prepareReview(io, { out })
+      expect(JSON.parse(read('dependencies.json')).map((d: { on: string }) => d.on)).toEqual([
+        '#12',
+        '#20',
+      ])
+      expect(summary.written).toContain('dependencies.json')
+      expect(summary.problems).toContain('One lookup note.')
+    })
+
+    it('removes a stale dependencies.json and writes none without dependencies', async () => {
+      writeFileSync(join(out, 'dependencies.json'), '[]')
+      const summary = await prepareReview(fakeIo(), { out })
+      expect(existsSync(join(out, 'dependencies.json'))).toBe(false)
+      expect(summary.written).not.toContain('dependencies.json')
+    })
   })
 
   describe('commits carried from elsewhere', () => {

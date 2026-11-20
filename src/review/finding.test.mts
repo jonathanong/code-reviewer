@@ -84,6 +84,24 @@ describe('parseReviewInput', () => {
     expect(parseReviewInput({ notes: ['x'.repeat(900)] }).notes?.[0]).toHaveLength(600)
   })
 
+  it('keeps well-formed dependencies, capped, and omits an empty list', () => {
+    const dep = { on: ' #1 ', kind: 'pull', state: 'open', why: ' w ' }
+    expect(parseReviewInput({ dependencies: [] })).not.toHaveProperty('dependencies')
+    expect(parseReviewInput({ dependencies: [dep] }).dependencies).toEqual([
+      { on: '#1', kind: 'pull', state: 'open', why: 'w' },
+    ])
+    const many = Array.from({ length: 20 }, () => dep)
+    expect(parseReviewInput({ dependencies: many }).dependencies).toHaveLength(15)
+  })
+
+  it('rejects dependencies of the wrong shape', () => {
+    expect(failure({ dependencies: 'x' })).toBe('dependencies must be an array.')
+    expect(failure({ dependencies: [3] })).toBe('dependencies[0] must be an object.')
+    expect(
+      failure({ dependencies: [{ on: '#1', kind: 'nope', state: 'open', why: 'w' }] }),
+    ).toContain('dependencies[0].kind')
+  })
+
   it('rejects notes that are not a list of non-empty strings', () => {
     expect(failure({ notes: 'x' })).toBe('notes must be an array.')
     expect(failure({ notes: [' '] })).toBe('notes[0] must be a non-empty string.')

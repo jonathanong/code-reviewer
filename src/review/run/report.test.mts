@@ -79,6 +79,7 @@ const OUTPUT: ReviewVerifierOutput = {
   dropped: new Map([[1, 'Style only.']]),
   questions: [],
   fixedThreadIds: [],
+  dependencies: [],
   skills: [],
   usage: usage(1.5, 12),
 }

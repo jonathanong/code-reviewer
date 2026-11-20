@@ -2,8 +2,14 @@
   "effort": "high",
   "summary": "The change speeds up widget lookups with a cache, but the cache key ignores the tenant, so one tenant can read another's widgets.",
   "skipped": [
-    { "pillar": "security", "reason": "The run failed twice: timed out after 30 minutes" },
-    { "pillar": "history", "reason": "No history trigger paths changed." }
+    {
+      "pillar": "security",
+      "reason": "The run failed twice: timed out after 30 minutes"
+    },
+    {
+      "pillar": "history",
+      "reason": "No history trigger paths changed."
+    }
   ],
   "findings": [
     {
@@ -34,11 +40,34 @@
   ],
   "questions": [
     "Should the cache be shared between processes?",
-    { "question": "Who clears it on deploy?" },
+    {
+      "question": "Who clears it on deploy?"
+    },
     7
   ],
   "notes": [
     "Base branch `feat/parent` was merged in #3, so this diff may include changes that are not its own.",
     9
+  ],
+  "dependencies": [
+    {
+      "on": "#3",
+      "kind": "stack-parent",
+      "state": "open",
+      "why": "This pull request is stacked on it."
+    },
+    {
+      "on": "billing service",
+      "kind": "api",
+      "state": "unknown"
+    },
+    {
+      "on": "legacy",
+      "why": "x"
+    },
+    {
+      "kind": "api"
+    },
+    7
   ]
 }

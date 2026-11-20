@@ -155,6 +155,20 @@ describe('renderHeader', () => {
     )
   })
 
+  it('shows what the change still waits on, and nothing when it has all merged', () => {
+    const dep = (on: string, state: 'open' | 'merged') => ({
+      on,
+      kind: 'pull' as const,
+      state,
+      why: 'w',
+    })
+    const base = renderHeader(input(), SHA)
+    expect(renderHeader(input({ dependencies: [dep('#1', 'merged')] }), SHA)).toBe(base)
+    const out = renderHeader(input({ dependencies: [dep('#1', 'merged'), dep('#2', 'open')] }), SHA)
+    expect(out).toContain('**Depends on**\n\n- #2 (open): w')
+    expect(out).not.toContain('#1')
+  })
+
   it('shows notes once, before the skipped pillars, and nothing without them', () => {
     const base = renderHeader(input(), SHA)
     expect(base).not.toContain('Notes')

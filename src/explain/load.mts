@@ -7,7 +7,7 @@ import { findingId } from '../review/run/evidence-run.mts'
 import { costBreakdown, type ReportData } from '../review/run/report.mts'
 import { reportStack, type ReportStack } from '../review/run/stack-report.mts'
 import type { StackFile } from '../review/stack-file.mts'
-import { notesOf, stackView } from './notes.mts'
+import { dependenciesOf, notesOf, stackView } from './notes.mts'
 import { asNumber, asRecord, asString, readJson, type Json } from '../tracker/json.mts'
 
 export type ExplainFinding = {
@@ -51,6 +51,8 @@ export type Explained = {
   downgraded: string | null
   /** What the review noted about the pull request itself, such as commits it did not review. */
   notes: string[]
+  /** What the pull request needs first, as the review recorded it. */
+  dependencies: { on: string; state: string; why: string }[]
   reviewedAreas: string[]
   notReviewed: { area: string; reason: string }[]
   /** Sources of real data the review could not use, with why. */
@@ -173,6 +175,7 @@ export function loadRun(
     questions,
     event: null,
     downgraded: null,
+    dependencies: dependenciesOf(review.dependencies),
     notes: notesOf(review.notes),
     reviewedAreas: areas.flatMap((area) =>
       area.error === undefined ? [asString(area.pillar) ?? 'unknown'] : [],

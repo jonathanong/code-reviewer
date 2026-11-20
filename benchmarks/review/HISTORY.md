@@ -2,6 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: the contract and verifier prompts gained a dependencies rule (no run)
+
+`pillars/_contract.md` gained a Dependencies section and `verifier.md` a step and an output field
+for implied dependencies. The per-run Known dependencies block appears only in runs whose directory
+has a `dependencies.json`, which bench cases never have, so the benchmark prompts differ from before
+only by the added reference text. The extended verifier output schema adds an optional field. No run
+was made; scores are not re-measured.
+
 ## 2026-11-19: the contract and verifier prompts gained a carried-changes rule (no run)
 
 `pillars/_contract.md` gained a Carried changes section and `verifier.md` a step that drops findings

@@ -5,6 +5,7 @@ import type { Question } from '../question.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
 import type { CarriedFile } from '../carried-file.mts'
+import type { Dependency } from '../dependency.mts'
 import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
 import type { ApprovalCheck } from './approval-check.mts'
@@ -60,6 +61,7 @@ export type ReportData = {
   stack?: ReportStack // absent for a pull request that is not in a stack
   push?: ReportPush // absent for a first review, or when the head did not move
   carried?: CarriedFile // absent when git found no commit already elsewhere and the base is fine
+  dependencies?: Dependency[] // absent when the pull request depends on nothing
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
 }
@@ -84,6 +86,7 @@ export type ReportInput = {
   stack?: StackFile | undefined
   push?: PushFile | undefined
   carried?: CarriedFile | undefined
+  dependencies?: readonly Dependency[] | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
@@ -150,6 +153,9 @@ export function buildReport(input: ReportInput): ReportData {
     ...(stack === undefined ? {} : { stack }),
     ...(input.push === undefined ? {} : { push: reportPush(input.push) }),
     ...(input.carried === undefined ? {} : { carried: input.carried }),
+    ...(input.dependencies === undefined || input.dependencies.length === 0
+      ? {}
+      : { dependencies: [...input.dependencies] }),
     verifier:
       input.verifier === undefined
         ? null

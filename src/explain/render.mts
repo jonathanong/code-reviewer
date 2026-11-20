@@ -170,6 +170,14 @@ export function renderExplained(run: Explained): string {
     ...(run.notes.length === 0
       ? []
       : ['## Notes', run.notes.map((note) => `- ${note}`).join('\n')]),
+    ...(run.dependencies.length === 0
+      ? []
+      : [
+          '## Depends on',
+          run.dependencies
+            .map((entry) => `- ${entry.on} (${entry.state}): ${entry.why}`)
+            .join('\n'),
+        ]),
     '## What was checked, and what was not',
     checked(run).join('\n'),
     '## Cost',

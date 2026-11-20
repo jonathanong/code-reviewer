@@ -181,6 +181,33 @@ describe('createGhPrepareIo', () => {
     expect(git).toHaveBeenCalled()
   })
 
+  it('looks references up through one graphql call for the reviewed repository', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify({
+        data: {
+          self: { isPrivate: false },
+          r0: {
+            isPrivate: false,
+            issueOrPullRequest: { __typename: 'Issue', state: 'OPEN' },
+          },
+        },
+      }),
+    )
+    const { io } = setup(run)
+    const { found } = await io.linked([{ repo: 'o/other', number: 3 }])
+    expect(found.get('o/other#3')).toEqual({ kind: 'issue', state: 'open', restricted: false })
+    expect(run).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads full commit messages in the range, without merges, split on NUL', async () => {
+    const { io, git } = setup()
+    git.mockResolvedValue('one\n\nbody\0two\n\0\n')
+    expect(await io.commitMessages('/t', 'b', 'h')).toEqual(['one\n\nbody', 'two\n'])
+    const args = git.mock.calls[0]?.[0] as string[]
+    expect(args).toContain('--no-merges')
+    expect(args.at(-1)).toBe('b..h')
+  })
+
   it('shares the own identity with the gh io', async () => {
     const run = vi.fn(async (_args: readonly string[]) => {
       throw new Error('no viewer')

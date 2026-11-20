@@ -1,3 +1,4 @@
+import { dependsOnSection } from './dependency-render.mts'
 import { notesSection } from './notes.mts'
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
 import { renderQuestions, type Question } from './question.mts'
@@ -114,6 +115,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
     ...(index.length > 0 ? [index.join('\n')] : []),
     ...renderQuestions(input.questions),
     ...notesSection(input.notes),
+    ...dependsOnSection(input.dependencies),
     ...skippedSection(input.skipped),
   ].join('\n\n')
 }

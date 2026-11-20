@@ -198,6 +198,20 @@ pull request should be retargeted, and `report.md` and `explain` show it too. Th
 informational and never changes the verdict. Anything that cannot be proved, including a missing
 checkout, is treated as the pull request's own and reviewed in full, with the reason in `problems`.
 
+### Dependencies
+
+`prepare` reads the pull request description and the full commit messages (`git log`, with the
+headlines as the fallback) for lines that make another pull request or issue a precondition
+("depends on", "requires", "after #N", "blocked by", cross-repository references and URLs), adds the
+pull requests below this one in its stack, and asks GitHub once for the state of each (open, merged,
+closed). The result is `dependencies.json`, written only when something was found. A reference to a
+private repository from a public one is not read; its state is `unknown` and `problems` says why.
+The verifier adds implied dependencies it can see in the diff (an unreleased package version,
+another service's API, schema, flag or infrastructure) with the state `unknown`; it cannot know a
+state. The list appears as `dependencies` in `review.json` and `report.json`, as a "Depends on"
+section in the posted review only for dependencies that have not merged, and in `explain`. It is
+informational: it never changes the verdict.
+
 ## Unattended runs: `run`
 
 ```bash
