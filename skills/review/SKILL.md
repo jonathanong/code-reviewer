@@ -60,7 +60,7 @@ writes every file; the session reads the one JSON line it prints and, to present
 - **Unattended: `code-reviewer run --repo <repo> --pr <n>`.** One command does Steps 1 to 5
   itself: the checkout (a temporary worktree it removes), the claim, the review, and then it posts
   or holds by the hold rules in the machine config. It prints one JSON line and exits 0 (posted),
-  10 (held), 11 (nothing to do), 12 (precondition failed) or 13 (failed); the README has the line
+  10 (held), 11 (nothing to do), 12 (precondition failed) or 13 (failed); `docs/run.md` has the line
   and the rules. Use it for a review nobody is waiting to read first, from the standing loop or
   from any session that has the plugin. A held review is never posted by `run`: show the human
   `attention` and `explainPath` and, when they agree, post with the printed `postCommand`.
