@@ -58,6 +58,13 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
   `range-diff.txt` in the run directory carry the material.
 - A `substantive` push is routed as before. Its merge resolutions are still written, and the
   correctness pillar and the verifier are told to read them.
+- `prepare` also asks local history (in the `--tree` checkout) which commits of the pull request
+  already exist in the default branch (same commit, same patch, or the same file contents as a
+  squash merge), in a parent of its stack, or in an older open pull request, and whether its base
+  branch still exists or was merged. It writes `carried.json` only when it found something. The
+  pillars and the verifier get a Carried changes block and raise no finding on carried changes; the
+  dead base and the carried commits are reported once as a note in the posted review and the
+  report. Anything that cannot be proved is the pull request's own, reviewed in full.
 - A light follow-up reviews only the diff since the last reviewed SHA (`sinceSha`), and the
   verifier rechecks every unresolved finding listed in `context.md`. A light first review reviews
   the whole pull request. `--effort low` on a pull request with no earlier review runs full.

@@ -18,6 +18,8 @@ import { listRuleSkills, selectSkills } from './select-skills.mts'
 import { runReviewVerifier } from './verify.mts'
 
 import {
+  noteFields,
+  reviewDependencies,
   countFindings,
   failedSkips,
   message,
@@ -122,12 +124,15 @@ async function review(
     settings,
     exec: steps.exec,
   })
+  const dependencies = reviewDependencies(run, output.dependencies)
   const input: ReviewInput = {
     effort: plan.effort,
     summary: output.summary,
     skipped,
     findings: verified,
     questions,
+    ...noteFields(run),
+    ...(dependencies.length === 0 ? {} : { dependencies }),
   }
   writeJson(join(out, 'review.json'), input)
   const outcome = await steps.preview(input, headSha)
@@ -146,6 +151,8 @@ async function review(
     approvalCheck: second.check,
     stack: run.stack,
     push: run.push,
+    carried: run.carried,
+    dependencies,
   })
   const report = writeReportFiles(out, data)
   return {

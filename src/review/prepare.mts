@@ -9,8 +9,21 @@ import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
+import { clearCarried } from './carried-file.mts'
+import { clearDependencies } from './dependency.mts'
+import { clearIssues } from './issues.mts'
+import { prepareIssues } from './links-issues.mts'
+import { prepareLinks } from './links-prepare.mts'
+import { prepareCarried } from './carried-prepare.mts'
+import {
+  carriedSummary,
+  pushFiles,
+  pushSummary,
+  type CarriedSummary,
+  type PushSummary,
+} from './prepare-summary.mts'
 import { preparePush } from './push-prepare.mts'
-import { clearPush, type PushFile } from './push-file.mts'
+import { clearPush } from './push-file.mts'
 import { prepareStack } from './stack-prepare.mts'
 import { writeDiffDir, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
@@ -38,35 +51,9 @@ export type PrepareSummary = {
   problems?: string[]
   /** The push since the last trusted review, when it was classified. */
   push?: PushSummary
+  /** Commits already in the default branch or another pull request, and a dead base branch. */
+  carried?: CarriedSummary
   rules: { related: string[]; consumers: string[]; missing: string[] }
-}
-
-export type PushSummary = Pick<
-  PushFile,
-  'kind' | 'reason' | 'mergesTotal' | 'mergesCapped' | 'resolvedPaths'
-> & { merges: number; resolved: number }
-
-function pushSummary(push: PushFile): PushSummary {
-  const { kind, reason, mergesTotal, mergesCapped, resolvedPaths } = push
-  const resolved = push.merges.filter((merge) => merge.resolution === 'resolved').length
-  return {
-    kind,
-    reason,
-    merges: push.merges.length,
-    resolved,
-    mergesTotal,
-    mergesCapped,
-    resolvedPaths,
-  }
-}
-
-function pushFiles(push: PushFile): string[] {
-  return [
-    'push.json',
-    ...(push.merges.length === 0 ? [] : ['merges/INDEX.md']),
-    ...(push.rangeDiff === undefined ? [] : [push.rangeDiff]),
-    ...(push.incoming === undefined ? [] : [push.incoming]),
-  ]
 }
 
 function writeDiff(out: string, name: string, patch: string, write: Write): string[] {
@@ -90,6 +77,9 @@ export async function prepareReview(
   rmSync(join(options.out, 'stack.json'), { force: true })
   rmSync(join(options.out, 'stack'), { recursive: true, force: true })
   clearPush(options.out)
+  clearCarried(options.out)
+  clearDependencies(options.out)
+  clearIssues(options.out)
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(options.tree),
@@ -108,9 +98,10 @@ export async function prepareReview(
   }
   const context = buildFollowUpContext(conversation, trusted)
   const written = writeDiff(options.out, 'diff', patch, write)
-  write(join(options.out, 'context.md'), renderFollowUpContext(context))
+  const linkedIssues = await prepareIssues(io, options.out, write, conversation)
+  write(join(options.out, 'context.md'), renderFollowUpContext(context, linkedIssues.issues))
   write(join(options.out, 'context.json'), `${JSON.stringify(context, null, 2)}\n`)
-  written.push('context.md', 'context.json')
+  written.push('context.md', 'context.json', ...linkedIssues.written)
   let since: SinceDiff | undefined
   if (context.reviewedSha !== null && context.reviewedSha !== headSha) {
     since = await io.compare(context.reviewedSha, headSha)
@@ -129,10 +120,28 @@ export async function prepareReview(
   const subjects =
     options.tree === undefined ? undefined : await io.history(options.tree, context.baseSha, paths)
   const history = subjects === undefined ? undefined : historyHits(subjects)
-  const { stack, problem } = await prepareStack(io, options.out, write, options.tree)
+  const { stack, problem, open } = await prepareStack(io, options.out, write, options.tree)
   if (stack !== undefined) {
     written.push('stack.json', ...stack.members.flatMap((member) => member.diff ?? []))
   }
+  const carried = await prepareCarried(io, options.out, write, {
+    ...(options.tree === undefined ? {} : { tree: options.tree }),
+    baseSha: context.baseSha,
+    headSha,
+    baseRef: conversation.baseRefName,
+    ...(stack === undefined ? {} : { stack }),
+    ...(open === undefined ? {} : { open }),
+  })
+  if (carried.file !== undefined) written.push('carried.json')
+  const links = await prepareLinks(io, options.out, write, {
+    ...(options.tree === undefined ? {} : { tree: options.tree }),
+    baseSha: context.baseSha,
+    headSha,
+    body: conversation.body,
+    headlines: conversation.commits.nodes.map((node) => node.commit.messageHeadline),
+    ...(stack === undefined ? {} : { stack }),
+  })
+  written.push(...links.written)
   const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files),
@@ -146,7 +155,13 @@ export async function prepareReview(
       : { push: { kind: push.kind, resolvedPaths: push.resolvedPaths } }),
     ...(history === undefined ? {} : { history }),
   })
-  const problems = [...(problem === undefined ? [] : [problem]), ...(push?.problems ?? [])]
+  const problems = [
+    ...(problem === undefined ? [] : [problem]),
+    ...(push?.problems ?? []),
+    ...carried.problems,
+    ...links.problems,
+    ...linkedIssues.problems,
+  ]
   const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)
   written.push('plan.json')
@@ -170,6 +185,7 @@ export async function prepareReview(
     plan,
     ...(problems.length === 0 ? {} : { problems }),
     ...(push === undefined ? {} : { push: pushSummary(push) }),
+    ...(carried.file === undefined ? {} : { carried: carriedSummary(carried.file) }),
     written,
     rules: {
       related: staged.related,

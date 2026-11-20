@@ -41,6 +41,17 @@ describe('renderFollowUpContext', () => {
     expect(out.endsWith('\n')).toBe(true)
   })
 
+  it('quotes each referenced issue as untrusted, and changes nothing without any', () => {
+    expect(renderFollowUpContext(context(), [])).toBe(renderFollowUpContext(context()))
+    const out = renderFollowUpContext(context(), [
+      { ref: 'acme/lib#2', state: 'open', title: 'Add retries', body: 'Line one\nLine two' },
+    ])
+    expect(out).toContain(
+      'Referenced issue acme/lib#2 (open, untrusted): Add retries\n> Line one\n> Line two',
+    )
+    expect(out.indexOf('Referenced issue')).toBeLessThan(out.indexOf('## Unresolved'))
+  })
+
   it('lists commits since the earlier review', () => {
     const out = renderFollowUpContext(
       context({

@@ -39,6 +39,7 @@ const OUTPUT: ReviewVerifierOutput = {
   dropped: new Map(),
   questions: [],
   fixedThreadIds: [],
+  dependencies: [],
   skills: [],
   usage: parseUsage({ total_cost_usd: 1, num_turns: 2 }),
 }

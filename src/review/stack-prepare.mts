@@ -13,6 +13,9 @@ const MAX_MEMBER_DIFF_BYTES = 20_000_000
 const parentOf = (members: readonly StackMember[], member: StackMember) =>
   members.find((other) => other.headRef === member.baseRef) as StackMember
 
+/** The repository's open pull requests and the one under review. */
+export type OpenPulls = { pr: number; pulls: StackMember[] }
+
 const firstLine = (error: unknown) =>
   (error instanceof Error ? error.message : String(error)).split('\n')[0] as string
 
@@ -26,17 +29,19 @@ export async function prepareStack(
   out: string,
   write: Write,
   tree?: string,
-): Promise<{ stack?: StackFile; problem?: string }> {
+): Promise<{ stack?: StackFile; problem?: string; open?: OpenPulls }> {
   let stack
+  let open: OpenPulls
   try {
     const input = await io.stackInput()
+    open = { pr: input.pr, pulls: input.pulls }
     stack = detectStack(input.pr, input.pulls, input.defaultBranch)
   } catch (error) {
     return {
       problem: `Open pull requests could not be listed, so the stack is unknown: ${firstLine(error)}`,
     }
   }
-  if (stack === undefined) return {}
+  if (stack === undefined) return { open }
   const later = stack.members.slice(stack.index + 1)
   const patches = await Promise.all(
     later.map((member) =>
@@ -64,5 +69,5 @@ export async function prepareStack(
   })
   const file: StackFile = { ...stack, members }
   write(join(out, 'stack.json'), `${JSON.stringify(file, null, 2)}\n`)
-  return { stack: file }
+  return { stack: file, open }
 }

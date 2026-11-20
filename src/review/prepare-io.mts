@@ -4,6 +4,10 @@ import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhReviewIo } from './github.mts'
 import { localDiffBetween, localPullDiff } from './local-diff.mts'
+import type { CarriedInspection } from './carried-file.mts'
+import { inspectCarried, type CarriedArgs } from './carried-inspect.mts'
+import { lookupLinked, type LinkedLookup } from './links-query.mts'
+import type { Ref } from './links-refs.mts'
 import { inspectPush, type PushShas } from './push-inspect.mts'
 import type { PushInspection } from './push-types.mts'
 import type { PullTarget } from './target.mts'
@@ -15,6 +19,8 @@ import type { TrustedAuthors } from './trust.mts'
 
 /** The GitHub and git reads `prepareReview` needs, injectable for tests. */
 export type PrepareIo = {
+  /** The pull request under review. */
+  readonly self: Ref
   headSha(): Promise<string>
   /** Logins whose `final-review` markers count. */
   trusted(): Promise<TrustedAuthors>
@@ -34,6 +40,14 @@ export type PrepareIo = {
   memberDiff(member: StackMember, baseSha: string, tree?: string): Promise<string>
   /** What was pushed since the last trusted review, classified by local git in `tree`. */
   push(tree: string, shas: PushShas): Promise<PushInspection>
+  /** Which of the pull request's commits already exist elsewhere, by local git in `tree`; never rejects. */
+  carried(tree: string, args: CarriedArgs): Promise<CarriedInspection>
+  /** The merged pull request whose head branch is `ref`, if GitHub knows one. */
+  mergedPull(ref: string): Promise<number | undefined>
+  /** The state of pull requests and issues this one names, in one lookup; never rejects. */
+  linked(refs: readonly Ref[]): Promise<LinkedLookup>
+  /** The full messages of the pull request's own commits, from local history in `tree`. */
+  commitMessages(tree: string, baseSha: string, headSha: string): Promise<string[]>
   /** The commit checked out at `tree`. */
   treeHead(tree: string): Promise<string>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
@@ -62,6 +76,7 @@ export function createGhPrepareIo(
   const compareUrl = (base: string, head: string) =>
     `repos/${target.repo}/compare/${base}...${head}`
   return {
+    self: { repo: target.repo, number: target.pr },
     headSha: () => io.headSha(),
     trusted: () => io.trustedAuthors(),
     async diff(tree) {
@@ -122,6 +137,31 @@ export function createGhPrepareIo(
     compareDiff: (base, head) =>
       run(['api', compareUrl(base, head), '-H', 'Accept: application/vnd.github.diff']),
     push: (tree, shas) => inspectPush(git, tree, shas),
+    carried: (tree, args) => inspectCarried(git, tree, args),
+    linked: (refs) => lookupLinked(run, target.repo, refs),
+    async commitMessages(tree, baseSha, headSha) {
+      const out = await git([
+        '-C',
+        tree,
+        'log',
+        '--no-merges',
+        '--max-count=100',
+        '--format=%B%x00',
+        `${baseSha}..${headSha}`,
+      ])
+      return out.split('\0').filter((message) => message.trim() !== '')
+    },
+    async mergedPull(ref) {
+      const [owner] = target.repo.split('/') as [string]
+      const out = await run([
+        'api',
+        `repos/${target.repo}/pulls?state=closed&head=${owner}:${encodeURIComponent(ref)}&per_page=10`,
+        '-q',
+        '[.[] | select(.merged_at != null) | .number] | first // empty',
+      ])
+      const number = Number(out.trim())
+      return Number.isInteger(number) && number > 0 ? number : undefined
+    },
     async treeHead(tree) {
       return (await git(['-C', tree, 'rev-parse', 'HEAD'])).trim()
     },

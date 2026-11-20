@@ -7,6 +7,7 @@ import { findingId } from '../review/run/evidence-run.mts'
 import { costBreakdown, type ReportData } from '../review/run/report.mts'
 import { reportStack, type ReportStack } from '../review/run/stack-report.mts'
 import type { StackFile } from '../review/stack-file.mts'
+import { dependenciesOf, notesOf, stackView } from './notes.mts'
 import { asNumber, asRecord, asString, readJson, type Json } from '../tracker/json.mts'
 
 export type ExplainFinding = {
@@ -48,6 +49,10 @@ export type Explained = {
   event: string | null
   /** Why that event is a COMMENT instead of the verdict's own event. */
   downgraded: string | null
+  /** What the review noted about the pull request itself, such as commits it did not review. */
+  notes: string[]
+  /** What the pull request needs first, as the review recorded it. */
+  dependencies: { on: string; state: string; why: string }[]
   reviewedAreas: string[]
   notReviewed: { area: string; reason: string }[]
   /** Sources of real data the review could not use, with why. */
@@ -170,6 +175,8 @@ export function loadRun(
     questions,
     event: null,
     downgraded: null,
+    dependencies: dependenciesOf(review.dependencies),
+    notes: notesOf(review.notes),
     reviewedAreas: areas.flatMap((area) =>
       area.error === undefined ? [asString(area.pillar) ?? 'unknown'] : [],
     ),
@@ -184,15 +191,7 @@ export function loadRun(
     ),
     checkedSources: sources.filter((source) => source.status === 'checked').length,
     evidenceError: asString(evidence.error),
-    stack:
-      stack === undefined
-        ? null
-        : {
-            position: stack.index + 1,
-            total: stack.members.length,
-            staleBase: stack.staleBase,
-            rootBase: stack.rootBase,
-          },
+    stack: stackView(stack),
     costUsd: Object.keys(report).length === 0 ? null : cost(report),
   }
 }

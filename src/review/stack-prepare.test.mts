@@ -38,7 +38,9 @@ afterEach(() => rmSync(out, { recursive: true, force: true }))
 
 describe('prepareStack', () => {
   it('writes nothing for a flat pull request', async () => {
-    expect(await prepareStack(io(1, [pull(1, 'a', 'main')]), out, writeFileSync)).toEqual({})
+    expect(await prepareStack(io(1, [pull(1, 'a', 'main')]), out, writeFileSync)).toEqual({
+      open: { pr: 1, pulls: [pull(1, 'a', 'main')] },
+    })
     expect(existsSync(join(out, 'stack.json'))).toBe(false)
     expect(existsSync(join(out, 'stack'))).toBe(false)
   })
