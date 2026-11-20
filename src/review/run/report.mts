@@ -6,8 +6,10 @@ import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
 import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
+import type { ApprovalCheck } from './approval-check.mts'
 import type { EvidenceReport } from './evidence-types.mts'
 import { reportPush, type ReportPush } from './push-report.mts'
+import { markDropped } from './report-pillars.mts'
 import { reportStack, type ReportStack } from './stack-report.mts'
 import type { PillarResult, SkillChoice } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
@@ -53,6 +55,7 @@ export type ReportData = {
   skillSelection: SkillChoice
   verifier: { model: string; usage: Usage | null } | null
   evidence?: EvidenceReport // absent when no evidence source is configured
+  approvalCheck?: ApprovalCheck // absent unless a review that would approve got a second check
   stack?: ReportStack // absent for a pull request that is not in a stack
   push?: ReportPush // absent for a first review, or when the head did not move
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
@@ -75,6 +78,7 @@ export type ReportInput = {
   pillars: readonly PillarResult[]
   verifier?: { model: string; output: ReviewVerifierOutput } | undefined
   evidence?: EvidenceReport | undefined
+  approvalCheck?: ApprovalCheck | undefined
   stack?: StackFile | undefined
   push?: PushFile | undefined
 }
@@ -82,36 +86,6 @@ export type ReportInput = {
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
 export function flattenFindings(pillars: readonly PillarResult[]): Finding[] {
   return pillars.flatMap((result) => result.findings)
-}
-
-function markDropped(
-  pillars: readonly PillarResult[],
-  output: ReviewVerifierOutput | undefined,
-): ReportPillar[] {
-  const kept = new Set(output?.sources.flat() ?? [])
-  return pillars.map((result, position) => {
-    const start = pillars
-      .slice(0, position)
-      .reduce((total, earlier) => total + earlier.findings.length, 0)
-    return {
-      pillar: result.pillar,
-      model: result.model,
-      skills: result.skills,
-      usage: result.usage,
-      ...(result.error === undefined ? {} : { error: result.error }),
-      failedAttempts: result.failedAttempts,
-      findings: result.findings.map((finding, at): ReportFinding => {
-        const here = start + at
-        if (output === undefined || kept.has(here)) return { ...finding, dropped: false }
-        const reason = output.dropped.get(here)
-        return {
-          ...finding,
-          dropped: true,
-          ...(reason === undefined ? {} : { droppedReason: reason }),
-        }
-      }),
-    }
-  })
 }
 
 function present(usages: ReadonlyArray<Usage | null>): Usage[] {
@@ -136,6 +110,11 @@ function byStep(input: ReportInput) {
     ...(input.evidence === undefined
       ? []
       : [{ name: 'evidence', models: summarizeModels(present(evidenceUsages(input.evidence))) }]),
+    ...(input.approvalCheck === undefined
+      ? []
+      : [
+          { name: 'approval check', models: summarizeModels(present([input.approvalCheck.usage])) },
+        ]),
   ]
 }
 
@@ -164,6 +143,7 @@ export function buildReport(input: ReportInput): ReportData {
     skipped: input.skipped,
     skillSelection: input.skillSelection,
     ...(input.evidence === undefined ? {} : { evidence: input.evidence }),
+    ...(input.approvalCheck === undefined ? {} : { approvalCheck: input.approvalCheck }),
     ...(stack === undefined ? {} : { stack }),
     ...(input.push === undefined ? {} : { push: reportPush(input.push) }),
     verifier:
@@ -190,11 +170,13 @@ export function costBreakdown(data: ReportData) {
   const selection = spent(data.skillSelection.usage)
   const verifier = spent(data.verifier?.usage ?? null)
   const evidence = evidenceUsages(data.evidence).reduce((sum, usage) => sum + spent(usage), 0)
+  const approvalCheck = spent(data.approvalCheck?.usage ?? null)
   return {
     selection,
     pillars,
     verifier,
     evidence,
-    total: selection + pillars + verifier + evidence,
+    approvalCheck,
+    total: selection + pillars + verifier + evidence + approvalCheck,
   }
 }

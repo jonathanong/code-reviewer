@@ -1,5 +1,6 @@
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
 import { renderQuestions, type Question } from './question.mts'
+import { APPROVAL_CHECK } from './skipped.mts'
 
 export const VERDICTS = ['Approve', 'Request Changes', 'Comment'] as const
 export type Verdict = (typeof VERDICTS)[number]
@@ -10,15 +11,18 @@ const SHORT_BODY_LINES = 4
 /**
  * Top-down: a blocking finding requests changes; else a high finding or an open question
  * comments; else approve. A failed pillar changes none of this: it is listed as skipped, and a
- * review where every pillar failed never reaches a verdict.
+ * review where every pillar failed never reaches a verdict. An approval whose second check did not
+ * complete is listed as skipped too, and is a comment: nothing double-checked it.
  */
 export function deriveVerdict(
   findings: readonly Finding[],
   questions: readonly Question[],
+  skipped: readonly SkippedPillar[] = [],
 ): Verdict {
   if (findings.some((finding) => finding.severity === 'blocking')) return 'Request Changes'
   if (findings.some((finding) => finding.severity === 'high')) return 'Comment'
   if (questions.length > 0) return 'Comment'
+  if (skipped.some((entry) => entry.pillar === APPROVAL_CHECK)) return 'Comment'
   return 'Approve'
 }
 
@@ -88,7 +92,7 @@ function skippedSection(skipped: readonly SkippedPillar[]): string[] {
 
 /** Renders the review's top section: verdict, reviewed SHA, summary, and the finding index. */
 export function renderHeader(input: ReviewInput, headSha: string): string {
-  const verdict = deriveVerdict(input.findings, input.questions)
+  const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
   const index = sortFindings(input.findings).map((finding) => {
     const where = locationText(finding)
     return `- **${severityTag(finding.severity)}** ${finding.title}${where ? ` — ${where}` : ''}`

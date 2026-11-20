@@ -4,7 +4,12 @@ import { postFinalReview } from '../review/post.mts'
 import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { recordReview } from '../tracker/record.mts'
-import { resolveEvidence, resolveReferences, type PullTarget } from '../review/index.mts'
+import {
+  resolveApprovalCheck,
+  resolveEvidence,
+  resolveReferences,
+  type PullTarget,
+} from '../review/index.mts'
 import {
   abortCommand,
   claimCommand,
@@ -59,6 +64,8 @@ export async function reviewCommand(
       }),
       // Machine config only, for the same reason: a fetch can carry the run's private code out.
       webReferences: resolveReferences(deps.configs(), target.repo).sources,
+      // Machine config only: a repository must not switch off the check on its own approvals.
+      approvalCheck: resolveApprovalCheck(deps.configs(), target.repo).enabled,
       exec: deps.exec,
       references: deps.references(),
     },

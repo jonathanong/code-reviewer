@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: a full review that would approve gets a second check (no run)
+
+New `references/refute.md`, the prompt of a separate run (the approval check) that tries to refute
+an approval, and one added paragraph in `verifier.md`'s Verdict section pointing at it. The check
+runs only in `review`, after the verifier, for a full review whose derived verdict is Approve; the
+benchmark has no such step and never reads `refute.md`. `bench-verifier` rows are not comparable
+with earlier entries (the verifier prompt text changed by that paragraph); recall and severity are
+not expected to move. The approval check itself is not measured. No run was made.
+
 ## 2026-11-19: posted text is short and free of review narration (no run)
 
 `pillars/_contract.md` gained a rule for posted text: lead with the defect and its consequence, one

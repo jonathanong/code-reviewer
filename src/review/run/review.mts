@@ -7,6 +7,9 @@ import { pluginSettings } from '../plugins.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
+import { applyApprovalCheck } from './approval-check.mts'
+import { approvalCheckInput } from './approval-check-prompt.mts'
+import { skipReview } from './review-skip.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { runPillars } from './pillars.mts'
@@ -17,7 +20,6 @@ import { runReviewVerifier } from './verify.mts'
 import {
   countFindings,
   failedSkips,
-  skipResult,
   message,
   read,
   runDir,
@@ -42,23 +44,7 @@ async function review(
   const title = titleOf(out)
   const base = { repo: options.repo, pr: options.pr, title, headSha, effort: plan.effort }
   const mode = plan.mode
-  if (mode === 'skip') {
-    const skipReason = plan.skipReason as string
-    await steps.skip(skipReason, headSha)
-    closed.value = true
-    const data = buildReport({
-      ...base,
-      mode,
-      reasons: plan.reasons,
-      skipReason,
-      verdict: null,
-      skipped: plan.skipped,
-      skillSelection: { selected: [], available: 0, usage: null },
-      pillars: [],
-    })
-    const report = writeReportFiles(out, data)
-    return skipResult(mode, headSha, report)
-  }
+  if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed)
   const plugins = await steps.plugins()
   const settings = pluginSettings(plugins.enabled)
   const followUp = plan.sinceSha !== null
@@ -99,7 +85,7 @@ async function review(
       `Every pillar failed: ${results.map((result) => `${result.pillar} (${(result.error as string).split('\n')[0]})`).join('; ')}`,
     )
   }
-  const skipped = [...plan.skipped, ...failedSkips(results)]
+  const pillarSkips = [...plan.skipped, ...failedSkips(results)]
   const findings = flattenFindings(results)
   const output = await runReviewVerifier(
     {
@@ -107,20 +93,30 @@ async function review(
       references: steps.references,
       run,
       findings,
-      skipped,
+      skipped: pillarSkips,
       threads: threadIdsOf(out),
       ...(web === undefined ? {} : { web }),
     },
     { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
+  const second = await applyApprovalCheck({
+    enabled: steps.approvalCheck,
+    mode,
+    model: plan.verifierModel,
+    tree,
+    settings,
+    exec: steps.exec,
+    input: approvalCheckInput(steps.references, run, output, results, findings, pillarSkips),
+  })
+  const { skipped, questions } = second
   const { evidence, findings: verified } = await applyEvidence({
     setup: () => steps.evidence(),
     readPrompt: () => read(join(steps.references, 'evidence.md')),
     out,
     title,
     pullRequestSummary: output.pullRequestSummary,
-    findings: output.findings,
+    findings: second.findings,
     mode,
     tree,
     settings,
@@ -131,7 +127,7 @@ async function review(
     summary: output.summary,
     skipped,
     findings: verified,
-    questions: output.questions,
+    questions,
   }
   writeJson(join(out, 'review.json'), input)
   const outcome = await steps.preview(input, headSha)
@@ -140,13 +136,14 @@ async function review(
     ...base,
     mode,
     reasons: plan.reasons,
-    verdict: deriveVerdict(verified, output.questions),
+    verdict: deriveVerdict(verified, questions, skipped),
     postWarnings: outcome.warnings,
     skipped,
     skillSelection: skillChoice,
     pillars: results,
-    verifier: { model: plan.verifierModel, output: { ...output, findings: verified } },
+    verifier: { model: plan.verifierModel, output: { ...output, findings: verified, questions } },
     evidence,
+    approvalCheck: second.check,
     stack: run.stack,
     push: run.push,
   })
@@ -158,7 +155,8 @@ async function review(
       mode,
       verdict: data.verdict,
       findings: countFindings(verified),
-      questions: output.questions.length,
+      questions: questions.length,
+      ...(second.check === undefined ? {} : { approvalCheck: second.check.outcome }),
       costUsd: costBreakdown(data).total,
       report,
       review: join(out, 'review.json'),

@@ -146,6 +146,7 @@ function setup(
       ],
     })),
     evidence: vi.fn(async () => ({ sources: [], readGuide: async () => '' })),
+    approvalCheck: false,
     exec: claude(),
     references: fixture('references'),
     ...overrides,

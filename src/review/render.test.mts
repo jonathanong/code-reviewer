@@ -36,6 +36,14 @@ describe('verdict and tags', () => {
     expect(severityTag('high')).toBe('[high]')
   })
 
+  it('makes an approval whose second check did not complete a Comment, never softening worse verdicts', () => {
+    const unchecked = [{ pillar: 'approval-check' as const, reason: 'timed out' }]
+    const failed = [{ pillar: 'security' as const, reason: 'failed' }]
+    expect(deriveVerdict([], [], unchecked)).toBe('Comment')
+    expect(deriveVerdict([], [], failed)).toBe('Approve')
+    expect(deriveVerdict([f({ severity: 'blocking' })], [], unchecked)).toBe('Request Changes')
+  })
+
   it('formats the marker with a dashed verdict', () => {
     expect(reviewMarker(SHA, 'Request Changes', 'low')).toBe(
       `<!-- final-review sha=${SHA} verdict=Request-Changes effort=low -->`,

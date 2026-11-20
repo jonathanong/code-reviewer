@@ -80,6 +80,9 @@ The verdict is derived top-down; do not choose it separately:
 2. Otherwise a `high` finding, or any open question, gives Comment.
 3. Otherwise Approve.
 
+A full review that would approve then gets one more pass, the [approval check](refute.md), which
+may add findings and questions; the caller derives the verdict again. You do not run it.
+
 A failed pillar changes none of this: it is listed under `skipped`, and when every pillar fails
 there is no review at all. `code-reviewer post` recomputes the verdict from the findings and
 questions; a `verdict` in `review.json` that disagrees fails the review. To change the verdict,

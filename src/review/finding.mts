@@ -1,6 +1,7 @@
 import type { ReviewSide } from '../review-payload/index.mts'
 import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
+import { APPROVAL_CHECK } from './skipped.mts'
 
 export const PILLARS = [
   'rules',
@@ -19,6 +20,9 @@ export type Severity = (typeof SEVERITIES)[number]
 export const EFFORTS = ['low', 'medium', 'high'] as const
 export type Effort = (typeof EFFORTS)[number]
 
+/** A pillar, or the approval check, that did not run, with why. */
+export type SkippedPillar = { pillar: Pillar | typeof APPROVAL_CHECK; reason: string }
+
 export type Finding = {
   pillar: Pillar
   severity: Severity
@@ -29,8 +33,6 @@ export type Finding = {
   side?: ReviewSide
   startLine?: number
 }
-
-export type SkippedPillar = { pillar: Pillar; reason: string }
 
 export type ReviewInput = {
   effort: Effort
@@ -111,7 +113,7 @@ function parseSkipped(raw: unknown, index: number): SkippedPillar {
   const where = `skipped[${index}]`
   if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
   return {
-    pillar: oneOf(PILLARS, raw.pillar, `${where}.pillar`),
+    pillar: oneOf([...PILLARS, APPROVAL_CHECK], raw.pillar, `${where}.pillar`),
     reason: text(raw, 'reason', where),
   }
 }
@@ -147,7 +149,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')
-    const derived = deriveVerdict(review.findings, review.questions)
+    const derived = deriveVerdict(review.findings, review.questions, review.skipped)
     if (given !== derived) {
       throw new ReviewError(
         `verdict ${given} does not match the findings and questions (${derived}); remove it to recompute.`,

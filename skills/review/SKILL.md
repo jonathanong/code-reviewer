@@ -95,6 +95,11 @@ rather than label, or to review a head that is already reviewed. The command:
    `report.md` and writes `evidence.json`. It never changes a severity or the verdict. A source
    reported `blocked` in `report.md` (denied command, missing credentials, unreadable guide)
    was not checked: say so when you relay the review.
+   A full review that would approve first gets one more independent run, the
+   [approval check](references/refute.md), that tries to refute the approval; what it confirms is
+   added to the findings and questions and the verdict is derived again. If that run fails the
+   review still completes, lists `approval-check` under `skipped`, and is a Comment, not an
+   approval. `approvalCheck: false` in a machine config switches it off.
    When the machine config lists `references`, the correctness and security pillars and the
    verifier also get `WebFetch`, allowed only for the listed domains, to check a specific claim
    against the documentation ([web-references](references/web-references.md)).
@@ -124,7 +129,7 @@ it inline. `report.md` holds the raw findings, the skills loaded and the cost by
 whether to post. Post without asking only when the human has said this kind of review may be
 posted unattended. A human who wants a finding or question changed edits `review.json`; preview the result
 with `post --dry-run`. The verdict is derived from the findings and questions (a blocking finding
-requests changes; otherwise a high finding or any open question comments; otherwise approve), and
+requests changes; otherwise a high finding or any open question comments; otherwise approve; an `approval-check` entry under `skipped` also makes it a comment), and
 `post` fails a `review.json` whose `verdict` field disagrees, so remove that field when editing.
 
 ## Step 4 - Post or drop

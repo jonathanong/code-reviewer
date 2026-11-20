@@ -160,6 +160,15 @@ describe('explainRun', () => {
     expect(text).toContain('$3.01 to produce this review.')
   })
 
+  it('says an approval nobody double-checked is a Comment, not an Approve', () => {
+    const text = explain('unchecked-approval', { repo: 'acme/widgets', pr: 3, title: 'T' })
+    expect(text).toContain('## Verdict: Comment')
+    expect(text).toContain(
+      'but the second check on the approval did not finish. That means Comment',
+    )
+    expect(text).toContain('- Not reviewed, approval-check: The second check on the approval')
+  })
+
   it('uses no process jargon a reader cannot act on', () => {
     expect(explain('full')).not.toMatch(/pillar|verifier|run directory|plan\.json/iu)
   })

@@ -29,6 +29,8 @@ export type ReviewSteps = {
   evidence(): Promise<EvidenceSetup>
   /** The machine-configured web references for the repository; none when absent. */
   webReferences?: readonly ReferenceSource[]
+  /** False when the settings switch off the second check on an approval. */
+  approvalCheck: boolean
   exec: Exec
   /** Directory holding `verifier.md` and `pillars/`. */
   references: string

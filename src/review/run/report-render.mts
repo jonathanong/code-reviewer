@@ -5,6 +5,7 @@ import { renderQuestions } from '../question.mts'
 import { locationText } from '../render.mts'
 import { renderPush } from './push-report.mts'
 import { renderStack } from './stack-report.mts'
+import { renderApprovalCheck } from './approval-check-render.mts'
 import { renderEvidence } from './evidence-render.mts'
 import { costBreakdown, type ReportData, type ReportFinding, type ReportPillar } from './report.mts'
 
@@ -92,6 +93,7 @@ export function renderReport(data: ReportData): string {
           )
           .join('\n\n'),
     ...renderQuestions(data.questions ?? []),
+    ...renderApprovalCheck(data.approvalCheck),
     ...renderPostWarnings(data.postWarnings ?? []),
     ...(data.fixedThreadIds.length === 0
       ? []
@@ -110,7 +112,7 @@ export function renderReport(data: ReportData): string {
       ? 'None.'
       : data.skipped.map((entry) => `- ${entry.pillar}: ${entry.reason}`).join('\n'),
     '### Cost',
-    `Total: ${money(cost.total)} (skill selection ${money(cost.selection)}, pillars ${money(cost.pillars)}, verifier ${money(cost.verifier)}${data.verifier === null ? '' : `, ${data.verifier.model}`}${data.evidence === undefined ? '' : `, evidence ${money(cost.evidence)}`})`,
+    `Total: ${money(cost.total)} (skill selection ${money(cost.selection)}, pillars ${money(cost.pillars)}, verifier ${money(cost.verifier)}${data.verifier === null ? '' : `, ${data.verifier.model}`}${data.evidence === undefined ? '' : `, evidence ${money(cost.evidence)}`}${data.approvalCheck === undefined ? '' : `, approval check ${money(cost.approvalCheck)}`})`,
     '### Tokens by model',
     'Input counts fresh, cache read and cache creation tokens. Failed attempts are included.',
     renderModelTable(data.usageByModel, 'Step'),
