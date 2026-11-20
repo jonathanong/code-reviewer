@@ -1,5 +1,7 @@
+import { VERDICT_EVENTS } from '../review/event.mts'
 import type { Severity } from '../review/finding.mts'
-import type { ExplainFinding, Explained } from './load.mts'
+import type { Verdict } from '../review/render.mts'
+import type { ExplainFinding, ExplainQuestion, Explained } from './load.mts'
 
 const ORDER: Severity[] = ['blocking', 'high', 'medium', 'low']
 
@@ -53,12 +55,52 @@ function finding(entry: ExplainFinding, index: number): string {
   return lines.join('\n\n')
 }
 
-/** The one reason for the verdict: the most severe finding, or that there is none. */
-function reason(findings: readonly ExplainFinding[]): string {
-  const top = findings.find((entry) => entry.severity === 'blocking' || entry.severity === 'high')
-  return top === undefined
-    ? 'No blocking or high-severity problem was found.'
-    : `${WEIGHT[top.severity]}: ${top.title}.`
+const ASKED: Record<NonNullable<ExplainQuestion['askOf']>, string> = {
+  author: 'the author',
+  product: 'whoever owns the product decision',
+}
+
+function question(entry: ExplainQuestion): string {
+  const who = entry.askOf === null ? '' : `For ${ASKED[entry.askOf]}: `
+  const why = entry.why === null || entry.why === '' ? '' : `\n  Why it matters: ${entry.why}`
+  return `- ${who}${entry.text}${why}`
+}
+
+const RULES =
+  'The verdict follows three rules in order: a blocking problem means Request Changes; otherwise a high-severity problem or any open question means Comment; otherwise Approve.'
+
+/** Why the verdict is what it is, in plain words, from the most severe finding or the questions. */
+function reason(findings: readonly ExplainFinding[], questions: number): string {
+  const blocking = findings.find((entry) => entry.severity === 'blocking')
+  const high = findings.find((entry) => entry.severity === 'high')
+  const asked = `${questions} open question${questions === 1 ? ' is' : 's are'} still waiting for an answer`
+  const why =
+    blocking !== undefined
+      ? `${WEIGHT.blocking}: ${blocking.title}. A blocking problem means Request Changes.`
+      : high !== undefined
+        ? `No blocking problem, but a high-severity one: ${high.title}.${questions > 0 ? ` Also, ${asked}.` : ''} That means Comment.`
+        : questions > 0
+          ? `No blocking or high-severity problem, but ${asked}. That means Comment: the reviewer cannot say yes or no until they are answered.`
+          : 'No blocking or high-severity problem was found, and no question is open. That means Approve.'
+  return `${why}\n\n${RULES}`
+}
+
+function posted(run: Explained): string[] {
+  if (run.event === null) return []
+  const own = VERDICT_EVENTS[run.verdict as Verdict] as string | undefined
+  if (run.event === own) return []
+  const because: Record<string, string> = {
+    'self-review':
+      "the pull request is the reviewer's own, and GitHub does not let an account approve or request changes on its own pull request",
+    'identity-unknown':
+      'the reviewer could not confirm who wrote the pull request, so it posted the safe form',
+    rejected: 'GitHub refused the verdict as a review event',
+  }
+  const reason =
+    run.downgraded === null ? '' : ` because ${because[run.downgraded] ?? run.downgraded}`
+  return [
+    `On GitHub this was posted as ${run.event === 'COMMENT' ? 'a plain comment' : run.event}${reason}. The verdict above is still the reviewer's real conclusion.`,
+  ]
 }
 
 function checked(run: Explained): string[] {
@@ -107,14 +149,13 @@ export function renderExplained(run: Explained): string {
       ? 'No description of the change was recorded.'
       : run.pullRequestSummary,
     `## Verdict: ${run.verdict ?? 'not recorded'}`,
-    reason(sorted),
+    reason(sorted, run.questions.length),
+    ...posted(run),
     ...(run.summary === '' ? [] : [run.summary]),
     `## Findings (${sorted.length})`,
     sorted.length === 0 ? 'None.' : sorted.map(finding).join('\n\n'),
     '## Open questions',
-    run.questions.length === 0
-      ? 'None.'
-      : run.questions.map((question) => `- ${question}`).join('\n'),
+    run.questions.length === 0 ? 'None.' : run.questions.map(question).join('\n'),
     '## What was checked, and what was not',
     checked(run).join('\n'),
     '## Cost',

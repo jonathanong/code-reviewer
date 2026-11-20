@@ -1,0 +1,18 @@
+{
+  "effort": "high",
+  "summary": "The change looks right, but two things are not settled by the code.",
+  "skipped": [],
+  "findings": [],
+  "questions": [
+    {
+      "question": "Is the v1 endpoint still called by anyone?",
+      "askOf": "product",
+      "why": "If it is, removing it breaks those callers."
+    },
+    {
+      "question": "Should retries stop after the first 4xx?",
+      "askOf": "author",
+      "why": "It decides whether the loop can run forever."
+    }
+  ]
+}

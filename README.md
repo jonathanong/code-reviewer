@@ -82,8 +82,9 @@ comments). GitHub refuses approve and request-changes on your own pull request, 
 author is the reviewer's identity (the `gh` login, or the App bot; the same identity that decides
 whose markers count) the review goes out as `COMMENT`. So it does when that identity cannot be
 determined, or when GitHub rejects the event with 422: it falls back to `COMMENT` once, and the
-`post` output says `event` and `downgraded` (`self-review`, `identity-unknown`, or `rejected`), so a
-review is never lost. The first-line tag, hidden marker, labels and check run are unchanged and
+`post` output says `event` and `downgraded` (`self-review`, `identity-unknown`, or `rejected`; the
+tracker's `posted` row and `explain` carry both), so a review is never lost. The author comes from
+the run's `context.json` when it is for the same head, and from the host otherwise. The first-line tag, hidden marker, labels and check run are unchanged and
 still decide `status`; GitHub's own review state is not trusted. A new review does not dismiss the
 reviewer's earlier request for changes on an older head: the newer approval or comment is enough.
 
@@ -139,7 +140,7 @@ Every `review` appends one row to a tracker, and `post` appends a `posted` row t
 one review run of one pull request head: repository, number, title, author, head SHA, mode (`full`,
 `light`, `follow-up` or `skip`), verdict, finding counts by severity, the number of open questions
 when `review.json` has a `questions` list, cost, start and finish times, the run directory, and a state:
-`reviewed` (produced, not posted), `posted` (with the review link and event), `skipped` or `failed`
+`reviewed` (produced, not posted), `posted` (with the review link, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
 (with the reason). A later row for the same repository, pull request and head replaces an earlier
 one, except that `posted` adds to the `reviewed` row it follows. `tracker` prints that folded state;
 CSV cells that begin with a spreadsheet formula character are prefixed with an apostrophe.
@@ -152,8 +153,11 @@ do not publish it. A tracker failure is reported as `trackerProblem` in the comm
 never fails a review or a post.
 
 `explain` prints a Markdown explainer for someone who has not read the code: what the pull request
-does, the verdict and the reason for it, each finding (claim, where, why it matters and what
-would fix it, most severe first), open questions, what was and was not checked, and the cost. It
+does, the verdict and why it is that verdict in plain words (a blocking finding: Request Changes; a
+high finding or an open question: Comment; otherwise Approve), the event it was posted as when that
+differs from the verdict (read from the tracker's `posted` row), each open question with who is asked
+and why it matters, each finding (claim, where, why it matters and what
+would fix it, most severe first), what was and was not checked, and the cost. It
 is built from `review.json`, `report.json`, `evidence.json` and `stack.json` in the run directory,
 any of which may be missing, and makes no model call and no network request. With `--repo` and
 `--pr` it uses the run directory of the latest tracked run, which must still exist. The skills put

@@ -21,6 +21,14 @@ export type ExplainFinding = {
   checked: { effect: string; note: string } | null
 }
 
+export type ExplainQuestion = {
+  text: string
+  /** Who is asked; null for a question recorded without it. */
+  askOf: 'author' | 'product' | null
+  /** What the answer changes about the review; null when not recorded. */
+  why: string | null
+}
+
 export type Explained = {
   repo: string | null
   pr: number | null
@@ -34,7 +42,11 @@ export type Explained = {
   /** Set when nothing was reviewed. */
   skipReason: string | null
   findings: ExplainFinding[]
-  questions: string[]
+  questions: ExplainQuestion[]
+  /** The GitHub review event it was posted as, from the tracker; null when not known. */
+  event: string | null
+  /** Why that event is a COMMENT instead of the verdict's own event. */
+  downgraded: string | null
   reviewedAreas: string[]
   notReviewed: { area: string; reason: string }[]
   /** Sources of real data the review could not use, with why. */
@@ -49,11 +61,13 @@ export type Fallback = { repo?: string; pr?: number; title?: string | null }
 
 const QUESTION_KEYS = ['question', 'text', 'title', 'body']
 
-function questionText(entry: unknown): string[] {
-  if (typeof entry === 'string') return [entry]
+function questionOf(entry: unknown): ExplainQuestion[] {
+  if (typeof entry === 'string') return [{ text: entry, askOf: null, why: null }]
   const record = asRecord(entry)
   const key = QUESTION_KEYS.find((candidate) => typeof record[candidate] === 'string')
-  return key === undefined ? [] : [record[key] as string]
+  if (key === undefined) return []
+  const askOf = record.askOf === 'author' || record.askOf === 'product' ? record.askOf : null
+  return [{ text: record[key] as string, askOf, why: asString(record.why) }]
 }
 
 function findingsOf(list: unknown): Finding[] {
@@ -112,6 +126,7 @@ export function loadRun(
   const sources = listOf(evidence.sources)
   const areas = listOf(report.pillars)
   const skipped = listOf(review.skipped ?? report.skipped)
+  const questions = (Array.isArray(review.questions) ? review.questions : []).flatMap(questionOf)
   return {
     repo: asString(report.repo) ?? fallback.repo ?? null,
     pr: asNumber(report.pr) ?? fallback.pr ?? null,
@@ -123,7 +138,12 @@ export function loadRun(
     summary: asString(review.summary) ?? asString(report.summary) ?? '',
     verdict:
       asString(report.verdict) ??
-      (Object.keys(review).length === 0 ? null : deriveVerdict(findings)),
+      (Object.keys(review).length === 0
+        ? null
+        : deriveVerdict(
+            findings,
+            questions.map((item) => ({ question: item.text, askOf: 'author', why: '' })),
+          )),
     skipReason: asString(report.skipReason) ?? asString(plan.skipReason),
     findings: findings.map((finding, index) => {
       const note = notes.get(findingId(index))
@@ -142,7 +162,9 @@ export function loadRun(
             : { effect: asString(note.effect) ?? 'none', note: asString(note.note) ?? '' },
       }
     }),
-    questions: (Array.isArray(review.questions) ? review.questions : []).flatMap(questionText),
+    questions,
+    event: null,
+    downgraded: null,
     reviewedAreas: areas.flatMap((area) =>
       area.error === undefined ? [asString(area.pillar) ?? 'unknown'] : [],
     ),

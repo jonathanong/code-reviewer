@@ -150,55 +150,16 @@ describe('runReviewCommand', () => {
     expect(Array.isArray(printed.reviews)).toBe(true)
   })
 
-  it('passes --allow-long and the text targets to the post, and rejects a bad target', async () => {
+  it('uses the author prepare recorded instead of asking the host', async () => {
     const { out } = capture()
-    const long = JSON.stringify({
-      findings: [
-        {
-          pillar: 'rules',
-          severity: 'low',
-          title: 'T',
-          body: 'x'.repeat(200),
-          path: 'a.ts',
-          line: 1,
-        },
-      ],
-    })
-    const args = ['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--dry-run']
-    const files = [{ filename: 'a.ts', patch: '@@ -1 +1 @@\n+x\n' }]
-    const first = deps(fakeIo({ listFiles: vi.fn(async () => files) }), long)
-    await runReviewCommand([...args, '--inline-target', '10'], first)
-    expect(JSON.parse(out.join('')).tooLong).toHaveLength(1)
-    const io = fakeIo({ listFiles: vi.fn(async () => files) })
-    const refused = capture()
-    await expect(
-      runReviewCommand(
-        ['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--inline-target', '10'],
-        deps(io, long),
-      ),
-    ).resolves.toBe(2)
-    expect(refused.err.join('')).toContain('--allow-long')
-    expect(io.postReview).not.toHaveBeenCalled()
-    await expect(
-      runReviewCommand(
-        [
-          'post',
-          ...PR,
-          '--head-sha',
-          SHA,
-          '--input',
-          'f.json',
-          '--inline-target',
-          '10',
-          '--allow-long',
-        ],
-        deps(io, long),
-      ),
-    ).resolves.toBe(0)
-    expect(io.postReview).toHaveBeenCalledOnce()
-    await expect(
-      runReviewCommand([...args, '--body-target', '0'], deps(fakeIo(), long)),
-    ).resolves.toBe(2)
+    const io = fakeIo()
+    const run = JSON.stringify({ findings: [], author: 'bot', headSha: SHA })
+    await runReviewCommand(
+      ['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--dry-run'],
+      deps(io, run),
+    )
+    expect(io.pullAuthor).not.toHaveBeenCalled()
+    expect(JSON.parse(out.join(''))).toMatchObject({ event: 'COMMENT', downgraded: 'self-review' })
   })
 
   it('posts for real, completes the lifecycle, and prints the review count', async () => {
@@ -233,7 +194,7 @@ describe('runReviewCommand', () => {
         state: 'posted',
         verdict: 'Approve',
         reviewUrl: 'https://example.test/r',
-        event: 'COMMENT',
+        event: 'APPROVE',
         postedAt: '2026-05-06T07:08:09.000Z',
       },
     ])

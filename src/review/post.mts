@@ -50,6 +50,8 @@ export async function postFinalReview(
     limits?: BuildLimits
     textLimits?: TextLimits
     allowLong?: boolean
+    /** The pull request author when the run already knows it; saves a lookup. */
+    author?: string
   } = {},
 ): Promise<PostOutcome> {
   if (!SHA_RE.test(headSha)) throw new ReviewError('--head-sha must be a full lowercase SHA.')
@@ -61,7 +63,7 @@ export async function postFinalReview(
   }
   const index = indexReviewFiles(await io.listFiles())
   const verdict = deriveVerdict(input.findings, input.questions)
-  const choice = await chooseEvent(io, verdict)
+  const choice = await chooseEvent(io, verdict, options.author)
   const reviews = withEvent(
     buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS),
     choice.event,

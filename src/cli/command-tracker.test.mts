@@ -42,6 +42,7 @@ function row(overrides: Partial<TrackerRow>): TrackerRow {
     reason: null,
     reviewUrl: null,
     event: null,
+    downgraded: null,
     postedAt: null,
     runDir: null,
     ...overrides,
