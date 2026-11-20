@@ -10,6 +10,7 @@ import {
   revokeFinalApproval,
   type PullTarget,
 } from '../review/index.mts'
+import { takeRetryCount } from '../gh-cli/index.mts'
 import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
@@ -182,5 +183,12 @@ export async function runReviewCommand(
       `code-reviewer: ${error instanceof Error ? error.message : String(error)}\n`,
     )
     return 2
+  } finally {
+    const retries = takeRetryCount()
+    if (retries > 0) {
+      process.stderr.write(
+        `code-reviewer: warning: ${retries} GitHub ${retries === 1 ? 'call was' : 'calls were'} retried after transient failures.\n`,
+      )
+    }
   }
 }

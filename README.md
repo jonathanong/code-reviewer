@@ -96,6 +96,18 @@ fails, or GitHub refuses a dismissal, the post still succeeds and `warnings` nam
 standing. `dismissed` in the output lists the dismissed review ids; a dry run lists what it would
 dismiss as `wouldDismiss` and dismisses nothing.
 
+GitHub calls survive transient failures. Every `gh` call goes through one retry policy
+(`src/gh-cli/retry.mts`): 3 tries per call, so 2 retries, waiting about 1s then 2s (each wait is
+jittered to between half and all of its step, and no backoff exceeds 8s). A 502, 503 or 504, a
+reset, timed-out or dropped connection, and a secondary rate limit or 429 are transient; a wait
+GitHub names with `retry-after` is honoured up to 60s, and a longer one fails the call. Every
+other failure (401, 403, 404, 422, other 5xx, a missing `gh`, bad App config) fails at once.
+Reads are retried, and so are the writes that are safe to repeat: adding or removing a label and
+setting a commit status. A review POST is never repeated blindly, because a request that timed out
+may have landed; and the check-run POST is not repeated either, since a repeat would make a second
+check run. A command that retried anything prints one stderr line, `warning: N GitHub calls were
+retried after transient failures`.
+
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
 plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of

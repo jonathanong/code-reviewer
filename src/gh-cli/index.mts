@@ -13,3 +13,16 @@ export { loadAppConfig } from './app-config.mts'
 export type { AppConfig, FetchJson, TokenProvider } from './app-auth.mts'
 export { appRunner, createGhAuth, splitRepo } from './auth.mts'
 export type { GhAuth } from './auth.mts'
+export { classifyFailure, RETRY_AFTER_CAP_MS } from './failure.mts'
+export type { Failure } from './failure.mts'
+export {
+  createRetrier,
+  pauseForRetry,
+  processRetrier,
+  RETRY_POLICY,
+  retryDelay,
+  takeRetryCount,
+  withRetry,
+} from './retry.mts'
+export type { Retrier } from './retry.mts'
+export { callKind } from './retry-safety.mts'
