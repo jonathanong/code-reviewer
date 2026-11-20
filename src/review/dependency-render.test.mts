@@ -30,6 +30,18 @@ describe('dependsOnSection', () => {
     ])
   })
 
+  it('caps the posted list and each reason, so the body stays under its length target', () => {
+    const many = Array.from({ length: 15 }, (_, i) => ({
+      ...dep(`#${i + 1}`, 'open'),
+      why: 'x'.repeat(400),
+    }))
+    const block = dependsOnSection(many)[0] ?? ''
+    const lines = block.split('\n').slice(2)
+    expect(lines).toHaveLength(6)
+    expect(lines[5]).toBe('- +10 more, listed in the full report')
+    expect(block.length).toBeLessThan(1100)
+  })
+
   it('writes one line per dependency for the report and the explanation', () => {
     expect(dependencyLine(dep('#2', 'open'))).toBe('- #2 (open): why #2')
   })
