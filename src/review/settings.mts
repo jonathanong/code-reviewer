@@ -1,4 +1,5 @@
 import type { RepoConfig, RepoConfigs } from './rules/config.mts'
+import type { EvidenceSource } from './rules/evidence-parse.mts'
 import type { TargetConfig } from './rules/target-config.mts'
 import type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
 
@@ -81,6 +82,27 @@ export function settingLayers(
       approval: labelLayer('approval'),
     },
     checkRun: layers.find(([, config]) => config?.checkRun !== undefined)?.[0] ?? null,
+  }
+}
+
+export type EvidenceSettings = {
+  sources: EvidenceSource[]
+  /** The machine layer whose list applies; null when none sets one. */
+  from: 'machine repo' | 'machine owner' | null
+}
+
+/**
+ * The evidence sources for `owner/name` (or `owner`): the highest machine layer that sets the key.
+ * The reviewed repository's own file is never consulted, so a pull request's repository cannot
+ * grant the reviewer commands.
+ */
+export function resolveEvidence(configs: RepoConfigs, scope: string): EvidenceSettings {
+  const [layer, config] = candidates(configs, scope, undefined).find(
+    ([, candidate]) => candidate?.evidence !== undefined,
+  ) ?? [null, undefined]
+  return {
+    sources: config?.evidence ?? [],
+    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
   }
 }
 

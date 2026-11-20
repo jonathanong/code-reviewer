@@ -60,6 +60,18 @@ export function pillarToolFlags(
   return { tools, allowedTools: tools }
 }
 
+/**
+ * The evidence run reads files and runs only the configured command prefixes: Bash is offered, and
+ * `--allowedTools` grants one `Bash(<prefix>:*)` per prefix, so `dontAsk` denies any other command.
+ */
+export function evidenceToolFlags(prefixes: readonly string[]): {
+  tools: string
+  allowedTools: string
+} {
+  const allowed = [...new Set(prefixes)].map((prefix) => `Bash(${prefix}:*)`)
+  return { tools: `${READ_ONLY_TOOLS},Bash`, allowedTools: [READ_ONLY_TOOLS, ...allowed].join(',') }
+}
+
 /** The `claude --effort` level for a run, by the plan's mode. The plan's own `effort` is separate. */
 export const CLAUDE_EFFORT: Record<Exclude<Mode, 'skip'>, string> = {
   light: 'low',

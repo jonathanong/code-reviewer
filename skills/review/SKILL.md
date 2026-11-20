@@ -65,6 +65,12 @@ rather than label, or to review a head that is already reviewed. The command:
 5. Writes `review.json` (what `post` takes), `preview.md` (the review as it would be posted), and
    `report.md` with the pull request summary, the verdict, every pillar's findings including the
    ones the verifier dropped and why, the skills each pillar loaded, and the cost by model.
+   When the machine config lists `evidence` sources, one more run follows the verifier
+   ([evidence](references/evidence.md)): it checks findings against those sources, appends an
+   `Evidence` line to a supported or contradicted finding, adds an Evidence section to
+   `report.md` and writes `evidence.json`. It never changes a severity or the verdict. A source
+   reported `blocked` in `report.md` (denied command, missing credentials, unreadable guide)
+   was not checked: say so when you relay the review.
 
 It prints one line:
 `{claimed, mode, verdict, findings, costUsd, report, review, headSha, fixedThreadIds}`. It

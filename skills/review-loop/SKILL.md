@@ -104,13 +104,13 @@ and can check that their rules were applied, and that there is a history of what
 said.
 
 When a review finishes, append its `report.md` as one section: the pull request summary, the
-verdict, the verified findings, every pillar's raw findings with the ones the verifier dropped
+verdict, the verified findings, the Evidence section when there is one, every pillar's raw findings with the ones the verifier dropped
 and why, the skills each pillar loaded, and the cost. Start a new document after about 25 pull
 requests, or one per organization when the session reviews several, and link the new one from the
 old.
 
-Then tell the human the pull request, the verdict, the count of findings by severity, and the
-document link, and ask whether to post. Post only on their answer, unless they have said that
+Then tell the human the pull request, the verdict, the count of findings by severity, any
+evidence source reported `blocked` (the review went on without it), and the document link, and ask whether to post. Post only on their answer, unless they have said that
 kind of review may be posted unattended. While waiting, keep reviewing the queue; a review that
 waits for an answer does not count toward the three.
 

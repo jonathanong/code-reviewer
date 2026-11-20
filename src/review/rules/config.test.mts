@@ -102,6 +102,54 @@ describe('parseRepoConfig settings', () => {
   })
 })
 
+describe('parseRepoConfig evidence', () => {
+  const evidence = [
+    {
+      name: 'aws',
+      description: 'Logs.',
+      guide: { file: '/guides/aws.md' },
+      commands: ['aws logs filter-log-events'],
+      env: { AWS_PROFILE: 'readonly' },
+    },
+  ]
+
+  it('reads evidence sources from a repository file and an owner file', () => {
+    const text = JSON.stringify({ evidence })
+    expect(parseRepoConfig(text, FILE).evidence).toEqual(evidence)
+    expect(parseRepoConfig(text, 'acme.json', 'owner')).toEqual({
+      consumes: [],
+      evidence,
+      problems: [],
+    })
+  })
+
+  it('names the file in an evidence problem', () => {
+    const text = JSON.stringify({ evidence: [{ ...evidence[0], commands: ['aws'] }] })
+    expect(parseRepoConfig(text, FILE).problems).toEqual([
+      expect.stringContaining(`${FILE} evidence[0]: every command must be`),
+    ])
+  })
+
+  it('ignores evidence in the reviewed repository own file and says it is machine-only', () => {
+    const parsed = parseRepoConfig(
+      JSON.stringify({ evidence }),
+      'acme/web/.code-reviewer.json',
+      'target',
+    )
+    expect(parsed).toEqual({
+      consumes: [],
+      problems: ['acme/web/.code-reviewer.json: evidence sources are machine-only; ignored'],
+    })
+  })
+
+  it('keeps the other keys of a reviewed repository file that also sets evidence', () => {
+    const text = JSON.stringify({ evidence, consumes: [{ repo: 'acme/api' }] })
+    const parsed = parseRepoConfig(text, 'f', 'target')
+    expect(parsed.consumes).toEqual([{ repo: 'acme/api', paths: [], via: '' }])
+    expect(parsed.evidence).toBeUndefined()
+  })
+})
+
 describe('loadRepoConfigs', () => {
   const dirs: string[] = []
   afterEach(() => {

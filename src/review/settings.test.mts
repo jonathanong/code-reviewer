@@ -4,6 +4,7 @@ import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './rules/config.mt
 import {
   DEFAULT_LABELS,
   repoSettings,
+  resolveEvidence,
   reviewSettings,
   settingLayers,
   settingsProblems,
@@ -116,6 +117,48 @@ describe('the repository file layer', () => {
     const settings = await repoSettings({ configs: () => NO_CONFIGS, targetConfig }, 'acme/web')
     expect(settings.checkRun).toEqual({ name: 'Own review' })
     expect(targetConfig).toHaveBeenCalledWith('acme/web')
+  })
+})
+
+describe('resolveEvidence', () => {
+  const source = (name: string) => ({
+    name,
+    description: 'Logs.',
+    guide: { file: '/g.md' },
+    commands: ['aws logs get-query-results'],
+    env: {},
+  })
+  const configs: RepoConfigs = {
+    byOwner: new Map([['acme', { consumes: [], evidence: [source('owner')], problems: [] }]]),
+    byRepo: new Map([
+      ['acme/web', { consumes: [], evidence: [source('repo')], problems: [] }],
+      ['acme/off', { consumes: [], evidence: [], problems: [] }],
+      ['acme/plain', { consumes: [], problems: [] }],
+    ]),
+    problems: [],
+  }
+
+  it('takes the repository list over the owner list, replacing it whole', () => {
+    expect(resolveEvidence(configs, 'acme/web')).toEqual({
+      sources: [source('repo')],
+      from: 'machine repo',
+    })
+  })
+
+  it('falls back to the owner list, and lets a repository switch evidence off with []', () => {
+    expect(resolveEvidence(configs, 'Acme/plain')).toEqual({
+      sources: [source('owner')],
+      from: 'machine owner',
+    })
+    expect(resolveEvidence(configs, 'acme')).toEqual({
+      sources: [source('owner')],
+      from: 'machine owner',
+    })
+    expect(resolveEvidence(configs, 'acme/off')).toEqual({ sources: [], from: 'machine repo' })
+  })
+
+  it('has none without a machine list', () => {
+    expect(resolveEvidence(NO_CONFIGS, 'acme/web')).toEqual({ sources: [], from: null })
   })
 })
 

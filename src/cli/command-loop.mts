@@ -8,6 +8,7 @@ import {
   claimReview,
   reviewStatus,
   prepareReview,
+  resolveEvidence,
   resolveThreads,
   reviewSettings,
   settingLayers,
@@ -56,10 +57,13 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   else assertRepo(repo)
   const configs = deps.configs()
   const target = repo === undefined ? undefined : await deps.targetConfig(repo)
+  const evidence = resolveEvidence(configs, scope)
   return {
     scope,
     ...reviewSettings(configs, scope, target?.config),
     from: settingLayers(configs, scope, target?.config),
+    // Names only: a source's env values and commands stay out of any output.
+    evidence: { sources: evidence.sources.map((source) => source.name), from: evidence.from },
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

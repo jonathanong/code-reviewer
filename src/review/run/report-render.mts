@@ -2,6 +2,7 @@ import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
 import { locationText } from '../render.mts'
+import { renderEvidence } from './evidence-render.mts'
 import { costBreakdown, type ReportData, type ReportFinding, type ReportPillar } from './report.mts'
 
 function money(value: number | null): string {
@@ -79,6 +80,9 @@ export function renderReport(data: ReportData): string {
           '### Fixed since the last review',
           `After posting, run \`code-reviewer resolve --repo ${data.repo} --pr ${data.pr} --thread ${data.fixedThreadIds.join(' ')}\`.`,
         ]),
+    ...(data.evidence === undefined
+      ? []
+      : renderEvidence(data.evidence, data.findings, money(cost.evidence))),
     '### Pillars',
     `Skills selected: ${data.skillSelection.selected.length === 0 ? 'none' : data.skillSelection.selected.join(', ')}${data.skillSelection.error === undefined ? '' : ` (selection error: ${data.skillSelection.error})`}`,
     ...data.pillars.map(pillar),
@@ -87,7 +91,7 @@ export function renderReport(data: ReportData): string {
       ? 'None.'
       : data.skipped.map((entry) => `- ${entry.pillar}: ${entry.reason}`).join('\n'),
     '### Cost',
-    `Total: ${money(cost.total)} (skill selection ${money(cost.selection)}, pillars ${money(cost.pillars)}, verifier ${money(cost.verifier)}${data.verifier === null ? '' : `, ${data.verifier.model}`})`,
+    `Total: ${money(cost.total)} (skill selection ${money(cost.selection)}, pillars ${money(cost.pillars)}, verifier ${money(cost.verifier)}${data.verifier === null ? '' : `, ${data.verifier.model}`}${data.evidence === undefined ? '' : `, evidence ${money(cost.evidence)}`})`,
     '### Tokens by model',
     'Input counts fresh, cache read and cache creation tokens. Failed attempts are included.',
     renderModelTable(data.usageByModel, 'Step'),

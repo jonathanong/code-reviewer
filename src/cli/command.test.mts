@@ -61,6 +61,7 @@ function deps(io: ReviewIo, input = '{}'): MockDeps {
     createIo: vi.fn(() => io),
     createLabelIo: vi.fn(fakeLabelIo),
     createPrepareIo: vi.fn(() => ({}) as PrepareIo),
+    guideReader: vi.fn(() => vi.fn(async () => '')),
     runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
     listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),

@@ -25,11 +25,18 @@ export { skipPullRequest } from './skip.mts'
 export {
   DEFAULT_LABELS,
   repoSettings,
+  resolveEvidence,
   reviewSettings,
   settingLayers,
   settingsProblems,
 } from './settings.mts'
-export type { CheckRunSettings, LabelNames, ReviewSettings, SettingLayers } from './settings.mts'
+export type {
+  CheckRunSettings,
+  EvidenceSettings,
+  LabelNames,
+  ReviewSettings,
+  SettingLayers,
+} from './settings.mts'
 export type { TargetConfig } from './rules/target-config.mts'
 export { STARTED, abortedStep, postedStep, reportCheckRun, skippedStep } from './check-run.mts'
 export type { CheckRunResult, CheckRunStep } from './check-run.mts'

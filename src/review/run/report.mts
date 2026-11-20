@@ -3,6 +3,7 @@ import { summarizeModels, type ModelTotals } from '../benchmark/usage-summary.mt
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
+import type { EvidenceReport } from './evidence-types.mts'
 import type { PillarResult, SkillChoice } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
 
@@ -46,7 +47,9 @@ export type ReportData = {
   skipped: SkippedPillar[]
   skillSelection: SkillChoice
   verifier: { model: string; usage: Usage | null } | null
-  /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier. */
+  /** Absent when no evidence source is configured. */
+  evidence?: EvidenceReport
+  /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
 }
 
@@ -64,6 +67,7 @@ export type ReportInput = {
   skillSelection: SkillChoice
   pillars: readonly PillarResult[]
   verifier?: { model: string; output: ReviewVerifierOutput } | undefined
+  evidence?: EvidenceReport | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
@@ -105,6 +109,12 @@ function present(usages: ReadonlyArray<Usage | null>): Usage[] {
   return usages.filter((usage): usage is Usage => usage !== null)
 }
 
+function evidenceUsages(evidence: EvidenceReport | undefined): Array<Usage | null> {
+  return evidence === undefined
+    ? []
+    : [evidence.usage, ...evidence.failedAttempts.map((attempt) => attempt.usage)]
+}
+
 function byStep(input: ReportInput) {
   const pillars = input.pillars.flatMap((pillar) => [
     pillar.usage,
@@ -114,6 +124,9 @@ function byStep(input: ReportInput) {
     { name: 'selection', models: summarizeModels(present([input.skillSelection.usage])) },
     { name: 'pillars', models: summarizeModels(present(pillars)) },
     { name: 'verifier', models: summarizeModels(present([input.verifier?.output.usage ?? null])) },
+    ...(input.evidence === undefined
+      ? []
+      : [{ name: 'evidence', models: summarizeModels(present(evidenceUsages(input.evidence))) }]),
   ]
 }
 
@@ -138,6 +151,7 @@ export function buildReport(input: ReportInput): ReportData {
     pillars: markDropped(input.pillars, output),
     skipped: input.skipped,
     skillSelection: input.skillSelection,
+    ...(input.evidence === undefined ? {} : { evidence: input.evidence }),
     verifier:
       input.verifier === undefined
         ? null
@@ -150,7 +164,7 @@ function spent(usage: Usage | null): number {
   return usage?.costUsd ?? 0
 }
 
-/** Cost of the skill selection, each pillar (failed attempts included), and the verifier. */
+/** Cost of the skill selection, each pillar and the evidence run (failed attempts included), and the verifier. */
 export function costBreakdown(data: ReportData) {
   const pillars = data.pillars.reduce(
     (sum, pillar) =>
@@ -161,5 +175,12 @@ export function costBreakdown(data: ReportData) {
   )
   const selection = spent(data.skillSelection.usage)
   const verifier = spent(data.verifier?.usage ?? null)
-  return { selection, pillars, verifier, total: selection + pillars + verifier }
+  const evidence = evidenceUsages(data.evidence).reduce((sum, usage) => sum + spent(usage), 0)
+  return {
+    selection,
+    pillars,
+    verifier,
+    evidence,
+    total: selection + pillars + verifier + evidence,
+  }
 }

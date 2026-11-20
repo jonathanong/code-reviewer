@@ -193,6 +193,18 @@ describe('createDefaultDeps', () => {
     expect(deps.references().endsWith('skills/review/references')).toBe(true)
   })
 
+  it('reads repository guides from the given clone root, else the environment one', async () => {
+    const guide = { repo: 'acme/ops', path: 'docs/data.md' }
+    const none = createDefaultDeps(fakeAuth().getAuth, {}).guideReader(undefined)
+    await expect(none(guide)).rejects.toThrow('no clone root')
+    const env = { CODE_REVIEWER_CLONE_ROOT: '/nowhere/env-clones' }
+    const deps = createDefaultDeps(fakeAuth().getAuth, env)
+    await expect(deps.guideReader(undefined)(guide)).rejects.toThrow('/nowhere/env-clones')
+    await expect(deps.guideReader('/nowhere/flag-clones')(guide)).rejects.toThrow(
+      '/nowhere/flag-clones',
+    )
+  })
+
   it('delegates the benchmarks', async () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await expect(deps.runBench(['--x'])).resolves.toBe(5)

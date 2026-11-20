@@ -6,6 +6,7 @@ import type { ReviewInput } from '../finding.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
 import type { PluginInfo } from '../plugins.mts'
+import type { EvidenceSetup } from './evidence-types.mts'
 import type { PillarResult } from './types.mts'
 
 /** Everything `review` needs from outside: the label and GitHub steps, the plugins, and the model. */
@@ -19,6 +20,8 @@ export type ReviewSteps = {
   /** Renders what `post` would send for `input`, without posting. */
   preview(input: ReviewInput, headSha: string): Promise<PostOutcome>
   plugins(): Promise<PluginInfo>
+  /** The machine-configured evidence sources for the repository and the reader for their guides. */
+  evidence(): Promise<EvidenceSetup>
   exec: Exec
   /** Directory holding `verifier.md` and `pillars/`. */
   references: string

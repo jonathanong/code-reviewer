@@ -20,12 +20,18 @@ import { postFinalReview } from '../review/post.mts'
 import { runReview, type ReviewSteps } from '../review/run/review.mts'
 import { abortCommand, claimCommand, prepareCommand, skipCommand } from './command-loop.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
+import { NO_CONFIGS } from '../review/rules/config.mts'
 import type { ReviewDeps } from './deps.mts'
 
 afterEach(() => vi.clearAllMocks())
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
+const guide = vi.fn(async () => 'guide text')
+const configs = vi.fn(() => NO_CONFIGS)
+const guideReader = vi.fn(() => guide)
 const deps = {
+  configs,
+  guideReader,
   createIo: vi.fn(() => ({})),
   pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
   exec: vi.fn(async () => ''),
@@ -95,6 +101,26 @@ describe('reviewCommand', () => {
     expect(await wired.plugins()).toEqual({ enabled: [], installs: [] })
     expect(wired.exec).toBe(deps.exec)
     expect(wired.references).toBe('/refs')
+  })
+
+  it('wires the evidence step to the machine config and the clone root', async () => {
+    const source = {
+      name: 'aws',
+      description: 'Logs.',
+      guide: { file: '/g.md' },
+      commands: ['aws logs get-query-results'],
+      env: {},
+    }
+    configs.mockReturnValueOnce({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], evidence: [source], problems: [] }]]),
+    })
+    const { wired } = await steps({ out: 'o', tree: 't', clones: 'c' })
+    const setup = await wired.evidence()
+    expect(setup.sources).toEqual([source])
+    expect(guideReader).toHaveBeenCalledWith(resolve('c'))
+    expect(setup.readGuide).toBe(guide)
+    expect((await wired.evidence()).sources).toEqual([])
   })
 
   it('previews with a dry run', async () => {

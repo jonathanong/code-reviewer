@@ -251,6 +251,8 @@ consumer (`links-consumer-field-rename`, blast radius), an additive change with 
 (`links-consumer-additive-field`, negative), and a call that does not match a declared
 dependency's route, with no package import to detect (`links-declared-api-payload`, correctness).
 
+Evidence sources are not wired into `bench`: it runs the pillars and the verifier only.
+
 ## Running
 
 ```bash
