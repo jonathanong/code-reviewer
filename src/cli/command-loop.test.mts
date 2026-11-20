@@ -67,6 +67,7 @@ const CONFIGS: RepoConfigs = {
               domains: ['docs.aws.amazon.com'],
             },
           ],
+          approvalCheck: false,
         },
         'owner',
       ),
@@ -310,6 +311,7 @@ describe('runLoopCommand', () => {
           sources: [{ name: 'aws-docs', domains: ['docs.aws.amazon.com'] }],
           from: 'machine owner',
         },
+        approvalCheck: { enabled: false, from: 'machine owner' },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -328,6 +330,7 @@ describe('runLoopCommand', () => {
           },
           evidence: { sources: [], from: null },
           references: { sources: [], from: null },
+          approvalCheck: { enabled: true, from: null },
           problems: [],
         },
       )
@@ -351,6 +354,7 @@ describe('runLoopCommand', () => {
           },
           evidence: { sources: [], from: null },
           references: { sources: [], from: null },
+          approvalCheck: { enabled: true, from: null },
           problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
         },
       )

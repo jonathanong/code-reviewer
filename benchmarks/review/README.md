@@ -18,7 +18,9 @@ and output schema later gained open questions and a derived verdict; see the 202
 and the verifier re-decides severity; no pillar or verifier row is re-measured for that, and
 severity agreement is not comparable with earlier rows. The contract's posted-text rules (short,
 no review narration) are likewise not re-measured, and make every pillar and verifier row not
-comparable with earlier ones.
+comparable with earlier ones. The verifier prompt later gained one paragraph about the approval
+check, a `review`-only step the benchmark does not run; no verifier row is re-measured for it. The contract later gained a premise-challenge rule and an
+optional `prevent` line on findings; no pillar or verifier row is re-measured for that either.
 
 Mined cases (8 real pull requests from `cases.json`):
 

@@ -117,11 +117,14 @@ describe('reviewCommand', () => {
       commands: ['aws logs get-query-results'],
       env: {},
     }
-    // The web references read the configs first, when the command is wired.
-    configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
-      ...NO_CONFIGS,
-      byRepo: new Map([['acme/widgets', { consumes: [], evidence: [source], problems: [] }]]),
-    })
+    // The web references and the approval check read the configs first, when the command is wired.
+    configs
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce({
+        ...NO_CONFIGS,
+        byRepo: new Map([['acme/widgets', { consumes: [], evidence: [source], problems: [] }]]),
+      })
     const { wired } = await steps({ out: 'o', tree: 't', clones: 'c' })
     const setup = await wired.evidence()
     expect(setup.sources).toEqual([source])
@@ -141,6 +144,16 @@ describe('reviewCommand', () => {
 
   it('has no web references without a machine list', async () => {
     expect((await steps()).wired.webReferences).toEqual([])
+  })
+
+  it('runs the approval check unless a machine config switches it off', async () => {
+    expect((await steps()).wired.approvalCheck).toBe(true)
+    vi.clearAllMocks()
+    configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
+    })
+    expect((await steps()).wired.approvalCheck).toBe(false)
   })
 
   it('previews with a dry run', async () => {

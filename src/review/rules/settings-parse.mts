@@ -70,3 +70,11 @@ export function parseCheckRun(
   }
   return { name: raw.name.trim() }
 }
+
+/** A `true` or `false` setting; anything else is a problem and the setting is ignored. */
+export function parseSwitch(raw: unknown, where: string, problems: string[]): boolean | undefined {
+  if (raw === undefined) return undefined
+  if (typeof raw === 'boolean') return raw
+  problems.push(`${where}: must be true or false; ignored`)
+  return undefined
+}

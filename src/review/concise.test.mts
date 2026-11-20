@@ -61,6 +61,16 @@ describe('checkPostedText', () => {
     expect(over.tooLong).toEqual([])
   })
 
+  it('warns when a prevention note is longer than one short line', () => {
+    const finding = { pillar: 'rules' as const, severity: 'low' as const, title: 't', body: 'b' }
+    const quiet = { ...input, findings: [{ ...finding, prevent: 'p'.repeat(160) }, finding] }
+    expect(checkPostedText(quiet, post('Short.')).warnings).toEqual([])
+    const loud = { ...input, findings: [finding, { ...finding, prevent: 'p'.repeat(161) }] }
+    expect(checkPostedText(loud, post('Short.')).warnings).toEqual([
+      'findings[1].prevent is 161 characters, over its 160 target',
+    ])
+  })
+
   it('refuses only above three times the target, and not for collapsed or hidden text', () => {
     const hidden = `<!-- ${'m'.repeat(5000)} -->\n<details>${'d'.repeat(5000)}</details>`
     expect(checkPostedText(input, post(`Short.\n${hidden}`)).warnings).toEqual([])

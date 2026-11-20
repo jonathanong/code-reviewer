@@ -128,6 +128,26 @@ export function resolveReferences(configs: RepoConfigs, scope: string): Referenc
   }
 }
 
+export type ApprovalCheckSettings = {
+  enabled: boolean
+  /** The machine layer whose value applies; null when none sets one, which leaves the check on. */
+  from: 'machine repo' | 'machine owner' | null
+}
+
+/**
+ * Whether a full review that would approve gets a second check first: on unless a machine layer
+ * sets `approvalCheck` to false. The reviewed repository's own file is never consulted.
+ */
+export function resolveApprovalCheck(configs: RepoConfigs, scope: string): ApprovalCheckSettings {
+  const [layer, config] = candidates(configs, scope, undefined).find(
+    ([, candidate]) => candidate?.approvalCheck !== undefined,
+  ) ?? [null, undefined]
+  return {
+    enabled: config?.approvalCheck ?? true,
+    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
+  }
+}
+
 /** What `repoSettings` reads: the machine configs and, per repository, its own file. */
 export type SettingsSource = {
   configs(): RepoConfigs

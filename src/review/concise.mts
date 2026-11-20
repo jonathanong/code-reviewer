@@ -60,7 +60,23 @@ export function checkPostedText(
   limits: TextLimits = DEFAULT_TEXT_LIMITS,
 ): TextCheck {
   const length = checkLength(reviews, limits)
-  return { ...length, warnings: [...length.warnings, ...narrationWarnings(input)] }
+  return {
+    ...length,
+    warnings: [...length.warnings, ...narrationWarnings(input), ...preventWarnings(input)],
+  }
+}
+
+/** The prevention note is one short line; a longer one is a second finding, so it warns. */
+export const PREVENT_TARGET = 160
+
+function preventWarnings(input: ReviewInput): string[] {
+  return input.findings.flatMap((finding, at) =>
+    (finding.prevent?.length ?? 0) > PREVENT_TARGET
+      ? [
+          `findings[${at}].prevent is ${finding.prevent?.length} characters, over its ${PREVENT_TARGET} target`,
+        ]
+      : [],
+  )
 }
 
 function checkLength(reviews: readonly SanitizedReview[], limits: TextLimits): TextCheck {

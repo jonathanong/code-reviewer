@@ -26,6 +26,7 @@ export {
   repoSettings,
   resolveEvidence,
   resolveReferences,
+  resolveApprovalCheck,
   reviewSettings,
   settingLayers,
   settingsProblems,

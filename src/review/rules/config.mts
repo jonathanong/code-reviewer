@@ -8,6 +8,7 @@ import {
   REPO_RE,
   parseCheckRun,
   parseLabels,
+  parseSwitch,
   type CheckRunSettings,
   type LabelNames,
 } from './settings-parse.mts'
@@ -44,6 +45,8 @@ export type RepoConfig = {
   evidence?: EvidenceSource[]
   /** Machine config only: it grants network access, so a reviewed repository's file never sets it. */
   references?: ReferenceSource[]
+  /** Machine config only: `false` switches off the second check on an approval. */
+  approvalCheck?: boolean
   problems: string[]
 }
 
@@ -53,7 +56,7 @@ export type RepoConfig = {
  */
 type ConfigScope = 'repo' | 'owner' | 'target'
 
-const KEYS = new Set(['consumes', 'labels', 'checkRun', 'evidence', 'references'])
+const KEYS = new Set(['consumes', 'labels', 'checkRun', 'evidence', 'references', 'approvalCheck'])
 const CONSUMES_KEYS = new Set(['repo', 'paths', 'via'])
 
 type Json = Record<string, unknown>
@@ -134,12 +137,21 @@ export function parseRepoConfig(
   }
   const references =
     scope === 'target' ? undefined : parseReferences(raw.references, `${file} references`, problems)
+  // A repository that could switch off the check on its own approvals would weaken its own review.
+  if (scope === 'target' && raw.approvalCheck !== undefined) {
+    problems.push(`${file}: approvalCheck is machine-only; ignored`)
+  }
+  const approvalCheck =
+    scope === 'target'
+      ? undefined
+      : parseSwitch(raw.approvalCheck, `${file} approvalCheck`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
     ...(checkRun === undefined ? {} : { checkRun }),
     ...(evidence === undefined ? {} : { evidence }),
     ...(references === undefined ? {} : { references }),
+    ...(approvalCheck === undefined ? {} : { approvalCheck }),
     problems,
   }
 }

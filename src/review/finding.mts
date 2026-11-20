@@ -1,6 +1,7 @@
 import type { ReviewSide } from '../review-payload/index.mts'
 import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
+import { APPROVAL_CHECK } from './skipped.mts'
 
 export const PILLARS = [
   'rules',
@@ -19,6 +20,9 @@ export type Severity = (typeof SEVERITIES)[number]
 export const EFFORTS = ['low', 'medium', 'high'] as const
 export type Effort = (typeof EFFORTS)[number]
 
+/** A pillar, or the approval check, that did not run, with why. */
+export type SkippedPillar = { pillar: Pillar | typeof APPROVAL_CHECK; reason: string }
+
 export type Finding = {
   pillar: Pillar
   severity: Severity
@@ -28,9 +32,9 @@ export type Finding = {
   line?: number
   side?: ReviewSide
   startLine?: number
+  /** One line naming a mechanical check (lint rule, type, test, CI guard) that would stop this class of mistake. */
+  prevent?: string
 }
-
-export type SkippedPillar = { pillar: Pillar; reason: string }
 
 export type ReviewInput = {
   effort: Effort
@@ -95,6 +99,16 @@ function parseLocation(record: Json, where: string): Partial<Finding> {
   return { path, line, side, startLine }
 }
 
+/** The optional one-line prevention note: whitespace collapsed, absent when blank. */
+function parsePrevent(record: Json, where: string): Pick<Finding, 'prevent'> {
+  if (record.prevent === undefined) return {}
+  if (typeof record.prevent !== 'string') {
+    throw new ReviewError(`${where}.prevent must be a string.`)
+  }
+  const prevent = record.prevent.replace(/\s+/gu, ' ').trim()
+  return prevent === '' ? {} : { prevent }
+}
+
 function parseFinding(raw: unknown, index: number): Finding {
   const where = `findings[${index}]`
   if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
@@ -104,6 +118,7 @@ function parseFinding(raw: unknown, index: number): Finding {
     title: text(raw, 'title', where).trim(),
     body: text(raw, 'body', where).trim(),
     ...parseLocation(raw, where),
+    ...parsePrevent(raw, where),
   }
 }
 
@@ -111,7 +126,7 @@ function parseSkipped(raw: unknown, index: number): SkippedPillar {
   const where = `skipped[${index}]`
   if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
   return {
-    pillar: oneOf(PILLARS, raw.pillar, `${where}.pillar`),
+    pillar: oneOf([...PILLARS, APPROVAL_CHECK], raw.pillar, `${where}.pillar`),
     reason: text(raw, 'reason', where),
   }
 }
@@ -147,7 +162,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')
-    const derived = deriveVerdict(review.findings, review.questions)
+    const derived = deriveVerdict(review.findings, review.questions, review.skipped)
     if (given !== derived) {
       throw new ReviewError(
         `verdict ${given} does not match the findings and questions (${derived}); remove it to recompute.`,

@@ -32,6 +32,7 @@ export const VERIFIER_OUTPUT_SCHEMA = {
           line: { type: 'integer', minimum: 1 },
           side: { type: 'string', enum: ['LEFT', 'RIGHT'] },
           startLine: { type: 'integer', minimum: 1 },
+          prevent: { type: 'string' },
           sources: { type: 'array', items: { type: 'integer', minimum: 0 } },
         },
       },

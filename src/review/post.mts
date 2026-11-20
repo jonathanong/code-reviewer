@@ -67,7 +67,7 @@ export async function postFinalReview(
     )
   }
   const index = indexReviewFiles(await io.listFiles())
-  const verdict = deriveVerdict(input.findings, input.questions)
+  const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
   const choice = await chooseEvent(io, verdict, options.author)
   const reviews = withEvent(
     buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS),

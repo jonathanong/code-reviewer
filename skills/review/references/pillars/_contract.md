@@ -52,6 +52,16 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
 - Use the `explorer` subagent for broad searches (finding callers, consumers, or where something is
   defined) and read only the files that matter yourself.
 
+## Premise
+
+You may challenge whether the change should exist in this form: it solves the wrong problem, it
+duplicates something that already exists in the tree, or a much smaller change achieves the stated
+goal. Do it only with evidence from the tree or the context: cite the existing code (path and
+line) or the stated goal in `context.md` that the change misses or overshoots. Raise it as a
+`medium` or `low` finding that states the evidence and the question it leaves; the verifier may
+turn it into a question for the author or product. A premise challenge is never `blocking` or
+`high` by itself, and a preference for another design is not a premise challenge.
+
 ## Stacks
 
 When the run has a Stack block, the pull request is one member of a stack and the diff under
@@ -87,7 +97,8 @@ Return only JSON:
       "path": "repo/relative/path.ts",
       "line": 42,
       "side": "RIGHT",
-      "startLine": 40
+      "startLine": 40,
+      "prevent": "optional: one line naming a check that would stop this class of mistake"
     }
   ]
 }
@@ -117,6 +128,11 @@ Return only JSON:
   ignores produces a wrong result for every caller who sets it, even when the default path works.
   A pre-release or unpublished version does not lower severity: a wrong boundary or contract costs
   the same to unwind once a consumer adopts it.
+- `prevent` is optional and rare. When a finding is one instance of a class of mistake that a
+  mechanical check could stop (a lint rule, a type, a test, a CI guard), put one short line in
+  `prevent` that names that check, for example "an oxlint rule banning `==` on enum values".
+  Omit it for a one-off, and when no check would catch the class rather than only this instance.
+  It is not a second finding and never changes the severity.
 - Put a GitHub `suggestion` block in the body only for an exact, minimal replacement of the
   commented lines.
 - Posted text is read by the author, so write it short. Lead with the defect and its consequence.

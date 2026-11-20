@@ -10,6 +10,7 @@ import {
   prepareReview,
   resolveEvidence,
   resolveReferences,
+  resolveApprovalCheck,
   resolveThreads,
   reviewSettings,
   settingLayers,
@@ -60,6 +61,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   const target = repo === undefined ? undefined : await deps.targetConfig(repo)
   const evidence = resolveEvidence(configs, scope)
   const references = resolveReferences(configs, scope)
+  const approvalCheck = resolveApprovalCheck(configs, scope)
   return {
     scope,
     ...reviewSettings(configs, scope, target?.config),
@@ -70,6 +72,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       sources: references.sources.map(({ name, domains }) => ({ name, domains })),
       from: references.from,
     },
+    approvalCheck,
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

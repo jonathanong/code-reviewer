@@ -5,6 +5,7 @@ import {
   DEFAULT_LABELS,
   repoSettings,
   resolveEvidence,
+  resolveApprovalCheck,
   resolveReferences,
   reviewSettings,
   settingLayers,
@@ -190,6 +191,33 @@ describe('resolveReferences', () => {
 
   it('has none without a machine list', () => {
     expect(resolveReferences(NO_CONFIGS, 'acme/web')).toEqual({ sources: [], from: null })
+  })
+})
+
+describe('resolveApprovalCheck', () => {
+  const configs: RepoConfigs = {
+    byOwner: new Map([['acme', { consumes: [], approvalCheck: false, problems: [] }]]),
+    byRepo: new Map([
+      ['acme/on', { consumes: [], approvalCheck: true, problems: [] }],
+      ['acme/plain', { consumes: [], problems: [] }],
+    ]),
+    problems: [],
+  }
+
+  it('is on without a machine value', () => {
+    expect(resolveApprovalCheck(NO_CONFIGS, 'acme/web')).toEqual({ enabled: true, from: null })
+  })
+
+  it('takes the repository value over the owner value', () => {
+    expect(resolveApprovalCheck(configs, 'acme/on')).toEqual({
+      enabled: true,
+      from: 'machine repo',
+    })
+    expect(resolveApprovalCheck(configs, 'acme/plain')).toEqual({
+      enabled: false,
+      from: 'machine owner',
+    })
+    expect(resolveApprovalCheck(configs, 'acme').enabled).toBe(false)
   })
 })
 

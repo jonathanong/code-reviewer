@@ -64,11 +64,25 @@ target, a real `post` refuses unless `--allow-long` is given (`tooLong` lists th
 warns when authored text narrates the review (the verifier, a pillar, tool names, first-person
 process, praise); it never refuses.
 
+### Premise and prevention
+
+A reviewer may challenge whether a change should exist in this form (it solves the wrong problem,
+duplicates something already in the tree, or a much smaller change reaches the stated goal), but
+only with evidence from the tree or the context, as a `medium` or `low` finding that the verifier
+may turn into a question; never as `blocking` or `high` on that ground alone. These are prompt
+rules in the pillar contract, with no code check.
+
+A finding may carry `prevent`, one optional line naming a lint rule, type, test or CI guard that
+would stop the class of mistake. It is kept in `review.json`, shown as a `**Prevent:**` line under
+the finding in the posted comment and in `report.md`, and absent means nothing is rendered. A
+`prevent` over 160 characters warns like any over-long posted text.
+
 ### Verdict and questions
 
 The verdict is derived, never chosen, top-down: a verified `blocking` finding gives Request Changes;
 otherwise a `high` finding or an open question gives Comment; otherwise Approve. A failed pillar is
-listed as skipped and changes none of this, and a review where every pillar failed fails instead.
+listed as skipped and changes none of this (a failed [`approvalCheck`](#approvalcheck) does: it makes
+an Approve a Comment), and a review where every pillar failed fails instead.
 The verifier may return `questions` (`question`, `askOf` `author` or `product`, and a required
 `why`: what the answer changes). A question is for something the code and context cannot settle,
 not a softened finding and not a request to explain code. Questions appear in `report.md` and under
@@ -174,7 +188,7 @@ this text in a Claude Doc when the session has a document connector; the CLI nev
 ## Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -256,8 +270,11 @@ guides, and `Read`, `Grep`, `Glob` and the allowed commands. It writes `evidence
 Evidence section in `report.md`, and appends one `Evidence (...)` line to a supported or
 contradicted finding in `review.json`. It never drops a finding or changes a severity or the
 verdict, its cost is in the cost tables, and a failed run or blocked source is reported while the
-review goes on. A source is `checked` only with the commands it ran; an empty result needs a
-control query. Evidence is not part of `bench`.
+review goes on. A source is `checked` only with the commands it ran. An empty result is evidence
+of absence only if a control query (the same query loosened so it must return something, such as
+a known-present value or a wider window) returns something; when the control is empty too, the
+run reports the evidence as inconclusive (effect `none`: `report.md` keeps the note, and no
+Evidence line is added to the finding). Evidence is not part of `bench`.
 
 ### `references`
 
@@ -293,6 +310,27 @@ the `WebFetch` tool with one `WebFetch(domain:<host>)` allow rule per domain und
 other pillars are unchanged. These runs, like runs with a shell, pass `--setting-sources ''` so
 no user setting can widen the allow-list. With no references every prompt and flag is unchanged.
 `bench` does not use references. `code-reviewer settings` lists the configured names and domains.
+
+### `approvalCheck`
+
+A full review whose verdict would be Approve gets one more independent run first, on the verifier's
+model, whose only job is to refute the approval: it looks for an unreviewed changed file, a risky
+area no pillar covered, a claim in the description nothing checked, or a finding the verifier
+dropped that is real. What it confirms is added to the findings and questions, and the verdict is
+derived again in code, so it can turn an Approve into a Comment or Request Changes but never the
+reverse. It costs one more verifier-class run, only on reviews that would approve. It is skipped
+for light reviews and for any verdict other than Approve. If the run fails or returns something
+unreadable it is not retried: the review completes, `approval-check` is listed under `skipped`
+with the reason, and the verdict is Comment, because nothing double-checked the approval.
+`report.md` has a "Second check on the approval" section (whether it ran, what it added, the
+verdict change) and its cost.
+
+```json
+{ "approvalCheck": false }
+```
+
+It is on by default and, like `evidence`, machine-only: a repository's own file cannot switch it
+off. `code-reviewer settings` prints the resolved value and its layer.
 
 ### `labels` and `checkRun`
 

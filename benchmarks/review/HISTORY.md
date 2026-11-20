@@ -2,6 +2,34 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: an empty evidence result needs a working control query (no run)
+
+`references/evidence.md` step 4 now spells out the control rule (loosen the same query so it must
+return something; if the control is also empty the evidence is inconclusive, effect `none`).
+Only the evidence run reads this file; `bench` never runs it, so no benchmark prompt, case or
+score is affected. No run was made and the new wording is not measured live.
+
+## 2026-11-19: premise challenge and a prevention note on findings (no run)
+
+`pillars/_contract.md` gained a Premise section (a reviewer may challenge whether the change should
+exist in this form, only with evidence from the tree or context, as a `medium` or `low` finding
+the verifier may turn into a question, never `blocking` or `high` on that ground alone) and an
+optional `prevent` line on a finding (a mechanical check that would stop the class of mistake).
+`verifier.md` step 2 and step 8 say how to keep or convert them. The pillar and verifier output
+schemas gained an optional `prevent` string, which the bench graders ignore. Every pillar prompt
+includes the contract, so every `bench` pillar row and every `bench-verifier` row is no longer
+comparable with earlier entries. The expected movement is a few extra `medium` or `low` premise
+findings and `prevent` lines; recall of expected findings is not expected to move. No run was made.
+
+## 2026-11-19: a full review that would approve gets a second check (no run)
+
+New `references/refute.md`, the prompt of a separate run (the approval check) that tries to refute
+an approval, and one added paragraph in `verifier.md`'s Verdict section pointing at it. The check
+runs only in `review`, after the verifier, for a full review whose derived verdict is Approve; the
+benchmark has no such step and never reads `refute.md`. `bench-verifier` rows are not comparable
+with earlier entries (the verifier prompt text changed by that paragraph); recall and severity are
+not expected to move. The approval check itself is not measured. No run was made.
+
 ## 2026-11-19: posted text is short and free of review narration (no run)
 
 `pillars/_contract.md` gained a rule for posted text: lead with the defect and its consequence, one

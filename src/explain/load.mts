@@ -2,6 +2,7 @@ import { join } from 'node:path'
 
 import { SEVERITIES, type Finding, type Severity } from '../review/finding.mts'
 import { deriveVerdict } from '../review/render.mts'
+import { APPROVAL_CHECK } from '../review/skipped.mts'
 import { findingId } from '../review/run/evidence-run.mts'
 import { costBreakdown, type ReportData } from '../review/run/report.mts'
 import { reportStack, type ReportStack } from '../review/run/stack-report.mts'
@@ -144,6 +145,9 @@ export function loadRun(
         : deriveVerdict(
             findings,
             questions.map((item) => ({ question: item.text, askOf: 'author', why: '' })),
+            skipped.flatMap((entry) =>
+              entry.pillar === APPROVAL_CHECK ? [{ pillar: APPROVAL_CHECK, reason: '' }] : [],
+            ),
           )),
     skipReason: asString(report.skipReason) ?? asString(plan.skipReason),
     findings: findings.map((finding, index) => {

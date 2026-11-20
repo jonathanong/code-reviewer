@@ -1,0 +1,12 @@
+{
+  "effort": "high",
+  "summary": "A small, safe change.",
+  "skipped": [
+    {
+      "pillar": "approval-check",
+      "reason": "The second check on the approval did not complete (timed out), so this is a comment, not an approval."
+    }
+  ],
+  "findings": [],
+  "questions": []
+}

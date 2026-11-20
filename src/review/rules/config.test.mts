@@ -179,6 +179,27 @@ describe('parseRepoConfig references', () => {
   })
 })
 
+describe('parseRepoConfig approvalCheck', () => {
+  it('reads a boolean from a repository file and an owner file', () => {
+    expect(parseRepoConfig('{"approvalCheck":false}', FILE).approvalCheck).toBe(false)
+    expect(parseRepoConfig('{"approvalCheck":true}', 'acme.json', 'owner').approvalCheck).toBe(true)
+  })
+
+  it('ignores anything else with a problem', () => {
+    const parsed = parseRepoConfig('{"approvalCheck":"no"}', FILE)
+    expect(parsed.approvalCheck).toBeUndefined()
+    expect(parsed.problems).toEqual([`${FILE} approvalCheck: must be true or false; ignored`])
+  })
+
+  it('ignores it in the reviewed repository own file and says it is machine-only', () => {
+    const file = 'acme/web/.code-reviewer.json'
+    expect(parseRepoConfig('{"approvalCheck":false}', file, 'target')).toEqual({
+      consumes: [],
+      problems: [`${file}: approvalCheck is machine-only; ignored`],
+    })
+  })
+})
+
 describe('loadRepoConfigs', () => {
   const dirs: string[] = []
   afterEach(() => {

@@ -36,6 +36,14 @@ describe('verdict and tags', () => {
     expect(severityTag('high')).toBe('[high]')
   })
 
+  it('makes an approval whose second check did not complete a Comment, never softening worse verdicts', () => {
+    const unchecked = [{ pillar: 'approval-check' as const, reason: 'timed out' }]
+    const failed = [{ pillar: 'security' as const, reason: 'failed' }]
+    expect(deriveVerdict([], [], unchecked)).toBe('Comment')
+    expect(deriveVerdict([], [], failed)).toBe('Approve')
+    expect(deriveVerdict([f({ severity: 'blocking' })], [], unchecked)).toBe('Request Changes')
+  })
+
   it('formats the marker with a dashed verdict', () => {
     expect(reviewMarker(SHA, 'Request Changes', 'low')).toBe(
       `<!-- final-review sha=${SHA} verdict=Request-Changes effort=low -->`,
@@ -61,6 +69,14 @@ describe('locationText', () => {
 describe('finding bodies', () => {
   it('keeps short bodies inline', () => {
     expect(renderFindingBody(f())).toBe('**[low]** Title\n\n<sub>rules</sub>\n\nBody')
+    const prevent = 'an oxlint rule banning x'
+    expect(renderFindingBody(f({ prevent }))).toBe(
+      `**[low]** Title\n\n<sub>rules</sub>\n\nBody\n\n**Prevent:** ${prevent}`,
+    )
+    expect(renderBodyFinding(f({ prevent }))).toContain(
+      `Body\n\n**Prevent:** ${prevent}\n\n</details>`,
+    )
+    expect(renderBodyFinding(f())).not.toContain('Prevent')
   })
 
   it('collapses bodies that are too long or have too many lines', () => {

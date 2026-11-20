@@ -1,6 +1,7 @@
 import { VERDICT_EVENTS } from '../review/event.mts'
 import type { Severity } from '../review/finding.mts'
 import type { Verdict } from '../review/render.mts'
+import { APPROVAL_CHECK } from '../review/skipped.mts'
 import type { ExplainFinding, ExplainQuestion, Explained } from './load.mts'
 
 const ORDER: Severity[] = ['blocking', 'high', 'medium', 'low']
@@ -70,7 +71,11 @@ const RULES =
   'The verdict follows three rules in order: a blocking problem means Request Changes; otherwise a high-severity problem or any open question means Comment; otherwise Approve.'
 
 /** Why the verdict is what it is, in plain words, from the most severe finding or the questions. */
-function reason(findings: readonly ExplainFinding[], questions: number): string {
+function reason(
+  findings: readonly ExplainFinding[],
+  questions: number,
+  unchecked: boolean,
+): string {
   const blocking = findings.find((entry) => entry.severity === 'blocking')
   const high = findings.find((entry) => entry.severity === 'high')
   const asked = `${questions} open question${questions === 1 ? ' is' : 's are'} still waiting for an answer`
@@ -81,7 +86,9 @@ function reason(findings: readonly ExplainFinding[], questions: number): string 
         ? `No blocking problem, but a high-severity one: ${high.title}.${questions > 0 ? ` Also, ${asked}.` : ''} That means Comment.`
         : questions > 0
           ? `No blocking or high-severity problem, but ${asked}. That means Comment: the reviewer cannot say yes or no until they are answered.`
-          : 'No blocking or high-severity problem was found, and no question is open. That means Approve.'
+          : unchecked
+            ? 'No blocking or high-severity problem was found, and no question is open, but the second check on the approval did not finish. That means Comment: an approval nobody double-checked is not given.'
+            : 'No blocking or high-severity problem was found, and no question is open. That means Approve.'
   return `${why}\n\n${RULES}`
 }
 
@@ -149,7 +156,11 @@ export function renderExplained(run: Explained): string {
       ? 'No description of the change was recorded.'
       : run.pullRequestSummary,
     `## Verdict: ${run.verdict ?? 'not recorded'}`,
-    reason(sorted, run.questions.length),
+    reason(
+      sorted,
+      run.questions.length,
+      run.notReviewed.some((area) => area.area === APPROVAL_CHECK),
+    ),
     ...posted(run),
     ...(run.summary === '' ? [] : [run.summary]),
     `## Findings (${sorted.length})`,
