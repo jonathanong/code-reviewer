@@ -12,6 +12,8 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import type { Exec } from '../review/benchmark/exec.mts'
+import { createTrackerIo } from '../tracker/io.mts'
+import type { TrackerIo } from '../tracker/types.mts'
 import { pluginRoot } from '../plugin-root.mts'
 import {
   parsePluginInstalls,
@@ -53,6 +55,8 @@ export type ReviewDeps = {
   /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
   runner(owner: string, repo?: string): RunTextCommand
   readFile(path: string): string
+  /** The machine-local tracker: its state directory, files and clock. */
+  tracker(): TrackerIo
   /** The Claude Code plugins enabled for this session's user and project. */
   listPlugins(): Promise<Plugin[]>
   /** The enabled plugins and where the user-scope ones are installed. */
@@ -133,6 +137,7 @@ export function createDefaultDeps(
       createGuideReader({ clones: clones ?? env.CODE_REVIEWER_CLONE_ROOT, git: runGit }),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
+    tracker: () => createTrackerIo(env),
     listPlugins: async () => {
       const { defaultExec } = await import('../review/benchmark/exec.mts')
       return parsePluginList(

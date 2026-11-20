@@ -15,12 +15,14 @@ import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type ReviewDeps } from './deps.mts'
+import { explainCommand, trackerCommand } from './command-tracker.mts'
+import { recordPosted } from '../tracker/record.mts'
 import { REVIEW_USAGE } from './usage.mts'
 
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, tracker, explain, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -54,6 +56,10 @@ function parse(args: string[]) {
       clones: { type: 'string' },
       thread: { type: 'string', multiple: true },
       require: { type: 'string', multiple: true },
+      since: { type: 'string' },
+      state: { type: 'string' },
+      format: { type: 'string' },
+      run: { type: 'string' },
     },
   }).values
 }
@@ -76,6 +82,16 @@ async function run(
     const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
     print(result)
     return result.missing.length === 0 ? 0 : 1
+  }
+  if (subcommand === 'tracker') {
+    const { output, problems } = trackerCommand(values, deps.tracker())
+    for (const problem of problems) process.stderr.write(`code-reviewer: ${problem}\n`)
+    process.stdout.write(output)
+    return 0
+  }
+  if (subcommand === 'explain') {
+    process.stdout.write(explainCommand(values, deps.tracker()))
+    return 0
   }
   if (subcommand === 'report') {
     print(reportCommand(values))
@@ -115,7 +131,14 @@ async function run(
         postedStep(outcome.verdict, outcome.urls),
         values['head-sha'],
       )
-      print({ ...outcome, reviews: outcome.reviews.length, lifecycle, checkRun })
+      const tracked = recordPosted(deps.tracker(), {
+        ...pull,
+        headSha: values['head-sha'],
+        input: values.input,
+        findings: input.findings,
+        outcome,
+      })
+      print({ ...outcome, reviews: outcome.reviews.length, lifecycle, checkRun, ...tracked })
       return 0
     }
     case 'diff':

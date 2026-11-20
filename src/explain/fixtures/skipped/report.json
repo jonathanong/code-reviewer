@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "repo": "acme/widgets",
+  "pr": 10,
+  "title": "Fix README typo",
+  "url": "https://github.com/acme/widgets/pull/10",
+  "headSha": "6666666666666666666666666666666666666666",
+  "mode": "skip",
+  "skipReason": "Only documentation changed.",
+  "findings": [],
+  "pillars": [],
+  "skipped": [],
+  "skillSelection": { "selected": [], "available": 0, "usage": null },
+  "verifier": null
+}

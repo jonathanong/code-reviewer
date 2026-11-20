@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "repo": "acme/widgets",
+  "pr": 4,
+  "title": "Cache widget lookups",
+  "url": "https://github.com/acme/widgets/pull/4",
+  "headSha": "1111111111111111111111111111111111111111",
+  "mode": "full",
+  "effort": "high",
+  "reasons": [],
+  "pullRequestSummary": "Adds an in-memory cache in front of the widget lookup so repeated reads skip the database.",
+  "summary": "Not used: the explainer takes the summary from review.json.",
+  "verdict": "Request Changes",
+  "findings": [],
+  "fixedThreadIds": [],
+  "pillars": [
+    {
+      "pillar": "correctness",
+      "model": "sonnet",
+      "skills": [],
+      "usage": { "costUsd": 1.2 },
+      "failedAttempts": [],
+      "findings": []
+    },
+    {
+      "pillar": "design",
+      "model": "sonnet",
+      "skills": [],
+      "usage": { "costUsd": 0.4 },
+      "failedAttempts": [],
+      "findings": []
+    },
+    {
+      "pillar": "security",
+      "model": "sonnet",
+      "skills": [],
+      "usage": null,
+      "error": "timed out",
+      "failedAttempts": [{ "error": "timed out", "usage": { "costUsd": 0.3 } }],
+      "findings": []
+    }
+  ],
+  "skipped": [],
+  "skillSelection": { "selected": [], "available": 0, "usage": { "costUsd": 0.01 } },
+  "verifier": { "model": "opus", "usage": { "costUsd": 0.9 } },
+  "evidence": {
+    "sources": [],
+    "findings": [],
+    "claims": [],
+    "model": "sonnet",
+    "usage": { "costUsd": 0.2 },
+    "failedAttempts": []
+  },
+  "stack": {
+    "members": [
+      { "number": 3, "title": "Add widget table" },
+      { "number": 4, "title": "Cache widget lookups" },
+      { "number": 5, "title": "Polish cache logging" }
+    ],
+    "index": 1,
+    "rootBase": "main",
+    "rootIsDefault": true,
+    "staleBase": false,
+    "fixedLater": [{ "finding": 1, "pr": 5 }]
+  },
+  "usageByModel": []
+}

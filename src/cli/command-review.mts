@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { postFinalReview } from '../review/post.mts'
 import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
+import { recordReview } from '../tracker/record.mts'
 import { resolveEvidence, resolveReferences, type PullTarget } from '../review/index.mts'
 import {
   abortCommand,
@@ -40,7 +41,9 @@ export async function reviewCommand(
     ...(values.clones === undefined ? {} : { clones: resolve(values.clones) }),
   }
   const targetOf = () => target
-  return runReview(
+  const tracker = deps.tracker()
+  const startedAt = tracker.now().toISOString()
+  const result = await runReview(
     {
       claim: () => claimCommand(resolved, targetOf, deps),
       prepare: () => prepareCommand(resolved, targetOf, deps),
@@ -61,6 +64,8 @@ export async function reviewCommand(
     },
     { repo: target.repo, pr: target.pr, out, tree, jobs: jobs(values.jobs) },
   )
+  const tracked = recordReview(tracker, { ...target, out, startedAt, ...result })
+  return { ...result, summary: { ...result.summary, ...tracked } }
 }
 
 /** `code-reviewer report`: renders `report.md` again from `report.json`. */

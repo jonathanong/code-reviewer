@@ -1,0 +1,15 @@
+{
+  "effort": "low",
+  "summary": "Small follow-up.",
+  "skipped": [],
+  "findings": [
+    {
+      "pillar": "correctness",
+      "severity": "low",
+      "title": "Unused import",
+      "body": "Fixed in #7: removed there.",
+      "path": "src/b.mts",
+      "line": 1
+    }
+  ]
+}

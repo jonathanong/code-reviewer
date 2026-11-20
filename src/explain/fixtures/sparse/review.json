@@ -1,0 +1,7 @@
+{
+  "skipped": [{}],
+  "findings": [
+    { "severity": "high", "title": "First claim" },
+    { "severity": "low", "title": "Second claim" }
+  ]
+}

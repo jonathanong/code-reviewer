@@ -45,6 +45,18 @@ afterEach(() => {
 })
 
 describe('createDefaultDeps', () => {
+  it('keeps the tracker in the state directory, apart from the config directory', () => {
+    const { getAuth } = fakeAuth()
+    const state = createDefaultDeps(getAuth, {
+      CODE_REVIEWER_STATE_DIR: '/state/here',
+      CODE_REVIEWER_CONFIG_DIR: '/config/here',
+    }).tracker()
+    expect(state.dir).toBe('/state/here')
+    expect(createDefaultDeps(getAuth, { XDG_STATE_HOME: '/xdg' }).tracker().dir).toBe(
+      '/xdg/code-reviewer',
+    )
+  })
+
   it('resolves auth lazily and only once', () => {
     const { getAuth } = fakeAuth('gh')
     const deps = createDefaultDeps(getAuth)

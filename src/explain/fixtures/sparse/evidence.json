@@ -1,0 +1,4 @@
+{
+  "sources": [{ "status": "blocked" }],
+  "findings": [{ "id": "F1", "effect": "supports" }, { "id": "F2" }]
+}

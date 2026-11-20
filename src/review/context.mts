@@ -18,6 +18,8 @@ export type OtherNote = { author: string; where: string; text: string }
 
 export type FollowUpContext = {
   title: string
+  /** Login of the pull request author; null when the account is gone. */
+  author: string | null
   /** The pull request description and closing issues: untrusted, truncated. */
   intent: { body: string; issues: { number: number; title: string; body: string }[] }
   headSha: string
@@ -157,6 +159,7 @@ export function buildFollowUpContext(
     .flatMap((review) => parseBodyFindings(review.body))
   return {
     title: pull.title,
+    author: pull.author?.login ?? null,
     intent: {
       body: clip(pull.body, BODY_CHARS),
       issues: pull.closingIssuesReferences.nodes.map((issue) => ({

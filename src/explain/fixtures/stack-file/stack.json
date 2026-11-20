@@ -1,0 +1,22 @@
+{
+  "members": [
+    {
+      "number": 6,
+      "title": "Second\nstep",
+      "headRef": "b",
+      "baseRef": "a",
+      "headSha": "2222222222222222222222222222222222222222"
+    },
+    {
+      "number": 7,
+      "title": "Third step",
+      "headRef": "c",
+      "baseRef": "b",
+      "headSha": "3333333333333333333333333333333333333333"
+    }
+  ],
+  "index": 0,
+  "rootBase": "feature/old",
+  "rootIsDefault": false,
+  "staleBase": true
+}

@@ -21,7 +21,8 @@ the standing reviewer that other sessions ask, use the [review-loop](../review-l
 skill, which calls this one per pull request.
 
 The CLI is `code-reviewer`, which the plugin puts on `PATH` (`pnpm exec code-reviewer` when
-developing in a checkout; `help` lists the flags). Every subcommand prints a short JSON result. It authenticates as the GitHub App when
+developing in a checkout; `help` lists the flags). Every subcommand prints a short JSON result, and `review` and `post` also append a row to a
+machine-local tracker (`code-reviewer tracker` lists it). It authenticates as the GitHub App when
 `CODE_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login (`code-reviewer auth`
 says which).
 
@@ -104,14 +105,19 @@ every pillar fails it fails the review, not approves it.
 
 ## Step 3 - Get permission to post
 
-Show the human the verdict, the findings by severity, and the path of `report.md`, and ask
+Show the human the verdict, the findings by severity, and `code-reviewer explain --run "$run"`
+(a plain-language Markdown explainer built from the run's files, with no model call). With a
+document connector (a first-party Claude Docs capability), put it in the session's document as a
+section for this pull request marked "draft", and give the human the link instead; otherwise show
+it inline. `report.md` holds the raw findings, the skills loaded and the cost by model. Ask
 whether to post. Post without asking only when the human has said this kind of review may be
 posted unattended. A human who wants a finding changed edits `review.json`; preview the result
 with `post --dry-run`.
 
 ## Step 4 - Post or drop
 
-- Post: `code-reviewer post --repo <repo> --pr <n> --head-sha <headSha> --input "$run/review.json"`.
+- Post: `code-reviewer post --repo <repo> --pr <n> --head-sha <headSha> --input "$run/review.json"`,
+  then mark the document section "posted" with the review link.
 - Drop: `code-reviewer abort --repo <repo> --pr <n>` (add `--requeue` to ask again later).
 
 `post` renders and posts the review:
@@ -132,8 +138,8 @@ printed, which `report.md` repeats as a ready `code-reviewer resolve` command.
 
 ## Step 5 - Clean up and report
 
-`git -C <clone> worktree remove --force "$run/tree"`, then `rm -rf "$run"` once the report has
-been recorded. Reply to the requester with the verdict and the review link. Merging agents check
+`git -C <clone> worktree remove --force "$run/tree"`, then `rm -rf "$run"` once the explainer has
+been recorded (`explain` reads the run directory, so it cannot run after this). Reply to the requester with the verdict and the review link. Merging agents check
 `code-reviewer status`, which exits 0 only when the newest review approved the current head with
 the `final approval` label present, or skipped it.
 

@@ -81,9 +81,14 @@ function pull(overrides: Partial<PrConversation> = {}): PrConversation {
 const FINDING = '**[high]** Title here\n\n<sub>correctness</sub>\n\nbody'
 
 describe('buildFollowUpContext', () => {
+  it('records no author for a deleted account', () => {
+    expect(build(pull({ author: null })).author).toBeNull()
+  })
+
   it('handles a pull request without a review', () => {
     expect(build(pull())).toEqual({
       title: 'Title',
+      author: 'dev',
       intent: { body: 'Does a thing.', issues: [] },
       headSha: C,
       baseSha: B,

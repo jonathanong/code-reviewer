@@ -1,0 +1,7 @@
+{
+  "effort": "high",
+  "summary": "Caches widgets.",
+  "skipped": [],
+  "findings": [],
+  "questions": ["Is the cache shared between tenants?", "Who clears it?"]
+}

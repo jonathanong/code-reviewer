@@ -1,6 +1,6 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
 
 vi.mock('../review/benchmark/cli.mts', () => ({
@@ -17,6 +17,7 @@ vi.mock('../review/benchmark/verifier-cli.mts', () => ({
 }))
 
 import type { ReviewIo, LabelIo, PrepareIo } from '../review/index.mts'
+import type { TrackerIo } from '../tracker/types.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import { runReview } from '../review/run/review.mts'
 import { runReviewBenchCli } from '../review/benchmark/cli.mts'
@@ -53,7 +54,26 @@ function fakeLabelIo(): LabelIo {
   }
 }
 
-function deps(io: ReviewIo, input = '{}'): MockDeps {
+type MemoryTracker = TrackerIo & { files: Map<string, string> }
+
+function memoryTracker(): MemoryTracker {
+  const files = new Map<string, string>()
+  return {
+    dir: '/state',
+    files,
+    read: (path) => files.get(path),
+    append: (path, text) => void files.set(path, `${files.get(path) ?? ''}${text}`),
+    now: () => new Date('2026-05-06T07:08:09.000Z'),
+  }
+}
+
+const rowsOf = (tracker: MemoryTracker) =>
+  (tracker.files.get('/state/reviews.jsonl') ?? '')
+    .split('\n')
+    .filter((line) => line !== '')
+    .map((line) => JSON.parse(line) as Record<string, unknown>)
+
+function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
     authIdentity: vi.fn(async () => ({})),
@@ -65,6 +85,7 @@ function deps(io: ReviewIo, input = '{}'): MockDeps {
     guideReader: vi.fn(() => vi.fn(async () => '')),
     runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
+    tracker: vi.fn(() => tracker),
     listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),
     pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
     exec: vi.fn(async () => ''),
@@ -144,6 +165,50 @@ describe('runReviewCommand', () => {
       lifecycle: { added: ['final-review:complete'], removed: ['final-review:in-progress'] },
     })
     expect(d.createLabelIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
+  })
+
+  it('records the posted review in the tracker', async () => {
+    capture()
+    const tracker = memoryTracker()
+    const d = deps(fakeIo(), JSON.stringify({ findings: [] }), tracker)
+    await runReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', 'f.json'], d)
+    expect(rowsOf(tracker)).toMatchObject([
+      {
+        repo: 'acme/widgets',
+        pr: 4,
+        head: SHA,
+        state: 'posted',
+        verdict: 'Approve',
+        reviewUrl: 'https://example.test/r',
+        event: 'COMMENT',
+        postedAt: '2026-05-06T07:08:09.000Z',
+      },
+    ])
+  })
+
+  it('does not record a dry run, and a tracker failure never fails a post', async () => {
+    const { out } = capture()
+    const tracker = memoryTracker()
+    const dry = deps(fakeIo(), JSON.stringify({ findings: [] }), tracker)
+    await runReviewCommand(
+      ['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--dry-run'],
+      dry,
+    )
+    expect(rowsOf(tracker)).toEqual([])
+    out.length = 0
+    const broken = deps(fakeIo(), JSON.stringify({ findings: [] }), {
+      ...tracker,
+      append: () => {
+        throw new Error('disk full')
+      },
+    })
+    await expect(
+      runReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', 'f.json'], broken),
+    ).resolves.toBe(0)
+    expect(JSON.parse(out.join(''))).toMatchObject({
+      verdict: 'Approve',
+      trackerProblem: 'the tracker could not record this run: disk full',
+    })
   })
 
   it('completes the configured check run when posting for real, and reports its failure', async () => {
@@ -286,7 +351,7 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, bench, bench-verifier, or bench-selection.',
+      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, report, resolve, plugins, tracker, explain, bench, bench-verifier, or bench-selection.',
     )
   })
 
@@ -297,6 +362,39 @@ describe('runReviewCommand', () => {
     expect(JSON.parse(out.join(''))).toEqual({ claimed: true })
     vi.mocked(runReview).mockResolvedValueOnce({ ok: false, summary: { error: 'x' } })
     await expect(runReviewCommand(args, deps(fakeIo()))).resolves.toBe(1)
+  })
+
+  it('records the review run in the tracker and reports a tracker failure beside the summary', async () => {
+    const { out } = capture()
+    const args = ['review', ...PR, '--out', 'o', '--tree', 't']
+    const tracker = memoryTracker()
+    vi.mocked(runReview).mockResolvedValueOnce({
+      ok: false,
+      summary: { claimed: true, error: 'every pillar failed' },
+    })
+    await runReviewCommand(args, deps(fakeIo(), '{}', tracker))
+    expect(rowsOf(tracker)).toMatchObject([
+      {
+        repo: 'acme/widgets',
+        pr: 4,
+        state: 'failed',
+        reason: 'every pillar failed',
+        startedAt: '2026-05-06T07:08:09.000Z',
+        runDir: resolve('o'),
+      },
+    ])
+    out.length = 0
+    const broken = {
+      ...tracker,
+      append: () => {
+        throw new Error('disk full')
+      },
+    }
+    await runReviewCommand(args, deps(fakeIo(), '{}', broken))
+    expect(JSON.parse(out.join(''))).toEqual({
+      claimed: true,
+      trackerProblem: 'the tracker could not record this run: disk full',
+    })
   })
 
   it('re-renders a report from report.json and exits 2 for a bad one', async () => {
