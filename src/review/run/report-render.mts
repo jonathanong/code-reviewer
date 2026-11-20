@@ -2,6 +2,7 @@ import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
 import { locationText } from '../render.mts'
+import { renderPush } from './push-report.mts'
 import { renderStack } from './stack-report.mts'
 import { renderEvidence } from './evidence-render.mts'
 import { costBreakdown, type ReportData, type ReportFinding, type ReportPillar } from './report.mts'
@@ -63,6 +64,7 @@ export function renderReport(data: ReportData): string {
     `**Mode:** ${data.mode} · **Effort:** ${data.effort}`,
     ...(data.reasons.length === 0 ? [] : [data.reasons.map((reason) => `- ${reason}`).join('\n')]),
     ...(data.stack === undefined ? [] : renderStack(data.stack)),
+    ...(data.push === undefined ? [] : renderPush(data.push)),
   ]
   if (data.skipReason !== undefined) {
     sections.push(`**Skipped:** ${data.skipReason}`, `Total cost: ${money(cost.total)}`)

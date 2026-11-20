@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: the contract and verifier prompts gained a merge-resolution rule (no run)
+
+`pillars/_contract.md` gained a Merge resolutions section (judge the resolution, not the incoming
+base change) and `verifier.md` a step that reads the resolutions. The per-run Merge resolutions
+block and the push routing (a re-review after a base-only merge or an unchanged-change rebase is
+light) appear only for runs whose directory has `push.json`, which bench cases never have, so the
+benchmark prompts differ from before only by the added reference text. No run was made; scores are
+not re-measured.
+
 ## 2026-11-19: correctness, security and verifier runs may fetch configured references (no run)
 
 When a machine config lists `references`, the correctness pillar, the security pillar and the

@@ -3,8 +3,10 @@ import { summarizeModels, type ModelTotals } from '../benchmark/usage-summary.mt
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
+import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
 import type { EvidenceReport } from './evidence-types.mts'
+import { reportPush, type ReportPush } from './push-report.mts'
 import { reportStack, type ReportStack } from './stack-report.mts'
 import type { PillarResult, SkillChoice } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
@@ -53,6 +55,8 @@ export type ReportData = {
   evidence?: EvidenceReport
   /** Absent for a pull request that is not in a stack. */
   stack?: ReportStack
+  /** Absent for a first review, or when the head did not move since the last one. */
+  push?: ReportPush
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
 }
@@ -73,6 +77,7 @@ export type ReportInput = {
   verifier?: { model: string; output: ReviewVerifierOutput } | undefined
   evidence?: EvidenceReport | undefined
   stack?: StackFile | undefined
+  push?: PushFile | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
@@ -159,6 +164,7 @@ export function buildReport(input: ReportInput): ReportData {
     skillSelection: input.skillSelection,
     ...(input.evidence === undefined ? {} : { evidence: input.evidence }),
     ...(stack === undefined ? {} : { stack }),
+    ...(input.push === undefined ? {} : { push: reportPush(input.push) }),
     verifier:
       input.verifier === undefined
         ? null

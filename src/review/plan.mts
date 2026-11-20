@@ -1,6 +1,7 @@
 import type { FollowUpContext } from './context.mts'
 import type { Effort, Pillar, SkippedPillar } from './finding.mts'
 import { chooseMode, securityPaths, type Mode, type ModeChoice } from './mode.mts'
+import type { LightPush } from './push-types.mts'
 import type { StackSummary } from './stack.mts'
 import { isDocsOnly, isTestOrDocsOnly } from './triggers.mts'
 
@@ -24,6 +25,11 @@ export type PlanInput = {
   context: FollowUpContext
   requested?: Effort
   since?: SinceDiff
+  /**
+   * The push since the last review is only merges of the base, or a rewrite with the same change
+   * (local git proved it); `resolvedPaths` are the files its merge resolutions touch.
+   */
+  push?: { kind: LightPush; resolvedPaths: string[] }
   /** Revert or hotfix subjects on the changed files; undefined when history was not checked. */
   history?: string[]
   /** Login of the pull request author; undefined or null when unknown. */
@@ -43,6 +49,8 @@ export type ReviewPlan = {
   effort: Effort
   /** Review only the diff since this SHA (light follow-up), or the whole pull request when null. */
   sinceSha: string | null
+  /** Set when a light re-review covers a merge-only or same-change push, not a diff since a SHA. */
+  push?: LightPush
   pillars: { pillar: Pillar; model: Model }[]
   verifierModel: Model
   skipped: SkippedPillar[]
@@ -65,7 +73,10 @@ function selectPillars(input: PlanInput, choice: ModeChoice, paths: string[]) {
   const run = new Set<Pillar>()
   const security = securityPaths(input, paths)
   const reasonFor = (text: string) => DISPATCHED.forEach((name) => why.set(name, text))
-  if (choice.sinceSha !== null) {
+  if (choice.push !== undefined) {
+    run.add('correctness')
+    reasonFor('Light re-review of a push that only merges the base or rewrites history.')
+  } else if (choice.sinceSha !== null) {
     run.add('correctness')
     for (const finding of input.context.unresolved) {
       const pillar = DISPATCHED.find((name) => name === finding.pillar)
@@ -116,10 +127,15 @@ export function planReview(input: PlanInput): ReviewPlan {
     }
   }
   // A follow-up always has `since`: chooseMode escalates to full without it.
-  const paths = sinceSha === null ? input.paths : (input.since as SinceDiff).paths
+  const paths =
+    choice.push !== undefined
+      ? (input.push as NonNullable<PlanInput['push']>).resolvedPaths
+      : sinceSha === null
+        ? input.paths
+        : (input.since as SinceDiff).paths
   const { run, why, security } = selectPillars(input, choice, paths)
   if (security.length > 0) reasons.push(`Security trigger: ${security.slice(0, 5).join(', ')}.`)
-  const docsOnly = isDocsOnly(paths)
+  const docsOnly = choice.push === undefined && isDocsOnly(paths)
   const pillars = DISPATCHED.filter((pillar) => run.has(pillar)).map((pillar) => ({
     pillar,
     model: (docsOnly || pillar === 'history' ? 'haiku' : 'sonnet') satisfies Model as Model,
@@ -129,5 +145,15 @@ export function planReview(input: PlanInput): ReviewPlan {
     pillar,
     reason: why.get(pillar) as string,
   }))
-  return { upToDate, mode, effort, sinceSha, pillars, verifierModel, skipped, reasons }
+  return {
+    upToDate,
+    mode,
+    effort,
+    sinceSha,
+    ...(choice.push === undefined ? {} : { push: choice.push }),
+    pillars,
+    verifierModel,
+    skipped,
+    reasons,
+  }
 }

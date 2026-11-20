@@ -14,6 +14,7 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
 | 1     | `--effort medium` or `--effort high` is given                                                         | full            | as requested |
 | 2     | Dependabot author and every changed file is a lockfile (and no `--effort`)                            | skip            | low          |
 | 3     | An earlier review exists and none of the escalations below applies                                    | light follow-up | low          |
+| 3a    | An earlier review exists and the push since it is `base-merges-only` or `rebase-same-change`          | light push      | low          |
 | 4     | An earlier review exists and an escalation applies, or `--effort low` is given with no earlier review | full            | high         |
 | 5     | First review by Dependabot (any files)                                                                | light           | low          |
 | 6     | First review that changes only docs and/or tests                                                      | light           | low          |
@@ -40,18 +41,36 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
 - Escalations of a follow-up to full: the review conversation was truncated, the last reviewed SHA
   is not an ancestor of the head (force-push or rebase), the diff since it is too large to list, or
   the new commits change more than half of the pull request's lines.
+- A push is classified in `prepare` with git in the `--tree` checkout and written to `push.json`.
+  `base-merges-only`: every new first-parent commit since the last reviewed SHA is a merge whose
+  other parents are all already in the base. `rebase-same-change`: the reviewed SHA is not an
+  ancestor of the head, but the pull request's own change against the base (the diff from the fork
+  point, ignoring line numbers and blob ids) is the same before and after. Anything else, and any
+  case git cannot answer (no checkout, commit missing, git older than 2.36, more than 20 merges, a
+  resolution too large to list), is `substantive` with the reason in `problems`.
+- A light push (rule 3a) is exempt from the escalations below: the size of what came in from the
+  base and an unreachable reviewed SHA do not make it full. The truncated-conversation escalation
+  and `--effort` still apply. It has two jobs: judge each merge resolution (`git show
+  --remerge-diff`, the part of the merge a person had to write) or the range-diff of a rewrite,
+  and decide whether what came in from the base breaks the pull request's own change. A clean
+  merge with nothing resolved has only the second job. A non-empty resolution is never skipped. It
+  reviews no diff since a SHA (`sinceSha` is null); `merges/INDEX.md`, `incoming/INDEX.md` and
+  `range-diff.txt` in the run directory carry the material.
+- A `substantive` push is routed as before. Its merge resolutions are still written, and the
+  correctness pillar and the verifier are told to read them.
 - A light follow-up reviews only the diff since the last reviewed SHA (`sinceSha`), and the
   verifier rechecks every unresolved finding listed in `context.md`. A light first review reviews
   the whole pull request. `--effort low` on a pull request with no earlier review runs full.
 
 ## Pillars by mode
 
-| Mode               | Pillars                                                                           |
-| ------------------ | --------------------------------------------------------------------------------- |
-| full               | rules, correctness, design, blast-radius, plus the rules below                    |
-| light first review | rules, correctness (docs-only: rules only)                                        |
-| light follow-up    | correctness, plus each pillar that has an unresolved finding from the last review |
-| skip               | none                                                                              |
+| Mode               | Pillars                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| full               | rules, correctness, design, blast-radius, plus the rules below                     |
+| light first review | rules, correctness (docs-only: rules only)                                         |
+| light follow-up    | correctness, plus each pillar that has an unresolved finding from the last review  |
+| light push         | correctness; security only when a merge resolution touched a security trigger path |
+| skip               | none                                                                               |
 
 A security trigger path always adds the security pillar in every mode except skip; a follow-up
 looks at the files changed since the last review. A pull request with a security trigger path is

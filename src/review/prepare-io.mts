@@ -4,6 +4,8 @@ import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhReviewIo } from './github.mts'
 import { localDiffBetween, localPullDiff } from './local-diff.mts'
+import { inspectPush, type PushShas } from './push-inspect.mts'
+import type { PushInspection } from './push-types.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
@@ -30,6 +32,8 @@ export type PrepareIo = {
    * local git when there is one, from the API otherwise or when git fails.
    */
   memberDiff(member: StackMember, baseSha: string, tree?: string): Promise<string>
+  /** What was pushed since the last trusted review, classified by local git in `tree`. */
+  push(tree: string, shas: PushShas): Promise<PushInspection>
   /** The commit checked out at `tree`. */
   treeHead(tree: string): Promise<string>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
@@ -117,6 +121,7 @@ export function createGhPrepareIo(
     },
     compareDiff: (base, head) =>
       run(['api', compareUrl(base, head), '-H', 'Accept: application/vnd.github.diff']),
+    push: (tree, shas) => inspectPush(git, tree, shas),
     async treeHead(tree) {
       return (await git(['-C', tree, 'rev-parse', 'HEAD'])).trim()
     },

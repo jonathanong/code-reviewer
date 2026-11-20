@@ -82,6 +82,19 @@ default branch) or a stale base (no open pull request has it as head). `queue` r
 pull request carry `stack: {root, position, size}` and are ordered bottom-up. A flat pull request
 is unchanged.
 
+### Pushes that only merge the base
+
+When a pull request that was already reviewed gets a new head, `prepare` classifies the push with
+git in the `--tree` checkout and writes `push.json`: `base-merges-only` (every new commit merges
+the base), `rebase-same-change` (history was rewritten but the pull request's own change against
+the base is the same), or `substantive`. The first two get a light review of the merge
+resolutions (`git show --remerge-diff`, so git 2.36 or newer) or the range-diff, and of whether
+what came in from the base breaks the pull request's change; the base's own commits are not
+judged. A clean merge is as cheap as light gets, and a resolution a person wrote is never
+skipped. A resolution that drops one side's change, keeps both when one replaced the other, or
+edits a generated file by hand is a finding. Anything git cannot answer is `substantive`, with the
+reason recorded in `problems`. `report.md` shows the kind and the merges checked.
+
 ## Tracker and explainer
 
 ```bash

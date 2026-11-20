@@ -9,6 +9,8 @@ import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
+import { preparePush } from './push-prepare.mts'
+import { clearPush, type PushFile } from './push-file.mts'
 import { prepareStack } from './stack-prepare.mts'
 import { writeDiffDir, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
@@ -34,7 +36,37 @@ export type PrepareSummary = {
   /** The rule sources staged under `out/rules`: linked repos, unavailable sources. */
   /** Non-fatal problems, such as open pull requests that could not be listed. */
   problems?: string[]
+  /** The push since the last trusted review, when it was classified. */
+  push?: PushSummary
   rules: { related: string[]; consumers: string[]; missing: string[] }
+}
+
+export type PushSummary = Pick<
+  PushFile,
+  'kind' | 'reason' | 'mergesTotal' | 'mergesCapped' | 'resolvedPaths'
+> & { merges: number; resolved: number }
+
+function pushSummary(push: PushFile): PushSummary {
+  const { kind, reason, mergesTotal, mergesCapped, resolvedPaths } = push
+  const resolved = push.merges.filter((merge) => merge.resolution === 'resolved').length
+  return {
+    kind,
+    reason,
+    merges: push.merges.length,
+    resolved,
+    mergesTotal,
+    mergesCapped,
+    resolvedPaths,
+  }
+}
+
+function pushFiles(push: PushFile): string[] {
+  return [
+    'push.json',
+    ...(push.merges.length === 0 ? [] : ['merges/INDEX.md']),
+    ...(push.rangeDiff === undefined ? [] : [push.rangeDiff]),
+    ...(push.incoming === undefined ? [] : [push.incoming]),
+  ]
 }
 
 function writeDiff(out: string, name: string, patch: string, write: Write): string[] {
@@ -57,6 +89,7 @@ export async function prepareReview(
   // A rerun into the same directory must not leave the stack of an earlier run behind.
   rmSync(join(options.out, 'stack.json'), { force: true })
   rmSync(join(options.out, 'stack'), { recursive: true, force: true })
+  clearPush(options.out)
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(options.tree),
@@ -86,6 +119,13 @@ export async function prepareReview(
       written.push(...writeDiff(options.out, 'since', sincePatch, write))
     }
   }
+  const push = await preparePush(io, options.out, write, {
+    ...(options.tree === undefined ? {} : { tree: options.tree }),
+    reviewedSha: context.reviewedSha,
+    headSha,
+    baseSha: context.baseSha,
+  })
+  if (push !== undefined) written.push(...pushFiles(push))
   const subjects =
     options.tree === undefined ? undefined : await io.history(options.tree, context.baseSha, paths)
   const history = subjects === undefined ? undefined : historyHits(subjects)
@@ -101,8 +141,12 @@ export async function prepareReview(
     authorIsBot: conversation.author?.__typename === 'Bot',
     ...(options.requested === undefined ? {} : { requested: options.requested }),
     ...(since === undefined ? {} : { since }),
+    ...(push === undefined || push.kind === 'substantive'
+      ? {}
+      : { push: { kind: push.kind, resolvedPaths: push.resolvedPaths } }),
     ...(history === undefined ? {} : { history }),
   })
+  const problems = [...(problem === undefined ? [] : [problem]), ...(push?.problems ?? [])]
   const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)
   written.push('plan.json')
@@ -124,7 +168,8 @@ export async function prepareReview(
     lines: context.lines,
     mode: plan.mode,
     plan,
-    ...(problem === undefined ? {} : { problems: [problem] }),
+    ...(problems.length === 0 ? {} : { problems }),
+    ...(push === undefined ? {} : { push: pushSummary(push) }),
     written,
     rules: {
       related: staged.related,

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
@@ -6,9 +6,12 @@ import type { ReviewInput } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
+import { readPushFile } from '../push-file.mts'
+import { readStackFile } from '../stack-file.mts'
 import type { PluginInfo } from '../plugins.mts'
 import type { ReferenceSource } from '../rules/references-parse.mts'
 import type { EvidenceSetup } from './evidence-types.mts'
+import type { RunDir } from './pillar-prompt.mts'
 import type { PillarResult } from './types.mts'
 
 /** Everything `review` needs from outside: the label and GitHub steps, the plugins, and the model. */
@@ -49,6 +52,17 @@ export function writeJson(path: string, value: unknown): void {
 
 export function read(path: string): string {
   return readFileSync(path, 'utf8')
+}
+
+/** The run directory as the pillars and the verifier see it: what `prepare` wrote there. */
+export function runDir(out: string, sinceSha: string | null): RunDir {
+  return {
+    out,
+    sinceSha,
+    hasRules: existsSync(join(out, 'rules', 'INDEX.md')),
+    stack: readStackFile(out),
+    push: readPushFile(out),
+  }
 }
 
 export const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
