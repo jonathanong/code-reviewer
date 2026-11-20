@@ -24,6 +24,7 @@ describe('explainRun', () => {
       '### 2. Should fix before merge: Cached widgets are never invalidated',
       '### 3. Minor: Typo in the cache log message',
       '## Open questions',
+      '## Notes',
       '## What was checked, and what was not',
       '## Cost',
     ])
@@ -144,6 +145,12 @@ describe('explainRun', () => {
     expect(withRows(posted('COMMENT', null))).toContain('posted as a plain comment.')
     expect(withRows(posted('REQUEST_CHANGES', null))).not.toContain('On GitHub this was posted')
     expect(explain('full')).not.toContain('On GitHub this was posted')
+  })
+
+  it('lists the review notes, such as a dead base branch, and drops other shapes', () => {
+    const text = explain('full')
+    expect(text).toContain('## Notes\n\n- Base branch `feat/parent` was merged in #3')
+    expect(text).not.toContain('- 9')
   })
 
   it('says what was not checked: failed and skipped areas, blocked sources, the stack', () => {

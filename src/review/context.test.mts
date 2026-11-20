@@ -67,6 +67,7 @@ function pull(overrides: Partial<PrConversation> = {}): PrConversation {
     closingIssuesReferences: { nodes: [] },
     headRefOid: C,
     baseRefOid: B,
+    baseRefName: 'main',
     additions: 5,
     deletions: 2,
     reviews: { nodes: [] },

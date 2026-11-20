@@ -1,3 +1,4 @@
+import { notesSection } from './notes.mts'
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
 import { renderQuestions, type Question } from './question.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
@@ -112,6 +113,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
     ...(input.summary ? [input.summary] : []),
     ...(index.length > 0 ? [index.join('\n')] : []),
     ...renderQuestions(input.questions),
+    ...notesSection(input.notes),
     ...skippedSection(input.skipped),
   ].join('\n\n')
 }

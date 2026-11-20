@@ -167,6 +167,9 @@ export function renderExplained(run: Explained): string {
     sorted.length === 0 ? 'None.' : sorted.map(finding).join('\n\n'),
     '## Open questions',
     run.questions.length === 0 ? 'None.' : run.questions.map(question).join('\n'),
+    ...(run.notes.length === 0
+      ? []
+      : ['## Notes', run.notes.map((note) => `- ${note}`).join('\n')]),
     '## What was checked, and what was not',
     checked(run).join('\n'),
     '## Cost',

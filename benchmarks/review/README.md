@@ -21,6 +21,8 @@ no review narration) are likewise not re-measured, and make every pillar and ver
 comparable with earlier ones. The verifier prompt later gained one paragraph about the approval
 check, a `review`-only step the benchmark does not run; no verifier row is re-measured for it. The contract later gained a premise-challenge rule and an
 optional `prevent` line on findings; no pillar or verifier row is re-measured for that either.
+The contract and verifier prompts also gained a Carried changes section and step (no bench run has
+a `carried.json`, so that block never appears); that is not re-measured either.
 
 Mined cases (8 real pull requests from `cases.json`):
 

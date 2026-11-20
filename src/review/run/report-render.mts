@@ -3,6 +3,7 @@ import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
 import { renderQuestions } from '../question.mts'
 import { locationText } from '../render.mts'
+import { renderCarried } from './carried-report.mts'
 import { renderPush } from './push-report.mts'
 import { renderStack } from './stack-report.mts'
 import { renderApprovalCheck } from './approval-check-render.mts'
@@ -73,6 +74,7 @@ export function renderReport(data: ReportData): string {
     ...(data.reasons.length === 0 ? [] : [data.reasons.map((reason) => `- ${reason}`).join('\n')]),
     ...(data.stack === undefined ? [] : renderStack(data.stack)),
     ...(data.push === undefined ? [] : renderPush(data.push)),
+    ...(data.carried === undefined ? [] : renderCarried(data.carried)),
   ]
   if (data.skipReason !== undefined) {
     sections.push(`**Skipped:** ${data.skipReason}`, `Total cost: ${money(cost.total)}`)

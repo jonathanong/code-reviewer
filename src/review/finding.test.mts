@@ -76,6 +76,20 @@ describe('parseReviewInput', () => {
     expect(failure({ verdict: 'Maybe' })).toContain('verdict must be one of')
   })
 
+  it('keeps trimmed notes, bounded in count and length, and omits an empty list', () => {
+    expect(parseReviewInput({ notes: [] })).not.toHaveProperty('notes')
+    expect(parseReviewInput({ notes: ['  a note  '] }).notes).toEqual(['a note'])
+    const many = parseReviewInput({ notes: Array.from({ length: 12 }, () => 'n') }).notes
+    expect(many).toHaveLength(10)
+    expect(parseReviewInput({ notes: ['x'.repeat(900)] }).notes?.[0]).toHaveLength(600)
+  })
+
+  it('rejects notes that are not a list of non-empty strings', () => {
+    expect(failure({ notes: 'x' })).toBe('notes must be an array.')
+    expect(failure({ notes: [' '] })).toBe('notes[0] must be a non-empty string.')
+    expect(failure({ notes: [3] })).toBe('notes[0] must be a non-empty string.')
+  })
+
   it('ignores a non-string summary', () => {
     expect(parseReviewInput({ summary: 4 }).summary).toBe('')
   })

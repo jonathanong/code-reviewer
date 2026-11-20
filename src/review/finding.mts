@@ -42,6 +42,8 @@ export type ReviewInput = {
   skipped: SkippedPillar[]
   findings: Finding[]
   questions: Question[]
+  /** Informational notes about the pull request itself; they never change the verdict. */
+  notes?: string[]
 }
 
 export class ReviewError extends Error {
@@ -147,18 +149,34 @@ function list(record: Json, field: string): unknown[] {
   return value
 }
 
+const MAX_NOTES = 10
+const MAX_NOTE_CHARS = 600
+
+function parseNotes(raw: unknown): string[] {
+  if (raw === undefined) return []
+  if (!Array.isArray(raw)) throw new ReviewError('notes must be an array.')
+  return raw.slice(0, MAX_NOTES).map((entry: unknown, index) => {
+    if (typeof entry !== 'string' || entry.trim().length === 0) {
+      throw new ReviewError(`notes[${index}] must be a non-empty string.`)
+    }
+    return entry.trim().slice(0, MAX_NOTE_CHARS)
+  })
+}
+
 /**
  * Validates the verifier's collected findings and questions; malformed input fails closed. An
  * optional `verdict` must equal the one the findings and questions give.
  */
 export function parseReviewInput(raw: unknown): ReviewInput {
   if (!isRecord(raw)) throw new ReviewError('Input must be a JSON object.')
+  const notes = parseNotes(raw.notes)
   const review: ReviewInput = {
     effort: raw.effort === undefined ? 'high' : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
     skipped: list(raw, 'skipped').map(parseSkipped),
     findings: list(raw, 'findings').map(parseFinding),
     questions: list(raw, 'questions').map(parseQuestion),
+    ...(notes.length === 0 ? {} : { notes }),
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')

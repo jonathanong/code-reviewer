@@ -6,6 +6,8 @@ import type { Finding, ReviewInput } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
+import { carriedNotes } from '../carried-note.mts'
+import { readCarriedFile } from '../carried-file.mts'
 import { readPushFile } from '../push-file.mts'
 import { readStackFile } from '../stack-file.mts'
 import type { PluginInfo } from '../plugins.mts'
@@ -64,6 +66,7 @@ export function runDir(out: string, sinceSha: string | null): RunDir {
     hasRules: existsSync(join(out, 'rules', 'INDEX.md')),
     stack: readStackFile(out),
     push: readPushFile(out),
+    carried: readCarriedFile(out),
   }
 }
 
@@ -114,4 +117,9 @@ export function skipResult(mode: Mode, headSha: string, report: string): ReviewR
       headSha,
     },
   }
+}
+
+/** The notes `review.json` carries: what `prepare` found that is true of the pull request itself. */
+export function contextNotes(run: RunDir): string[] {
+  return run.carried === undefined ? [] : carriedNotes(run.carried)
 }

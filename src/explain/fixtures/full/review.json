@@ -36,5 +36,9 @@
     "Should the cache be shared between processes?",
     { "question": "Who clears it on deploy?" },
     7
+  ],
+  "notes": [
+    "Base branch `feat/parent` was merged in #3, so this diff may include changes that are not its own.",
+    9
   ]
 }

@@ -155,6 +155,18 @@ describe('renderHeader', () => {
     )
   })
 
+  it('shows notes once, before the skipped pillars, and nothing without them', () => {
+    const base = renderHeader(input(), SHA)
+    expect(base).not.toContain('Notes')
+    expect(renderHeader(input({ notes: [] }), SHA)).toBe(base)
+    const out = renderHeader(
+      input({ notes: ['Base branch gone.'], skipped: [{ pillar: 'history', reason: 'r' }] }),
+      SHA,
+    )
+    expect(out).toContain('**Notes**\n\n- Base branch gone.')
+    expect(out.indexOf('**Notes**')).toBeLessThan(out.indexOf('Skipped pillars'))
+  })
+
   it('uses the singular noun for one finding', () => {
     expect(renderHeader(input({ findings: [f({ severity: 'medium' })] }), SHA)).toContain(
       '1 finding (1 medium)',

@@ -4,6 +4,8 @@ import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhReviewIo } from './github.mts'
 import { localDiffBetween, localPullDiff } from './local-diff.mts'
+import type { CarriedInspection } from './carried-file.mts'
+import { inspectCarried, type CarriedArgs } from './carried-inspect.mts'
 import { inspectPush, type PushShas } from './push-inspect.mts'
 import type { PushInspection } from './push-types.mts'
 import type { PullTarget } from './target.mts'
@@ -34,6 +36,10 @@ export type PrepareIo = {
   memberDiff(member: StackMember, baseSha: string, tree?: string): Promise<string>
   /** What was pushed since the last trusted review, classified by local git in `tree`. */
   push(tree: string, shas: PushShas): Promise<PushInspection>
+  /** Which of the pull request's commits already exist elsewhere, by local git in `tree`; never rejects. */
+  carried(tree: string, args: CarriedArgs): Promise<CarriedInspection>
+  /** The merged pull request whose head branch is `ref`, if GitHub knows one. */
+  mergedPull(ref: string): Promise<number | undefined>
   /** The commit checked out at `tree`. */
   treeHead(tree: string): Promise<string>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
@@ -122,6 +128,18 @@ export function createGhPrepareIo(
     compareDiff: (base, head) =>
       run(['api', compareUrl(base, head), '-H', 'Accept: application/vnd.github.diff']),
     push: (tree, shas) => inspectPush(git, tree, shas),
+    carried: (tree, args) => inspectCarried(git, tree, args),
+    async mergedPull(ref) {
+      const [owner] = target.repo.split('/') as [string]
+      const out = await run([
+        'api',
+        `repos/${target.repo}/pulls?state=closed&head=${owner}:${encodeURIComponent(ref)}&per_page=10`,
+        '-q',
+        '[.[] | select(.merged_at != null) | .number] | first // empty',
+      ])
+      const number = Number(out.trim())
+      return Number.isInteger(number) && number > 0 ? number : undefined
+    },
     async treeHead(tree) {
       return (await git(['-C', tree, 'rev-parse', 'HEAD'])).trim()
     },

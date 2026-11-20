@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CarriedInspection } from './carried-file.mts'
 import type { PrConversation } from './context-query.mts'
 import type { SinceDiff } from './plan.mts'
 import { prepareReview } from './prepare.mts'
@@ -30,6 +31,7 @@ function conversation(
     closingIssuesReferences: { nodes: [] },
     headRefOid: HEAD,
     baseRefOid: BASE,
+    baseRefName: 'main',
     additions: lines,
     deletions: 0,
     reviews: {
@@ -51,6 +53,16 @@ function conversation(
     comments: { nodes: [] },
     commits: { nodes: [] },
   }
+}
+
+const noneCarried: CarriedInspection = {
+  commits: [],
+  commitsInRange: 0,
+  files: [],
+  filesTotal: 0,
+  defaultBranch: 'main',
+  base: 'default',
+  problems: [],
 }
 
 function inspection(rest: Partial<PushInspection>): PushInspection {
@@ -104,6 +116,8 @@ function fakeIo({
     ruleSources: vi.fn(async () => ({ related: [], missing: ['x: none'] })),
     stackInput: vi.fn(async () => ({ pr: 7, pulls: [] as StackMember[], defaultBranch: 'main' })),
     memberDiff: vi.fn(async () => PATCH),
+    carried: vi.fn(async () => noneCarried),
+    mergedPull: vi.fn(async (_ref: string): Promise<number | undefined> => undefined),
   } satisfies PrepareIo
 }
 
@@ -306,6 +320,69 @@ describe('prepareReview', () => {
     await prepareReview(io, { out })
     expect(existsSync(join(out, 'stack.json'))).toBe(false)
     expect(existsSync(join(out, 'stack'))).toBe(false)
+  })
+
+  describe('commits carried from elsewhere', () => {
+    const CARRIED = {
+      commits: [
+        {
+          sha: 'e'.repeat(40),
+          subject: 's',
+          home: { kind: 'default' as const },
+          how: 'patch' as const,
+        },
+      ],
+      commitsInRange: 3,
+      files: ['landed.ts'],
+      filesTotal: 1,
+      defaultBranch: 'main',
+      base: 'present' as const,
+      problems: ['One head could not be fetched.'],
+    }
+
+    it('writes carried.json, summarizes it, and carries its problems', async () => {
+      const io = fakeIo()
+      io.carried.mockResolvedValue(CARRIED)
+      io.mergedPull.mockResolvedValue(3)
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(io.carried).toHaveBeenCalledWith(
+        '/tree',
+        expect.objectContaining({ baseSha: BASE, headSha: HEAD, baseRef: 'main' }),
+      )
+      expect(summary.carried).toEqual({
+        commits: 1,
+        inRange: 3,
+        files: 1,
+        base: 'present',
+        baseMergedIn: 3,
+      })
+      expect(summary.written).toContain('carried.json')
+      expect(JSON.parse(read('carried.json'))).toMatchObject({ baseMergedIn: 3, baseRef: 'main' })
+      expect(summary.problems).toContain('One head could not be fetched.')
+    })
+
+    it('leaves baseMergedIn out of the summary when no pull request merged the base', async () => {
+      const io = fakeIo()
+      io.carried.mockResolvedValue({ ...CARRIED, base: 'default' })
+      const summary = await prepareReview(io, { out, tree: '/tree' })
+      expect(summary.carried).toEqual({ commits: 1, inRange: 3, files: 1, base: 'default' })
+    })
+
+    it('asks nothing without a checkout, and writes nothing when nothing is carried', async () => {
+      const flat = fakeIo()
+      const summary = await prepareReview(flat, { out })
+      expect(flat.carried).not.toHaveBeenCalled()
+      expect(summary.carried).toBeUndefined()
+      expect(existsSync(join(out, 'carried.json'))).toBe(false)
+      const clean = fakeIo()
+      expect((await prepareReview(clean, { out, tree: '/tree' })).carried).toBeUndefined()
+    })
+
+    it('removes the carried.json of an earlier run in the same directory', async () => {
+      writeFileSync(join(out, 'carried.json'), '{}')
+      await prepareReview(fakeIo(), { out, tree: '/tree' })
+      expect(existsSync(join(out, 'carried.json'))).toBe(false)
+    })
   })
 
   describe('the push since the last review', () => {

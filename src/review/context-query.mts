@@ -43,6 +43,8 @@ export type PrConversation = {
   closingIssuesReferences: { nodes: ClosingIssue[] }
   headRefOid: string
   baseRefOid: string
+  /** The base branch's name, which may no longer exist. */
+  baseRefName: string
   additions: number
   deletions: number
   reviews: { nodes: PrReview[]; pageInfo?: PageInfo }
@@ -54,7 +56,7 @@ export type PrConversation = {
 const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $pr) {
-      title body headRefOid baseRefOid additions deletions
+      title body headRefOid baseRefOid baseRefName additions deletions
       author { login __typename }
       closingIssuesReferences(first: 20) { nodes { number title body } }
       reviews(last: 60) {

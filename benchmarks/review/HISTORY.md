@@ -2,6 +2,13 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: the contract and verifier prompts gained a carried-changes rule (no run)
+
+`pillars/_contract.md` gained a Carried changes section and `verifier.md` a step that drops findings
+on carried changes. The per-run Carried changes block appears only in runs whose directory has a
+`carried.json` with carried commits, which bench cases never have, so the benchmark prompts differ
+from before only by the added reference text. No run was made; scores are not re-measured.
+
 ## 2026-11-19: an empty evidence result needs a working control query (no run)
 
 `references/evidence.md` step 4 now spells out the control rule (loosen the same query so it must
