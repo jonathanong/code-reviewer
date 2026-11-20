@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "repo": "acme/widgets",
+  "pr": 4,
+  "title": "Cache widget lookups",
+  "url": "https://github.com/acme/widgets/pull/4",
+  "headSha": "1111111111111111111111111111111111111111",
+  "mode": "full",
+  "effort": "high",
+  "reasons": [],
+  "pullRequestSummary": "Adds an in-memory cache.",
+  "summary": "Caches widget lookups.",
+  "verdict": "Approve",
+  "findings": [],
+  "questions": [],
+  "fixedThreadIds": [],
+  "pillars": [
+    {
+      "pillar": "correctness",
+      "model": "sonnet",
+      "skills": [],
+      "usage": { "costUsd": 1.2 },
+      "failedAttempts": [],
+      "findings": []
+    }
+  ],
+  "skipped": [],
+  "skillSelection": { "selected": [], "available": 0, "usage": null },
+  "verifier": { "model": "opus", "usage": { "costUsd": 0.9 } },
+  "usageByModel": [
+    {
+      "name": "pillars",
+      "models": [
+        { "model": "sonnet", "runs": 1, "inputTokens": 100, "outputTokens": 20, "costUsd": 1.2 }
+      ]
+    },
+    {
+      "name": "verifier",
+      "models": [
+        { "model": "opus", "runs": 1, "inputTokens": 50, "outputTokens": 10, "costUsd": 0.9 }
+      ]
+    }
+  ]
+}

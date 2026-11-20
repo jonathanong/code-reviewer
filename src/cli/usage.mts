@@ -6,6 +6,7 @@ code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
 code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--clones DIR]
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run] [--allow-long] [--body-target N] [--inline-target N]
@@ -46,6 +47,12 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   review.json, preview.md, report.md and report.json to --out and stops before posting. It fails
   closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
   from report.json.
+  run is the unattended path: it checks the rule plugins, settings and auth, declines a head already
+  reviewed or held, requests and claims the pull request, checks the head out in a temporary
+  directory, runs review, then posts the review or holds it for a human (--post hold always holds;
+  the hold rules are in the README). It prints one JSON line and exits 0 posted, 10 held, 11 nothing
+  to do, 12 precondition or config failure, 13 review or post failure. A held review stays in the run
+  directory with the request label back and the command that posts it in postCommand.
   resolve resolves review threads of fixed findings.
   review and post also append a row to the machine-local tracker, reviews.jsonl in the state home
   ($XDG_STATE_HOME/code-reviewer, default ~/.local/state/code-reviewer, or CODE_REVIEWER_STATE_DIR).

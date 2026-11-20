@@ -1,6 +1,7 @@
 import type { RepoConfig, RepoConfigs } from './rules/config.mts'
 import type { EvidenceSource } from './rules/evidence-parse.mts'
 import type { ReferenceSource } from './rules/references-parse.mts'
+import { DEFAULT_RUN, type RunSettings } from './rules/run-parse.mts'
 import type { TargetConfig } from './rules/target-config.mts'
 import type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
 
@@ -145,6 +146,20 @@ export function resolveApprovalCheck(configs: RepoConfigs, scope: string): Appro
   return {
     enabled: config?.approvalCheck ?? true,
     from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
+  }
+}
+
+/**
+ * The `run` settings for `owner/name`: the highest machine layer that sets the key, over the
+ * defaults. The reviewed repository's own file is never consulted, so it cannot switch off a rule.
+ */
+export function resolveRun(configs: RepoConfigs, scope: string): RunSettings {
+  const run = candidates(configs, scope, undefined).find(
+    ([, candidate]) => candidate?.run !== undefined,
+  )?.[1]?.run
+  return {
+    rules: { ...DEFAULT_RUN.rules, ...run?.rules },
+    largeChange: { ...DEFAULT_RUN.largeChange, ...run?.largeChange },
   }
 }
 

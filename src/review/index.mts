@@ -27,6 +27,7 @@ export {
   resolveEvidence,
   resolveReferences,
   resolveApprovalCheck,
+  resolveRun,
   reviewSettings,
   settingLayers,
   settingsProblems,
