@@ -54,6 +54,18 @@ review on the head, then the labels) and writes a short report. If anything fail
 command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
 pillar fails, the review fails closed instead of approving unchecked code.
 
+### Verdict and questions
+
+The verdict is derived, never chosen, top-down: a verified `blocking` finding gives Request Changes;
+otherwise a `high` finding or an open question gives Comment; otherwise Approve. A failed pillar is
+listed as skipped and changes none of this, and a review where every pillar failed fails instead.
+The verifier may return `questions` (`question`, `askOf` `author` or `product`, and a required
+`why`: what the answer changes). A question is for something the code and context cannot settle,
+not a softened finding and not a request to explain code. Questions appear in `report.md` and under
+a "Questions" heading in the posted review body, and the next review of the pull request reads them
+as context so an answered one is not asked again. `post` recomputes the verdict from the findings
+and questions; a `verdict` field in `review.json` that disagrees fails the review.
+
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
 plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of

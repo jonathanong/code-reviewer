@@ -12,7 +12,9 @@ every run.
 Not re-measured since the 2026-11-19 snapshot change: the mined-case rows below were taken before
 the reviewer could read history, so they are not comparable with a run made now. The contract and
 verifier prompts also gained a Stacks section after the last run (no bench case is stacked, so the
-Stack block of a run prompt never appears); no score was re-measured for it.
+Stack block of a run prompt never appears); no score was re-measured for it. The verifier prompt
+and output schema later gained open questions and a derived verdict; see the 2026-11-19 entry in
+[HISTORY.md](HISTORY.md). No verifier row is re-measured for it.
 
 Mined cases (8 real pull requests from `cases.json`):
 

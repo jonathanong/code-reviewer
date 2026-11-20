@@ -32,6 +32,7 @@ function input(severity?: 'blocking' | 'high' | 'low'): ReviewInput {
     effort: 'high',
     summary: '',
     skipped: [],
+    questions: [],
     findings:
       severity === undefined
         ? []

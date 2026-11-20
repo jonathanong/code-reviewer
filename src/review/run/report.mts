@@ -1,6 +1,7 @@
 import type { Usage } from '../benchmark/usage.mts'
 import { summarizeModels, type ModelTotals } from '../benchmark/usage-summary.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
+import type { Question } from '../question.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
 import type { PushFile } from '../push-file.mts'
@@ -45,6 +46,8 @@ export type ReportData = {
   /** Null for a skipped review, which has no findings to derive one from. */
   verdict: Verdict | null
   findings: Finding[]
+  /** Open questions; absent in a report written before questions existed. */
+  questions?: Question[]
   /** Threads of earlier findings that are now fixed, to resolve after posting. */
   fixedThreadIds: string[]
   pillars: ReportPillar[]
@@ -158,6 +161,7 @@ export function buildReport(input: ReportInput): ReportData {
     summary: output?.summary ?? '',
     verdict: input.verdict,
     findings: output?.findings ?? [],
+    questions: output?.questions ?? [],
     fixedThreadIds: output?.fixedThreadIds ?? [],
     pillars: markDropped(input.pillars, output),
     skipped: input.skipped,

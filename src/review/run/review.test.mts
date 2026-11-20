@@ -172,6 +172,7 @@ describe('runReview', () => {
       review: join(out, 'review.json'),
       headSha: SHA,
       fixedThreadIds: [],
+      questions: 0,
     })
     expect(calls).toEqual([])
     for (const file of [
@@ -267,7 +268,7 @@ describe('runReview', () => {
     const { out, steps, options } = setup()
     await runReview(steps, options)
     const raw = readJson(out, 'review.json')
-    expect(Object.keys(raw).sort()).toEqual(['effort', 'findings', 'skipped', 'summary'])
+    expect(Object.keys(raw).sort().join()).toBe('effort,findings,questions,skipped,summary')
     expect(raw.effort).toBe('high')
     const parsed = parseReviewInput(raw)
     expect(parsed.findings).toHaveLength(1)

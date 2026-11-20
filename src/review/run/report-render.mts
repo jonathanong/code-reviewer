@@ -1,6 +1,7 @@
 import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
+import { renderQuestions } from '../question.mts'
 import { locationText } from '../render.mts'
 import { renderPush } from './push-report.mts'
 import { renderStack } from './stack-report.mts'
@@ -85,6 +86,7 @@ export function renderReport(data: ReportData): string {
             verified(finding, at, data.stack?.fixedLater.find((entry) => entry.finding === at)?.pr),
           )
           .join('\n\n'),
+    ...renderQuestions(data.questions ?? []),
     ...(data.fixedThreadIds.length === 0
       ? []
       : [

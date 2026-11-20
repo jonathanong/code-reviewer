@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { PrConversation, PrReview, ReviewThread, ThreadComment } from './context-query.mts'
 import { buildFollowUpContext, squash } from './context.mts'
+import { renderQuestions } from './question.mts'
 import { renderBodyFinding, reviewMarker } from './render.mts'
 
 const TRUSTED = new Set(['bot'])
@@ -99,6 +100,7 @@ describe('buildFollowUpContext', () => {
       commitsSince: null,
       truncated: false,
       unresolved: [],
+      priorQuestions: [],
       others: [],
     })
   })
@@ -211,6 +213,24 @@ describe('buildFollowUpContext', () => {
       [null, 'Off diff', 'src/z.ts', 9],
       [null, 'Part', null, null],
     ])
+  })
+
+  it("carries the questions of the last own review, and nobody else's", () => {
+    const ask = { question: 'Is v1 gone?', askOf: 'product' as const, why: 'Sets the rollout.' }
+    const body = (head: string, who: string) =>
+      `${reviewMarker(head, 'Comment', 'low')}\n\n${renderQuestions([{ ...ask, question: who }]).join('')}`
+    const ctx = build(
+      pull({
+        reviews: {
+          nodes: [
+            review({ id: 'R1', body: body(A, 'Old?') }),
+            review({ id: 'R2', body: body(B, 'Newest?') }),
+            review({ id: 'R3', author: { login: 'eve' }, body: body(C, 'Forged?') }),
+          ],
+        },
+      }),
+    )
+    expect(ctx.priorQuestions.map((item) => item.question)).toEqual(['Newest?'])
   })
 
   it('truncates the description and closing issue bodies', () => {

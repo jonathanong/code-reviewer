@@ -8,7 +8,7 @@ only step that writes the review.
 The run directory from `code-reviewer prepare`: `plan.json` (effort and `skipped`),
 `context.md` (the pull request title, description, and closing issues under "Intent"; the earlier
 review; unresolved findings, with thread ids or marked as review-body findings with no
-thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` when `plan.sinceSha` is set; `push.json` and `merges/INDEX.md` when the run has a Merge resolutions block), `pillars/*.json`, and the worktree at
+thread; the open questions the last review asked; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` when `plan.sinceSha` is set; `push.json` and `merges/INDEX.md` when the run has a Merge resolutions block), `pillars/*.json`, and the worktree at
 `tree/`. Read files by path with offsets; do not load the whole diff.
 
 ## Steps
@@ -53,7 +53,15 @@ thread; and other reviewers' notes), `diff/INDEX.md` (and `since/INDEX.md` when 
    yourself: a resolution that drops a side's change, keeps both when one replaced the other, or
    resolves a generated file by hand is a finding even when no pillar reported it. Never drop a
    finding about a resolution without reading that merge's file.
-8. **Summarize** in two to four sentences a human can act on: what the change does, whether it
+8. **Questions.** Ask a question only when the code and context cannot settle something and the
+   answer could change whether the change is right. It is not a softened finding (a defect you can
+   show is a finding) and not a request to explain code. Each question has `question`, `askOf`
+   (`author` for intent and code, `product` for requirements and rollout), and a non-empty `why`:
+   what the answer changes about the review. Never ask what the description, `context.md`, the
+   diff, or the tree already answers. An author reply or a later commit that answers a question
+   in `context.md` settles it: do not ask it again. If it is still open and still matters, ask it
+   again once, in the same words.
+9. **Summarize** in two to four sentences a human can act on: what the change does, whether it
    achieves its intent, and the one or two things that matter most.
 
 ## Severity
@@ -63,9 +71,16 @@ pillar.
 
 ## Verdict
 
-The verdict is derived from the findings: any `blocking` finding gives Request Changes, any `high`
-finding gives Comment, and anything else gives Approve. Do not choose it separately. To change
-the verdict, change a finding's severity, and justify that in its body.
+The verdict is derived top-down; do not choose it separately:
+
+1. A verified `blocking` finding gives Request Changes.
+2. Otherwise a `high` finding, or any open question, gives Comment.
+3. Otherwise Approve.
+
+A failed pillar changes none of this: it is listed under `skipped`, and when every pillar fails
+there is no review at all. `code-reviewer post` recomputes the verdict from the findings and
+questions; a `verdict` in `review.json` that disagrees fails the review. To change the verdict,
+change a finding's severity or the questions.
 
 ## Output
 
@@ -85,6 +100,13 @@ Copy `skipped` from `plan.json` (plus any pillar that failed), then write `revie
       "body": "...",
       "path": "...",
       "line": 1
+    }
+  ],
+  "questions": [
+    {
+      "question": "Is the v1 client still deployed?",
+      "askOf": "product",
+      "why": "A live v1 client makes the removed field a breaking change."
     }
   ]
 }

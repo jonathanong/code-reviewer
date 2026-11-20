@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import type { ReviewInput } from '../finding.mts'
+import type { Finding, ReviewInput } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
@@ -90,6 +90,12 @@ export function failedSkips(results: readonly PillarResult[]) {
 }
 
 export const ZERO_FINDINGS = { blocking: 0, high: 0, medium: 0, low: 0 }
+
+export function countFindings(findings: readonly Finding[]) {
+  const counts = { ...ZERO_FINDINGS }
+  for (const finding of findings) counts[finding.severity] += 1
+  return counts
+}
 
 /** The result of a review that posted a skip and ran no model. */
 export function skipResult(mode: Mode, headSha: string, report: string): ReviewResult {

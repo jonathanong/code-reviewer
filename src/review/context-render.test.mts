@@ -20,6 +20,7 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     commitsSince: null,
     truncated: false,
     unresolved: [],
+    priorQuestions: [],
     others: [],
     ...overrides,
   }
@@ -51,6 +52,15 @@ describe('renderFollowUpContext', () => {
     )
     expect(out).toContain(`- Last review: \`${'c'.repeat(12)}\` (Approve, high effort)`)
     expect(out).toContain('- Commits since: 2\n  - fix one\n  - fix two')
+  })
+
+  it('lists open questions only when there are some', () => {
+    const asked = renderFollowUpContext(
+      context({ priorQuestions: [{ question: 'Is v1 gone?', askOf: 'product', why: 'Rollout.' }] }),
+    )
+    expect(asked).toContain('## Open questions from the last review (1)')
+    expect(asked).toContain('- (product) Is v1 gone? Why it matters: Rollout.')
+    expect(renderFollowUpContext(context())).not.toContain('Open questions')
   })
 
   it('notes a truncated conversation', () => {

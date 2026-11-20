@@ -148,7 +148,22 @@ describe('verifier run', () => {
       out({ summary: ' S ', findings: [{ ...finding(), sources: [0, 1] }] }),
       2,
     )
-    expect(parsed).toEqual({ summary: 'S', findings: [finding()], sources: [[0, 1]] })
+    expect(parsed).toEqual({
+      summary: 'S',
+      findings: [finding()],
+      questions: [],
+      sources: [[0, 1]],
+    })
+  })
+
+  it('carries questions and fails on a malformed one rather than dropping it', () => {
+    const ask = { question: 'Q?', askOf: 'author', why: 'W' }
+    expect(
+      parseVerifierOutput(out({ summary: 's', findings: [], questions: [ask] }), 0).questions,
+    ).toEqual([ask])
+    expect(() =>
+      parseVerifierOutput(out({ summary: 's', findings: [], questions: [{ question: 'Q?' }] }), 0),
+    ).toThrow('questions[0].askOf')
   })
 
   it('rejects missing output and invalid sources', () => {
@@ -177,7 +192,7 @@ describe('verifier run', () => {
       },
     )
     expect(calls).toEqual(['claude /snap'])
-    expect(result.output).toEqual({ summary: 's', findings: [], sources: [] })
+    expect(result.output).toEqual({ summary: 's', findings: [], questions: [], sources: [] })
     expect(result.usage.byModel).toEqual({})
   })
 })

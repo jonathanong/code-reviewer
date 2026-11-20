@@ -27,6 +27,7 @@ const input: ReviewInput = {
   effort: 'high',
   summary: '',
   skipped: [],
+  questions: [],
   findings: ['a', 'b'].map((title, line) => ({
     pillar: 'rules',
     severity: 'low' as const,

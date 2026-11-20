@@ -40,7 +40,7 @@ export async function postFinalReview(
   }
   const index = indexReviewFiles(await io.listFiles())
   const reviews = buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS)
-  const verdict = deriveVerdict(input.findings)
+  const verdict = deriveVerdict(input.findings, input.questions)
   if (options.dryRun === true) return { verdict, reviews, urls: [], label: 'unchanged' }
   const urls: string[] = []
   for (const review of reviews) urls.push(await io.postReview(review))

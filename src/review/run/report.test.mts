@@ -77,6 +77,7 @@ const OUTPUT: ReviewVerifierOutput = {
   findings: [kept],
   sources: [[0]],
   dropped: new Map([[1, 'Style only.']]),
+  questions: [],
   fixedThreadIds: [],
   skills: [],
   usage: usage(1.5, 12),
@@ -328,6 +329,14 @@ describe('renderReport', () => {
     expect(markdown).toContain('### Verdict: Comment\n\nOne thing to fix.')
     expect(markdown).toContain('1. **[high]** Off by one (`a.ts:7-9`) (correctness)')
     expect(markdown).toContain('> Line one.\n> Line two.')
+  })
+
+  it('shows questions, and still renders a report written before questions existed', () => {
+    const data = buildReport(INPUT)
+    const ask = { question: 'Is v1 gone?', askOf: 'product' as const, why: 'Rollout.' }
+    expect(renderReport({ ...data, questions: [ask] })).toContain('- **Product:** Is v1 gone?')
+    const old = JSON.parse(JSON.stringify({ ...data, questions: undefined })) as typeof data
+    expect(renderReport(old)).not.toContain('### Questions')
   })
 
   it('lists every raw finding per pillar, marking the dropped ones', () => {

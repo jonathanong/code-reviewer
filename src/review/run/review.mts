@@ -15,7 +15,7 @@ import { listRuleSkills, selectSkills } from './select-skills.mts'
 import { runReviewVerifier } from './verify.mts'
 
 import {
-  ZERO_FINDINGS,
+  countFindings,
   failedSkips,
   skipResult,
   message,
@@ -132,6 +132,7 @@ async function review(
     summary: output.summary,
     skipped,
     findings: verified,
+    questions: output.questions,
   }
   writeJson(join(out, 'review.json'), input)
   const outcome = await steps.preview(input, headSha)
@@ -140,7 +141,7 @@ async function review(
     ...base,
     mode,
     reasons: plan.reasons,
-    verdict: deriveVerdict(verified),
+    verdict: deriveVerdict(verified, output.questions),
     skipped,
     skillSelection: skillChoice,
     pillars: results,
@@ -150,15 +151,14 @@ async function review(
     push: run.push,
   })
   const report = writeReportFiles(out, data)
-  const counts = { ...ZERO_FINDINGS }
-  for (const finding of verified) counts[finding.severity] += 1
   return {
     ok: true,
     summary: {
       claimed: true,
       mode,
       verdict: data.verdict,
-      findings: counts,
+      findings: countFindings(verified),
+      questions: output.questions.length,
       costUsd: costBreakdown(data).total,
       report,
       review: join(out, 'review.json'),

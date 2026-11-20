@@ -100,7 +100,7 @@ rather than label, or to review a head that is already reviewed. The command:
    against the documentation ([web-references](references/web-references.md)).
 
 It prints one line:
-`{claimed, mode, verdict, findings, costUsd, report, review, headSha, fixedThreadIds}`. It
+`{claimed, mode, verdict, findings, questions, costUsd, report, review, headSha, fixedThreadIds}`. It
 never posts. If it fails after the claim it drops the processing label itself and exits 1; when
 every pillar fails it fails the review, not approves it.
 
@@ -122,8 +122,10 @@ document connector (a first-party Claude Docs capability), put it in the session
 section for this pull request marked "draft", and give the human the link instead; otherwise show
 it inline. `report.md` holds the raw findings, the skills loaded and the cost by model. Ask
 whether to post. Post without asking only when the human has said this kind of review may be
-posted unattended. A human who wants a finding changed edits `review.json`; preview the result
-with `post --dry-run`.
+posted unattended. A human who wants a finding or question changed edits `review.json`; preview the result
+with `post --dry-run`. The verdict is derived from the findings and questions (a blocking finding
+requests changes; otherwise a high finding or any open question comments; otherwise approve), and
+`post` fails a `review.json` whose `verdict` field disagrees, so remove that field when editing.
 
 ## Step 4 - Post or drop
 
@@ -135,6 +137,7 @@ with `post --dry-run`.
 
 - The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is always a COMMENT,
   because GitHub does not let an author approve their own pull request.
+- Open questions follow the finding index under a "Questions" heading.
 - Findings are tagged `[blocking]`, `[high]`, `[medium]`, or `[low]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.
 - A hidden marker records the reviewed SHA, the verdict, and the effort.

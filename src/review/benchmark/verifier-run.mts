@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 
 import { ReviewError, PILLARS, SEVERITIES, parseReviewInput, type Finding } from '../finding.mts'
+import { QUESTIONS_SCHEMA, type Question } from '../question.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
 import { parseUsage, resultEvent, type Usage } from './usage.mts'
@@ -15,6 +16,7 @@ export const VERIFIER_OUTPUT_SCHEMA = {
   additionalProperties: false,
   properties: {
     summary: { type: 'string' },
+    questions: QUESTIONS_SCHEMA,
     findings: {
       type: 'array',
       items: {
@@ -37,7 +39,12 @@ export const VERIFIER_OUTPUT_SCHEMA = {
   },
 } as const
 
-export type VerifierOutput = { summary: string; findings: Finding[]; sources: number[][] }
+export type VerifierOutput = {
+  summary: string
+  findings: Finding[]
+  questions: Question[]
+  sources: number[][]
+}
 
 /** Wraps the verifier prompt with the case context and the fixed pillar findings. */
 export function buildVerifierPrompt(
@@ -114,7 +121,10 @@ export function parseVerifierOutput(stdout: string, inputCount: number): Verifie
 
 /** Validates a verifier's structured output object; shared by the benchmark and `review`. */
 export function validateVerifierOutput(value: unknown, inputCount: number): VerifierOutput {
-  const structured = value as { summary?: unknown; findings?: unknown } | undefined | null
+  const structured = value as
+    | { summary?: unknown; findings?: unknown; questions?: unknown }
+    | undefined
+    | null
   if (structured === undefined || structured === null || !Array.isArray(structured.findings)) {
     throw new ReviewError('Verifier run returned no structured findings.')
   }
@@ -127,8 +137,17 @@ export function validateVerifierOutput(value: unknown, inputCount: number): Veri
     if (!valid) throw new ReviewError(`findings[${index}].sources must list input indexes.`)
     return list as number[]
   })
-  const review = parseReviewInput({ summary: structured.summary, findings: raw })
-  return { summary: review.summary, findings: review.findings, sources }
+  const review = parseReviewInput({
+    summary: structured.summary,
+    findings: raw,
+    questions: structured.questions,
+  })
+  return {
+    summary: review.summary,
+    findings: review.findings,
+    questions: review.questions,
+    sources,
+  }
 }
 
 export type VerifierRun = {

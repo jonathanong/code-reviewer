@@ -20,12 +20,19 @@ const SHA = 'a'.repeat(40)
 
 describe('verdict and tags', () => {
   it('derives the verdict from the worst severity', () => {
-    expect(deriveVerdict([])).toBe('Approve')
-    expect(deriveVerdict([f({ severity: 'medium' })])).toBe('Approve')
-    expect(deriveVerdict([f({ severity: 'high' }), f()])).toBe('Comment')
-    expect(deriveVerdict([f({ severity: 'high' }), f({ severity: 'blocking' })])).toBe(
+    expect(deriveVerdict([], [])).toBe('Approve')
+    expect(deriveVerdict([f({ severity: 'medium' })], [])).toBe('Approve')
+    expect(deriveVerdict([f({ severity: 'high' }), f()], [])).toBe('Comment')
+    expect(deriveVerdict([f({ severity: 'high' }), f({ severity: 'blocking' })], [])).toBe(
       'Request Changes',
     )
+  })
+
+  it('makes an open question a Comment, but never softens a blocking finding', () => {
+    const ask = [{ question: 'Q?', askOf: 'author' as const, why: 'W' }]
+    expect(deriveVerdict([], ask)).toBe('Comment')
+    expect(deriveVerdict([f({ severity: 'low' })], ask)).toBe('Comment')
+    expect(deriveVerdict([f({ severity: 'blocking' })], ask)).toBe('Request Changes')
     expect(severityTag('high')).toBe('[high]')
   })
 
@@ -80,6 +87,7 @@ describe('renderHeader', () => {
     summary: '',
     skipped: [],
     findings: [],
+    questions: [],
     ...overrides,
   })
 
@@ -114,6 +122,21 @@ describe('renderHeader', () => {
     )
     expect(out).toContain('<summary>Skipped pillars (1)</summary>')
     expect(out).toContain('- **history**: shallow clone')
+  })
+
+  it('renders open questions and lets them set the verdict', () => {
+    const out = renderHeader(
+      input({
+        questions: [
+          { question: 'Is the old\nclient gone?', askOf: 'product', why: 'It sets the rollout.' },
+        ],
+      }),
+      SHA,
+    )
+    expect(out).toContain('## [Comment] Code review')
+    expect(out).toContain(
+      '### Questions\n\n- **Product:** Is the old client gone?\n  Why it matters: It sets the rollout.',
+    )
   })
 
   it('uses the singular noun for one finding', () => {

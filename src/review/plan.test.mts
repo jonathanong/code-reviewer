@@ -21,6 +21,7 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     commitsSince: null,
     truncated: false,
     unresolved: [],
+    priorQuestions: [],
     others: [],
     ...overrides,
   }

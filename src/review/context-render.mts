@@ -50,6 +50,12 @@ export function renderFollowUpContext(context: FollowUpContext): string {
       finding.threadId === null ? 'no thread (review body)' : `thread \`${finding.threadId}\``
     lines.push(`- [${finding.severity}] ${finding.title} (${finding.pillar}; ${where}; ${thread})`)
   }
+  if (context.priorQuestions.length > 0) {
+    lines.push('', `## Open questions from the last review (${context.priorQuestions.length})`, '')
+    for (const item of context.priorQuestions) {
+      lines.push(`- (${item.askOf}) ${item.question} Why it matters: ${item.why}`)
+    }
+  }
   lines.push('', `## Other reviewers and comments (${context.others.length})`, '')
   for (const note of context.others) lines.push(`- **${note.author}** ${note.where}: ${note.text}`)
   return `${lines.join('\n')}\n`

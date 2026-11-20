@@ -2,6 +2,19 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: the verifier may return open questions, which make the verdict Comment (no run)
+
+`verifier.md` gained a Questions step (ask only what the code and context cannot settle and whose
+answer could change the review; each question has `askOf` and a required `why`), a top-down
+Verdict rule (blocking finding: Request Changes; else a high finding or any open question:
+Comment; else Approve), and a `questions` array in its example output. The verifier output schema
+(shared by `bench-verifier` and `review`) gained an optional `questions` array, which the bench
+graders ignore. `context.md` gains an "Open questions from the last review" section only when the
+last review asked some, which no bench case has. A run with no questions returned and the same
+findings differs from before only by the added verifier text. No run was made. `bench-verifier`
+rows are not comparable with earlier entries: its prompt text and schema changed. Pillar rows
+(`bench`) are unaffected.
+
 ## 2026-11-19: the contract and verifier prompts gained a merge-resolution rule (no run)
 
 `pillars/_contract.md` gained a Merge resolutions section (judge the resolution, not the incoming
