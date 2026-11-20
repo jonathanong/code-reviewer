@@ -58,7 +58,7 @@ export async function prepareReview(
   mkdirSync(options.out, { recursive: true })
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
-    io.diff(),
+    io.diff(options.tree),
     io.files(),
     io.conversation(),
     io.trusted(),
