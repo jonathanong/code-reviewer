@@ -29,6 +29,10 @@ export type ReviewIo = {
   listFiles(): Promise<ReviewFile[]>
   /** Review bodies with their author logins, oldest first. */
   listReviews(): Promise<{ body: string; author: string | null }[]>
+  /** Reviews that still request changes, with their author logins, oldest first. */
+  changesRequested(): Promise<{ id: number; body: string; author: string | null }[]>
+  /** Dismisses a review that requests changes; GitHub requires a message. */
+  dismissReview(id: number, message: string): Promise<void>
   /** The pull request author's login; undefined when GitHub reports none. */
   pullAuthor(): Promise<string | undefined>
   /** Logins whose `final-review` markers count; see `resolveTrustedAuthors`. */
@@ -87,6 +91,28 @@ export function createGhReviewIo(
         '.[] | {body, author: .user.login} | @json',
       ])
       return lines(out).map((line) => JSON.parse(line) as { body: string; author: string | null })
+    },
+    async changesRequested() {
+      const out = await run([
+        'api',
+        '--paginate',
+        `${pull}/reviews?per_page=100`,
+        '-q',
+        '.[] | select(.state == "CHANGES_REQUESTED") | {id, body, author: .user.login} | @json',
+      ])
+      return lines(out).map(
+        (line) => JSON.parse(line) as { id: number; body: string; author: string | null },
+      )
+    },
+    async dismissReview(id, message) {
+      await run([
+        'api',
+        '--method',
+        'PUT',
+        `${pull}/reviews/${id}/dismissals`,
+        '-f',
+        `message=${message}`,
+      ])
     },
     async pullAuthor() {
       const out = (await run(['api', pull, '-q', '.user.login'])).trim()

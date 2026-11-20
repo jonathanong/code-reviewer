@@ -49,6 +49,8 @@ describe('retry after a partial post', () => {
       listReviews: async () => reviews.map((body) => ({ body, author: 'bot' })),
       trustedAuthors: async () => new Set(['bot']),
       pullAuthor: async () => 'dev',
+      changesRequested: async () => [],
+      dismissReview: async () => undefined,
       hasApprovalLabel: async () => false,
       postReview: vi.fn(async (review) => {
         if (reviews.length === 1 && failSecond) throw new Error('boom')

@@ -126,7 +126,8 @@ export function loadRun(
   const sources = listOf(evidence.sources)
   const areas = listOf(report.pillars)
   const skipped = listOf(review.skipped ?? report.skipped)
-  const questions = (Array.isArray(review.questions) ? review.questions : []).flatMap(questionOf)
+  const recorded = [review.questions, report.questions].find(Array.isArray) ?? []
+  const questions = (recorded as unknown[]).flatMap(questionOf)
   return {
     repo: asString(report.repo) ?? fallback.repo ?? null,
     pr: asNumber(report.pr) ?? fallback.pr ?? null,

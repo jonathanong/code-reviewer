@@ -31,6 +31,16 @@ describe('visibleBody', () => {
   })
 })
 
+describe('visibleBody nesting', () => {
+  it('hides a nested collapsed block through its outer close, and keeps text after it', () => {
+    const body =
+      'Top.\n<details><summary>a</summary>x<details><summary>b</summary>inner</details>still hidden</details>\nEnd.'
+    expect(visibleBody(body)).toBe('Top.\n\nEnd.')
+    expect(visibleBody('Keep.</details>Also.')).toBe('Keep.Also.')
+    expect(visibleBody('Keep.<details open>never closed')).toBe('Keep.')
+  })
+})
+
 describe('checkPostedText', () => {
   it('is quiet at the target and warns above it', () => {
     const { bodyTarget, inlineTarget } = DEFAULT_TEXT_LIMITS

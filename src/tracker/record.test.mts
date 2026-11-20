@@ -162,6 +162,7 @@ describe('recordPosted', () => {
     downgraded: 'self-review' as const,
     warnings: [],
     tooLong: [],
+    dismissed: [],
   }
   const finding = (severity: 'blocking' | 'low') => ({
     pillar: 'rules' as const,
@@ -212,6 +213,7 @@ describe('recordPosted', () => {
         label: 'added',
         warnings: [],
         tooLong: [],
+        dismissed: [],
       },
     })
     expect(readRows(io).rows[0]).toMatchObject({

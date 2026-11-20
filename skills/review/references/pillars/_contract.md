@@ -110,7 +110,8 @@ Return only JSON:
 
 - Blocking special cases. A wrong path behind a flag that ships off is still reported, and is
   blocking only if it would stop the flag being turned on. A guard on an irreversible or
-  money-moving action that fails open is blocking. Code that looks correct but has no test is not
+  money-moving action that fails open can be blocking: it still has to meet all four conditions
+  above, which it usually does, so it is not a shortcut around them. Code that looks correct but has no test is not
   blocking. A title or description problem is `medium` at most.
 - A declared use is a path someone takes. An option, parameter, or field the API accepts but
   ignores produces a wrong result for every caller who sets it, even when the default path works.

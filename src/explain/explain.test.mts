@@ -99,6 +99,25 @@ describe('explainRun', () => {
     expect(bare).toContain('a high-severity one: T. That means Comment.')
   })
 
+  it('falls back to the questions in report.json when review.json has none', () => {
+    const files: Record<string, string> = {
+      '/run/review.json': JSON.stringify({ summary: 's', findings: [] }),
+      '/run/report.json': JSON.stringify({
+        verdict: 'Comment',
+        questions: [{ question: 'From the report?', askOf: 'author', why: 'Because.' }],
+      }),
+    }
+    const text = explainRun({ ...io, read: (path) => files[path] }, '/run')
+    expect(text).toContain('- For the author: From the report?\n  Why it matters: Because.')
+    const empty: Record<string, string> = {
+      ...files,
+      '/run/review.json': JSON.stringify({ findings: [], questions: [] }),
+    }
+    expect(explainRun({ ...io, read: (path) => empty[path] }, '/run')).toContain(
+      '## Open questions\n\nNone.',
+    )
+  })
+
   it('says when a verdict was posted as a different review event, and why', () => {
     const head = '1'.repeat(40)
     const posted = (event: string, downgraded: string | null) =>

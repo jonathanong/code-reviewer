@@ -19,7 +19,17 @@ export type TextCheck = {
 
 /** The reader's part of a review body: no hidden marker and no collapsed details. */
 export function visibleBody(body: string): string {
-  return body.replace(/<!--[\s\S]*?-->/gu, '').replace(/<details>[\s\S]*?<\/details>/gu, '')
+  let depth = 0
+  let shown = ''
+  // A collapsed block ends at its matching close, so nested blocks do not end it early.
+  for (const piece of body
+    .replace(/<!--[\s\S]*?-->/gu, '')
+    .split(/(<details[^>]*>|<\/details>)/iu)) {
+    if (/^<details/iu.test(piece)) depth += 1
+    else if (/^<\/details>/iu.test(piece)) depth = Math.max(0, depth - 1)
+    else if (depth === 0) shown += piece
+  }
+  return shown
 }
 
 type Measured = { what: string; length: number; target: number }

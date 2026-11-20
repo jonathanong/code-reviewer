@@ -6,6 +6,7 @@ import {
 import { buildReviews, DEFAULT_LIMITS, type BuildLimits } from './build.mts'
 import { checkPostedText, DEFAULT_TEXT_LIMITS, type TextLimits } from './concise.mts'
 import { chooseEvent, postReviews, withEvent, type Downgrade } from './event.mts'
+import { dismissRequests, staleRequests } from './dismiss.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
 import { isTrustedAuthor } from './trust.mts'
@@ -24,6 +25,10 @@ export type PostOutcome = {
   warnings: string[]
   /** The warnings over three times the target, which a real post refuses without `allowLong`. */
   tooLong: string[]
+  /** Earlier requests for changes of this reviewer's own that a COMMENT review dismissed. */
+  dismissed: number[]
+  /** On a dry run, the earlier requests for changes a real post would dismiss. */
+  wouldDismiss?: number[]
 }
 
 export const SHA_RE = /^[0-9a-f]{40}$/u
@@ -73,8 +78,23 @@ export async function postFinalReview(
     reviews,
     options.textLimits ?? DEFAULT_TEXT_LIMITS,
   )
-  const common = { verdict, reviews, warnings, tooLong }
-  if (options.dryRun === true) return { ...common, urls: [], label: 'unchanged', ...choice }
+  // Only a COMMENT leaves an earlier request for changes standing, and only a verdict that no
+  // longer requests changes should clear it.
+  const clears = choice.event === 'COMMENT' && verdict !== 'Request Changes'
+  if (options.dryRun === true) {
+    const stale = clears ? await staleRequests(io) : { ids: [], warnings: [] }
+    return {
+      verdict,
+      reviews,
+      tooLong,
+      warnings: [...warnings, ...stale.warnings],
+      dismissed: [],
+      wouldDismiss: stale.ids,
+      urls: [],
+      label: 'unchanged',
+      ...choice,
+    }
+  }
   if (tooLong.length > 0 && options.allowLong !== true) {
     throw new ReviewError(
       `Posted text is over three times its target (${tooLong.join('; ')}); shorten it or pass --allow-long.`,
@@ -82,6 +102,16 @@ export async function postFinalReview(
   }
   const { urls, ...posted } = await postReviews(io, reviews)
   const sent = { ...choice, ...posted }
+  const stale =
+    sent.event === 'COMMENT' && clears ? await staleRequests(io) : { ids: [], warnings: [] }
+  const cleared = await dismissRequests(io, stale.ids, urls[0])
+  const common = {
+    verdict,
+    reviews,
+    tooLong,
+    warnings: [...warnings, ...stale.warnings, ...cleared.warnings],
+    dismissed: cleared.dismissed,
+  }
   if (verdict === 'Approve') {
     await io.addApprovalLabel()
     return { ...common, urls, label: 'added', ...sent }

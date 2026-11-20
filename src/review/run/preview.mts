@@ -2,7 +2,9 @@ import type { PostOutcome } from '../post.mts'
 
 /** The reviews `post` would send, as Markdown: each body, then each inline comment with its place. */
 export function renderPreview(
-  outcome: Pick<PostOutcome, 'verdict' | 'reviews' | 'event' | 'downgraded'>,
+  outcome: Pick<PostOutcome, 'verdict' | 'reviews' | 'event' | 'downgraded'> & {
+    wouldDismiss?: number[]
+  },
 ): string {
   const total = outcome.reviews.length
   const parts = outcome.reviews.map((review, index) => {
@@ -17,5 +19,10 @@ export function renderPreview(
     ].join('\n\n')
   })
   const posted = `Posts as ${outcome.event}${outcome.downgraded === undefined ? '' : ` (downgraded: ${outcome.downgraded})`}.`
-  return `# Preview: ${outcome.verdict}\n\n${posted}\n\n${parts.join('\n\n')}\n`
+  const ids = outcome.wouldDismiss ?? []
+  const dismissal =
+    ids.length === 0
+      ? ''
+      : `\n\nWould dismiss this reviewer's earlier request for changes: ${ids.join(', ')}.`
+  return `# Preview: ${outcome.verdict}\n\n${posted}${dismissal}\n\n${parts.join('\n\n')}\n`
 }

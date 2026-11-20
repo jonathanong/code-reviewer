@@ -85,8 +85,16 @@ determined, or when GitHub rejects the event with 422: it falls back to `COMMENT
 `post` output says `event` and `downgraded` (`self-review`, `identity-unknown`, or `rejected`; the
 tracker's `posted` row and `explain` carry both), so a review is never lost. The author comes from
 the run's `context.json` when it is for the same head, and from the host otherwise. The first-line tag, hidden marker, labels and check run are unchanged and
-still decide `status`; GitHub's own review state is not trusted. A new review does not dismiss the
-reviewer's earlier request for changes on an older head: the newer approval or comment is enough.
+still decide `status`; GitHub's own review state is not trusted. An `APPROVE` clears the reviewer's earlier
+request for changes by itself, but a later `COMMENT` does not on GitHub, so the pull request would
+stay blocked after the blocking findings were fixed. When the review goes out as a `COMMENT` and the
+verdict no longer requests changes, `post` dismisses the reviewer's own earlier reviews that are
+still in the changes-requested state, with a one-line message that links the new review. "Own"
+means written by the trusted identity and carrying the hidden marker; nobody else's review is ever
+touched. This is the only dismissal the tool performs. If the identity is unknown, the lookup
+fails, or GitHub refuses a dismissal, the post still succeeds and `warnings` names each review left
+standing. `dismissed` in the output lists the dismissed review ids; a dry run lists what it would
+dismiss as `wouldDismiss` and dismisses nothing.
 
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule

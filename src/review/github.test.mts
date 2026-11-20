@@ -73,6 +73,21 @@ describe('createGhReviewIo', () => {
     expect(calls[0]?.slice(-2)).toEqual(['-q', '.[] | {body, author: .user.login} | @json'])
   })
 
+  it('lists reviews that request changes, and dismisses one with a message', async () => {
+    const { io, calls } = setup(['{"id":9,"body":"b","author":"bot[bot]"}\n', ''])
+    await expect(io.changesRequested()).resolves.toEqual([{ id: 9, body: 'b', author: 'bot[bot]' }])
+    expect(calls[0]?.at(-1)).toContain('CHANGES_REQUESTED')
+    await io.dismissReview(9, 'Superseded.')
+    expect(calls[1]).toEqual([
+      'api',
+      '--method',
+      'PUT',
+      'repos/acme/widgets/pulls/7/reviews/9/dismissals',
+      '-f',
+      'message=Superseded.',
+    ])
+  })
+
   it('resolves trusted authors from the viewer and the allowlist', async () => {
     const { io, calls } = setup(['{"data":{"viewer":{"login":"Me"}}}'])
     await expect(io.trustedAuthors()).resolves.toEqual(new Set(['me']))

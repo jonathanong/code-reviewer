@@ -135,6 +135,17 @@ describe('foldRows', () => {
     })
   })
 
+  it('clears an earlier downgrade when the latest post has none', () => {
+    const posted = (event: string, downgraded: string | null) =>
+      row({ state: 'posted', counts: null, event, downgraded, reviewUrl: 'https://example.test/r' })
+    const folded = foldRows([
+      row(),
+      posted('COMMENT', 'identity-unknown'),
+      posted('APPROVE', null),
+    ])[0]
+    expect(folded).toMatchObject({ event: 'APPROVE', downgraded: null, title: 'Add widgets' })
+  })
+
   it('starts over when a run is reviewed again after it was posted', () => {
     const [folded] = foldRows([
       row({ state: 'posted', reviewUrl: 'https://example.test/r' }),

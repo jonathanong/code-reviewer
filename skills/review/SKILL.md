@@ -145,9 +145,11 @@ requests changes; otherwise a high finding or any open question comments; otherw
   the App bot), when the reviewer's identity cannot be determined, or when GitHub rejects the event
   with 422, it is posted once as `COMMENT`. `post` prints the `event` and, when it changed,
   `downgraded` (`self-review`, `identity-unknown`, or `rejected`). The tag, marker, labels and
-  check run stay the source of truth for `status`; GitHub's review state is never read. A new
-  review needs no dismissal of the reviewer's earlier request for changes: the newer approval or
-  comment is enough.
+  check run stay the source of truth for `status`; GitHub's review state is never read for the
+  verdict. An `APPROVE` clears an earlier request for changes by itself; after a `COMMENT` that no
+  longer requests changes, `post` dismisses the reviewer's own earlier changes-requested reviews
+  (trusted identity and marker only; the only dismissal the tool performs) and prints `dismissed`.
+  A failed or impossible dismissal is a warning naming the review left standing, not an error.
 - Open questions follow the finding index under a "Questions" heading.
 - Findings are tagged `[blocking]`, `[high]`, `[medium]`, or `[low]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.

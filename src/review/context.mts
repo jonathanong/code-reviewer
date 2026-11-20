@@ -1,5 +1,6 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
 import { parseBodyFindings } from './body-findings.mts'
+import { latestInstance } from './last-review.mts'
 import { MARKER_RE, PART_MARKER_RE } from './post.mts'
 import { parseQuestions, type Question } from './question.mts'
 import { isTrustedAuthor } from './trust.mts'
@@ -154,10 +155,7 @@ export function buildFollowUpContext(
     if (!markedIds.has(first.pullRequestReview?.id ?? '')) return []
     return priorFinding(thread, first.body) ?? []
   })
-  const latestSha = latest?.[1]
-  const lastReviews = own.filter((review) =>
-    [MARKER_RE, PART_MARKER_RE].some((re) => re.exec(review.body)?.[1] === latestSha),
-  )
+  const lastReviews = latestInstance(own, latest?.[1])
   const bodyFindings = lastReviews.flatMap((review) => parseBodyFindings(review.body))
   return {
     title: pull.title,

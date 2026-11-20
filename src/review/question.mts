@@ -43,7 +43,11 @@ export function renderQuestions(questions: readonly Question[]): string[] {
 
 /** Reads the questions a posted review body carries, so a follow-up does not ask them again. */
 export function parseQuestions(body: string): Question[] {
-  return [...body.matchAll(QUESTION_RE)].map((match) => ({
+  // Only the rendered section counts: an earlier look-alike in the summary is not a question.
+  const at = body.lastIndexOf(`\n\n${HEADING}\n\n`)
+  if (at === -1) return []
+  const section = body.slice(at + HEADING.length + 4).split('\n\n')[0] as string
+  return [...section.matchAll(QUESTION_RE)].map((match) => ({
     askOf: match[1] === 'Product' ? 'product' : 'author',
     question: match[2] as string,
     why: match[3] as string,
