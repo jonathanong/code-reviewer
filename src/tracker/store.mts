@@ -20,6 +20,7 @@ const NULLABLE_FIELDS = [
   'finishedAt',
   'reason',
   'reviewUrl',
+  'reviewId',
   'event',
   'downgraded',
   'postedAt',

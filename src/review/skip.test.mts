@@ -4,7 +4,7 @@ import { ReviewError } from './finding.mts'
 import type { SanitizedReview } from '../review-payload/index.mts'
 import type { ReviewIo } from './github.mts'
 import type { LabelIo } from './labels.mts'
-import { MARKER_RE } from './post.mts'
+import { MARKER_RE } from './markers.mts'
 import { DEFAULT_LABELS } from './settings.mts'
 import { sanitizeReason, skipNotice, skipPullRequest } from './skip.mts'
 

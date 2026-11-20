@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 import { ghSpawnEnv } from './env.mts'
+import { withRetry } from './retry.mts'
 
 const execFileAsync = promisify(execFile)
 
@@ -36,8 +37,11 @@ export function createCommandRunner(
   }
 }
 
-/** Runs `gh` and returns its stdout, with `CLICOLOR_FORCE` removed so `--json` output stays plain. */
-export const runGh: RunTextCommand = createCommandRunner('gh', undefined, ghSpawnEnv)
+/**
+ * Runs `gh` and returns its stdout, with `CLICOLOR_FORCE` removed so `--json` output stays plain.
+ * Transient failures of reads and idempotent writes are retried; see `withRetry`.
+ */
+export const runGh: RunTextCommand = withRetry(createCommandRunner('gh', undefined, ghSpawnEnv))
 
 /** Runs `git` and returns its stdout. */
 export const runGit: RunTextCommand = createCommandRunner('git')

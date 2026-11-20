@@ -5,10 +5,12 @@ import {
 } from '../review-payload/index.mts'
 import { buildReviews, DEFAULT_LIMITS, type BuildLimits } from './build.mts'
 import { checkPostedText, DEFAULT_TEXT_LIMITS, type TextLimits } from './concise.mts'
-import { chooseEvent, postReviews, withEvent, type Downgrade } from './event.mts'
+import { chooseEvent, withEvent, type Downgrade } from './event.mts'
 import { dismissRequests, staleRequests } from './dismiss.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
+import { MARKER_RE } from './markers.mts'
+import { postReviews } from './submit.mts'
 import { isTrustedAuthor } from './trust.mts'
 import { deriveVerdict, type Verdict } from './render.mts'
 
@@ -16,6 +18,10 @@ export type PostOutcome = {
   verdict: Verdict
   reviews: SanitizedReview[]
   urls: string[]
+  /** The ids of the reviews read back from the pull request, one per part; empty when none were. */
+  reviewIds: number[]
+  /** False when the review was submitted but the read-back could not confirm it (see `warnings`). */
+  confirmed: boolean
   label: 'added' | 'removed' | 'unchanged'
   /** What the first review was posted as; the verdict tag and marker stay the source of truth. */
   event: ReviewEvent
@@ -91,6 +97,8 @@ export async function postFinalReview(
       dismissed: [],
       wouldDismiss: stale.ids,
       urls: [],
+      reviewIds: [],
+      confirmed: false,
       label: 'unchanged',
       ...choice,
     }
@@ -100,17 +108,36 @@ export async function postFinalReview(
       `Posted text is over three times its target (${tooLong.join('; ')}); shorten it or pass --allow-long.`,
     )
   }
-  const { urls, ...posted } = await postReviews(io, reviews)
+  const { urls, confirmed, warnings: confirmation, ...posted } = await postReviews(io, reviews)
   const sent = { ...choice, ...posted }
+  const landed = confirmed.length > 0
+  // The old request is dismissed only once the new review is read back from the pull request, so
+  // a post that failed or cannot be confirmed never leaves the block cleared with no new review.
   const stale =
-    sent.event === 'COMMENT' && clears ? await staleRequests(io) : { ids: [], warnings: [] }
-  const cleared = await dismissRequests(io, stale.ids, urls[0])
+    sent.event === 'COMMENT' && clears && landed
+      ? await staleRequests(io)
+      : { ids: [], warnings: [] }
+  const cleared = await dismissRequests(io, stale.ids, confirmed[0]?.url)
+  const unconfirmed =
+    sent.event === 'COMMENT' && clears && !landed
+      ? [
+          'An earlier request for changes was not dismissed because the new review was not confirmed.',
+        ]
+      : []
   const common = {
     verdict,
     reviews,
     tooLong,
-    warnings: [...warnings, ...stale.warnings, ...cleared.warnings],
+    warnings: [
+      ...warnings,
+      ...confirmation,
+      ...unconfirmed,
+      ...stale.warnings,
+      ...cleared.warnings,
+    ],
     dismissed: cleared.dismissed,
+    reviewIds: confirmed.map(({ id }) => id),
+    confirmed: landed,
   }
   if (verdict === 'Approve') {
     await io.addApprovalLabel()
@@ -132,12 +159,6 @@ export type ReviewStatus = {
   /** True when the newest review is a skip notice for the current head: nothing left to review. */
   skipped: boolean
 }
-
-export const MARKER_RE =
-  /<!-- final-review sha=([0-9a-f]{40}) verdict=([A-Za-z-]+) effort=([a-z]+) -->/u
-
-/** Marker on the continuation parts of a review split over several posts. */
-export const PART_MARKER_RE = /<!-- final-review-part sha=([0-9a-f]{40}) part=(\d+) -->/u
 
 /** Reports whether the latest review covers the current head, for merging agents. */
 export async function reviewStatus(io: ReviewIo): Promise<ReviewStatus> {

@@ -1,5 +1,5 @@
 import type { ReviewIo } from './github.mts'
-import { MARKER_RE, PART_MARKER_RE } from './post.mts'
+import { MARKER_RE, PART_MARKER_RE } from './markers.mts'
 import { isTrustedAuthor } from './trust.mts'
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))

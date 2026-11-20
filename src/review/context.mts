@@ -1,7 +1,7 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
 import { parseBodyFindings } from './body-findings.mts'
 import { latestInstance } from './last-review.mts'
-import { MARKER_RE, PART_MARKER_RE } from './post.mts'
+import { MARKER_RE, PART_MARKER_RE } from './markers.mts'
 import { parseQuestions, type Question } from './question.mts'
 import { isTrustedAuthor } from './trust.mts'
 

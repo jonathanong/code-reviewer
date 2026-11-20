@@ -6,6 +6,7 @@ import {
 } from './app-auth.mts'
 import { loadAppConfig } from './app-config.mts'
 import { ghSpawnEnv } from './env.mts'
+import { withRetry } from './retry.mts'
 import { createCommandRunner, runGh, type ExecFileText, type RunTextCommand } from './exec.mts'
 
 /** How `gh` calls authenticate: as the GitHub App, or with the local `gh` login. */
@@ -29,11 +30,11 @@ export function appRunner(
   repo?: string,
   exec?: ExecFileText,
 ): RunTextCommand {
-  return async (args) => {
+  return withRetry(async (args) => {
     const token = await tokens(owner, repo)
     const run = createCommandRunner('gh', exec, (env) => ({ ...ghSpawnEnv(env), GH_TOKEN: token }))
     return run(args)
-  }
+  })
 }
 
 /** Picks App auth when `CODE_REVIEWER_APP_ID` is configured, otherwise the local `gh` login. */

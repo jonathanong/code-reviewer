@@ -21,14 +21,16 @@ export class ReviewRejectedError extends Error {
   }
 }
 
+export type ListedReview = { id: number; url: string; body: string; author: string | null }
+
 /** The GitHub reads and writes a review needs, injectable for tests. */
 export type ReviewIo = {
   headSha(): Promise<string>
   /** The pull request's unified diff against its base. */
   diff(): Promise<string>
   listFiles(): Promise<ReviewFile[]>
-  /** Review bodies with their author logins, oldest first. */
-  listReviews(): Promise<{ body: string; author: string | null }[]>
+  /** Reviews with their id, link, body and author login, oldest first. */
+  listReviews(): Promise<ListedReview[]>
   /** Reviews that still request changes, with their author logins, oldest first. */
   changesRequested(): Promise<{ id: number; body: string; author: string | null }[]>
   /** Dismisses a review that requests changes; GitHub requires a message. */
@@ -88,9 +90,9 @@ export function createGhReviewIo(
         '--paginate',
         `${pull}/reviews?per_page=100`,
         '-q',
-        '.[] | {body, author: .user.login} | @json',
+        '.[] | {id, url: .html_url, body, author: .user.login} | @json',
       ])
-      return lines(out).map((line) => JSON.parse(line) as { body: string; author: string | null })
+      return lines(out).map((line) => JSON.parse(line) as ListedReview)
     },
     async changesRequested() {
       const out = await run([

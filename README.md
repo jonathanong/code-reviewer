@@ -110,6 +110,39 @@ fails, or GitHub refuses a dismissal, the post still succeeds and `warnings` nam
 standing. `dismissed` in the output lists the dismissed review ids; a dry run lists what it would
 dismiss as `wouldDismiss` and dismisses nothing.
 
+GitHub calls survive transient failures. Every `gh` call goes through one retry policy
+(`src/gh-cli/retry.mts`): 3 tries per call, so 2 retries, waiting about 1s then 2s (each wait is
+jittered to between half and all of its step, and no backoff exceeds 8s). A 502, 503 or 504, a
+reset, timed-out or dropped connection, and a secondary rate limit or 429 are transient; a wait
+GitHub names with `retry-after` is honoured up to 60s, and a longer one fails the call. Every
+other failure (401, 403, 404, 422, other 5xx, a missing `gh`, bad App config) fails at once.
+Reads are retried, and so are the writes that are safe to repeat: adding or removing a label and
+setting a commit status, and dismissing one named review (a repeat that is answered with "already
+dismissed" counts as done). A review POST is never repeated blindly, because a request that timed out
+may have landed; and the check-run POST is not repeated either, since a repeat would make a second
+check run. A command that retried anything prints one stderr line, `warning: N GitHub calls were
+retried after transient failures`.
+
+`post` confirms what it posted. Before submitting, it records which reviews already exist; after,
+it reads the pull request's reviews back and looks for the reviews that are new, written by the
+reviewer's own identity (the same one that decides whose markers count), and carry this head's
+hidden marker: the verdict marker for the first part, the part marker for each later part. Exactly
+one per part is a confirmation, and the `post` output lists the ids as `reviewIds` (the tracker's
+`posted` row keeps the first as `reviewId` beside `reviewUrl`, taken from the confirmed review).
+A review POST that fails transiently is retried only after the read-back shows that part is not
+there (so a post that timed out but landed is never repeated), up to the same 3 tries and
+backoff; if it landed, `post` carries on with the review it found. If the reviewer's identity or
+the review list cannot be read, the post is not retried at all and says the review may have posted.
+GitHub's review list can lag behind a review it just accepted, so a read-back that misses a part
+is repeated twice more, 1s apart, before the part is called absent; the same re-reads precede
+deciding that a timed-out post did not land. A part still missing after that fails the command, and
+the approval label is not set. More than one new review with the same marker is a warning in `warnings` naming every link;
+nothing is deleted or dismissed. Dismissing the reviewer's own earlier request for changes happens
+only after the new review is confirmed, so a failed or unconfirmed post never leaves the old block
+cleared with no new review (the output then warns that it was not dismissed). A read-back that fails after its own retries is also a warning (the
+review was submitted but could not be confirmed, `confirmed` is false), not a failure. A dry run
+reads and confirms nothing.
+
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
 plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of
@@ -162,7 +195,7 @@ Every `review` appends one row to a tracker, and `post` appends a `posted` row t
 one review run of one pull request head: repository, number, title, author, head SHA, mode (`full`,
 `light`, `follow-up` or `skip`), verdict, finding counts by severity, the number of open questions
 when `review.json` has a `questions` list, cost, start and finish times, the run directory, and a state:
-`reviewed` (produced, not posted), `posted` (with the review link, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
+`reviewed` (produced, not posted), `posted` (with the review link and id, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
 (with the reason). A later row for the same repository, pull request and head replaces an earlier
 one, except that `posted` adds to the `reviewed` row it follows. `tracker` prints that folded state;
 CSV cells that begin with a spreadsheet formula character are prefixed with an apostrophe.

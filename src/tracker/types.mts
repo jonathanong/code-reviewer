@@ -27,6 +27,8 @@ export type TrackerRow = {
   /** Why a run was skipped or failed. */
   reason: string | null
   reviewUrl: string | null
+  /** The posted review's id, read back from the pull request. */
+  reviewId: number | null
   /** The GitHub review event of the posted review. */
   event: string | null
   /** Why the verdict went out as a COMMENT: self-review, identity-unknown, or rejected. */
