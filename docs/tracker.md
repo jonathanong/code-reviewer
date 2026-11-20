@@ -17,7 +17,7 @@ CSV cells that begin with a spreadsheet formula character are prefixed with an a
 The tracker is `reviews.jsonl` in the state directory: `CODE_REVIEWER_STATE_DIR`, else
 `code-reviewer` under `$XDG_STATE_HOME` (default `~/.local/state`). It is JSON Lines so concurrent
 runs append whole lines without a lock. A line that cannot be read is reported and skipped. The
-tracker is machine-local, never synced, and holds private pull request titles and author logins:
+tracker is machine-local, the tool never syncs it, and it holds private pull request titles and author logins:
 do not publish it. A tracker failure is reported as `trackerProblem` in the command's output and
 never fails a review or a post.
 

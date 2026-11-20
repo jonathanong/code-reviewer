@@ -10,7 +10,8 @@ the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it):
 
 `appId` is required (a string or number). `privateKeyPath` defaults to `app.pem` beside the file;
 a relative path is resolved against the config directory, and absolute and `~/` paths are allowed.
-`installationId` is optional; without it the installation is looked up per repository owner. The
+`installationId` is optional; without it the installation is looked up per repository owner, and
+with it every call uses that one installation, so set it only when one account is reviewed. The
 key file must be a PEM and not readable by group or others (`chmod 600`; the check is skipped on
 Windows). Any problem with the file or the key fails the command with a message naming the file.
 
@@ -41,7 +42,8 @@ someone else and write check runs.
 
 3. On the App's page, note the App ID and generate a private key. Move the downloaded `.pem` to
    `app.pem` in the config home and run `chmod 600` on it. Delete the downloaded copy.
-4. Install the App on each account or organization whose repositories it reviews, and select those
+4. Install the App on the account that owns it and select the repositories it reviews. To review
+   another account, allow installation on any account in step 1, install it there, and select those
    repositories.
 5. Write `app.json` beside the key with the App ID, then run `code-reviewer auth`. It prints
    `"mode": "app"`, the `source`, and the `login` the reviewer trusts.

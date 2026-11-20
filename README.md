@@ -32,11 +32,11 @@ GitHub review. It runs on your machine, for the repositories you pick.
 
 The verdict is derived from the verified findings, never chosen:
 
-| Verdict         | When                                 |
-| --------------- | ------------------------------------ |
-| Request Changes | A verified blocking finding.         |
-| Comment         | A high finding, or an open question. |
-| Approve         | Neither.                             |
+| Verdict         | When                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------- |
+| Request Changes | A verified blocking finding.                                                          |
+| Comment         | A high finding, an open question, or an approval whose second check did not complete. |
+| Approve         | Neither.                                                                              |
 
 An unattended run ends one of three ways: the review is posted, it is held for a human with the
 command that posts it, or there was nothing to do. See [Unattended runs](docs/run.md).
