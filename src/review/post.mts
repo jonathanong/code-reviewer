@@ -29,6 +29,8 @@ export type PostOutcome = {
   downgraded?: Downgrade
   /** Posted text over a target, or narrating the review; never a refusal on its own. */
   warnings: string[]
+  /** The subset of `warnings` about the wording itself: length, narration, praise. */
+  textWarnings: string[]
   /** The warnings over three times the target, which a real post refuses without `allowLong`. */
   tooLong: string[]
   /** Earlier requests for changes of this reviewer's own that a COMMENT review dismissed. */
@@ -94,6 +96,7 @@ export async function postFinalReview(
       reviews,
       tooLong,
       warnings: [...warnings, ...stale.warnings],
+      textWarnings: warnings,
       dismissed: [],
       wouldDismiss: stale.ids,
       urls: [],
@@ -135,6 +138,7 @@ export async function postFinalReview(
       ...stale.warnings,
       ...cleared.warnings,
     ],
+    textWarnings: warnings,
     dismissed: cleared.dismissed,
     reviewIds: confirmed.map(({ id }) => id),
     confirmed: landed,

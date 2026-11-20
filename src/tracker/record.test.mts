@@ -164,6 +164,7 @@ describe('recordPosted', () => {
     event: 'COMMENT' as const,
     downgraded: 'self-review' as const,
     warnings: [],
+    textWarnings: [],
     tooLong: [],
     dismissed: [],
   }
@@ -218,6 +219,7 @@ describe('recordPosted', () => {
         confirmed: false,
         label: 'added',
         warnings: [],
+        textWarnings: [],
         tooLong: [],
         dismissed: [],
       },

@@ -119,7 +119,15 @@ export async function finish(
       reviewIds: outcome.reviewIds,
       explainPath: explain.path,
       problems: [...problems, ...extra],
-      attention: [...new Set([...problems, ...extra, ...outcome.warnings])],
+      // Wording warnings are for whoever tunes the reviewer; they are not a reason to look at this
+      // pull request, so they stay out of `attention`.
+      attention: [
+        ...new Set([
+          ...problems,
+          ...extra,
+          ...outcome.warnings.filter((warning) => !outcome.textWarnings.includes(warning)),
+        ]),
+      ],
     })
   } catch (error) {
     const leftover = await release(pull, deps, false)

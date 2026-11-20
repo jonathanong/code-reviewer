@@ -271,7 +271,8 @@ commands use.
 for lists. `attention` is a list of short reasons a person should look; it is empty when a clean
 review was posted. A posted review's `attention` also carries the warnings `post` printed: a
 duplicate review, an earlier request for changes left undismissed, or a review it could not
-confirm.
+confirm. Warnings about the wording itself (text over its length target, narration) are not in
+`attention`; they are in `post`'s own output.
 
 `explainPath` is a Markdown file `run` always writes with the output of `explain`, for posted and
 held runs alike, so the review can be read or attached to a document. `run` talks to no document
