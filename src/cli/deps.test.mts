@@ -79,7 +79,13 @@ describe('createDefaultDeps', () => {
     const dir = mkdtempSync(join(tmpdir(), 'deps-configs-'))
     try {
       writeFileSync(join(dir, 'acme.json'), '{"labels":{"approval":"lgtm"}}')
-      const getAuth = vi.fn((): GhAuth => ({ mode: 'gh', runner: () => async () => 'lgtm\n' }))
+      const getAuth = vi.fn((): GhAuth => ({
+        mode: 'gh',
+        runner: () => async (args) => {
+          if (args[0] === 'api') throw new Error('HTTP 404')
+          return 'lgtm\n'
+        },
+      }))
       const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: dir })
       expect(deps.configs().byOwner.get('acme')?.labels).toEqual({ approval: 'lgtm' })
       expect(deps.configs()).toBe(deps.configs())
@@ -87,6 +93,53 @@ describe('createDefaultDeps', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('reads a repository file once per repository and labels the approval from it', async () => {
+    const run = vi.fn(async (args: string[]) => {
+      if (args[0] === 'api') return '{"labels":{"approval":"own lgtm"}}'
+      return 'own lgtm\n'
+    })
+    const getAuth = vi.fn((): GhAuth => ({ mode: 'gh', runner: () => run }))
+    const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs' })
+    await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
+    await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
+    const first = await deps.targetConfig('Acme/Widgets')
+    expect(first.config?.labels).toEqual({ approval: 'own lgtm' })
+    expect(await deps.targetConfig('acme/widgets')).toBe(first)
+    const reads = run.mock.calls.filter(([args]) => args[0] === 'api')
+    expect(reads).toHaveLength(1)
+    expect(reads[0]?.[0]).toContain('repos/acme/widgets/contents/.code-reviewer.json')
+  })
+
+  it('treats an absent repository file as no config and a failed read as a problem', async () => {
+    const failures: Record<string, string> = {
+      'a/none': 'gh: Not Found (HTTP 404)',
+      'a/bad': 'HTTP 500',
+    }
+    const run = vi.fn(async (args: string[]): Promise<string> => {
+      const repo = /repos\/(a\/\w+)\//u.exec(args.at(-1) ?? '')?.[1] ?? ''
+      throw new Error(failures[repo])
+    })
+    const deps = createDefaultDeps(() => ({ mode: 'gh', runner: () => run }), {
+      CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs',
+    })
+    await expect(deps.targetConfig('a/none')).resolves.toEqual({ config: undefined, problems: [] })
+    await expect(deps.targetConfig('a/bad')).resolves.toEqual({
+      config: undefined,
+      problems: ['a/bad/.code-reviewer.json: could not be read (HTTP 500); ignored'],
+    })
+  })
+
+  it('degrades to a problem when no gh auth can be built', async () => {
+    const getAuth = vi.fn((): GhAuth => {
+      throw new Error('no credentials')
+    })
+    const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere' })
+    await expect(deps.targetConfig('a/b')).resolves.toEqual({
+      config: undefined,
+      problems: ['a/b/.code-reviewer.json: could not be read (no credentials); ignored'],
+    })
   })
 
   it('passes the runner through', () => {

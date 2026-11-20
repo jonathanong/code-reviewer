@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { DEFAULT_CONFIG_DIR, loadRepoConfigs, parseRepoConfig } from './config.mts'
+import { loadRepoConfigs, machineConfigDir, parseRepoConfig } from './config.mts'
 
 const FILE = 'acme/web.json'
 
@@ -134,10 +134,19 @@ describe('loadRepoConfigs', () => {
       problems: [],
     })
   })
+})
 
-  it('ships configs that parse cleanly', () => {
-    const configs = loadRepoConfigs(DEFAULT_CONFIG_DIR)
-    expect(configs.problems).toEqual([])
-    expect(configs.byRepo.size).toBeGreaterThan(0)
+describe('machineConfigDir', () => {
+  it('prefers CODE_REVIEWER_CONFIG_DIR, then XDG_CONFIG_HOME, then HOME/.config', () => {
+    expect(machineConfigDir({ CODE_REVIEWER_CONFIG_DIR: '/c', XDG_CONFIG_HOME: '/x' })).toBe('/c')
+    expect(machineConfigDir({ XDG_CONFIG_HOME: '/x', HOME: '/h' })).toBe('/x/code-reviewer/repos')
+    expect(machineConfigDir({ HOME: '/h' })).toBe('/h/.config/code-reviewer/repos')
+  })
+
+  it('treats empty variables as unset and falls back to the home directory', () => {
+    expect(
+      machineConfigDir({ CODE_REVIEWER_CONFIG_DIR: '', XDG_CONFIG_HOME: '', HOME: '/h' }),
+    ).toBe('/h/.config/code-reviewer/repos')
+    expect(machineConfigDir({}).endsWith('/.config/code-reviewer/repos')).toBe(true)
   })
 })

@@ -41,7 +41,7 @@ export function createGhReviewIo(
   target: PullTarget,
   run: RunTextCommand = runGh,
   trustedAllowlist: readonly string[] = [],
-  approvalLabel: string = DEFAULT_LABELS.approval,
+  approvalLabel: () => Promise<string> = async () => DEFAULT_LABELS.approval,
 ): ReviewIo {
   assertPullTarget(target)
   const { repo, pr } = target
@@ -91,7 +91,7 @@ export function createGhReviewIo(
         '-q',
         '.labels[].name',
       ])
-      return lines(out).includes(approvalLabel)
+      return lines(out).includes(await approvalLabel())
     },
     async postReview(review) {
       const dir = mkdtempSync(join(tmpdir(), 'review-'))
@@ -121,12 +121,12 @@ export function createGhReviewIo(
         'POST',
         `repos/${repo}/issues/${pr}/labels`,
         '-f',
-        `labels[]=${approvalLabel}`,
+        `labels[]=${await approvalLabel()}`,
       ])
     },
     async removeApprovalLabel() {
       // One label per request: `gh pr edit --remove-label` splits a name on commas.
-      await createGhLabelIo(target, run).remove(approvalLabel)
+      await createGhLabelIo(target, run).remove(await approvalLabel())
     },
   }
 }

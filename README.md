@@ -1,14 +1,13 @@
 # code-reviewer
 
 A standing, multi-pillar reviewer for pull requests in any repository. It reads each
-repository's `AGENTS.md` and skills, plus the per-repository configs kept here, reviews the
-change, and posts a GitHub review.
+repository's `AGENTS.md` and skills, plus any configs for it, reviews the change, and posts a
+GitHub review.
 
 - `bin/code-reviewer.mts`: the deterministic CLI (numbered diffs, posting, status, labels,
   benchmarks). Run `pnpm exec code-reviewer help`. `vouchington-reviewer` remains as an alias
   for callers that have not moved yet.
 - `skills/`: the Claude Code skills (pillar prompts, verifier, and the standing loop).
-- `repos/`: what the reviewer knows about each reviewed repository.
 - `benchmarks/review/`: labeled eval cases and how to run them.
 
 ## Install
@@ -60,10 +59,29 @@ plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k 
 about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 
-## Repository configs: `repos/<owner>/<name>.json`
+## Configuration
 
-Reviewed repositories carry no reviewer config. What the reviewer cannot work out from a diff
-lives here, one file per repository, so any repository can be reviewed as it is.
+No repository needs a config; every key has a default. Settings come from three layers, and for
+each top-level key (`labels`, `checkRun`, `consumes`) the highest layer that sets it wins. `labels`
+merge by label name.
+
+1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
+   `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer/repos`. `<owner>/<name>.json` holds one
+   repository's settings and `<owner>.json` (beside the `<owner>/` directory) the settings its
+   repositories share; the repository file beats the owner file.
+2. `.code-reviewer.json` at the root of the reviewed repository, in the format of a repository
+   file. It is read from the repository's default branch, never from the pull request, so a pull
+   request cannot change its own settings. `prepare` reads it from the clone's `origin/HEAD`, or
+   through the GitHub API without a clone; the other commands read it through the API once per
+   repository they act on. A missing file is no config; any other read failure is reported as a
+   problem and the lower layers apply.
+3. Built-in defaults.
+
+`code-reviewer settings --repo owner/name` prints the resolved values and the layer each came
+from. An owner-wide `queue` or `settings --owner` reads machine configs only, since a repository's
+own file is read when the repository is named.
+
+### `consumes`
 
 ```json
 {
@@ -75,24 +93,23 @@ lives here, one file per repository, so any repository can be reviewed as it is.
   `via` (optional) says how in a few words. `paths` (optional) are globs in the consumed
   repository that this one depends on; without it, any change there counts.
 
-Only the consumer's file declares the link. `prepare` uses it in both directions, for
+Only the consumer's config declares the link. `prepare` uses it in both directions, for
 repositories cloned under the clone root (matched by their `origin` URL, or by directory name
 without one):
 
 - A pull request in the consumer stages the consumed repository's instructions, skills, and code
   location as a dependency, ahead of dependencies found by import.
 - A pull request in the consumed repository that touches `paths` stages the consumer under
-  "Consumers" in `rules/INDEX.md`, for the blast-radius pillar.
+  "Consumers" in `rules/INDEX.md`, for the blast-radius pillar. Only machine configs are
+  searched for consumers, because a consumer's own file is read when its pull request is reviewed.
 
 A malformed file, an unknown key, or a configured repository with no clone is listed under
-"Missing" in `rules/INDEX.md` and in `prepare`'s output; none of them stops the review. Set
-`CODE_REVIEWER_CONFIG_DIR` to read the configs from another directory.
+"Missing" in `rules/INDEX.md` and in `prepare`'s output; none of them stops the review.
 
-## Per-repository settings
+### `labels` and `checkRun`
 
-Label names and an optional GitHub check run are set here too, per organization in
-`repos/<owner>.json` (a file beside the `repos/<owner>/` directory) and per repository in
-`repos/<owner>/<name>.json`. A repository's keys override its organization's.
+Label names and an optional GitHub check run are set in the same files; an owner file cannot set
+`consumes`.
 
 ```json
 {

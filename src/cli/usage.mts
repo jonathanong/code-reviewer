@@ -19,10 +19,10 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   auth reports whether gh calls use the GitHub App (CODE_REVIEWER_APP_ID with
   CODE_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
-  post, revoke and status use the label names from repos/<owner>.json and repos/<owner>/<name>.json
-  (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
-  settings prints the resolved labels and optional check run for a repository or owner, so a
-  session can read the requested label for hook-harness. skip closes a pull request the plan will
+  post, revoke and status use the label names from the machine config (<owner>.json, <owner>/<name>.json) and the
+  repository's own .code-reviewer.json on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
+  settings prints the resolved labels and optional check run for a repository or owner, the
+  layer each came from, and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
   not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,
   then swaps processing and requested for completed and leaves the approval label alone. With
   checkRun configured and GitHub App auth, claim opens a check run, post completes it (success,
@@ -35,7 +35,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   numbered diff, per-file patches, the follow-up context digest, the diff since the last review,
   and plan.json to --out without model calls, plus rules/INDEX.md: the rule sources for the change
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
-  the diff imports, or that this reviewer's repos/<owner>/<name>.json configs link to the
+  the diff imports, or that the reviewer's configs link to the
   change as consumed or as consumers) read from --clones DIR (or CODE_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
   review runs claim, prepare, a Haiku skill selection, the planned pillars (--jobs at a time,
   default 3, each retried once), and the verifier with headless claude runs, then writes

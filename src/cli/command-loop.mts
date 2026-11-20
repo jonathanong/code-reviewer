@@ -10,6 +10,7 @@ import {
   prepareReview,
   resolveThreads,
   reviewSettings,
+  settingLayers,
   settingsProblems,
   skipPullRequest,
   skippedStep,
@@ -41,8 +42,11 @@ function effort(value: string | undefined): Effort | undefined {
   return found
 }
 
-/** The resolved labels and check run for one repository or owner, with problems in its files. */
-function settings(values: LoopValues, deps: ReviewDeps) {
+/**
+ * The resolved labels and check run for one repository or owner, the layer each came from, and
+ * problems in the files that fed them.
+ */
+async function settings(values: LoopValues, deps: ReviewDeps) {
   const repo = values.repo?.[0]
   if ((repo === undefined) === (values.owner === undefined)) {
     throw new Error('settings needs --repo or --owner.')
@@ -51,10 +55,15 @@ function settings(values: LoopValues, deps: ReviewDeps) {
   if (repo === undefined) assertOwner(scope)
   else assertRepo(repo)
   const configs = deps.configs()
+  const target = repo === undefined ? undefined : await deps.targetConfig(repo)
   return {
     scope,
-    ...reviewSettings(configs, scope),
-    problems: settingsProblems(configs, scope.split('/')[0] as string),
+    ...reviewSettings(configs, scope, target?.config),
+    from: settingLayers(configs, scope, target?.config),
+    problems: [
+      ...settingsProblems(configs, scope.split('/')[0] as string),
+      ...(target?.problems ?? []),
+    ],
   }
 }
 
@@ -62,19 +71,27 @@ function settings(values: LoopValues, deps: ReviewDeps) {
 export async function claimCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
   const force = values.force === true
   const status = force ? undefined : await reviewStatus(deps.createIo(target()))
-  const outcome = await claimReview(deps.createLabelIo(target()), labelsFor(deps, target().repo), {
-    force,
-    headReviewed: status?.current === true,
-  })
+  const outcome = await claimReview(
+    deps.createLabelIo(target()),
+    await labelsFor(deps, target().repo),
+    {
+      force,
+      headReviewed: status?.current === true,
+    },
+  )
   if (!outcome.claimed) return status === undefined ? outcome : { ...outcome, status }
   return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED, status?.headSha) }
 }
 
 /** Drops the in-progress label; `--requeue` asks again. */
 export async function abortCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
-  const labels = await abortReview(deps.createLabelIo(target()), labelsFor(deps, target().repo), {
-    requeue: values.requeue === true,
-  })
+  const labels = await abortReview(
+    deps.createLabelIo(target()),
+    await labelsFor(deps, target().repo),
+    {
+      requeue: values.requeue === true,
+    },
+  )
   return { ...labels, checkRun: await checkRunFor(deps, target(), abortedStep()) }
 }
 
@@ -94,7 +111,7 @@ export async function skipCommand(
   const { headSha, url, ...labels } = await skipPullRequest(
     deps.createIo(target()),
     deps.createLabelIo(target()),
-    labelsFor(deps, target().repo),
+    await labelsFor(deps, target().repo),
     values.reason,
     expectedHead,
   )

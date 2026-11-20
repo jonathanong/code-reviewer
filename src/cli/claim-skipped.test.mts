@@ -17,6 +17,7 @@ function fakeDeps(head: string) {
   const deps = {
     authMode: () => 'gh' as const,
     configs: () => NO_CONFIGS,
+    targetConfig: async () => ({ config: undefined, problems: [] }),
     createLabelIo: () => labelIo,
     createIo: () => ({
       headSha: async () => head,

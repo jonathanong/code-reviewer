@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { parseRepoConfig, type RepoConfigs } from './rules/config.mts'
-import { DEFAULT_LABELS, reviewSettings, settingsProblems } from './settings.mts'
+import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './rules/config.mts'
+import {
+  DEFAULT_LABELS,
+  repoSettings,
+  reviewSettings,
+  settingLayers,
+  settingsProblems,
+} from './settings.mts'
 
 const ORG = parseRepoConfig(
   JSON.stringify({
@@ -54,6 +60,62 @@ describe('reviewSettings', () => {
       labels: { ...DEFAULT_LABELS, requested: 'org requested', approval: 'repo approval' },
       checkRun: { name: 'Repo review' },
     })
+  })
+})
+
+const OWN = parseRepoConfig(
+  JSON.stringify({
+    labels: { requested: 'own requested', processing: 'own busy', approval: 'own approval' },
+    checkRun: { name: 'Own review' },
+  }),
+  'acme/web/.code-reviewer.json',
+)
+
+describe('the repository file layer', () => {
+  it('sits under the machine files per key and per label name', () => {
+    expect(reviewSettings(CONFIGS, 'acme/web', OWN)).toEqual({
+      labels: {
+        ...DEFAULT_LABELS,
+        requested: 'org requested',
+        processing: 'own busy',
+        approval: 'repo approval',
+      },
+      checkRun: { name: 'Repo review' },
+    })
+    expect(settingLayers(CONFIGS, 'acme/web', OWN)).toEqual({
+      labels: {
+        requested: 'machine owner',
+        processing: 'repository file',
+        completed: 'default',
+        approval: 'machine repo',
+      },
+      checkRun: 'machine repo',
+    })
+  })
+
+  it('applies when no machine file exists, and never to an owner scope', () => {
+    expect(reviewSettings(NO_CONFIGS, 'acme/web', OWN)).toEqual({
+      labels: {
+        ...DEFAULT_LABELS,
+        requested: 'own requested',
+        processing: 'own busy',
+        approval: 'own approval',
+      },
+      checkRun: { name: 'Own review' },
+    })
+    expect(reviewSettings(NO_CONFIGS, 'acme', OWN)).toEqual({
+      labels: DEFAULT_LABELS,
+      checkRun: null,
+    })
+    expect(settingLayers(NO_CONFIGS, 'acme', OWN).checkRun).toBeNull()
+    expect(settingLayers(NO_CONFIGS, 'acme/web', OWN).checkRun).toBe('repository file')
+  })
+
+  it('is read through repoSettings', async () => {
+    const targetConfig = vi.fn(async () => ({ config: OWN, problems: [] }))
+    const settings = await repoSettings({ configs: () => NO_CONFIGS, targetConfig }, 'acme/web')
+    expect(settings.checkRun).toEqual({ name: 'Own review' })
+    expect(targetConfig).toHaveBeenCalledWith('acme/web')
   })
 })
 

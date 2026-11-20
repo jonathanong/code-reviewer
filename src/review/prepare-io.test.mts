@@ -6,7 +6,7 @@ const target = { repo: 'o/r', pr: 7 }
 
 function setup(run = vi.fn(async (_args: readonly string[]) => '')) {
   const git = vi.fn(async (_args: readonly string[]) => '')
-  return { run, git, io: createGhPrepareIo(target, run, git) }
+  return { run, git, io: createGhPrepareIo(target, run, git, [], undefined, '/nowhere') }
 }
 
 describe('createGhPrepareIo', () => {
@@ -141,18 +141,37 @@ describe('createGhPrepareIo', () => {
     const run = vi.fn(async (_args: readonly string[]) => {
       throw new Error('no viewer')
     })
-    const io = createGhPrepareIo(target, run, vi.fn(), ['App[bot]'])
+    const io = createGhPrepareIo(target, run, vi.fn(), ['App[bot]'], undefined, '/nowhere')
     expect(await io.trusted()).toEqual(new Set(['app[bot]']))
   })
 
   it('builds rule sources from the explicit or default clone root', async () => {
     const git = vi.fn(async (_args: readonly string[]) => '')
     const run = vi.fn(async (_args: readonly string[]) => '')
-    const io = createGhPrepareIo(target, run, git, [], '/default')
+    const io = createGhPrepareIo(target, run, git, [], '/default', '/nowhere')
     const explicit = await io.ruleSources({ clones: '/nowhere', tree: '/t', baseSha: 'abcdef012' })
     expect(explicit.repo?.refLabel).toBe('base abcdef0')
     expect(explicit.related).toEqual([])
     const fallback = await io.ruleSources({ baseSha: 'abcdef012' })
     expect(fallback.related).toEqual([])
+  })
+
+  it('reads the repository file from the default branch of the tree, else through the API', async () => {
+    const run = vi.fn(async (args: readonly string[]) =>
+      args.some((arg) => arg.endsWith('contents/.code-reviewer.json'))
+        ? '{"consumes":[{"repo":"o/api"}]}'
+        : '',
+    )
+    const git = vi.fn(async (args: readonly string[]) => {
+      if (args.includes('--abbrev-ref')) return 'origin/main\n'
+      if (args[0] === '-C' && args[2] === 'show') return '{"consumes":[{"repo":"o/lib"}]}'
+      return ''
+    })
+    const io = createGhPrepareIo(target, run, git, [], undefined, '/nowhere')
+    const viaTree = await io.ruleSources({ tree: '/t', baseSha: 'abcdef012' })
+    expect(git).toHaveBeenCalledWith(['-C', '/t', 'show', 'origin/main:.code-reviewer.json'])
+    expect(viaTree.configs?.byRepo.get('o/r')?.consumes.map((c) => c.repo)).toEqual(['o/lib'])
+    const viaApi = await io.ruleSources({ baseSha: 'abcdef012' })
+    expect(viaApi.configs?.byRepo.get('o/r')?.consumes.map((c) => c.repo)).toEqual(['o/api'])
   })
 })

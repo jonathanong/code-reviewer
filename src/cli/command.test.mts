@@ -57,6 +57,7 @@ function deps(io: ReviewIo, input = '{}'): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
     configs: vi.fn(() => NO_CONFIGS),
+    targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
     createIo: vi.fn(() => io),
     createLabelIo: vi.fn(fakeLabelIo),
     createPrepareIo: vi.fn(() => ({}) as PrepareIo),

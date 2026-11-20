@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 
 import {
   parseCheckRun,
@@ -10,11 +10,15 @@ import {
 } from './settings-parse.mts'
 
 /**
- * Where this repository keeps what the reviewer must know about reviewed repositories: one
- * `<owner>/<name>.json` per repository, and `<owner>.json` beside that directory for the settings
- * every repository of the owner shares. Reviewed repositories carry no config of their own.
+ * The machine config directory: `CODE_REVIEWER_CONFIG_DIR`, else `code-reviewer/repos` under the
+ * XDG config home. It holds one `<owner>/<name>.json` per repository, and `<owner>.json` beside
+ * that directory for the settings every repository of the owner shares.
  */
-export const DEFAULT_CONFIG_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../repos')
+export function machineConfigDir(env: Record<string, string | undefined>): string {
+  if (env.CODE_REVIEWER_CONFIG_DIR) return env.CODE_REVIEWER_CONFIG_DIR
+  const home = env.XDG_CONFIG_HOME || join(env.HOME || homedir(), '.config')
+  return join(home, 'code-reviewer', 'repos')
+}
 
 /** Another repository this one depends on without a package import (an HTTP API, a schema). */
 export type Consumes = {

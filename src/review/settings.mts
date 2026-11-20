@@ -1,4 +1,5 @@
-import type { RepoConfigs } from './rules/config.mts'
+import type { RepoConfig, RepoConfigs } from './rules/config.mts'
+import type { TargetConfig } from './rules/target-config.mts'
 import type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
 
 export type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
@@ -21,18 +22,77 @@ export type ReviewSettings = {
   checkRun: CheckRunSettings | null
 }
 
-/**
- * Resolves settings for `owner/name`, or for `owner` alone: defaults, then the owner file, then the
- * repository file, per key.
- */
-export function reviewSettings(configs: RepoConfigs, scope: string): ReviewSettings {
+/** Where a setting's value came from. */
+export type SettingLayer = 'machine repo' | 'machine owner' | 'repository file' | 'default'
+
+export type SettingLayers = {
+  labels: Record<keyof LabelNames, SettingLayer>
+  checkRun: SettingLayer | null
+}
+
+type Candidate = readonly [SettingLayer, RepoConfig | undefined]
+
+/** Highest layer first: machine repo file, machine owner file, then the repository's own file. */
+function candidates(
+  configs: RepoConfigs,
+  scope: string,
+  target: RepoConfig | undefined,
+): Candidate[] {
   const [owner = '', name] = scope.toLowerCase().split('/')
-  const org = configs.byOwner.get(owner)
-  const repo = name === undefined ? undefined : configs.byRepo.get(`${owner}/${name}`)
+  return [
+    ['machine repo', name === undefined ? undefined : configs.byRepo.get(`${owner}/${name}`)],
+    ['machine owner', configs.byOwner.get(owner)],
+    ['repository file', name === undefined ? undefined : target],
+  ]
+}
+
+/**
+ * Resolves settings for `owner/name`, or for `owner` alone, per key: the machine repo file, the
+ * machine owner file, the repository's own file, then the defaults. Labels merge by name.
+ */
+export function reviewSettings(
+  configs: RepoConfigs,
+  scope: string,
+  target?: RepoConfig,
+): ReviewSettings {
+  const layers = candidates(configs, scope, target)
+  const labels = { ...DEFAULT_LABELS }
+  for (const [, config] of layers.toReversed()) Object.assign(labels, config?.labels)
   return {
-    labels: { ...DEFAULT_LABELS, ...org?.labels, ...repo?.labels },
-    checkRun: repo?.checkRun ?? org?.checkRun ?? null,
+    labels,
+    checkRun: layers.find(([, config]) => config?.checkRun !== undefined)?.[1]?.checkRun ?? null,
   }
+}
+
+/** The layer each setting of `reviewSettings` came from. */
+export function settingLayers(
+  configs: RepoConfigs,
+  scope: string,
+  target?: RepoConfig,
+): SettingLayers {
+  const layers = candidates(configs, scope, target)
+  const labelLayer = (key: keyof LabelNames): SettingLayer =>
+    layers.find(([, config]) => config?.labels?.[key] !== undefined)?.[0] ?? 'default'
+  return {
+    labels: {
+      requested: labelLayer('requested'),
+      processing: labelLayer('processing'),
+      completed: labelLayer('completed'),
+      approval: labelLayer('approval'),
+    },
+    checkRun: layers.find(([, config]) => config?.checkRun !== undefined)?.[0] ?? null,
+  }
+}
+
+/** What `repoSettings` reads: the machine configs and, per repository, its own file. */
+export type SettingsSource = {
+  configs(): RepoConfigs
+  targetConfig(repo: string): Promise<TargetConfig>
+}
+
+/** `reviewSettings` for one repository, including the file it keeps on its default branch. */
+export async function repoSettings(source: SettingsSource, repo: string): Promise<ReviewSettings> {
+  return reviewSettings(source.configs(), repo, (await source.targetConfig(repo)).config)
 }
 
 /** Problems found in the files that feed `owner`'s settings, for `settings` to print. */
