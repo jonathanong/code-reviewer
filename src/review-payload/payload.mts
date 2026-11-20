@@ -21,8 +21,11 @@ export type ReviewComment = {
   start_side?: ReviewSide
 }
 
+/** What the host does with a review: COMMENT leaves no state, the others approve or block. */
+export type ReviewEvent = 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES'
+
 export type SanitizedReview = {
-  event: 'COMMENT'
+  event: ReviewEvent
   commit_id: string
   body: string
   comments: ReviewComment[]

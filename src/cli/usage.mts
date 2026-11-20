@@ -56,8 +56,11 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   Markers in earlier reviews count only from the reviewer's own identity: the gh viewer, or under
   App auth the App's <app-slug>[bot] from GET /app. If that lookup fails nothing is trusted, and
   reviews from every other author are read as ordinary notes, never as a prior review.
-  post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
-  the header; inline comments where the diff allows, the rest in the body) and adds the "final
+  post renders verified findings as one or more reviews (verdict, reviewed SHA and effort in
+  the header; inline comments where the diff allows, the rest in the body). The first is submitted
+  as APPROVE, REQUEST_CHANGES or COMMENT to match the verdict, and as COMMENT, reported in the
+  output as event and downgraded, on the reviewer's own pull request, when the identity is unknown,
+  or when GitHub rejects the event with 422. It adds the "final
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
   the label before a re-review. status exits 0 only when the newest review approved the current

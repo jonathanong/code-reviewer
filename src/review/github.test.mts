@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createGhReviewIo } from './github.mts'
+import { createGhReviewIo, ReviewRejectedError } from './github.mts'
 import { assertPullTarget } from './target.mts'
 
 const target = { repo: 'acme/widgets', pr: 7 }
@@ -124,6 +124,26 @@ describe('createGhReviewIo', () => {
       'POST',
       'repos/acme/widgets/pulls/7/reviews',
     ])
+  })
+
+  it('reads the pull request author, and none when GitHub reports none', async () => {
+    const run = vi.fn(async () => 'dev[bot]\n')
+    await expect(createGhReviewIo(target, run).pullAuthor()).resolves.toBe('dev[bot]')
+    expect(run).toHaveBeenCalledWith(['api', 'repos/acme/widgets/pulls/7', '-q', '.user.login'])
+    await expect(createGhReviewIo(target, async () => '\n').pullAuthor()).resolves.toBeUndefined()
+  })
+
+  it('reports a 422 as a rejected review and other failures as they are', async () => {
+    const io = createGhReviewIo(target, async () => {
+      throw new Error('Command failed: gh api\ngh: Unprocessable Entity (HTTP 422)')
+    })
+    await expect(io.postReview(review)).rejects.toThrow(ReviewRejectedError)
+    const other = createGhReviewIo(target, async () => {
+      throw new Error('HTTP 500')
+    })
+    await expect(other.postReview(review)).rejects.not.toBeInstanceOf(ReviewRejectedError)
+    const notAnError = createGhReviewIo(target, async () => Promise.reject('plain'))
+    await expect(notAnError.postReview(review)).rejects.toBe('plain')
   })
 
   it('cleans up the temp file when gh fails', async () => {

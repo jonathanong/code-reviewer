@@ -13,6 +13,14 @@ import { DEFAULT_LABELS } from './settings.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
+/** GitHub refused the request (HTTP 422), so it created nothing. */
+export class ReviewRejectedError extends Error {
+  constructor(message: string, options: { cause: unknown }) {
+    super(message, options)
+    this.name = 'ReviewRejectedError'
+  }
+}
+
 /** The GitHub reads and writes a review needs, injectable for tests. */
 export type ReviewIo = {
   headSha(): Promise<string>
@@ -21,6 +29,8 @@ export type ReviewIo = {
   listFiles(): Promise<ReviewFile[]>
   /** Review bodies with their author logins, oldest first. */
   listReviews(): Promise<{ body: string; author: string | null }[]>
+  /** The pull request author's login; undefined when GitHub reports none. */
+  pullAuthor(): Promise<string | undefined>
   /** Logins whose `final-review` markers count; see `resolveTrustedAuthors`. */
   trustedAuthors(): Promise<TrustedAuthors>
   hasApprovalLabel(): Promise<boolean>
@@ -78,6 +88,10 @@ export function createGhReviewIo(
       ])
       return lines(out).map((line) => JSON.parse(line) as { body: string; author: string | null })
     },
+    async pullAuthor() {
+      const out = (await run(['api', pull, '-q', '.user.login'])).trim()
+      return out === '' ? undefined : out
+    },
     trustedAuthors: () => resolveTrustedAuthors(run, identity),
     async hasApprovalLabel() {
       const out = await run([
@@ -109,6 +123,11 @@ export function createGhReviewIo(
           '.html_url',
         ])
         return out.trim()
+      } catch (error) {
+        if (error instanceof Error && /HTTP 422/u.test(error.message)) {
+          throw new ReviewRejectedError('GitHub rejected the review (HTTP 422).', { cause: error })
+        }
+        throw error
       } finally {
         rmSync(dir, { recursive: true, force: true })
       }

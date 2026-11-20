@@ -1,5 +1,10 @@
-import { indexReviewFiles, type SanitizedReview } from '../review-payload/index.mts'
+import {
+  indexReviewFiles,
+  type ReviewEvent,
+  type SanitizedReview,
+} from '../review-payload/index.mts'
 import { buildReviews, DEFAULT_LIMITS, type BuildLimits } from './build.mts'
+import { chooseEvent, postReviews, withEvent, type Downgrade } from './event.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
 import { isTrustedAuthor } from './trust.mts'
@@ -10,6 +15,10 @@ export type PostOutcome = {
   reviews: SanitizedReview[]
   urls: string[]
   label: 'added' | 'removed' | 'unchanged'
+  /** What the first review was posted as; the verdict tag and marker stay the source of truth. */
+  event: ReviewEvent
+  /** Set when the verdict went out as a COMMENT instead of its own event. */
+  downgraded?: Downgrade
 }
 
 export const SHA_RE = /^[0-9a-f]{40}$/u
@@ -22,8 +31,10 @@ export async function revokeFinalApproval(io: ReviewIo): Promise<boolean> {
 }
 
 /**
- * Renders the reviews for `headSha` and, unless `dryRun`, posts them and sets the label. Refuses
- * when the pull request head moved, because the findings describe an older commit.
+ * Renders the reviews for `headSha` and, unless `dryRun`, posts them and sets the label. The
+ * first review carries the verdict's event (APPROVE, REQUEST_CHANGES, or COMMENT), downgraded to
+ * COMMENT when the host cannot take it. Refuses when the pull request head moved, because the
+ * findings describe an older commit.
  */
 export async function postFinalReview(
   io: ReviewIo,
@@ -39,17 +50,21 @@ export async function postFinalReview(
     )
   }
   const index = indexReviewFiles(await io.listFiles())
-  const reviews = buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS)
   const verdict = deriveVerdict(input.findings, input.questions)
-  if (options.dryRun === true) return { verdict, reviews, urls: [], label: 'unchanged' }
-  const urls: string[] = []
-  for (const review of reviews) urls.push(await io.postReview(review))
+  const choice = await chooseEvent(io, verdict)
+  const reviews = withEvent(
+    buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS),
+    choice.event,
+  )
+  if (options.dryRun === true) return { verdict, reviews, urls: [], label: 'unchanged', ...choice }
+  const { urls, ...posted } = await postReviews(io, reviews)
+  const sent = { ...choice, ...posted }
   if (verdict === 'Approve') {
     await io.addApprovalLabel()
-    return { verdict, reviews, urls, label: 'added' }
+    return { verdict, reviews, urls, label: 'added', ...sent }
   }
   const removed = await revokeFinalApproval(io)
-  return { verdict, reviews, urls, label: removed ? 'removed' : 'unchanged' }
+  return { verdict, reviews, urls, label: removed ? 'removed' : 'unchanged', ...sent }
 }
 
 export type ReviewStatus = {

@@ -36,6 +36,7 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
     listFiles: vi.fn(async () => []),
     listReviews: vi.fn(async () => []),
     trustedAuthors: vi.fn(async () => new Set(['bot'])),
+    pullAuthor: vi.fn(async () => 'dev'),
     hasApprovalLabel: vi.fn(async () => true),
     postReview: vi.fn(async () => 'https://example.test/r'),
     addApprovalLabel: vi.fn(async () => undefined),
@@ -159,6 +160,7 @@ describe('runReviewCommand', () => {
     expect(io.postReview).toHaveBeenCalledOnce()
     expect(JSON.parse(out.join(''))).toMatchObject({
       verdict: 'Approve',
+      event: 'APPROVE',
       reviews: 1,
       urls: ['https://example.test/r'],
       label: 'added',

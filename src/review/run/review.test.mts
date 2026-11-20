@@ -133,6 +133,7 @@ function setup(
     abort: vi.fn(async () => calls.push('abort')),
     preview: vi.fn(async () => ({
       verdict: 'Comment',
+      event: 'COMMENT',
       reviews: [{ event: 'COMMENT', commit_id: SHA, body: 'Body.', comments: [] }],
     })) as never,
     plugins: vi.fn(async () => ({

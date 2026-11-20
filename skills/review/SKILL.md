@@ -135,8 +135,15 @@ requests changes; otherwise a high finding or any open question comments; otherw
 
 `post` renders and posts the review:
 
-- The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is always a COMMENT,
-  because GitHub does not let an author approve their own pull request.
+- The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is posted
+  as `APPROVE`, `REQUEST_CHANGES`, or `COMMENT` to match the verdict. GitHub refuses approve and
+  request-changes on the reviewer's own pull request, so there (the author is the `gh` login or
+  the App bot), when the reviewer's identity cannot be determined, or when GitHub rejects the event
+  with 422, it is posted once as `COMMENT`. `post` prints the `event` and, when it changed,
+  `downgraded` (`self-review`, `identity-unknown`, or `rejected`). The tag, marker, labels and
+  check run stay the source of truth for `status`; GitHub's review state is never read. A new
+  review needs no dismissal of the reviewer's earlier request for changes: the newer approval or
+  comment is enough.
 - Open questions follow the finding index under a "Questions" heading.
 - Findings are tagged `[blocking]`, `[high]`, `[medium]`, or `[low]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.

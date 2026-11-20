@@ -66,6 +66,17 @@ a "Questions" heading in the posted review body, and the next review of the pull
 as context so an answered one is not asked again. `post` recomputes the verdict from the findings
 and questions; a `verdict` field in `review.json` that disagrees fails the review.
 
+`post` submits the verdict as its own review event: Approve as `APPROVE`, Request Changes as
+`REQUEST_CHANGES`, Comment as `COMMENT` (on the first part of a split review; later parts are
+comments). GitHub refuses approve and request-changes on your own pull request, so when the
+author is the reviewer's identity (the `gh` login, or the App bot; the same identity that decides
+whose markers count) the review goes out as `COMMENT`. So it does when that identity cannot be
+determined, or when GitHub rejects the event with 422: it falls back to `COMMENT` once, and the
+`post` output says `event` and `downgraded` (`self-review`, `identity-unknown`, or `rejected`), so a
+review is never lost. The first-line tag, hidden marker, labels and check run are unchanged and
+still decide `status`; GitHub's own review state is not trusted. A new review does not dismiss the
+reviewer's earlier request for changes on an older head: the newer approval or comment is enough.
+
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
 plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of
