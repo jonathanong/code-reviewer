@@ -17,8 +17,15 @@ git clone https://github.com/jonathanong/code-reviewer.git
 cd code-reviewer && pnpm install
 ```
 
-As a Claude Code plugin, add the marketplace `jonathanong/code-reviewer` and install the
-`code-reviewer` plugin. The plugin puts `code-reviewer` on the session's `PATH` and needs only
+As a Claude Code plugin, install it from the shared `harness-plugins` marketplace:
+
+```bash
+claude plugin marketplace add jonathanong/harness-plugins
+claude plugin install code-reviewer@harness-plugins
+```
+
+If you added the old `code-reviewer` marketplace, run `claude plugin marketplace remove code-reviewer`
+first (removing a marketplace uninstalls its plugins), then install as above. The plugin puts `code-reviewer` on the session's `PATH` and needs only
 Node 24, so the standing reviewer session runs from any directory; see
 [`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md). The checkout is for developing the
 reviewer and running benchmarks.
