@@ -51,6 +51,10 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
   a separate one. Report a test gap alone only when no defect is known and the gap matters.
 - Clean pull requests are common. Raise a finding only when you can name what goes wrong or what
   it costs; style preferences and speculative "could be cleaner" notes are not findings.
+- Do not report what the pull request page already shows the author: that the branch conflicts
+  with its base, that a check is failing, that a review is pending. Report what the page does not
+  show: a defect in this change that causes it, or what it means for the change, for example a
+  failing check that shows an acceptance criterion is not met.
 - When you read or reason about another repository's code (a dependency the change calls, or a
   consumer), read that repository's staged instructions and matching skills first and apply them
   to how the change uses it. A declared dependency has no import to follow: check each call the
