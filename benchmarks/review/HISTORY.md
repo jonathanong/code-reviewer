@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: history pillar runs load no settings file (no run)
+
+The history pillar is the one pillar with a shell. It passed `--setting-sources user`, so the
+operator's own allow rules and sandbox auto-allow applied on top of its `git log` / `git show`
+allow-list: in a live check with those settings a run executed every command it was given,
+including a chained `touch`. It now passes `--setting-sources ''`. In the same check without user
+settings, chained and substituted commands were denied, read-only built-ins and `git log` ran, and
+the rule plugins still loaded. Other pillars have no shell and are unchanged. History-pillar scores
+were not re-measured; user hooks and environment settings no longer reach that pillar, so its
+earlier rows are not strictly comparable.
+
 ## 2026-11-19: `vouchington-2936` re-measured after the lock rule was reworded
 
 Commit: the one before the snapshot change above (runs used the export without history).

@@ -62,7 +62,8 @@ export function pillarToolFlags(
 
 /**
  * The evidence run reads files and runs only the configured command prefixes: Bash is offered, and
- * `--allowedTools` grants one `Bash(<prefix>:*)` per prefix, so `dontAsk` denies any other command.
+ * `--allowedTools` grants one `Bash(<prefix>:*)` per prefix, so `dontAsk` denies any other command
+ * except the read-only ones Claude Code always permits.
  */
 export function evidenceToolFlags(prefixes: readonly string[]): {
   tools: string
@@ -93,12 +94,15 @@ export const EXPLORER_AGENTS = {
  * Flags every headless run shares: no MCP servers, user settings only, and, when the enabled
  * plugins are known, only the rule plugins on (`settings` is the `pluginSettings` object), which
  * leaves the rule skills as the run's only skills and keeps the fixed context small.
+ *
+ * A run with a shell passes `shell` and loads no settings file at all: user settings can allow
+ * commands of their own, or allow every sandboxed command, and either widens the allow-list.
  */
-export function isolationArgs(settings?: object): string[] {
+export function isolationArgs(settings?: object, shell = false): string[] {
   return [
     '--strict-mcp-config',
     '--setting-sources',
-    'user',
+    shell ? '' : 'user',
     ...(settings === undefined ? [] : ['--settings', JSON.stringify(settings)]),
   ]
 }
@@ -141,7 +145,7 @@ export function pillarArgs(options: PillarArgsOptions): string[] {
     'dontAsk',
     '--max-turns',
     String(options.maxTurns),
-    ...isolationArgs(options.settings),
+    ...isolationArgs(options.settings, tools.split(',').includes('Bash')),
     '--effort',
     options.effort ?? CLAUDE_EFFORT.full,
     ...(options.explorer === false ? [] : ['--agents', JSON.stringify(EXPLORER_AGENTS)]),

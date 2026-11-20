@@ -60,6 +60,12 @@ plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k 
 about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 
+A run that has a shell (the history pillar and the evidence run) passes `--setting-sources ''`
+instead, so no settings file is loaded. User settings can allow commands of their own, or allow
+every sandboxed command, and either would widen the run's allow-list. Such a run can execute its
+listed prefixes and the read-only commands Claude Code always permits (`echo`, `ls`, `git log` and
+the like); a chained or substituted command is denied whole.
+
 ## Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
@@ -135,8 +141,8 @@ owner file's list whole; `[]` switches evidence off for that repository.
 - `guide`: how to query the source. `{ "repo", "path" }` is read from that repository's clone under
   the clone root at its remote default branch (never the working tree, never a pull request);
   `{ "file" }` is a path on this machine, `~/` allowed.
-- `commands`: command prefixes of at least two words, each allowed as `Bash(<prefix>:*)` and
-  nothing else. Grant read-only prefixes: a prefix is only as safe as the CLI's subcommand.
+- `commands`: command prefixes of at least two words, each allowed as `Bash(<prefix>:*)`; beyond
+  them the run has only the read-only commands Claude Code always permits. Grant read-only prefixes: a prefix is only as safe as the CLI's subcommand.
 - `env` (optional): variables set for the run. Values are never printed, logged, or put in a
   prompt, report, or `settings` output; only names are.
 
