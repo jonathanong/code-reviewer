@@ -103,7 +103,36 @@ never paste diffs, pillar output, or review bodies into the session.
 A skip (`mode: "skip"`) is finished when the command exits (it posted a skip review that makes
 `status` pass): note it in the document and move on.
 
+### Unattended: `run` per label event
+
+An orchestrator that is not watching each review dispatches one background command per label
+event instead of the checkout and `review` steps above:
+
+```bash
+code-reviewer run --repo <repo> --pr <n> [--effort <e>]
+```
+
+Run at most three at once, and read only the one JSON line it prints and its exit code: never the
+run files. `run` is safe to start twice for the same pull request, because the label claim lets
+one win. It exits:
+
+- 0 `posted`: the review is posted. Note the verdict and `reviewUrl`.
+- 10 `held`: the review is finished and not posted because a hold rule matched (an open question,
+  a large or risky change, a partial failure, a non-App identity). Flag it to the human with
+  `attention` and `explainPath` and wait: they read the explainer and, when they agree, post with
+  the printed `postCommand`. Do not post a held review yourself, do not rerun it to change the
+  answer, and do not use `--force` unless the human asks.
+- 11 `noop`: nothing to do; `reason` says why. Take no action.
+- 12 `error`: a precondition failed (a missing plugin, a settings problem, no auth, a bad flag).
+  Stop dispatching and tell the human `reason`.
+- 13 `error`: the run failed and released its claim. Say so with `reason`; retry once at most.
+
+Anything in `attention` goes to the human even when the review was posted.
+
 ## Step 4 - Explain, then ask before posting
+
+This step is the manual path. A run that `run` posted needs none of it, and one it held needs only
+the human's reading of `explainPath`.
 
 The human has to understand each verdict and check that their rules were applied, so give them
 `code-reviewer explain --run "$run"`: plain Markdown built from the run's files (what the change

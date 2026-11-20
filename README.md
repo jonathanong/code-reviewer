@@ -30,7 +30,7 @@ code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs 
 code-reviewer report --out DIR
 ```
 
-`review` runs one pull request end to end with headless `claude -p` calls and stops before
+`run` (below) is the unattended path. `review` runs one pull request end to end with headless `claude -p` calls and stops before
 posting, so you can read the result first. `--tree` is a checkout at the pull request head and
 `--out` receives the run files; both become absolute paths. It claims the pull request (a head the
 newest review already covers is declined unless `--force`), runs `prepare`, asks Haiku to pick
@@ -184,6 +184,105 @@ skipped. A resolution that drops one side's change, keeps both when one replaced
 edits a generated file by hand is a finding. Anything git cannot answer is `substantive`, with the
 reason recorded in `problems`. `report.md` shows the kind and the merges checked.
 
+## Unattended runs: `run`
+
+```bash
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--clones DIR]
+```
+
+`run` takes one pull request from a label request to a posted or held review in one process, for
+a session that dispatches it without watching. It:
+
+1. Checks the preconditions: both rule plugins (`no-mistakes-rules`, `jong-skills`) are enabled,
+   the machine config and the repository's own file have no problems, and auth resolves.
+2. Reads the pull request and declines it (a no-op) when the newest trusted review already covers
+   the head, another session holds it, or an unposted review of this head waits in a run
+   directory. `--force` skips these checks.
+3. Checks the head out in a temporary git worktree under the OS temp directory, from the local
+   clone in `--clones` or `CODE_REVIEWER_CLONE_ROOT` after fetching the head. Without a local
+   clone it makes a blobless clone there instead. The tree is removed on success, on failure and
+   on `SIGINT` or `SIGTERM`.
+4. Runs `review` in-process. `review` makes the claim, so a lost claim is a no-op with a reason;
+   `run` adds the request label first when neither it nor the in-progress label is present.
+5. Posts through `post` (which records the tracker row and moves the labels), or holds.
+
+Progress goes to stderr. Stdout is exactly one JSON line.
+
+### Exit codes
+
+Defined once, in [`src/run/output.mts`](src/run/output.mts). They avoid 1 and 2, which other
+commands use.
+
+| Code | `outcome` | Meaning                                                                             |
+| ---- | --------- | ----------------------------------------------------------------------------------- |
+| 0    | `posted`  | The review was posted, or a skip plan was closed out.                               |
+| 10   | `held`    | The review is finished and waits for a human. Nothing was posted.                   |
+| 11   | `noop`    | Nothing to do; `reason` says why (already reviewed, in progress, held, claim lost). |
+| 12   | `error`   | A precondition or a flag failed before any label changed.                           |
+| 13   | `error`   | The run failed after starting; the claim was released.                              |
+
+### The JSON line
+
+`repo`, `pr`, `headSha`, `outcome`, `exitCode`, `verdict`, `event` (the posted review event),
+`held` (the rules that matched), `findings` (counts by severity), `questions`, `reviewUrl`,
+`costUsd`, `tokens`, `mode`, `tree` (`worktree` or `clone`), `runDir`, `explainPath`,
+`postCommand`, `attention`, `problems` and `reason`. Fields that do not apply are `null`, or `[]`
+for lists. `attention` is a list of short reasons a person should look; it is empty when a clean
+review was posted.
+
+`explainPath` is a Markdown file `run` always writes with the output of `explain`, for posted and
+held runs alike, so the review can be read or attached to a document. `run` talks to no document
+service.
+
+### Hold rules
+
+A hold rule keeps a finished review from being posted. Every rule is on by default and can be
+switched off in machine config. `--post hold` holds every run (`held` lists `post-hold`).
+
+| Rule               | Holds when                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `unclear-intent`   | The review has open questions.                                                                                                |
+| `large-change`     | The change is over `largeChange.files` files or `largeChange.lines` changed lines, or the diff or conversation was cut short. |
+| `risky-change`     | The change touches paths the dispatcher sends to the security pillar.                                                         |
+| `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked.                                                             |
+| `not-app-identity` | Calls use the local `gh` login and not the GitHub App.                                                                        |
+| `text-too-long`    | Posted text is over three times its target, which `post` would refuse.                                                        |
+
+A held run releases the claim and puts the request label back, so the pull request stays visible
+in `queue`. It leaves the review in `runDir` and the tracker row at `reviewed`, which makes a
+later `run` of the same head a no-op rather than a loop. With `--post auto`, a held review is
+posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
+(`code-reviewer post ... --input RUNDIR/review.json`). `run --force` reviews the head again.
+
+### Config
+
+A machine-only key, in the files described under [Configuration](#configuration). A repository's
+own `.code-reviewer.json` cannot set it, because it comes from the reviewed repository. Unknown
+rule names and keys are a config problem, which fails the precondition check.
+
+```json
+{
+  "run": {
+    "rules": { "risky-change": false },
+    "largeChange": { "files": 80, "lines": 2000 }
+  }
+}
+```
+
+- `run.rules`: each rule above, `true` or `false`.
+- `run.largeChange`: `files` and `lines`, positive integers. Defaults: 50 files, 1,000 lines.
+
+### Using it from another agent session
+
+The `code-reviewer` plugin and the CLI must be installed for that session: the plugin's `bin/`
+puts `code-reviewer` on the session's `PATH`, and a session without the plugin has no
+`code-reviewer` command. A session on the standing loop dispatches `run` as a background command
+per label event, at most three at once, and reads only the JSON line and the exit code. `run` is
+safe to call concurrently for the same pull request: the label claim lets one win and the rest
+exit 11. Two calls that read the labels in the same instant can both try to claim; the loser's
+claim fails and exits 11 too. See
+[`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md).
+
 ## Tracker and explainer
 
 ```bash
@@ -221,7 +320,7 @@ this text in a Claude Doc when the session has a document connector; the CLI nev
 ## Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else

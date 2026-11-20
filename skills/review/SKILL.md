@@ -55,6 +55,22 @@ The session that runs this skill only orchestrates. One headless command does th
 writes every file; the session reads the one JSON line it prints and, to present the review,
 `report.md`. Never read the diff or the pillar outputs into the session.
 
+## Two paths
+
+- **Unattended: `code-reviewer run --repo <repo> --pr <n>`.** One command does Steps 1 to 5
+  itself: the checkout (a temporary worktree it removes), the claim, the review, and then it posts
+  or holds by the hold rules in the machine config. It prints one JSON line and exits 0 (posted),
+  10 (held), 11 (nothing to do), 12 (precondition failed) or 13 (failed); the README has the line
+  and the rules. Use it for a review nobody is waiting to read first, from the standing loop or
+  from any session that has the plugin. A held review is never posted by `run`: show the human
+  `attention` and `explainPath` and, when they agree, post with the printed `postCommand`.
+- **Manual: Steps 1 to 5 below.** Use it when a human wants to read the review before it is
+  posted, edit `review.json`, or check out the tree themselves.
+
+The attended rule stands on both paths: when a human is in the conversation, show the verdict,
+findings and explainer (Step 3) before posting. `run --post hold` produces the same review and
+stops before posting.
+
 ## Step 1 - Check out the head
 
 1. Create a private run directory: `run=$(mktemp -d "${TMPDIR:-/tmp}/review-<name>-<n>-XXXXXX")`.
