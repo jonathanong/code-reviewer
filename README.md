@@ -260,6 +260,36 @@ The environment overrides the file, for CI: when `CODE_REVIEWER_APP_ID` is set, 
 `app.json` is ignored. `code-reviewer auth` prints the `source` (`env` or the path of `app.json`),
 never the key.
 
+### Creating the GitHub App
+
+A GitHub App gives the reviewer its own identity, so it can review your own pull requests as
+someone else and write check runs.
+
+1. On GitHub, open Settings, Developer settings, GitHub Apps, New GitHub App, under the account or
+   organization that will own it. Give it a name (GitHub derives the App's slug, and so its
+   `<slug>[bot]` login, from the name) and any homepage URL. Untick "Active" under Webhook: the
+   reviewer receives no webhooks. Allow installation only on this account.
+2. Grant these repository permissions and no others:
+
+   | Permission    | Access         | Used for                                                  |
+   | ------------- | -------------- | --------------------------------------------------------- |
+   | Pull requests | Read and write | Reading pull requests, posting reviews, resolving threads |
+   | Issues        | Read and write | Adding and removing the review labels                     |
+   | Contents      | Read-only      | Reading `.code-reviewer.json`                             |
+   | Checks        | Read and write | The check run, when `checkRun` is configured              |
+   | Metadata      | Read-only      | Required by GitHub                                        |
+
+3. On the App's page, note the App ID and generate a private key. Move the downloaded `.pem` to
+   `app.pem` in the config home and run `chmod 600` on it. Delete the downloaded copy.
+4. Install the App on each account or organization whose repositories it reviews, and select those
+   repositories.
+5. Write `app.json` beside the key with the App ID, then run `code-reviewer auth`. It prints
+   `"mode": "app"`, the `source`, and the `login` the reviewer trusts.
+
+Renaming the App changes its login, so reviews it posted under the old name stop counting as its
+own. Git operations still use your own clones and credentials; the App is used only for GitHub API
+calls.
+
 `claim` and `status` trust a `<!-- final-review ... -->` marker only from the identity that posts
 reviews, so a review forged by someone else cannot decline a head or report approval. That
 identity is the reviewer's own: the authenticated GraphQL `viewer`, or under App auth the App's

@@ -23,10 +23,9 @@ Resolve these first and ask when one is missing:
   sources, and dependencies. Set `CODE_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
   from each clone's `origin/HEAD`, so run `git fetch` in those clones at start.
 - **Event source**: the hook-harness CLI (`npx -y hook-harness`), its MCP server, or none.
-- **GitHub App** (optional): `CODE_REVIEWER_APP_ID` plus `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`
-  (or `_PRIVATE_KEY`) and optionally `CODE_REVIEWER_APP_INSTALLATION_ID` in the session
-  environment. The App needs Pull requests and Issues read and write, and Contents and Metadata
-  read. Without it, the local `gh` login is used. Never search for or print keys.
+- **GitHub App** (optional): `app.json` and its key in the config home; the README's
+  "Creating the GitHub App" section has the steps and permissions. Without it, the local `gh`
+  login is used. Check with `code-reviewer auth`. Never search for or print keys.
 
 ## Intake
 
