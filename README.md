@@ -108,6 +108,22 @@ may have landed; and the check-run POST is not repeated either, since a repeat w
 check run. A command that retried anything prints one stderr line, `warning: N GitHub calls were
 retried after transient failures`.
 
+`post` confirms what it posted. Before submitting, it records which reviews already exist; after,
+it reads the pull request's reviews back and looks for the reviews that are new, written by the
+reviewer's own identity (the same one that decides whose markers count), and carry this head's
+hidden marker: the verdict marker for the first part, the part marker for each later part. Exactly
+one per part is a confirmation, and the `post` output lists the ids as `reviewIds` (the tracker's
+`posted` row keeps the first as `reviewId` beside `reviewUrl`, taken from the confirmed review).
+A review POST that fails transiently is retried only after the read-back shows that part is not
+there (so a post that timed out but landed is never repeated), up to the same 3 tries and
+backoff; if it landed, `post` carries on with the review it found. If the reviewer's identity or
+the review list cannot be read, the post is not retried at all and says the review may have posted.
+A submitted part that the read-back does not find fails the command, and the approval label is not
+set. More than one new review with the same marker is a warning in `warnings` naming every link;
+nothing is deleted or dismissed. A read-back that fails after its own retries is also a warning (the
+review was submitted but could not be confirmed, `confirmed` is false), not a failure. A dry run
+reads and confirms nothing.
+
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
 plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of
@@ -160,7 +176,7 @@ Every `review` appends one row to a tracker, and `post` appends a `posted` row t
 one review run of one pull request head: repository, number, title, author, head SHA, mode (`full`,
 `light`, `follow-up` or `skip`), verdict, finding counts by severity, the number of open questions
 when `review.json` has a `questions` list, cost, start and finish times, the run directory, and a state:
-`reviewed` (produced, not posted), `posted` (with the review link, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
+`reviewed` (produced, not posted), `posted` (with the review link and id, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
 (with the reason). A later row for the same repository, pull request and head replaces an earlier
 one, except that `posted` adds to the `reviewed` row it follows. `tracker` prints that folded state;
 CSV cells that begin with a spreadsheet formula character are prefixed with an apostrophe.

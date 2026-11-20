@@ -1,30 +1,38 @@
 import { describe, expect, it, vi, type Mock } from 'vitest'
 
-import { postReviews } from './event.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
-import { ReviewRejectedError, type ReviewIo } from './github.mts'
+import { ReviewRejectedError, type ListedReview, type ReviewIo } from './github.mts'
+import { postReviews } from './submit.mts'
 import { reviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 import { reviewMarker, type Verdict } from './render.mts'
 
 const SHA = 'c'.repeat(40)
 const OTHER = 'd'.repeat(40)
 
-const asReviews = (bodies: string[], author = 'bot') => bodies.map((body) => ({ body, author }))
+const asReviews = (bodies: string[], author: string | null = 'bot'): ListedReview[] =>
+  bodies.map((body, at) => ({ id: at + 1, url: `https://example.test/r/${at + 1}`, body, author }))
 
 type MockIo = { [K in keyof ReviewIo]: Mock<ReviewIo[K]> }
 
+/** A pull request that keeps what is posted to it, so the read-back finds it. */
 function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
+  const posted: ListedReview[] = []
   return {
     headSha: vi.fn(async () => SHA),
     diff: vi.fn(async () => ''),
     listFiles: vi.fn(async () => [{ filename: 'a.ts', patch: '@@ -1 +1 @@\n+x\n' }]),
-    listReviews: vi.fn(async () => asReviews([])),
+    listReviews: vi.fn(async () => [...posted]),
     trustedAuthors: vi.fn(async () => new Set(['bot'])),
     pullAuthor: vi.fn(async () => 'dev'),
     changesRequested: vi.fn(async () => []),
     dismissReview: vi.fn(async () => undefined),
     hasApprovalLabel: vi.fn(async () => false),
-    postReview: vi.fn(async () => 'https://example.test/review'),
+    postReview: vi.fn(async (review) => {
+      const id = 100 + posted.length
+      const url = `https://example.test/review/${id}`
+      posted.push({ id, url, body: review.body, author: 'bot' })
+      return url
+    }),
     addApprovalLabel: vi.fn(async () => undefined),
     removeApprovalLabel: vi.fn(async () => undefined),
     ...overrides,
@@ -76,7 +84,9 @@ describe('postFinalReview', () => {
     const outcome = await postFinalReview(io, input('low'), SHA)
     expect(outcome).toMatchObject({
       verdict: 'Approve',
-      urls: ['https://example.test/review'],
+      urls: ['https://example.test/review/100'],
+      reviewIds: [100],
+      confirmed: true,
       label: 'added',
     })
     expect(io.addApprovalLabel).toHaveBeenCalledOnce()
@@ -155,16 +165,14 @@ describe('postFinalReview event', () => {
   })
 
   it('retries once as a COMMENT when GitHub rejects the event, and reports it', async () => {
-    const postReview = vi
-      .fn<ReviewIo['postReview']>()
-      .mockRejectedValueOnce(new ReviewRejectedError('no', { cause: 'x' }))
-      .mockResolvedValueOnce('https://example.test/second')
-    const io = fakeIo({ postReview })
+    const io = fakeIo()
+    const { postReview } = io
+    postReview.mockRejectedValueOnce(new ReviewRejectedError('no', { cause: 'x' }))
     const outcome = await postFinalReview(io, input('blocking'), SHA)
     expect(outcome).toMatchObject({
       event: 'COMMENT',
       downgraded: 'rejected',
-      urls: ['https://example.test/second'],
+      urls: ['https://example.test/review/100'],
     })
     expect(postReview.mock.calls.map(([review]) => review.event)).toEqual([
       'REQUEST_CHANGES',
@@ -190,10 +198,35 @@ describe('postFinalReview event', () => {
       urls: [],
     })
     expect(io.postReview).not.toHaveBeenCalled()
+    expect(io.listReviews).not.toHaveBeenCalled()
+  })
+
+  it('reports the confirmed review ids, and warns instead of claiming a confirmation it lacks', async () => {
+    const io = fakeIo()
+    await expect(postFinalReview(io, input('low'), SHA)).resolves.toMatchObject({
+      reviewIds: [100],
+      confirmed: true,
+      warnings: [],
+    })
+    const blind = fakeIo({ trustedAuthors: vi.fn(async () => new Set<string>()) })
+    const outcome = await postFinalReview(blind, input('low'), SHA)
+    expect(outcome).toMatchObject({ reviewIds: [], confirmed: false, label: 'added' })
+    expect(outcome.warnings).toEqual([expect.stringContaining('could not be confirmed')])
+  })
+
+  it('does not label a review that is not on the pull request', async () => {
+    const io = fakeIo({ postReview: vi.fn(async () => 'https://example.test/phantom') })
+    await expect(postFinalReview(io, input('low'), SHA)).rejects.toThrow(ReviewError)
+    expect(io.addApprovalLabel).not.toHaveBeenCalled()
   })
 
   it('posts nothing for a review with no parts', async () => {
-    await expect(postReviews(fakeIo(), [])).resolves.toEqual({ urls: [], event: 'COMMENT' })
+    await expect(postReviews(fakeIo(), [])).resolves.toEqual({
+      urls: [],
+      event: 'COMMENT',
+      confirmed: [],
+      warnings: [],
+    })
   })
 })
 
@@ -344,7 +377,7 @@ describe('reviewStatus', () => {
       listReviews: vi.fn(async () => [
         ...asReviews([body(OTHER, 'Request Changes')]),
         ...asReviews([body(SHA, 'Approve')], 'mallory'),
-        { body: body(SHA, 'Approve'), author: null },
+        ...asReviews([body(SHA, 'Approve')], null),
       ]),
       hasApprovalLabel: vi.fn(async () => true),
     })

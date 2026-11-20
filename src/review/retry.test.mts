@@ -46,7 +46,8 @@ describe('retry after a partial post', () => {
       headSha: async () => SHA,
       diff: async () => '',
       listFiles: async () => [{ filename: 'a.ts', patch: '@@ -0,0 +1,2 @@\n+x\n+y\n' }],
-      listReviews: async () => reviews.map((body) => ({ body, author: 'bot' })),
+      listReviews: async () =>
+        reviews.map((body, at) => ({ id: at + 1, url: `u${at}`, body, author: 'bot' })),
       trustedAuthors: async () => new Set(['bot']),
       pullAuthor: async () => 'dev',
       changesRequested: async () => [],

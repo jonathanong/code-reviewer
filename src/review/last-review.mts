@@ -1,4 +1,4 @@
-import { MARKER_RE, PART_MARKER_RE } from './post.mts'
+import { MARKER_RE, PART_MARKER_RE } from './markers.mts'
 
 /**
  * The newest review instance: the last non-skip review carrying a main marker, and the

@@ -18,7 +18,7 @@ export { reviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 export type { PostOutcome, ReviewStatus } from './post.mts'
 export { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 export type { TrustedAuthors } from './trust.mts'
-export { MARKER_RE, PART_MARKER_RE } from './post.mts'
+export { MARKER_RE, PART_MARKER_RE } from './markers.mts'
 export { abortReview, claimReview, completeReview, createGhLabelIo } from './labels.mts'
 export { skipPullRequest } from './skip.mts'
 export {

@@ -35,6 +35,7 @@ function row(overrides: Partial<TrackerRow> = {}): TrackerRow {
     finishedAt: '2026-01-01T00:10:00.000Z',
     reason: null,
     reviewUrl: null,
+    reviewId: null,
     event: null,
     downgraded: null,
     postedAt: null,

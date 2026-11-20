@@ -22,6 +22,7 @@ const COLUMNS = [
   'state',
   'reason',
   'reviewUrl',
+  'reviewId',
   'event',
   'downgraded',
   'postedAt',

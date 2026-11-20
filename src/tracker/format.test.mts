@@ -20,6 +20,7 @@ function row(overrides: Partial<TrackerRow> = {}): TrackerRow {
     finishedAt: '2026-01-01T00:10:00.000Z',
     reason: null,
     reviewUrl: null,
+    reviewId: null,
     event: null,
     downgraded: null,
     postedAt: null,
@@ -36,10 +37,10 @@ describe('formatRows', () => {
   it('prints CSV with one column per count', () => {
     const [header, line] = formatRows([row()], 'csv').split('\r\n')
     expect(header).toBe(
-      'repo,pr,title,author,head,mode,verdict,blocking,high,medium,low,questions,costUsd,startedAt,finishedAt,state,reason,reviewUrl,event,downgraded,postedAt,runDir',
+      'repo,pr,title,author,head,mode,verdict,blocking,high,medium,low,questions,costUsd,startedAt,finishedAt,state,reason,reviewUrl,reviewId,event,downgraded,postedAt,runDir',
     )
     expect(line).toBe(
-      `acme/widgets,4,Add widgets,octocat,${'a'.repeat(40)},full,Comment,0,1,0,2,3,1.5,2026-01-01T00:00:00.000Z,2026-01-01T00:10:00.000Z,reviewed,,,,,,/runs/4`,
+      `acme/widgets,4,Add widgets,octocat,${'a'.repeat(40)},full,Comment,0,1,0,2,3,1.5,2026-01-01T00:00:00.000Z,2026-01-01T00:10:00.000Z,reviewed,,,,,,,/runs/4`,
     )
   })
 

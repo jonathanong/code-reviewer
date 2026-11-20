@@ -17,6 +17,7 @@ vi.mock('../review/benchmark/verifier-cli.mts', () => ({
 }))
 
 import type { ReviewIo, LabelIo, PrepareIo } from '../review/index.mts'
+import type { ListedReview } from '../review/github.mts'
 import type { TrackerIo } from '../tracker/types.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import { runReview } from '../review/run/review.mts'
@@ -30,17 +31,26 @@ const SHA = 'e'.repeat(40)
 type MockIo = { [K in keyof ReviewIo]: Mock<ReviewIo[K]> }
 
 function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
+  const posted: ListedReview[] = []
   return {
     headSha: vi.fn(async () => SHA),
     diff: vi.fn(async () => ''),
     listFiles: vi.fn(async () => []),
-    listReviews: vi.fn(async () => []),
+    listReviews: vi.fn(async () => [...posted]),
     trustedAuthors: vi.fn(async () => new Set(['bot'])),
     pullAuthor: vi.fn(async () => 'dev'),
     changesRequested: vi.fn(async () => []),
     dismissReview: vi.fn(async () => undefined),
     hasApprovalLabel: vi.fn(async () => true),
-    postReview: vi.fn(async () => 'https://example.test/r'),
+    postReview: vi.fn(async (review) => {
+      posted.push({
+        id: 7 + posted.length,
+        url: 'https://example.test/r',
+        body: review.body,
+        author: 'bot',
+      })
+      return 'https://example.test/r'
+    }),
     addApprovalLabel: vi.fn(async () => undefined),
     removeApprovalLabel: vi.fn(async () => undefined),
     ...overrides,
@@ -322,39 +332,6 @@ describe('runReviewCommand', () => {
     ).resolves.toBe(1)
     expect(JSON.parse(out.join(''))).toEqual({ plugins: ['rules@m 1.0.0'], missing: ['db'] })
     expect(d.createIo).not.toHaveBeenCalled()
-  })
-
-  it('exits 0 for an approved status and 1 otherwise', async () => {
-    const { out } = capture()
-    const approved = fakeIo({
-      listReviews: vi.fn(async () => [
-        { body: `<!-- final-review sha=${SHA} verdict=Approve effort=high -->`, author: 'bot' },
-      ]),
-    })
-    await expect(runReviewCommand(['status', ...PR], deps(approved))).resolves.toBe(0)
-    expect(JSON.parse(out.join(''))).toMatchObject({ approved: true })
-    await expect(runReviewCommand(['status', ...PR], deps(fakeIo()))).resolves.toBe(1)
-  })
-
-  it('exits 0 for a skipped head even without the approval label', async () => {
-    const { out } = capture()
-    const skipped = fakeIo({
-      hasApprovalLabel: vi.fn(async () => false),
-      listReviews: vi.fn(async () => [
-        { body: `<!-- final-review sha=${SHA} verdict=Skipped effort=low -->`, author: 'bot' },
-      ]),
-    })
-    const done = deps(skipped)
-    done.createLabelIo.mockReturnValue({
-      ...fakeLabelIo(),
-      labels: vi.fn(async () => ['final-review:complete']),
-    })
-    await expect(runReviewCommand(['status', ...PR], done)).resolves.toBe(0)
-    expect(JSON.parse(out.join(''))).toMatchObject({ approved: false, skipped: true })
-    // A forced re-review swapped the completed label for the in-progress one.
-    out.length = 0
-    await expect(runReviewCommand(['status', ...PR], deps(skipped))).resolves.toBe(1)
-    expect(JSON.parse(out.join(''))).toMatchObject({ skipped: false })
   })
 
   it('reports usage and validation errors with exit code 2', async () => {

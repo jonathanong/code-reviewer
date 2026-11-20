@@ -64,13 +64,16 @@ describe('createGhReviewIo', () => {
 
   it('lists reviews with authors decoded from json lines', async () => {
     const { io, calls } = setup([
-      '{"body":"one\\ntwo","author":"bot"}\n\n  {"body":"three","author":null}  \n',
+      '{"id":1,"url":"https://example.test/1","body":"one\\ntwo","author":"bot"}\n\n  {"id":2,"url":"https://example.test/2","body":"three","author":null}  \n',
     ])
     await expect(io.listReviews()).resolves.toEqual([
-      { body: 'one\ntwo', author: 'bot' },
-      { body: 'three', author: null },
+      { id: 1, url: 'https://example.test/1', body: 'one\ntwo', author: 'bot' },
+      { id: 2, url: 'https://example.test/2', body: 'three', author: null },
     ])
-    expect(calls[0]?.slice(-2)).toEqual(['-q', '.[] | {body, author: .user.login} | @json'])
+    expect(calls[0]?.slice(-2)).toEqual([
+      '-q',
+      '.[] | {id, url: .html_url, body, author: .user.login} | @json',
+    ])
   })
 
   it('lists reviews that request changes, and dismisses one with a message', async () => {

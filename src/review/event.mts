@@ -1,5 +1,5 @@
 import type { ReviewEvent, SanitizedReview } from '../review-payload/index.mts'
-import { ReviewRejectedError, type ReviewIo } from './github.mts'
+import type { ReviewIo } from './github.mts'
 import type { Verdict } from './render.mts'
 import { isTrustedAuthor } from './trust.mts'
 
@@ -45,29 +45,4 @@ export async function chooseEvent(
 /** Only the first part carries the verdict's event; continuation parts are comments. */
 export function withEvent(reviews: SanitizedReview[], event: ReviewEvent): SanitizedReview[] {
   return reviews.map((review, part) => (part === 0 ? { ...review, event } : review))
-}
-
-/**
- * Posts the parts in order. When GitHub rejects the first part's approve or request-changes
- * event, it is posted once more as a COMMENT; nothing was created by the rejected request.
- */
-export async function postReviews(
-  io: ReviewIo,
-  reviews: SanitizedReview[],
-): Promise<{ urls: string[]; event: ReviewEvent; downgraded?: Downgrade }> {
-  const [first, ...rest] = reviews
-  if (first === undefined) return { urls: [], event: 'COMMENT' }
-  const urls: string[] = []
-  let sent = first
-  let downgraded: Downgrade | undefined
-  try {
-    urls.push(await io.postReview(first))
-  } catch (error) {
-    if (!(error instanceof ReviewRejectedError) || first.event === 'COMMENT') throw error
-    sent = { ...first, event: 'COMMENT' }
-    downgraded = 'rejected'
-    urls.push(await io.postReview(sent))
-  }
-  for (const review of rest) urls.push(await io.postReview(review))
-  return { urls, event: sent.event, ...(downgraded === undefined ? {} : { downgraded }) }
 }
