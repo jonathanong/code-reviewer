@@ -160,6 +160,7 @@ export function resolveRun(configs: RepoConfigs, scope: string): RunSettings {
   return {
     rules: { ...DEFAULT_RUN.rules, ...run?.rules },
     largeChange: { ...DEFAULT_RUN.largeChange, ...run?.largeChange },
+    riskyPaths: run?.riskyPaths,
   }
 }
 

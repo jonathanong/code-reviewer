@@ -9,8 +9,8 @@ export type HoldFacts = {
   lines: number
   /** Places the diff or the conversation was cut short. */
   truncated: string[]
-  /** Changed paths the dispatcher sends to the security pillar. */
-  securityPaths: string[]
+  /** Changed paths a human should read the review for; see `riskyPaths`. */
+  riskyPaths: string[]
   /** Pillars, the evidence run or the verifier that failed or were blocked. */
   partial: string[]
   authMode: 'app' | 'gh'
@@ -20,6 +20,11 @@ export type HoldFacts = {
 
 /** `post-hold` is `--post hold`, which is a request and not a configurable rule. */
 export type Held = { rule: HoldRule | 'post-hold'; why: string }
+
+function listPaths(paths: readonly string[]): string {
+  const more = paths.length - 5
+  return `${paths.slice(0, 5).join(', ')}${more > 0 ? ` and ${more} more` : ''}`
+}
 
 /** The enabled rules that match, in a fixed order. An empty list means the review may be posted. */
 export function holdRules(facts: HoldFacts, settings: RunSettings): Held[] {
@@ -39,9 +44,7 @@ export function holdRules(facts: HoldFacts, settings: RunSettings): Held[] {
     ],
     [
       'risky-change',
-      facts.securityPaths.length > 0
-        ? `touches security paths: ${facts.securityPaths.slice(0, 5).join(', ')}`
-        : undefined,
+      facts.riskyPaths.length > 0 ? `touches ${listPaths(facts.riskyPaths)}` : undefined,
     ],
     ['partial-failure', facts.partial.length > 0 ? facts.partial.join('; ') : undefined],
     [

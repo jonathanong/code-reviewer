@@ -286,10 +286,17 @@ switched off in machine config. `--post hold` holds every run (`held` lists `pos
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | `unclear-intent`   | The review has open questions.                                                                                                |
 | `large-change`     | The change is over `largeChange.files` files or `largeChange.lines` changed lines, or the diff or conversation was cut short. |
-| `risky-change`     | The change touches paths the dispatcher sends to the security pillar.                                                         |
+| `risky-change`     | The change touches a risky path (below).                                                                                      |
 | `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked, or the approval's second check did not complete.            |
 | `not-app-identity` | Calls use the local `gh` login and not the GitHub App.                                                                        |
 | `text-too-long`    | Posted text is over three times its target, which `post` would refuse.                                                        |
+
+A risky path is one a human should read the review for, which is narrower than what sends the
+change to the security pillar. By default it is a source file that is not a test or a doc and that
+is named for auth or secrets (`auth`, `session`, `permission`, `crypto`, `secret`, `password`,
+`credential`, `jwt`; a UI component under `auth/` counts, a story does not), a GitHub workflow or
+`action.yml`, a migration or `.sql` file, or infrastructure (Terraform or OpenTofu, a Dockerfile,
+`iam`). Manifests, lockfiles and shell scripts do not count. `run.riskyPaths` replaces that list.
 
 A held run releases the claim and puts the request label back, so the pull request stays visible
 in `queue`. It leaves the review in `runDir` and the tracker row at `reviewed`, which makes a
@@ -320,13 +327,16 @@ rule names and keys are a config problem, which fails the precondition check.
 {
   "run": {
     "rules": { "risky-change": false },
-    "largeChange": { "files": 80, "lines": 2000 }
+    "largeChange": { "files": 80, "lines": 2000 },
+    "riskyPaths": ["**/payments/**", "**/*.tf"]
   }
 }
 ```
 
 - `run.rules`: each rule above, `true` or `false`.
 - `run.largeChange`: `files` and `lines`, positive integers. Defaults: 50 files, 1,000 lines.
+- `run.riskyPaths`: glob patterns that replace the default risky paths; `[]` makes no path risky.
+  Test and doc paths never count.
 
 ### Using it from another agent session
 
