@@ -16,6 +16,11 @@ const NOT_RISKY = [
   'src/token-parser.mts',
   'src/authors.mts',
   'scripts/deploy.sh',
+  'scripts/rotate-secrets.sh',
+  'auth/package.json',
+  'auth/pnpm-lock.yaml',
+  'web/components/iam/role-picker.stories.tsx',
+  'src/authored-by.mts',
 ]
 
 const RISKY = [
@@ -36,6 +41,10 @@ const RISKY = [
   'services/api/Dockerfile.prod',
   'build/api.dockerfile',
   'infra/iam-roles.mts',
+  'src/authorization.ts',
+  'src/authorize.mts',
+  'src/authorise.mts',
+  'db/Migrations/001_Initial.cs',
 ]
 
 describe('riskyPaths', () => {
