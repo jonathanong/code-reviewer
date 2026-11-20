@@ -1,4 +1,4 @@
-import { SEVERITIES } from '../finding.mts'
+import { SEVERITIES, type Pillar } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 
 /** Output schema every pillar run must satisfy; the pillar name is filled in by the runner. */
@@ -36,10 +36,29 @@ export const PILLAR_TOOLS = `${READ_ONLY_TOOLS},Agent,Skill`
  * The history pillar also reads git history, and nothing else through the shell: `--allowedTools`
  * limits Bash to `git log` and `git show`, and `dontAsk` denies every other command.
  */
-export const HISTORY_TOOLS = `${PILLAR_TOOLS},Bash`
-export const HISTORY_ALLOWED_TOOLS = `${PILLAR_TOOLS},Bash(git log:*),Bash(git show:*)`
+const HISTORY_TOOLS = `${PILLAR_TOOLS},Bash`
+const HISTORY_ALLOWED_TOOLS = `${PILLAR_TOOLS},Bash(git log:*),Bash(git show:*)`
 /** Control runs differ from `PILLAR_TOOLS` only in having no Skill tool. */
 export const PILLAR_TOOLS_NO_SKILLS = `${READ_ONLY_TOOLS},Agent`
+const HISTORY_TOOLS_NO_SKILLS = `${PILLAR_TOOLS_NO_SKILLS},Bash`
+const HISTORY_ALLOWED_TOOLS_NO_SKILLS = `${PILLAR_TOOLS_NO_SKILLS},Bash(git log:*),Bash(git show:*)`
+
+/**
+ * The `--tools` and `--allowedTools` of a pillar run, shared by `review` and `bench` so a bench
+ * run grants exactly what a real review does. `skills: false` is a control run without Skill.
+ */
+export function pillarToolFlags(
+  pillar: Pillar,
+  skills = true,
+): { tools: string; allowedTools: string } {
+  if (pillar === 'history') {
+    return skills
+      ? { tools: HISTORY_TOOLS, allowedTools: HISTORY_ALLOWED_TOOLS }
+      : { tools: HISTORY_TOOLS_NO_SKILLS, allowedTools: HISTORY_ALLOWED_TOOLS_NO_SKILLS }
+  }
+  const tools = skills ? PILLAR_TOOLS : PILLAR_TOOLS_NO_SKILLS
+  return { tools, allowedTools: tools }
+}
 
 /** The `claude --effort` level for a run, by the plan's mode. The plan's own `effort` is separate. */
 export const CLAUDE_EFFORT: Record<Exclude<Mode, 'skip'>, string> = {

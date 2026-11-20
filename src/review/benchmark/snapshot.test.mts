@@ -35,55 +35,101 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true })
 })
 
-function fakeExec(calls: Array<[string, string[]]>): Exec {
+type Call = [string, string[]]
+
+function fakeExec(calls: Call[]): Exec {
   return async (command, args) => {
     calls.push([command, args])
-    if (command === 'git' && args.includes('archive')) {
-      writeFileSync(args[args.indexOf('-o') + 1] as string, 'tar')
-      return ''
-    }
-    if (command === 'tar') {
-      mkdirSync(join(args[args.indexOf('-C') + 1] as string, 'src'), { recursive: true })
-      writeFileSync(join(args[args.indexOf('-C') + 1] as string, 'src', 'a.ts'), 'x')
-      return ''
-    }
     if (command === 'git' && args.includes('diff')) return DIFF
-    if (command === 'gh' && args[0] === 'pr') return '  PR body \n'
+    if (command === 'gh' && args[0] === 'pr') {
+      return JSON.stringify({ body: '  PR body \n', baseRefName: 'trunk' })
+    }
+    if (command === 'gh' && args[0] === 'repo') return 'https://github.com/acme/widgets\n'
     return ''
   }
 }
 
 const DIFF = 'diff --git a/a.ts b/a.ts'
 
+const isCacheCreate = ([command, args]: Call) => command === 'gh' && args[0] === 'repo'
+/** The git subcommand, past `-C <dir>` and any `-c key=value` pairs. */
+function gitVerb([command, args]: Call): string {
+  if (command !== 'git') return command
+  const rest = [...args]
+  while (rest[0] === '-C' || rest[0] === '-c') rest.splice(0, 2)
+  return rest[0] === 'remote' ? 'remote add' : (rest[0] as string)
+}
+
 describe('prepareSnapshot', () => {
-  it('clones once, exports a git-free tree, and writes context files', async () => {
-    const calls: Array<[string, string[]]> = []
+  it('fetches the two commits into a bare cache, builds a checkout, and writes context files', async () => {
+    const calls: Call[] = []
     const cache = join(root, 'cache')
     const work = join(root, 'work')
     const snapshot = await prepareSnapshot(item, cache, work, fakeExec(calls))
-    const repoDir = join(cache, 'acme__widgets')
+    const repoDir = join(cache, 'acme__widgets.git')
     expect(snapshot).toEqual({
       dir: join(work, 'case-1', 'tree'),
       diff: DIFF,
       body: '  PR body \n',
     })
-    expect(calls.map(([command, args]) => [command, args[0]])).toEqual([
-      ['gh', 'repo'],
-      ['git', '-C'],
-      ['git', '-C'],
-      ['tar', '-xf'],
-      ['git', '-C'],
-      ['gh', 'pr'],
+    expect(calls.map(gitVerb)).toEqual([
+      'gh',
+      'init',
+      'remote add',
+      'fetch',
+      'gh',
+      'init',
+      'update-ref',
+      'symbolic-ref',
+      'checkout',
+      'diff',
     ])
-    expect(calls[0]?.[1].slice(0, 4)).toEqual(['repo', 'clone', 'acme/widgets', repoDir])
-    expect(calls[1]?.[1]).toContain('fetch')
-    expect(readFileSync(join(snapshot.dir, 'src', 'a.ts'), 'utf8')).toBe('x')
+    expect(calls[0]?.[1]).toEqual(['repo', 'view', 'acme/widgets', '--json', 'url', '-q', '.url'])
+    expect(calls[1]?.[1]).toEqual(['init', '--quiet', '--bare', repoDir])
+    expect(calls[2]?.[1]).toEqual([
+      '-C',
+      repoDir,
+      'remote',
+      'add',
+      'origin',
+      'https://github.com/acme/widgets',
+    ])
+    const fetchArgs = calls[3]?.[1] as string[]
+    expect(fetchArgs.slice(-3)).toEqual(['origin', item.baseSha, item.headSha])
+    expect(fetchArgs).toContain('credential.helper=!gh auth git-credential')
+    expect(fetchArgs).not.toContain('--depth')
+    expect(fetchArgs.some((arg) => arg.startsWith('--filter'))).toBe(false)
+    expect(calls[4]?.[1]).toContain('body,baseRefName')
+    const tree = join(work, 'case-1', 'tree')
+    expect(calls[6]?.[1]).toEqual([
+      '-C',
+      tree,
+      'update-ref',
+      'refs/remotes/origin/trunk',
+      item.baseSha,
+    ])
+    expect(calls[7]?.[1]).toEqual([
+      '-C',
+      tree,
+      'symbolic-ref',
+      'refs/remotes/origin/HEAD',
+      'refs/remotes/origin/trunk',
+    ])
+    expect(calls[8]?.[1]).toEqual(['-C', tree, 'checkout', '--quiet', '--detach', item.headSha])
+    expect(calls[9]?.[1]).toEqual([
+      '-C',
+      repoDir,
+      'diff',
+      '--no-color',
+      `${item.baseSha}...${item.headSha}`,
+    ])
+    expect(readFileSync(join(tree, '.git', 'objects', 'info', 'alternates'), 'utf8')).toBe(
+      `${join(repoDir, 'objects')}\n`,
+    )
+    expect(readFileSync(join(tree, '.git', 'info', 'exclude'), 'utf8')).toBe('.review/\n')
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'diff.patch'), 'utf8')).toBe(DIFF)
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'diff', '0001.patch'), 'utf8')).toBe(
       `${DIFF}\n`,
-    )
-    expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'files.md'), 'utf8')).toContain(
-      '`.review/diff/0001.patch` +0 -0 a.ts',
     )
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'files.md'), 'utf8')).toContain(
       '.review/diff/0001.patch` +0 -0 a.ts',
@@ -91,11 +137,10 @@ describe('prepareSnapshot', () => {
     expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'pr.md'), 'utf8')).toBe(
       '# My title\n\nPR body\n',
     )
-    expect(calls.at(-2)?.[1]).toContain(`${item.baseSha}...${item.headSha}`)
   })
 
-  it('shares one clone between parallel cases of a repository', async () => {
-    const calls: Array<[string, string[]]> = []
+  it('shares one cache between parallel cases of a repository', async () => {
+    const calls: Call[] = []
     const other = { ...item, id: 'case-2' }
     const cache = join(root, 'cache')
     const work = join(root, 'work')
@@ -104,44 +149,77 @@ describe('prepareSnapshot', () => {
       prepareSnapshot(item, cache, work, exec),
       prepareSnapshot(other, cache, work, exec),
     ])
-    expect(calls.filter(([command, args]) => command === 'gh' && args[0] === 'repo')).toHaveLength(
-      1,
-    )
+    expect(calls.filter(isCacheCreate)).toHaveLength(1)
+    expect(calls.filter((call) => gitVerb(call) === 'fetch')).toHaveLength(2)
   })
 
-  it('retries a clone after a failed one', async () => {
-    const calls: Array<[string, string[]]> = []
+  it('removes a half-created cache and creates it again after a failure', async () => {
+    const calls: Call[] = []
     const exec = fakeExec(calls)
     const failing: Exec = async (command, args, options) => {
-      if (command === 'gh' && args[0] === 'repo') throw new Error('clone failed')
+      if (command === 'git' && args.includes('remote')) {
+        mkdirSync(args[1] as string, { recursive: true })
+        throw new Error('remote failed')
+      }
       return exec(command, args, options)
     }
     const cache = join(root, 'cache')
     const work = join(root, 'work')
-    await expect(prepareSnapshot(item, cache, work, failing)).rejects.toThrow('clone failed')
+    await expect(prepareSnapshot(item, cache, work, failing)).rejects.toThrow('remote failed')
+    expect(existsSync(join(cache, 'acme__widgets.git'))).toBe(false)
     await expect(prepareSnapshot(item, cache, work, exec)).resolves.toBeDefined()
-    expect(calls.filter(([command, args]) => command === 'gh' && args[0] === 'repo')).toHaveLength(
-      1,
-    )
+    expect(calls.filter(isCacheCreate)).toHaveLength(2)
   })
 
-  it('reuses an existing clone and clears stale work directories', async () => {
+  it('does not leave the cache pending when `gh repo view` fails', async () => {
+    const calls: Call[] = []
+    const exec = fakeExec(calls)
+    const failing: Exec = async (command, args, options) => {
+      if (command === 'gh' && args[0] === 'repo') throw new Error('no such repo')
+      return exec(command, args, options)
+    }
     const cache = join(root, 'cache')
     const work = join(root, 'work')
-    mkdirSync(join(cache, 'acme__widgets', '.git'), { recursive: true })
+    await expect(prepareSnapshot(item, cache, work, failing)).rejects.toThrow('no such repo')
+    await expect(prepareSnapshot(item, cache, work, exec)).resolves.toBeDefined()
+  })
+
+  it('reuses an existing cache and rebuilds a stale case tree', async () => {
+    const cache = join(root, 'cache')
+    const work = join(root, 'work')
+    mkdirSync(join(cache, 'acme__widgets.git'), { recursive: true })
+    writeFileSync(join(cache, 'acme__widgets.git', 'HEAD'), 'ref: refs/heads/main\n')
     mkdirSync(join(work, 'case-1', 'tree'), { recursive: true })
     writeFileSync(join(work, 'case-1', 'tree', 'stale.txt'), 'old')
-    const calls: Array<[string, string[]]> = []
+    const calls: Call[] = []
     const snapshot = await prepareSnapshot(item, cache, work, fakeExec(calls))
-    expect(calls.some(([command, args]) => command === 'gh' && args[0] === 'repo')).toBe(false)
+    expect(calls.some(isCacheCreate)).toBe(false)
+    expect(calls.filter((call) => gitVerb(call) === 'fetch')).toHaveLength(1)
     expect(() => readFileSync(join(snapshot.dir, 'stale.txt'))).toThrow()
+  })
+
+  it('rejects a pull request without a base branch', async () => {
+    const exec = fakeExec([])
+    const noBase: Exec = async (command, args, options) =>
+      command === 'gh' && args[0] === 'pr'
+        ? '{"body":"b","baseRefName":""}'
+        : exec(command, args, options)
+    await expect(
+      prepareSnapshot(item, join(root, 'cache'), join(root, 'work'), noBase),
+    ).rejects.toThrow('no body or base branch')
+    const noBody: Exec = async (command, args, options) =>
+      command === 'gh' && args[0] === 'pr' ? '{"baseRefName":"main"}' : exec(command, args, options)
+    await expect(
+      prepareSnapshot(item, join(root, 'cache'), join(root, 'work'), noBody),
+    ).rejects.toThrow('no body or base branch')
   })
 
   it('uses the default exec and surfaces its failures when no binaries exist', async () => {
     const cache = join(root, 'cache')
     const empty = join(root, 'empty-bin')
     mkdirSync(empty)
-    mkdirSync(join(cache, 'acme__widgets', '.git'), { recursive: true })
+    mkdirSync(join(cache, 'acme__widgets.git'), { recursive: true })
+    writeFileSync(join(cache, 'acme__widgets.git', 'HEAD'), 'ref: refs/heads/main\n')
     vi.stubEnv('PATH', empty)
     try {
       await expect(prepareSnapshot(item, cache, join(root, 'work'))).rejects.toThrow()

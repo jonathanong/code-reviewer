@@ -1,11 +1,6 @@
 import type { Pillar } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import {
-  CLAUDE_EFFORT,
-  PILLAR_TOOLS,
-  PILLAR_TOOLS_NO_SKILLS,
-  pillarArgs,
-} from '../run/claude-flags.mts'
+import { CLAUDE_EFFORT, pillarArgs, pillarToolFlags } from '../run/claude-flags.mts'
 import { skillInstruction } from '../run/pillar-prompt.mts'
 import { parsePillarOutput, type PillarOutput } from '../run/stream-output.mts'
 import type { EvalCase } from './cases.mts'
@@ -52,7 +47,7 @@ export type PillarRun = {
   settings?: object
 }
 
-/** Runs one pillar in the snapshot directory with read-only tools and, by default, skills. */
+/** Runs one pillar in the snapshot directory with the tools `review` grants that pillar and, by default, skills. */
 export async function runPillar(
   item: EvalCase,
   dir: string,
@@ -67,7 +62,7 @@ export async function runPillar(
     prompt,
     model: run.model,
     maxTurns: run.maxTurns,
-    tools: run.skills === false ? PILLAR_TOOLS_NO_SKILLS : PILLAR_TOOLS,
+    ...pillarToolFlags(run.pillar, run.skills !== false),
     effort: CLAUDE_EFFORT.full,
     ...(run.settings === undefined ? {} : { settings: run.settings }),
   })

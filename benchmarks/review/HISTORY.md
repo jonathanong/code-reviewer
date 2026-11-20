@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: mined cases are git checkouts with history; no run
+
+Commit: this change. No run. A mined case's tree was an export with no `.git`; it is now a git
+checkout of the pull request head with full history up to the head, `origin/<base branch>` and
+`origin/HEAD` at the base, and no later commit reachable (details in the README's "Mined case
+checkouts"). The reviewer can therefore read history and diff against the base ref. Bench pillar
+runs also use the tool flags `review` uses: the `history` pillar gets `Bash(git log:*)` and
+`Bash(git show:*)` and no other shell; the other pillars are unchanged. Fixture cases are unchanged.
+
+Nothing is re-measured. Results on mined cases from here on are not comparable with earlier
+entries, because the reviewer can now read history, and the `history` pillar can use it; the
+README table is still the 2026-11-16 closing run. Fixture rows are not affected. The shared clone
+cache changed from a full clone to a bare repository under a new directory name, so a run fetches
+each case again.
+
 ## 2026-11-17: rule plugin renamed to `jong-skills`; no run
 
 Commit: this change. No run. The `skills` plugin (jonathanong/skills) moved to

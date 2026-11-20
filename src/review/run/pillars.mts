@@ -5,7 +5,7 @@ import type { Exec } from '../benchmark/exec.mts'
 import { describeFailure, parseUsage, resultEvent } from '../benchmark/usage.mts'
 import type { Pillar } from '../finding.mts'
 import type { Model } from '../plan.mts'
-import { CLAUDE_EFFORT, HISTORY_ALLOWED_TOOLS, HISTORY_TOOLS, pillarArgs } from './claude-flags.mts'
+import { CLAUDE_EFFORT, pillarArgs, pillarToolFlags } from './claude-flags.mts'
 import { buildPillarRunPrompt, type RunDir } from './pillar-prompt.mts'
 import { pool } from './pool.mts'
 import { parsePillarOutput } from './stream-output.mts'
@@ -46,7 +46,7 @@ async function runOne(
     maxTurns: REVIEW_MAX_TURNS,
     effort: CLAUDE_EFFORT[input.mode],
     addDirs: [input.run.out],
-    ...(pillar === 'history' ? { tools: HISTORY_TOOLS, allowedTools: HISTORY_ALLOWED_TOOLS } : {}),
+    ...pillarToolFlags(pillar),
     ...(input.settings === undefined ? {} : { settings: input.settings }),
   })
   const failedAttempts: FailedAttempt[] = []

@@ -1,43 +1,30 @@
-import { existsSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { isFixtureCase, type EvalCase, type RepoCase } from './cases.mts'
 import { defaultExec, type Exec } from './exec.mts'
+import { cacheDirOf, ensureCache, fetchCommits } from './snapshot-cache.mts'
 import { writeContext, type Snapshot } from './snapshot-context.mts'
 import { prepareFixtureSnapshot } from './snapshot-fixture.mts'
+import { buildTree } from './snapshot-tree.mts'
 
 export { defaultExec, ExecError, type Exec } from './exec.mts'
 export { CONTEXT_DIR, hasContextNotes, hasRulesIndex, type Snapshot } from './snapshot-context.mts'
 export { normalizeFixtureDiff } from './snapshot-fixture.mts'
 
-const pendingClones = new Map<string, Promise<unknown>>()
-
-/** Clones a repository once, so parallel cases sharing one wait instead of cloning over it. */
-async function ensureClone(repo: string, repoDir: string, exec: Exec): Promise<void> {
-  const pending = pendingClones.get(repoDir)
-  if (pending !== undefined) {
-    await pending
-    return
+/** What `gh pr view` reports about a pull request that the snapshot needs. */
+function parsePullRequest(json: string): { body: string; baseBranch: string } {
+  const parsed = JSON.parse(json) as { body?: unknown; baseRefName?: unknown }
+  const { body, baseRefName } = parsed
+  if (typeof body !== 'string' || typeof baseRefName !== 'string' || baseRefName === '') {
+    throw new Error('gh pr view returned no body or base branch')
   }
-  if (existsSync(join(repoDir, '.git'))) return
-  const args = [
-    'repo',
-    'clone',
-    repo,
-    repoDir,
-    '--',
-    '--filter=blob:none',
-    '--no-checkout',
-    '--quiet',
-  ]
-  const clone = exec('gh', args).finally(() => pendingClones.delete(repoDir))
-  pendingClones.set(repoDir, clone)
-  await clone
+  return { body, baseBranch: baseRefName }
 }
 
 /**
- * Exports the pre-merge head as a tree without `.git`, so the reviewer cannot read later history
- * (the revert, follow-up fixes) that would leak the answer.
+ * Builds a git checkout of the pull request head: full history up to the head and a base ref, and
+ * no commit after the head, since a later revert or fix would leak the answer.
  */
 async function prepareRepoSnapshot(
   item: RepoCase,
@@ -45,35 +32,28 @@ async function prepareRepoSnapshot(
   workRoot: string,
   exec: Exec = defaultExec,
 ): Promise<Snapshot> {
-  const repoDir = join(cacheRoot, item.repo.replace('/', '__'))
+  const repoDir = cacheDirOf(cacheRoot, item.repo)
   mkdirSync(cacheRoot, { recursive: true })
-  await ensureClone(item.repo, repoDir, exec)
-  await exec('git', ['-C', repoDir, 'fetch', '--quiet', 'origin', item.baseSha, item.headSha])
-  const caseRoot = join(workRoot, item.id)
-  const dir = join(caseRoot, 'tree')
-  rmSync(caseRoot, { recursive: true, force: true })
-  mkdirSync(dir, { recursive: true })
-  const tar = join(caseRoot, 'tree.tar')
-  await exec('git', ['-C', repoDir, 'archive', '--format=tar', '-o', tar, item.headSha])
-  await exec('tar', ['-xf', tar, '-C', dir])
-  rmSync(tar, { force: true })
-  const diff = await exec('git', [
-    '-C',
-    repoDir,
-    'diff',
-    '--no-color',
-    `${item.baseSha}...${item.headSha}`,
-  ])
-  const body = await exec('gh', [
+  await ensureCache(item.repo, repoDir, exec)
+  await fetchCommits(repoDir, item.baseSha, item.headSha, exec)
+  const dir = join(workRoot, item.id, 'tree')
+  const view = await exec('gh', [
     'pr',
     'view',
     String(item.pr),
     '-R',
     item.repo,
     '--json',
-    'body',
-    '-q',
-    '.body',
+    'body,baseRefName',
+  ])
+  const { body, baseBranch } = parsePullRequest(view)
+  await buildTree(dir, repoDir, { baseBranch, baseSha: item.baseSha, headSha: item.headSha }, exec)
+  const diff = await exec('git', [
+    '-C',
+    repoDir,
+    'diff',
+    '--no-color',
+    `${item.baseSha}...${item.headSha}`,
   ])
   writeContext(dir, item.title, diff, body)
   return { dir, diff, body }
