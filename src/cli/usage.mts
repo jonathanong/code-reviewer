@@ -50,7 +50,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   run is the unattended path: it checks the rule plugins, settings and auth, declines a head already
   reviewed or held, requests and claims the pull request, checks the head out in a temporary
   directory, runs review, then posts the review or holds it for a human (--post hold always holds;
-  the hold rules are in the README). It prints one JSON line and exits 0 posted, 10 held, 11 nothing
+  the hold rules are in docs/run.md). It prints one JSON line and exits 0 posted, 10 held, 11 nothing
   to do, 12 precondition or config failure, 13 review or post failure. A held review stays in the run
   directory with the request label back and the command that posts it in postCommand.
   resolve resolves review threads of fixed findings.
