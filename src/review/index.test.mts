@@ -33,7 +33,6 @@ describe('review index', () => {
       'numberDiff',
       'packBodies',
       'parseReviewInput',
-      'parseTrustedAuthors',
       'placeFindings',
       'planReview',
       'postFinalReview',

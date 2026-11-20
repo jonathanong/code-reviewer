@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   AppAuthError,
+  createAppIdentityProvider,
   createAppJwt,
   createInstallationTokenProvider,
-  loadAppConfig,
   type AppConfig,
   type FetchJson,
 } from './app-auth.mts'
@@ -16,52 +16,7 @@ const { privateKey, publicKey } = generateKeyPairSync('rsa', {
   publicKeyEncoding: { type: 'spki', format: 'pem' },
 })
 
-const CONFIG: AppConfig = { appId: '123', privateKey, apiUrl: 'https://api.test' }
-
-describe('loadAppConfig', () => {
-  it('returns undefined without an app id', () => {
-    expect(loadAppConfig({})).toBeUndefined()
-    expect(loadAppConfig({ CODE_REVIEWER_APP_ID: '  ' })).toBeUndefined()
-  })
-
-  it('reads the key from the environment and defaults the API url', () => {
-    expect(
-      loadAppConfig({ CODE_REVIEWER_APP_ID: ' 9 ', CODE_REVIEWER_APP_PRIVATE_KEY: privateKey }),
-    ).toEqual({ appId: '9', privateKey, apiUrl: 'https://api.github.com' })
-  })
-
-  it('reads the key from a path, the installation id, and strips trailing slashes', () => {
-    const readFile = vi.fn(() => privateKey)
-    expect(
-      loadAppConfig(
-        {
-          CODE_REVIEWER_APP_ID: '9',
-          CODE_REVIEWER_APP_PRIVATE_KEY_PATH: ' /k.pem ',
-          CODE_REVIEWER_APP_INSTALLATION_ID: ' 77 ',
-          GITHUB_API_URL: 'https://ghe.test/api///',
-        },
-        readFile,
-      ),
-    ).toEqual({ appId: '9', privateKey, installationId: '77', apiUrl: 'https://ghe.test/api' })
-    expect(readFile).toHaveBeenCalledWith('/k.pem')
-  })
-
-  it('reads real files by default', () => {
-    expect(() =>
-      loadAppConfig({
-        CODE_REVIEWER_APP_ID: '9',
-        CODE_REVIEWER_APP_PRIVATE_KEY_PATH: '/nonexistent/k.pem',
-      }),
-    ).toThrow(/ENOENT/u)
-  })
-
-  it('rejects a missing or invalid key', () => {
-    expect(() => loadAppConfig({ CODE_REVIEWER_APP_ID: '9' })).toThrow(AppAuthError)
-    expect(() =>
-      loadAppConfig({ CODE_REVIEWER_APP_ID: '9', CODE_REVIEWER_APP_PRIVATE_KEY: 'nope' }),
-    ).toThrow(/no PEM private key/u)
-  })
-})
+const CONFIG: AppConfig = { appId: '123', privateKey, apiUrl: 'https://api.test', source: 'env' }
 
 describe('createAppJwt', () => {
   it('signs a backdated ten-minute RS256 token', () => {
@@ -233,5 +188,45 @@ describe('createInstallationTokenProvider', () => {
       () => T0,
     )
     await expect(noExpiry('o')).rejects.toBeInstanceOf(AppAuthError)
+  })
+})
+
+describe('createAppIdentityProvider', () => {
+  const answer = (slug: unknown, ok = true): FetchJson =>
+    vi.fn(async () => ({ ok, status: ok ? 200 : 401, json: async () => ({ slug }) }))
+
+  it('looks the App up with its JWT and returns <slug>[bot], once per process', async () => {
+    const fetchJson = answer('my-app')
+    const identity = createAppIdentityProvider(CONFIG, fetchJson, () => 1_000_000)
+    await expect(identity()).resolves.toBe('my-app[bot]')
+    await expect(identity()).resolves.toBe('my-app[bot]')
+    expect(fetchJson).toHaveBeenCalledOnce()
+    const [url, init] = vi.mocked(fetchJson).mock.calls[0]!
+    expect(url).toBe('https://api.test/app')
+    expect(init.method).toBe('GET')
+    const jwt = init.headers.authorization?.replace('Bearer ', '') ?? ''
+    const [header, payload, signature] = jwt.split('.') as [string, string, string]
+    const verifier = createVerify('RSA-SHA256').update(`${header}.${payload}`)
+    expect(verifier.verify(publicKey, Buffer.from(signature, 'base64url'))).toBe(true)
+  })
+
+  it('rejects on a failed or slugless response and tries again next time', async () => {
+    await expect(createAppIdentityProvider(CONFIG, answer('x', false))()).rejects.toMatchObject({
+      status: 401,
+    })
+    await expect(createAppIdentityProvider(CONFIG, answer(''))()).rejects.toBeInstanceOf(
+      AppAuthError,
+    )
+    const flaky = vi
+      .fn<FetchJson>()
+      .mockResolvedValueOnce({ ok: false, status: 502, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ slug: 'a' }) })
+    const identity = createAppIdentityProvider(CONFIG, flaky)
+    await expect(identity()).rejects.toBeInstanceOf(AppAuthError)
+    await expect(identity()).resolves.toBe('a[bot]')
+  })
+
+  it('defaults to the global fetch and the clock', () => {
+    expect(createAppIdentityProvider(CONFIG)).toBeTypeOf('function')
   })
 })

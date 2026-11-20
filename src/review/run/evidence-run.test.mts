@@ -112,6 +112,14 @@ describe('buildEvidenceRunPrompt', () => {
     expect(prompt).not.toContain('secret-profile')
   })
 
+  it('gives the current time from the injected clock as ISO UTC, seconds, and milliseconds', () => {
+    const at = new Date('2026-03-04T05:06:07.089Z')
+    expect(buildEvidenceRunPrompt(INPUT, at)).toContain(
+      'Current time: 2026-03-04T05:06:07.089Z (UTC), 1772600767 epoch seconds, 1772600767089 epoch milliseconds.',
+    )
+    expect(prompt).toMatch(/Current time: \d{4}-\d\d-\d\dT/u)
+  })
+
   it('says so when there is no summary', () => {
     expect(buildEvidenceRunPrompt({ ...INPUT, pullRequestSummary: '' })).toContain('(no summary)')
   })
@@ -124,6 +132,7 @@ describe('runEvidenceModel', () => {
       ...OPTIONS,
       exec,
       settings: { enabledPlugins: {} },
+      now: () => new Date('2026-03-04T05:06:07.089Z'),
     })
     expect(exec).toHaveBeenCalledOnce()
     const [command, args, options] = exec.mock.calls[0] as unknown as [
@@ -133,6 +142,7 @@ describe('runEvidenceModel', () => {
     ]
     const flag = (name: string) => args[args.indexOf(name) + 1]
     expect(command).toBe('claude')
+    expect(args.join('\n')).toContain('1772600767089 epoch milliseconds')
     expect(flag('--model')).toBe(EVIDENCE_MODEL)
     expect(flag('--tools')).toBe('Read,Grep,Glob,Bash')
     expect(flag('--allowedTools')).toBe(

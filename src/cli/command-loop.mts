@@ -148,7 +148,7 @@ export async function runLoopCommand(
 ): Promise<unknown> {
   switch (subcommand) {
     case 'auth':
-      return { mode: deps.authMode() }
+      return { mode: deps.authMode(), ...(await deps.authIdentity()) }
     case 'settings':
       return settings(values, deps)
     case 'queue':

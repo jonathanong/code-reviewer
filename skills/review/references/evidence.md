@@ -41,6 +41,12 @@ is a checkout of the pull request head.
   be posted to GitHub, and a result goes into a report.
 - Keep each result short: the count, the key fields, or the error, not the whole output. Bound
   every query by time and result size.
+- Write each command as one plain invocation of an allowed prefix: no pipes, redirects, `&&` or `;`,
+  command substitution, variables, or backslash line continuations. The permission check denies a
+  command that is not plain, whole. Compute timestamps yourself from the current time in the run
+  and write them as literal numbers; shape output with the CLI's own flags (`--query`,
+  `--max-items`). A denial of an allowed prefix usually means the command was not plain: rewrite it
+  once before you report the source blocked.
 - Do not guess a command the guide does not support; say what is missing instead.
 
 ## Output

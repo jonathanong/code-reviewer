@@ -205,15 +205,37 @@ review.
 
 ## Authentication and trust
 
-Calls use a GitHub App when `CODE_REVIEWER_APP_ID` is set (with `CODE_REVIEWER_APP_PRIVATE_KEY`
-or `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`), otherwise the local `gh` login.
+Calls use a GitHub App when one is configured, otherwise the local `gh` login. Configure the App
+with `app.json` in the config home, `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer` (the parent of
+the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it):
+
+```json
+{ "appId": "123", "privateKeyPath": "app.pem", "installationId": "456" }
+```
+
+`appId` is required (a string or number). `privateKeyPath` defaults to `app.pem` beside the file;
+a relative path is resolved against the config directory, and absolute and `~/` paths are allowed.
+`installationId` is optional; without it the installation is looked up per repository owner. The
+key file must be a PEM and not readable by group or others (`chmod 600`; the check is skipped on
+Windows). Any problem with the file or the key fails the command with a message naming the file.
+
+The environment overrides the file, for CI: when `CODE_REVIEWER_APP_ID` is set, the
+`CODE_REVIEWER_APP_*` variables are used (`CODE_REVIEWER_APP_PRIVATE_KEY` with PEM text, or
+`CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and optionally `CODE_REVIEWER_APP_INSTALLATION_ID`) and
+`app.json` is ignored. `code-reviewer auth` prints the `source` (`env` or the path of `app.json`),
+never the key.
 
 `claim` and `status` trust a `<!-- final-review ... -->` marker only from the identity that posts
 reviews, so a review forged by someone else cannot decline a head or report approval. That
-identity is the authenticated GraphQL `viewer` plus the comma-separated logins in
-`CODE_REVIEWER_TRUSTED_AUTHORS`. An App installation token cannot query `viewer`, so under App
-auth set `CODE_REVIEWER_TRUSTED_AUTHORS=<app-slug>[bot]`; with neither, no marker is trusted and
-every head is re-reviewed (status never reports approval).
+identity is the reviewer's own: the authenticated GraphQL `viewer`, or under App auth the App's
+`<slug>[bot]`, looked up once per process with `GET /app` signed by the App JWT. An installation
+token cannot query `viewer`, which is why the App is asked for its own slug. No variable is needed.
+If the lookup fails nothing is trusted: every head is re-reviewed (status never reports approval),
+and `code-reviewer auth` prints `loginError` instead of `login`.
+
+Reviews from any other author, including one carrying a `final-review` marker, are not prior
+reviews. They reach the run as other reviewers' notes with the marker stripped, and the reviewer
+weighs them like any other comment.
 
 Under local `gh` auth the reviewer posts as you, so the pull request author shares the trusted
 identity when they are the same person. Use a GitHub App to separate the two.

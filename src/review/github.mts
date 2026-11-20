@@ -40,7 +40,7 @@ function lines(text: string): string[] {
 export function createGhReviewIo(
   target: PullTarget,
   run: RunTextCommand = runGh,
-  trustedAllowlist: readonly string[] = [],
+  identity: () => Promise<string | undefined> = async () => undefined,
   approvalLabel: () => Promise<string> = async () => DEFAULT_LABELS.approval,
 ): ReviewIo {
   assertPullTarget(target)
@@ -78,7 +78,7 @@ export function createGhReviewIo(
       ])
       return lines(out).map((line) => JSON.parse(line) as { body: string; author: string | null })
     },
-    trustedAuthors: () => resolveTrustedAuthors(run, trustedAllowlist),
+    trustedAuthors: () => resolveTrustedAuthors(run, identity),
     async hasApprovalLabel() {
       const out = await run([
         'pr',

@@ -90,6 +90,7 @@ function fakeDeps(mode: 'app' | 'gh' = 'app') {
   const createLabelIo = vi.fn(() => labelIo)
   const deps = {
     authMode: vi.fn(() => mode),
+    authIdentity: vi.fn(async () => (mode === 'app' ? { login: 'my-app[bot]' } : {})),
     configs: vi.fn(() => CONFIGS),
     targetConfig,
     createLabelIo,
@@ -105,9 +106,13 @@ afterEach(() => {
 })
 
 describe('runLoopCommand', () => {
-  it('reports the auth mode', async () => {
+  it('reports the auth mode and the identity that is trusted', async () => {
     await expect(runLoopCommand('auth', {}, target, fakeDeps().deps)).resolves.toEqual({
       mode: 'app',
+      login: 'my-app[bot]',
+    })
+    await expect(runLoopCommand('auth', {}, target, fakeDeps('gh').deps)).resolves.toEqual({
+      mode: 'gh',
     })
   })
 

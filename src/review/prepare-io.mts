@@ -50,11 +50,11 @@ export function createGhPrepareIo(
   target: PullTarget,
   run: RunTextCommand,
   git: RunTextCommand,
-  trustedAllowlist: readonly string[] = [],
+  identity: () => Promise<string | undefined>,
   cloneRoot: string | undefined,
   configDir: string,
 ): PrepareIo {
-  const io = createGhReviewIo(target, run, trustedAllowlist)
+  const io = createGhReviewIo(target, run, identity)
   const compareUrl = (base: string, head: string) =>
     `repos/${target.repo}/compare/${base}...${head}`
   return {

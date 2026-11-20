@@ -20,20 +20,23 @@ import { runReviewBenchCli } from '../review/benchmark/cli.mts'
 import { defaultExec } from '../review/benchmark/exec.mts'
 import { runReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
 import { runReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
-import type { GhAuth } from '../gh-cli/index.mts'
+import { AppAuthError, type GhAuth } from '../gh-cli/index.mts'
 import { createDefaultDeps } from './deps.mts'
 
 const SHA = 'a'.repeat(40)
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 
-function fakeAuth(mode: GhAuth['mode'] = 'app') {
+function fakeAuth(
+  mode: GhAuth['mode'] = 'app',
+  identity: GhAuth['identity'] = async () => undefined,
+) {
   const fakeRun = vi.fn(async (args: string[]) => {
     if (args.includes('--paginate')) return 'one\ntwo\n'
     if (args[0] === 'pr') return `${SHA}\n`
     return '[]'
   })
   const runner = vi.fn(() => fakeRun)
-  const getAuth = vi.fn((): GhAuth => ({ mode, runner }))
+  const getAuth = vi.fn((): GhAuth => ({ mode, identity, runner }))
   return { fakeRun, runner, getAuth }
 }
 
@@ -64,15 +67,33 @@ describe('createDefaultDeps', () => {
     expect(getAuth).toHaveBeenCalledOnce()
   })
 
-  it('passes the trusted-author allowlist to the gh ios', async () => {
-    const { getAuth } = fakeAuth()
-    const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_TRUSTED_AUTHORS: 'App[bot], Me' })
-    await expect(deps.createIo(TARGET).trustedAuthors()).resolves.toEqual(
-      new Set(['app[bot]', 'me']),
-    )
-    await expect(deps.createPrepareIo(TARGET).trusted()).resolves.toEqual(
-      new Set(['app[bot]', 'me']),
-    )
+  it('trusts the own identity under App auth, in both gh ios', async () => {
+    const { getAuth } = fakeAuth('app', async () => 'App[bot]')
+    const deps = createDefaultDeps(getAuth, {})
+    await expect(deps.createIo(TARGET).trustedAuthors()).resolves.toEqual(new Set(['app[bot]']))
+    await expect(deps.createPrepareIo(TARGET).trusted()).resolves.toEqual(new Set(['app[bot]']))
+  })
+
+  it('reports the identity, or why nothing is trusted', async () => {
+    const app = fakeAuth('app', async () => 'App[bot]')
+    const found = createDefaultDeps(() => ({ ...app.getAuth(), source: '/cfg/app.json' }), {})
+    await expect(found.authIdentity()).resolves.toEqual({
+      source: '/cfg/app.json',
+      login: 'App[bot]',
+    })
+    const gh = createDefaultDeps(fakeAuth('gh').getAuth, {})
+    await expect(gh.authIdentity()).resolves.toEqual({})
+    const failed = async () => {
+      throw new AppAuthError('GET /app failed with 401.')
+    }
+    const lost = await createDefaultDeps(fakeAuth('app', failed).getAuth, {}).authIdentity()
+    expect(lost).toEqual({ loginError: expect.stringContaining('no review marker is trusted') })
+    const odd = async () => {
+      throw 'boom'
+    }
+    await expect(
+      createDefaultDeps(fakeAuth('app', odd).getAuth, {}).authIdentity(),
+    ).resolves.toEqual({ loginError: expect.stringContaining('boom') })
   })
 
   it('reads the configs once from the config directory and labels the approval from them', async () => {
@@ -81,6 +102,7 @@ describe('createDefaultDeps', () => {
       writeFileSync(join(dir, 'acme.json'), '{"labels":{"approval":"lgtm"}}')
       const getAuth = vi.fn((): GhAuth => ({
         mode: 'gh',
+        identity: async () => undefined,
         runner: () => async (args) => {
           if (args[0] === 'api') throw new Error('HTTP 404')
           return 'lgtm\n'
@@ -100,7 +122,11 @@ describe('createDefaultDeps', () => {
       if (args[0] === 'api') return '{"labels":{"approval":"own lgtm"}}'
       return 'own lgtm\n'
     })
-    const getAuth = vi.fn((): GhAuth => ({ mode: 'gh', runner: () => run }))
+    const getAuth = vi.fn((): GhAuth => ({
+      mode: 'gh',
+      identity: async () => undefined,
+      runner: () => run,
+    }))
     const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs' })
     await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
     await expect(deps.createIo(TARGET).hasApprovalLabel()).resolves.toBe(true)
@@ -121,9 +147,12 @@ describe('createDefaultDeps', () => {
       const repo = /repos\/(a\/\w+)\//u.exec(args.at(-1) ?? '')?.[1] ?? ''
       throw new Error(failures[repo])
     })
-    const deps = createDefaultDeps(() => ({ mode: 'gh', runner: () => run }), {
-      CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs',
-    })
+    const deps = createDefaultDeps(
+      () => ({ mode: 'gh', identity: async () => undefined, runner: () => run }),
+      {
+        CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs',
+      },
+    )
     await expect(deps.targetConfig('a/none')).resolves.toEqual({ config: undefined, problems: [] })
     await expect(deps.targetConfig('a/bad')).resolves.toEqual({
       config: undefined,
@@ -153,6 +182,7 @@ describe('createDefaultDeps', () => {
 
   it('defaults to the environment-based auth', () => {
     vi.stubEnv('CODE_REVIEWER_APP_ID', '')
+    vi.stubEnv('XDG_CONFIG_HOME', '/nonexistent')
     expect(createDefaultDeps().authMode()).toBe('gh')
     vi.unstubAllEnvs()
   })

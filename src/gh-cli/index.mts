@@ -5,10 +5,11 @@ export { GITHUB_BODY_MAX_CHARACTERS, validateGitHubBodyLength } from './body-len
 export type { GitHubBodyLengthValidation } from './body-length.mts'
 export {
   AppAuthError,
+  createAppIdentityProvider,
   createAppJwt,
   createInstallationTokenProvider,
-  loadAppConfig,
 } from './app-auth.mts'
+export { loadAppConfig } from './app-config.mts'
 export type { AppConfig, FetchJson, TokenProvider } from './app-auth.mts'
 export { appRunner, createGhAuth, splitRepo } from './auth.mts'
 export type { GhAuth } from './auth.mts'

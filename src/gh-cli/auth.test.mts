@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { appRunner, createGhAuth, splitRepo } from './auth.mts'
 import { runGh, type ExecFileText } from './exec.mts'
 
+const NO_CONFIG = '/nonexistent/code-reviewer'
 const KEY = '-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----'
 
 afterEach(() => {
@@ -10,27 +11,34 @@ afterEach(() => {
 })
 
 describe('createGhAuth', () => {
-  it('uses the local gh login without App credentials', () => {
+  it('uses the local gh login without App credentials', async () => {
     const tokensFor = vi.fn()
-    const auth = createGhAuth({}, tokensFor)
+    const auth = createGhAuth({ XDG_CONFIG_HOME: NO_CONFIG }, tokensFor)
     expect(auth.mode).toBe('gh')
+    await expect(auth.identity()).resolves.toBeUndefined()
     expect(auth.runner('o', 'r')).toBe(runGh)
     expect(tokensFor).not.toHaveBeenCalled()
   })
 
-  it('uses App auth when configured', () => {
+  it('uses App auth when configured', async () => {
     const tokens = vi.fn(async () => 'app-token')
     const tokensFor = vi.fn(() => tokens)
+    const identityFor = vi.fn(() => async () => 'my-app[bot]')
     const auth = createGhAuth(
       { CODE_REVIEWER_APP_ID: '1', CODE_REVIEWER_APP_PRIVATE_KEY: KEY },
       tokensFor,
+      identityFor,
     )
     expect(auth.mode).toBe('app')
+    expect(auth.source).toBe('env')
+    expect(identityFor).toHaveBeenCalledWith(expect.objectContaining({ appId: '1' }))
+    await expect(auth.identity()).resolves.toBe('my-app[bot]')
     expect(tokensFor).toHaveBeenCalledWith(expect.objectContaining({ appId: '1' }))
     expect(auth.runner('o', 'r')).toBeTypeOf('function')
   })
 
   it('defaults to process.env and the real token provider', () => {
+    vi.stubEnv('XDG_CONFIG_HOME', NO_CONFIG)
     vi.stubEnv('CODE_REVIEWER_APP_ID', '')
     expect(createGhAuth().mode).toBe('gh')
     vi.stubEnv('CODE_REVIEWER_APP_ID', '5')

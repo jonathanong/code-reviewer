@@ -1,5 +1,4 @@
 import { createSign } from 'node:crypto'
-import { readFileSync } from 'node:fs'
 
 /** GitHub App credentials; without them every call uses the local `gh` login. */
 export type AppConfig = {
@@ -8,6 +7,8 @@ export type AppConfig = {
   /** Fixed installation; otherwise it is looked up per repository owner. */
   installationId?: string
   apiUrl: string
+  /** Where the config came from: `env`, or the path of `app.json`. Never the key. */
+  source: string
 }
 
 export type AppAuthEnv = Record<string, string | undefined>
@@ -24,34 +25,6 @@ export class AppAuthError extends Error {
     super(message)
     this.name = 'AppAuthError'
     this.status = status
-  }
-}
-
-/**
- * Reads `CODE_REVIEWER_APP_ID` with `CODE_REVIEWER_APP_PRIVATE_KEY` (PEM text) or
- * `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and optional `CODE_REVIEWER_APP_INSTALLATION_ID`.
- * Returns undefined when no App is configured, so callers fall back to `gh` credentials.
- */
-export function loadAppConfig(
-  env: AppAuthEnv = process.env,
-  readFile: (path: string) => string = (path) => readFileSync(path, 'utf8'),
-): AppConfig | undefined {
-  const appId = env.CODE_REVIEWER_APP_ID?.trim()
-  if (!appId) return undefined
-  const path = env.CODE_REVIEWER_APP_PRIVATE_KEY_PATH?.trim()
-  const privateKey = env.CODE_REVIEWER_APP_PRIVATE_KEY ?? (path ? readFile(path) : undefined)
-  if (!privateKey?.includes('PRIVATE KEY')) {
-    throw new AppAuthError(
-      'CODE_REVIEWER_APP_ID is set but no PEM private key was found in ' +
-        'CODE_REVIEWER_APP_PRIVATE_KEY or CODE_REVIEWER_APP_PRIVATE_KEY_PATH.',
-    )
-  }
-  const installationId = env.CODE_REVIEWER_APP_INSTALLATION_ID?.trim()
-  return {
-    appId,
-    privateKey,
-    ...(installationId ? { installationId } : {}),
-    apiUrl: (env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/+$/u, ''),
   }
 }
 
@@ -77,6 +50,53 @@ export type TokenProvider = (owner: string, repo?: string) => Promise<string>
 
 const REFRESH_MARGIN_MS = 5 * 60 * 1000
 
+/** One App-JWT-authenticated GitHub request, shared by installation lookup, tokens, and identity. */
+async function callApp(
+  config: AppConfig,
+  fetchJson: FetchJson,
+  now: () => number,
+  method: string,
+  path: string,
+): Promise<Record<string, unknown>> {
+  const jwt = createAppJwt(config.appId, config.privateKey, Math.floor(now() / 1000))
+  const response = await fetchJson(`${config.apiUrl}${path}`, {
+    method,
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: `Bearer ${jwt}`,
+      'x-github-api-version': '2022-11-28',
+    },
+  })
+  if (!response.ok) {
+    throw new AppAuthError(
+      `GitHub App request ${method} ${path} failed with ${response.status}.`,
+      response.status,
+    )
+  }
+  return (await response.json()) as Record<string, unknown>
+}
+
+/**
+ * The App's own review login, `<slug>[bot]`, from `GET /app`. A successful lookup is cached for
+ * the process; a failure is not, so a transient error does not stick.
+ */
+export function createAppIdentityProvider(
+  config: AppConfig,
+  fetchJson: FetchJson = fetch as unknown as FetchJson,
+  now: () => number = Date.now,
+): () => Promise<string> {
+  let login: string | undefined
+  return async () => {
+    if (login !== undefined) return login
+    const app = await callApp(config, fetchJson, now, 'GET', '/app')
+    if (typeof app.slug !== 'string' || app.slug === '') {
+      throw new AppAuthError('GitHub App response had no slug.')
+    }
+    login = `${app.slug}[bot]`
+    return login
+  }
+}
+
 /**
  * Mints installation tokens for an App and caches each until five minutes before it expires.
  * The installation is resolved from the repository unless the config pins one.
@@ -88,24 +108,7 @@ export function createInstallationTokenProvider(
 ): TokenProvider {
   const cache = new Map<string, CachedToken>()
   const installations = new Map<string, string>()
-  const call = async (method: string, path: string): Promise<Record<string, unknown>> => {
-    const jwt = createAppJwt(config.appId, config.privateKey, Math.floor(now() / 1000))
-    const response = await fetchJson(`${config.apiUrl}${path}`, {
-      method,
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${jwt}`,
-        'x-github-api-version': '2022-11-28',
-      },
-    })
-    if (!response.ok) {
-      throw new AppAuthError(
-        `GitHub App request ${method} ${path} failed with ${response.status}.`,
-        response.status,
-      )
-    }
-    return (await response.json()) as Record<string, unknown>
-  }
+  const call = (method: string, path: string) => callApp(config, fetchJson, now, method, path)
   const installationFor = async (owner: string, repo?: string): Promise<string> => {
     if (config.installationId !== undefined) return config.installationId
     const known = installations.get(owner)
