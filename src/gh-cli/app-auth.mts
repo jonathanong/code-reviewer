@@ -1,5 +1,4 @@
 import { createSign } from 'node:crypto'
-import { readFileSync } from 'node:fs'
 
 /** GitHub App credentials; without them every call uses the local `gh` login. */
 export type AppConfig = {
@@ -8,6 +7,8 @@ export type AppConfig = {
   /** Fixed installation; otherwise it is looked up per repository owner. */
   installationId?: string
   apiUrl: string
+  /** Where the config came from: `env`, or the path of `app.json`. Never the key. */
+  source: string
 }
 
 export type AppAuthEnv = Record<string, string | undefined>
@@ -24,34 +25,6 @@ export class AppAuthError extends Error {
     super(message)
     this.name = 'AppAuthError'
     this.status = status
-  }
-}
-
-/**
- * Reads `CODE_REVIEWER_APP_ID` with `CODE_REVIEWER_APP_PRIVATE_KEY` (PEM text) or
- * `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and optional `CODE_REVIEWER_APP_INSTALLATION_ID`.
- * Returns undefined when no App is configured, so callers fall back to `gh` credentials.
- */
-export function loadAppConfig(
-  env: AppAuthEnv = process.env,
-  readFile: (path: string) => string = (path) => readFileSync(path, 'utf8'),
-): AppConfig | undefined {
-  const appId = env.CODE_REVIEWER_APP_ID?.trim()
-  if (!appId) return undefined
-  const path = env.CODE_REVIEWER_APP_PRIVATE_KEY_PATH?.trim()
-  const privateKey = env.CODE_REVIEWER_APP_PRIVATE_KEY ?? (path ? readFile(path) : undefined)
-  if (!privateKey?.includes('PRIVATE KEY')) {
-    throw new AppAuthError(
-      'CODE_REVIEWER_APP_ID is set but no PEM private key was found in ' +
-        'CODE_REVIEWER_APP_PRIVATE_KEY or CODE_REVIEWER_APP_PRIVATE_KEY_PATH.',
-    )
-  }
-  const installationId = env.CODE_REVIEWER_APP_INSTALLATION_ID?.trim()
-  return {
-    appId,
-    privateKey,
-    ...(installationId ? { installationId } : {}),
-    apiUrl: (env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/+$/u, ''),
   }
 }
 

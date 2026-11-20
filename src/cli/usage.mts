@@ -16,8 +16,9 @@ code-reviewer plugins [--require NAME]...
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
-  auth reports whether gh calls use the GitHub App (CODE_REVIEWER_APP_ID with
-  CODE_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. Under App auth it also prints
+  auth reports whether gh calls use the GitHub App (app.json in the machine config directory, or
+  CODE_REVIEWER_APP_ID with CODE_REVIEWER_APP_PRIVATE_KEY or _PATH, which wins) or the local gh
+  login. Under App auth it also prints source (env or the app.json path) and
   login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
   post, revoke and status use the label names from the machine config (<owner>.json, <owner>/<name>.json) and the

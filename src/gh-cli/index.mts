@@ -8,8 +8,8 @@ export {
   createAppIdentityProvider,
   createAppJwt,
   createInstallationTokenProvider,
-  loadAppConfig,
 } from './app-auth.mts'
+export { loadAppConfig } from './app-config.mts'
 export type { AppConfig, FetchJson, TokenProvider } from './app-auth.mts'
 export { appRunner, createGhAuth, splitRepo } from './auth.mts'
 export type { GhAuth } from './auth.mts'

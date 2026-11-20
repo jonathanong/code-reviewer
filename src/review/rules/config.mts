@@ -11,6 +11,9 @@ import {
   type LabelNames,
 } from './settings-parse.mts'
 
+/** The GitHub App credentials file in the machine config directory, not an owner's settings. */
+export const APP_CONFIG_FILE = 'app.json'
+
 /**
  * The machine config directory: `CODE_REVIEWER_CONFIG_DIR`, else `code-reviewer/repos` under the
  * XDG config home. It holds one `<owner>/<name>.json` per repository, and `<owner>.json` beside
@@ -158,7 +161,9 @@ export function loadRepoConfigs(dir: string): RepoConfigs {
       .filter((entry) => entry[kind]())
       .map((entry) => entry.name)
       .sort()
-  for (const name of names('isFile').filter((file) => file.endsWith('.json'))) {
+  for (const name of names('isFile').filter(
+    (file) => file.endsWith('.json') && file !== APP_CONFIG_FILE,
+  )) {
     byOwner.set(name.slice(0, -'.json'.length).toLowerCase(), read(name, 'owner'))
   }
   for (const owner of names('isDirectory')) {

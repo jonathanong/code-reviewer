@@ -6,7 +6,6 @@ import {
   createAppIdentityProvider,
   createAppJwt,
   createInstallationTokenProvider,
-  loadAppConfig,
   type AppConfig,
   type FetchJson,
 } from './app-auth.mts'
@@ -17,52 +16,7 @@ const { privateKey, publicKey } = generateKeyPairSync('rsa', {
   publicKeyEncoding: { type: 'spki', format: 'pem' },
 })
 
-const CONFIG: AppConfig = { appId: '123', privateKey, apiUrl: 'https://api.test' }
-
-describe('loadAppConfig', () => {
-  it('returns undefined without an app id', () => {
-    expect(loadAppConfig({})).toBeUndefined()
-    expect(loadAppConfig({ CODE_REVIEWER_APP_ID: '  ' })).toBeUndefined()
-  })
-
-  it('reads the key from the environment and defaults the API url', () => {
-    expect(
-      loadAppConfig({ CODE_REVIEWER_APP_ID: ' 9 ', CODE_REVIEWER_APP_PRIVATE_KEY: privateKey }),
-    ).toEqual({ appId: '9', privateKey, apiUrl: 'https://api.github.com' })
-  })
-
-  it('reads the key from a path, the installation id, and strips trailing slashes', () => {
-    const readFile = vi.fn(() => privateKey)
-    expect(
-      loadAppConfig(
-        {
-          CODE_REVIEWER_APP_ID: '9',
-          CODE_REVIEWER_APP_PRIVATE_KEY_PATH: ' /k.pem ',
-          CODE_REVIEWER_APP_INSTALLATION_ID: ' 77 ',
-          GITHUB_API_URL: 'https://ghe.test/api///',
-        },
-        readFile,
-      ),
-    ).toEqual({ appId: '9', privateKey, installationId: '77', apiUrl: 'https://ghe.test/api' })
-    expect(readFile).toHaveBeenCalledWith('/k.pem')
-  })
-
-  it('reads real files by default', () => {
-    expect(() =>
-      loadAppConfig({
-        CODE_REVIEWER_APP_ID: '9',
-        CODE_REVIEWER_APP_PRIVATE_KEY_PATH: '/nonexistent/k.pem',
-      }),
-    ).toThrow(/ENOENT/u)
-  })
-
-  it('rejects a missing or invalid key', () => {
-    expect(() => loadAppConfig({ CODE_REVIEWER_APP_ID: '9' })).toThrow(AppAuthError)
-    expect(() =>
-      loadAppConfig({ CODE_REVIEWER_APP_ID: '9', CODE_REVIEWER_APP_PRIVATE_KEY: 'nope' }),
-    ).toThrow(/no PEM private key/u)
-  })
-})
+const CONFIG: AppConfig = { appId: '123', privateKey, apiUrl: 'https://api.test', source: 'env' }
 
 describe('createAppJwt', () => {
   it('signs a backdated ten-minute RS256 token', () => {

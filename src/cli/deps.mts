@@ -37,7 +37,7 @@ import {
 export type ReviewDeps = {
   authMode(): GhAuth['mode']
   /** The App's own review login, or why it could not be looked up; empty under a `gh` login. */
-  authIdentity(): Promise<{ login?: string; loginError?: string }>
+  authIdentity(): Promise<{ source?: string; login?: string; loginError?: string }>
   /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
   /**
@@ -96,9 +96,13 @@ export function createDefaultDeps(
   return {
     authMode: () => resolved().mode,
     authIdentity: async () => {
+      const { source } = resolved()
       try {
         const login = await identity()
-        return login === undefined ? {} : { login }
+        return {
+          ...(source === undefined ? {} : { source }),
+          ...(login === undefined ? {} : { login }),
+        }
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error)
         return {

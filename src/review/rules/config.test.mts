@@ -165,6 +165,7 @@ describe('loadRepoConfigs', () => {
     writeFileSync(join(dir, 'Acme/notes.md'), 'skipped')
     writeFileSync(join(dir, 'Acme.json'), '{"labels":{"requested":"go"}}')
     writeFileSync(join(dir, 'README.md'), 'skipped')
+    writeFileSync(join(dir, 'app.json'), '{"appId":"1"}')
     const configs = loadRepoConfigs(dir)
     expect([...configs.byRepo.keys()]).toEqual(['acme/web', 'acme/bad'])
     expect(configs.byRepo.get('acme/web')?.consumes).toEqual([

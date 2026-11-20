@@ -75,8 +75,12 @@ describe('createDefaultDeps', () => {
   })
 
   it('reports the identity, or why nothing is trusted', async () => {
-    const found = createDefaultDeps(fakeAuth('app', async () => 'App[bot]').getAuth, {})
-    await expect(found.authIdentity()).resolves.toEqual({ login: 'App[bot]' })
+    const app = fakeAuth('app', async () => 'App[bot]')
+    const found = createDefaultDeps(() => ({ ...app.getAuth(), source: '/cfg/app.json' }), {})
+    await expect(found.authIdentity()).resolves.toEqual({
+      source: '/cfg/app.json',
+      login: 'App[bot]',
+    })
     const gh = createDefaultDeps(fakeAuth('gh').getAuth, {})
     await expect(gh.authIdentity()).resolves.toEqual({})
     const failed = async () => {
@@ -178,6 +182,7 @@ describe('createDefaultDeps', () => {
 
   it('defaults to the environment-based auth', () => {
     vi.stubEnv('CODE_REVIEWER_APP_ID', '')
+    vi.stubEnv('CODE_REVIEWER_CONFIG_DIR', '/nonexistent/code-reviewer')
     expect(createDefaultDeps().authMode()).toBe('gh')
     vi.unstubAllEnvs()
   })
