@@ -64,7 +64,7 @@ type Installed = { id?: unknown; scope?: unknown; enabled?: unknown; installPath
 
 /**
  * Reads install directories from `claude plugin list --json`. Only user-scope entries count:
- * headless runs read user settings only, so a project-scoped plugin is not loadable there.
+ * headless runs read user settings at most, so a project-scoped plugin is not loadable there.
  */
 export function parsePluginInstalls(stdout: string): PluginInstall[] {
   const listed = JSON.parse(stdout) as unknown
