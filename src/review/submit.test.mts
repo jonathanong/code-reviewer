@@ -99,10 +99,23 @@ describe('postReviews confirmation', () => {
   it('errors, not success, when a submitted review is not on the pull request', async () => {
     const { io, mocks } = pull()
     mocks.postReview.mockResolvedValueOnce('https://example.test/phantom')
-    await expect(postReviews(io, [first()], retrier().value)).rejects.toMatchObject({
+    const { value, sleeps } = retrier()
+    await expect(postReviews(io, [first()], value)).rejects.toMatchObject({
       name: 'ReviewError',
       message: expect.stringContaining('https://example.test/phantom'),
     })
+    expect(sleeps).toEqual([1000, 1000])
+    expect(mocks.listReviews).toHaveBeenCalledTimes(4)
+  })
+
+  it('reads again when the list lags behind a review it just accepted', async () => {
+    const { io, mocks } = pull()
+    mocks.listReviews.mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    const { value, sleeps } = retrier()
+    const result = await postReviews(io, [first()], value)
+    expect(result.confirmed).toEqual([{ id: 100, url: 'https://example.test/review/100' }])
+    expect(sleeps).toEqual([1000])
+    expect(value.stats.retries).toBe(0)
   })
 
   it('warns, naming every copy, when a part exists more than once, and removes nothing', async () => {
@@ -171,7 +184,21 @@ describe('postReviews retry', () => {
     expect(result.confirmed).toHaveLength(1)
     expect(result.warnings).toEqual([])
     expect(value.stats.retries).toBe(1)
-    expect(sleeps).toHaveLength(1)
+    expect(sleeps).toEqual([1000, 1000, 500])
+  })
+
+  it('does not post again when a timed-out post is only slow to show in the list', async () => {
+    const { io, mocks, land } = pull()
+    mocks.postReview.mockImplementationOnce(async (review) => {
+      land(review)
+      throw new Error('read tcp: i/o timeout')
+    })
+    mocks.listReviews.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    const { value, sleeps } = retrier()
+    const result = await postReviews(io, [first()], value)
+    expect(mocks.postReview).toHaveBeenCalledOnce()
+    expect(result.confirmed).toHaveLength(1)
+    expect(sleeps).toEqual([1000, 1000])
   })
 
   it('does not post again when a timed-out post had landed', async () => {

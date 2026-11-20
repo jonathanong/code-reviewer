@@ -211,7 +211,10 @@ describe('postFinalReview event', () => {
     const blind = fakeIo({ trustedAuthors: vi.fn(async () => new Set<string>()) })
     const outcome = await postFinalReview(blind, input('low'), SHA)
     expect(outcome).toMatchObject({ reviewIds: [], confirmed: false, label: 'added' })
-    expect(outcome.warnings).toEqual([expect.stringContaining('could not be confirmed')])
+    expect(outcome.warnings).toEqual([
+      expect.stringContaining('could not be confirmed'),
+      expect.stringContaining('was not dismissed'),
+    ])
   })
 
   it('does not label a review that is not on the pull request', async () => {
@@ -253,6 +256,27 @@ describe('postFinalReview earlier requests for changes', () => {
     )
     expect(io.postReview.mock.invocationCallOrder[0]).toBeLessThan(
       io.dismissReview.mock.invocationCallOrder[0] as number,
+    )
+  })
+
+  it('dismisses nothing when the post fails, so the old block is never cleared without a new review', async () => {
+    const io = standing({
+      postReview: vi.fn(async () => {
+        throw new Error('HTTP 401: Bad credentials')
+      }),
+    })
+    await expect(postFinalReview(io, input('high'), SHA)).rejects.toThrow('HTTP 401')
+    expect(io.changesRequested).not.toHaveBeenCalled()
+    expect(io.dismissReview).not.toHaveBeenCalled()
+  })
+
+  it('dismisses nothing when the new review cannot be confirmed, and says so', async () => {
+    const io = standing({ trustedAuthors: vi.fn(async () => new Set<string>()) })
+    const outcome = await postFinalReview(io, input('high'), SHA)
+    expect(outcome).toMatchObject({ confirmed: false, dismissed: [] })
+    expect(io.dismissReview).not.toHaveBeenCalled()
+    expect(outcome.warnings).toContain(
+      'An earlier request for changes was not dismissed because the new review was not confirmed.',
     )
   })
 

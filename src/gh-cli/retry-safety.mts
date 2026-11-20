@@ -19,9 +19,13 @@ const VALUE_FLAGS = new Set([
 const READ_COMMANDS = new Set(['view', 'diff', 'list', 'status'])
 
 /** Writes that leave GitHub in the same state when applied twice. */
-const IDEMPOTENT_POSTS = [
-  /\/issues\/\d+\/labels$/u, // adding a label that is already there changes nothing
-  /\/statuses\/[0-9a-f]{40}$/u, // a commit status is set, and the newest one wins
+const IDEMPOTENT_WRITES: readonly { method: string; path: RegExp }[] = [
+  // Adding a label that is already there changes nothing.
+  { method: 'POST', path: /\/issues\/\d+\/labels$/u },
+  // A commit status is set, and the newest one wins.
+  { method: 'POST', path: /\/statuses\/[0-9a-f]{40}$/u },
+  // Dismissing one named review; dismissing it again leaves it dismissed.
+  { method: 'PUT', path: /\/pulls\/\d+\/reviews\/\d+\/dismissals$/u },
 ]
 
 export type CallKind = 'read' | 'idempotent-write' | 'write'
@@ -60,13 +64,22 @@ export function callKind(args: readonly string[]): CallKind {
   if (method === 'DELETE') return 'idempotent-write'
   if ((method === '' || method === 'GET') && !hasBody) return 'read'
   const path = endpoint.replace(/\?.*$/u, '')
-  const same = method === 'POST' && IDEMPOTENT_POSTS.some((pattern) => pattern.test(path))
+  const same = IDEMPOTENT_WRITES.some((write) => write.method === method && write.path.test(path))
   return same ? 'idempotent-write' : 'write'
 }
 
-/** A DELETE that finds its target already gone has done its job; a retry of one may see that. */
-export function isDelete(args: readonly string[]): boolean {
-  return args.some(
-    (arg, at) => (arg === '--method' || arg === '-X') && /^delete$/iu.test(String(args[at + 1])),
-  )
+/**
+ * Whether a failed repeat of an idempotent write only means an earlier try already did the job:
+ * a DELETE whose target is gone (404), or a dismissal of a review that is already dismissed (422
+ * saying so). Only a repeat qualifies; on a first try the same answer is a real error.
+ */
+export function settledByEarlierTry(
+  args: readonly string[],
+  reason: string,
+  text: string,
+): boolean {
+  const { method, endpoint } = parseApi(args)
+  if (method === 'DELETE') return reason === 'HTTP 404'
+  const dismissal = IDEMPOTENT_WRITES[2]?.path.test(endpoint) === true
+  return method === 'PUT' && dismissal && reason === 'HTTP 422' && /dismissed/iu.test(text)
 }

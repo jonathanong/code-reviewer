@@ -1,5 +1,5 @@
-import { classifyFailure, RETRY_AFTER_CAP_MS, type Failure } from './failure.mts'
-import { callKind, isDelete } from './retry-safety.mts'
+import { classifyFailure, failureText, RETRY_AFTER_CAP_MS, type Failure } from './failure.mts'
+import { callKind, settledByEarlierTry } from './retry-safety.mts'
 
 /** The one retry policy for GitHub calls. */
 export const RETRY_POLICY = {
@@ -10,6 +10,12 @@ export const RETRY_POLICY = {
   /** No computed backoff goes above this; `retry-after` has its own cap. */
   maxDelayMs: 8000,
   retryAfterCapMs: RETRY_AFTER_CAP_MS,
+  /**
+   * GitHub's review list can lag behind a just-created review: a read that misses it is repeated
+   * this many more times, this long apart, before the review is called absent.
+   */
+  readBackExtraReads: 2,
+  readBackDelayMs: 1000,
 } as const
 
 /** What retrying needs from outside the policy: a clock to wait on and a jitter source. */
@@ -78,7 +84,7 @@ export function withRetry(run: Run, retrier: Retrier = processRetrier): Run {
         return await run(args)
       } catch (error) {
         const failure = classifyFailure(error)
-        if (attempt > 1 && isDelete(args) && failure.reason === 'HTTP 404') return ''
+        if (attempt > 1 && settledByEarlierTry(args, failure.reason, failureText(error))) return ''
         const spent = attempt >= RETRY_POLICY.maxAttempts
         if (failure.kind === 'permanent' || kind === 'write' || spent) throw error
         await pauseForRetry(retrier, failure, attempt)

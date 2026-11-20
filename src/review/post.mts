@@ -120,23 +120,31 @@ export async function postFinalReview(
   const cleared = await dismissRequests(io, stale.ids, confirmed[0]?.url)
   const unconfirmed =
     sent.event === 'COMMENT' && clears && !landed
-      ? ['An earlier request for changes was not dismissed because the new review was not confirmed.']
+      ? [
+          'An earlier request for changes was not dismissed because the new review was not confirmed.',
+        ]
       : []
   const common = {
     verdict,
     reviews,
     tooLong,
-    warnings: [...warnings, ...confirmation, ...unconfirmed, ...stale.warnings, ...cleared.warnings],
+    warnings: [
+      ...warnings,
+      ...confirmation,
+      ...unconfirmed,
+      ...stale.warnings,
+      ...cleared.warnings,
+    ],
     dismissed: cleared.dismissed,
     reviewIds: confirmed.map(({ id }) => id),
     confirmed: landed,
   }
   if (verdict === 'Approve') {
     await io.addApprovalLabel()
-    return { ...landed, label: 'added' }
+    return { ...common, urls, label: 'added', ...sent }
   }
   const removed = await revokeFinalApproval(io)
-  return { ...landed, label: removed ? 'removed' : 'unchanged' }
+  return { ...common, urls, label: removed ? 'removed' : 'unchanged', ...sent }
 }
 
 export type ReviewStatus = {

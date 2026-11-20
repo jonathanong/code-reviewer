@@ -100,6 +100,36 @@ describe('withRetry', () => {
   })
 })
 
+describe('withRetry dismissal', () => {
+  const dismiss = [
+    'api',
+    '--method',
+    'PUT',
+    'repos/o/r/pulls/7/reviews/9/dismissals',
+    '-f',
+    'message=m',
+  ]
+
+  it('retries a dismissal and treats an already-dismissed answer on the repeat as done', async () => {
+    const { value } = retrier()
+    const run = vi
+      .fn<(args: string[]) => Promise<string>>()
+      .mockRejectedValueOnce(new Error('HTTP 504: Gateway Timeout'))
+      .mockRejectedValueOnce(new Error('HTTP 422: Can not dismiss a dismissed pull request review'))
+    await expect(withRetry(run, value)(dismiss)).resolves.toBe('')
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports an already-dismissed answer on the first try as the error it is', async () => {
+    const { value } = retrier()
+    const run = vi
+      .fn<(args: string[]) => Promise<string>>()
+      .mockRejectedValue(new Error('HTTP 422: Can not dismiss a dismissed pull request review'))
+    await expect(withRetry(run, value)(dismiss)).rejects.toThrow('HTTP 422')
+    expect(run).toHaveBeenCalledOnce()
+  })
+})
+
 describe('retryDelay', () => {
   it('doubles from the base, caps, and jitters between half and all of a step', () => {
     const at = (random: number, retry: number) =>

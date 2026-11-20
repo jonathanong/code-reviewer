@@ -50,6 +50,24 @@ function created(
     .map(({ id, url }) => ({ id, url }))
 }
 
+/**
+ * Reads the reviews, and while `found` says the one looked for is missing, reads again a short
+ * while later: GitHub's list can lag behind a review it just accepted. Bounded, so a review that
+ * really is absent costs a few seconds, not a hang. A failed read throws.
+ */
+async function readBack(
+  io: ReviewIo,
+  retrier: Retrier,
+  found: (listed: readonly ListedReview[]) => boolean,
+): Promise<ListedReview[]> {
+  let listed = await io.listReviews()
+  for (let extra = 0; extra < RETRY_POLICY.readBackExtraReads && !found(listed); extra += 1) {
+    await retrier.sleep(RETRY_POLICY.readBackDelayMs)
+    listed = await io.listReviews()
+  }
+  return listed
+}
+
 function unsure(part: number, cause: unknown): ReviewError {
   return new ReviewError(
     `Review part ${part + 1} failed and could not be checked for, so it may have posted; not retried to avoid a duplicate. Look at the pull request before posting again.`,
@@ -79,7 +97,9 @@ async function postPart(
       if (base === undefined) throw unsure(part, error)
       let landed: PostedReview[]
       try {
-        landed = created(await io.listReviews(), base, review.commit_id, part)
+        const has = (listed: readonly ListedReview[]) =>
+          created(listed, base, review.commit_id, part).length > 0
+        landed = created(await readBack(io, retrier, has), base, review.commit_id, part)
       } catch {
         throw unsure(part, error)
       }
@@ -96,6 +116,7 @@ async function confirm(
   reviews: readonly SanitizedReview[],
   base: Baseline | undefined,
   urls: readonly string[],
+  retrier: Retrier,
 ): Promise<Pick<Submitted, 'confirmed' | 'warnings'>> {
   const unconfirmed = (why: string) => ({
     confirmed: [],
@@ -104,7 +125,9 @@ async function confirm(
   if (base === undefined) return unconfirmed('the reviewer identity or review list was unreadable')
   let listed: ListedReview[]
   try {
-    listed = await io.listReviews()
+    listed = await readBack(io, retrier, (now) =>
+      reviews.every((review, part) => created(now, base, review.commit_id, part).length > 0),
+    )
   } catch {
     return unconfirmed('reading the reviews back failed')
   }
@@ -132,7 +155,8 @@ async function confirm(
  * Posts the parts in order and confirms each landed exactly once. When GitHub rejects the first
  * part's approve or request-changes event, it is posted once more as a COMMENT; nothing was
  * created by the rejected request. A transient post failure is retried only after the read-back
- * shows the part is absent. A part submitted but missing from the read-back throws; duplicates and
+ * shows the part is absent; a read that misses it is repeated a couple of times first, because the
+ * list can lag. A part submitted but missing from the read-back throws; duplicates and
  * an unreadable read-back are warnings.
  */
 export async function postReviews(
@@ -157,7 +181,7 @@ export async function postReviews(
   for (const [at, review] of rest.entries()) {
     urls.push(await postPart(io, review, at + 1, base, retrier))
   }
-  const checked = await confirm(io, [sent, ...rest], base, urls)
+  const checked = await confirm(io, [sent, ...rest], base, urls, retrier)
   return {
     urls: checked.confirmed.length > 0 ? checked.confirmed.map(({ url }) => url) : urls,
     event: sent.event,

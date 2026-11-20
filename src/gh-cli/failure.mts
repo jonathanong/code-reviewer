@@ -22,7 +22,7 @@ const NETWORK_PATTERNS = [
 ]
 
 /** The text a failed `gh` run left behind: the thrown message plus the child's stderr. */
-function failureText(error: unknown): string {
+export function failureText(error: unknown): string {
   if (!(error instanceof Error)) return String(error)
   const { stderr } = error as { stderr?: unknown }
   return typeof stderr === 'string' ? `${error.message}\n${stderr}` : error.message

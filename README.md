@@ -103,7 +103,8 @@ reset, timed-out or dropped connection, and a secondary rate limit or 429 are tr
 GitHub names with `retry-after` is honoured up to 60s, and a longer one fails the call. Every
 other failure (401, 403, 404, 422, other 5xx, a missing `gh`, bad App config) fails at once.
 Reads are retried, and so are the writes that are safe to repeat: adding or removing a label and
-setting a commit status. A review POST is never repeated blindly, because a request that timed out
+setting a commit status, and dismissing one named review (a repeat that is answered with "already
+dismissed" counts as done). A review POST is never repeated blindly, because a request that timed out
 may have landed; and the check-run POST is not repeated either, since a repeat would make a second
 check run. A command that retried anything prints one stderr line, `warning: N GitHub calls were
 retried after transient failures`.
@@ -118,9 +119,13 @@ A review POST that fails transiently is retried only after the read-back shows t
 there (so a post that timed out but landed is never repeated), up to the same 3 tries and
 backoff; if it landed, `post` carries on with the review it found. If the reviewer's identity or
 the review list cannot be read, the post is not retried at all and says the review may have posted.
-A submitted part that the read-back does not find fails the command, and the approval label is not
-set. More than one new review with the same marker is a warning in `warnings` naming every link;
-nothing is deleted or dismissed. A read-back that fails after its own retries is also a warning (the
+GitHub's review list can lag behind a review it just accepted, so a read-back that misses a part
+is repeated twice more, 1s apart, before the part is called absent; the same re-reads precede
+deciding that a timed-out post did not land. A part still missing after that fails the command, and
+the approval label is not set. More than one new review with the same marker is a warning in `warnings` naming every link;
+nothing is deleted or dismissed. Dismissing the reviewer's own earlier request for changes happens
+only after the new review is confirmed, so a failed or unconfirmed post never leaves the old block
+cleared with no new review (the output then warns that it was not dismissed). A read-back that fails after its own retries is also a warning (the
 review was submitted but could not be confirmed, `confirmed` is false), not a failure. A dry run
 reads and confirms nothing.
 
