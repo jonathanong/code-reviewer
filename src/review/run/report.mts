@@ -3,7 +3,9 @@ import { summarizeModels, type ModelTotals } from '../benchmark/usage-summary.mt
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
+import type { StackFile } from '../stack-file.mts'
 import type { EvidenceReport } from './evidence-types.mts'
+import { reportStack, type ReportStack } from './stack-report.mts'
 import type { PillarResult, SkillChoice } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
 
@@ -49,6 +51,8 @@ export type ReportData = {
   verifier: { model: string; usage: Usage | null } | null
   /** Absent when no evidence source is configured. */
   evidence?: EvidenceReport
+  /** Absent for a pull request that is not in a stack. */
+  stack?: ReportStack
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
 }
@@ -68,6 +72,7 @@ export type ReportInput = {
   pillars: readonly PillarResult[]
   verifier?: { model: string; output: ReviewVerifierOutput } | undefined
   evidence?: EvidenceReport | undefined
+  stack?: StackFile | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
@@ -132,6 +137,7 @@ function byStep(input: ReportInput) {
 
 export function buildReport(input: ReportInput): ReportData {
   const output = input.verifier?.output
+  const stack = reportStack(input.stack, output?.findings ?? [])
   return {
     version: 1,
     repo: input.repo,
@@ -152,6 +158,7 @@ export function buildReport(input: ReportInput): ReportData {
     skipped: input.skipped,
     skillSelection: input.skillSelection,
     ...(input.evidence === undefined ? {} : { evidence: input.evidence }),
+    ...(stack === undefined ? {} : { stack }),
     verifier:
       input.verifier === undefined
         ? null

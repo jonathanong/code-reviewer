@@ -25,6 +25,18 @@ developing in a checkout; `help` lists the flags). Every subcommand prints a sho
 `CODE_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login (`code-reviewer auth`
 says which).
 
+## Stacks
+
+A pull request whose base is another open pull request's head is one member of a stack.
+`prepare` finds the stack (same repository; the open pull requests are listed once, and a failure
+to list them is a recorded problem, not a failed review) and writes `stack.json`, plus
+`stack/<number>/INDEX.md` for each later member, with one numbered patch per file beside it, as for
+the main diff. Pillars and the verifier then judge findings against
+the top of the stack: a defect a later member fixes is kept as a `low` finding that starts with
+`Fixed in #N:`, not a blocker. A stack whose root base is not the default branch is off-base, and
+a base that no open pull request has as head is stale; `report.md` says so and the review still
+runs. Members are reviewed and posted one at a time, bottom-up.
+
 ## Token budget
 
 The session that runs this skill only orchestrates. One headless command does the review and

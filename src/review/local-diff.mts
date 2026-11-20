@@ -2,11 +2,23 @@ import type { RunTextCommand } from '../gh-cli/index.mts'
 import type { PullTarget } from './target.mts'
 
 /**
- * The pull request diff computed in a local checkout: the merge base of the base and head commits
- * against the head, which is what GitHub shows. Local git has no size limit, where GitHub refuses
- * a diff above 300 files. The base commit is fetched first, since a checkout of the head need not
- * have it.
+ * The diff of `headSha` against its merge base with `baseSha`, computed in a local checkout, which
+ * is what GitHub shows for a pull request. Local git has no size limit, where GitHub refuses a
+ * diff above 300 files. Both commits are fetched from origin by sha first, since a checkout of one
+ * head need not have them.
  */
+export async function localDiffBetween(
+  git: RunTextCommand,
+  tree: string,
+  baseSha: string,
+  headSha: string,
+): Promise<string> {
+  await git(['-C', tree, 'fetch', '--quiet', 'origin', baseSha, headSha])
+  const mergeBase = (await git(['-C', tree, 'merge-base', baseSha, headSha])).trim()
+  return git(['-C', tree, 'diff', '--no-color', '--no-ext-diff', mergeBase, headSha])
+}
+
+/** The pull request diff computed in a local checkout, with the commits read from the API. */
 export async function localPullDiff(
   target: PullTarget,
   run: RunTextCommand,
@@ -23,7 +35,5 @@ export async function localPullDiff(
     'baseRefOid,headRefOid',
   ])
   const { baseRefOid, headRefOid } = JSON.parse(view) as { baseRefOid: string; headRefOid: string }
-  await git(['-C', tree, 'fetch', '--quiet', 'origin', baseRefOid])
-  const mergeBase = (await git(['-C', tree, 'merge-base', baseRefOid, headRefOid])).trim()
-  return git(['-C', tree, 'diff', '--no-color', '--no-ext-diff', mergeBase, headRefOid])
+  return localDiffBetween(git, tree, baseRefOid, headRefOid)
 }

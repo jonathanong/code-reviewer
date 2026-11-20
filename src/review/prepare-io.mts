@@ -3,10 +3,12 @@ import { fetchConversation, type PrConversation } from './context-query.mts'
 import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhReviewIo } from './github.mts'
-import { localPullDiff } from './local-diff.mts'
+import { localDiffBetween, localPullDiff } from './local-diff.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
+import { fetchDefaultBranch, fetchOpenPulls } from './stack-gh.mts'
+import type { StackMember } from './stack.mts'
 import type { TrustedAuthors } from './trust.mts'
 
 /** The GitHub and git reads `prepareReview` needs, injectable for tests. */
@@ -21,6 +23,13 @@ export type PrepareIo = {
   conversation(): Promise<PrConversation>
   compare(base: string, head: string): Promise<SinceDiff>
   compareDiff(base: string, head: string): Promise<string>
+  /** The open pull requests and the default branch, for stack detection. */
+  stackInput(): Promise<{ pr: number; pulls: StackMember[]; defaultBranch: string }>
+  /**
+   * The diff of a stack member against its own base, whose tip is `baseSha`: computed in `tree` by
+   * local git when there is one, from the API otherwise or when git fails.
+   */
+  memberDiff(member: StackMember, baseSha: string, tree?: string): Promise<string>
   /** The commit checked out at `tree`. */
   treeHead(tree: string): Promise<string>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
@@ -87,6 +96,24 @@ export function createGhPrepareIo(
           })),
         ),
       }
+    },
+    async stackInput() {
+      const [pulls, defaultBranch] = await Promise.all([
+        fetchOpenPulls(run, target.repo),
+        fetchDefaultBranch(run, target.repo),
+      ])
+      return { pr: target.pr, pulls, defaultBranch }
+    },
+    async memberDiff(member, baseSha, tree) {
+      if (tree !== undefined) {
+        try {
+          return await localDiffBetween(git, tree, baseSha, member.headSha)
+        } catch {
+          // The commits cannot be fetched or compared locally; the API is the fallback.
+        }
+      }
+      // The API refuses a diff above 300 files; the caller records that the diff was skipped.
+      return run(['pr', 'diff', String(member.number), '-R', target.repo, '--color', 'never'])
     },
     compareDiff: (base, head) =>
       run(['api', compareUrl(base, head), '-H', 'Accept: application/vnd.github.diff']),

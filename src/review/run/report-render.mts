@@ -2,6 +2,7 @@ import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
 import { locationText } from '../render.mts'
+import { renderStack } from './stack-report.mts'
 import { renderEvidence } from './evidence-render.mts'
 import { costBreakdown, type ReportData, type ReportFinding, type ReportPillar } from './report.mts'
 
@@ -22,8 +23,9 @@ function where(finding: Finding): string {
   return location === '' ? '' : ` (${location})`
 }
 
-function verified(finding: Finding, index: number): string {
-  const head = `${index + 1}. **[${finding.severity}]** ${finding.title}${where(finding)} (${finding.pillar})`
+function verified(finding: Finding, index: number, fixedIn?: number): string {
+  const later = fixedIn === undefined ? '' : ` (fixed in a later member, #${fixedIn})`
+  const head = `${index + 1}. **[${finding.severity}]** ${finding.title}${where(finding)} (${finding.pillar})${later}`
   return `${head}\n\n${quote(finding.body)}`
 }
 
@@ -60,6 +62,7 @@ export function renderReport(data: ReportData): string {
     `[${data.url}](${data.url}) · head \`${data.headSha.slice(0, 7)}\``,
     `**Mode:** ${data.mode} · **Effort:** ${data.effort}`,
     ...(data.reasons.length === 0 ? [] : [data.reasons.map((reason) => `- ${reason}`).join('\n')]),
+    ...(data.stack === undefined ? [] : renderStack(data.stack)),
   ]
   if (data.skipReason !== undefined) {
     sections.push(`**Skipped:** ${data.skipReason}`, `Total cost: ${money(cost.total)}`)
@@ -73,7 +76,13 @@ export function renderReport(data: ReportData): string {
     `### Verdict: ${data.verdict ?? 'none'}`,
     data.summary,
     `### Verified findings (${data.findings.length})`,
-    data.findings.length === 0 ? 'None.' : data.findings.map(verified).join('\n\n'),
+    data.findings.length === 0
+      ? 'None.'
+      : data.findings
+          .map((finding, at) =>
+            verified(finding, at, data.stack?.fixedLater.find((entry) => entry.finding === at)?.pr),
+          )
+          .join('\n\n'),
     ...(data.fixedThreadIds.length === 0
       ? []
       : [

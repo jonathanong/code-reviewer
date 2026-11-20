@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { diffExcerpt, splitDiff } from '../diff-files.mts'
 import { ReviewError, type ReviewInput, type Pillar } from '../finding.mts'
 import { pluginSettings } from '../plugins.mts'
+import { readStackFile } from '../stack-file.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
@@ -16,6 +17,7 @@ import { runReviewVerifier } from './verify.mts'
 import {
   ZERO_FINDINGS,
   failedSkips,
+  skipResult,
   message,
   read,
   threadIdsOf,
@@ -54,19 +56,7 @@ async function review(
       pillars: [],
     })
     const report = writeReportFiles(out, data)
-    return {
-      ok: true,
-      summary: {
-        claimed: true,
-        mode,
-        verdict: null,
-        findings: ZERO_FINDINGS,
-        costUsd: 0,
-        report,
-        review: null,
-        headSha,
-      },
-    }
+    return skipResult(mode, headSha, report)
   }
   const plugins = await steps.plugins()
   const settings = pluginSettings(plugins.enabled)
@@ -86,7 +76,13 @@ async function review(
   if (skillChoice.error !== undefined) {
     throw new ReviewError(`Skill selection failed, so no review was run: ${skillChoice.error}`)
   }
-  const run = { out, sinceSha: plan.sinceSha, hasRules: existsSync(join(out, 'rules', 'INDEX.md')) }
+  const stack = readStackFile(out)
+  const run = {
+    out,
+    sinceSha: plan.sinceSha,
+    hasRules: existsSync(join(out, 'rules', 'INDEX.md')),
+    stack,
+  }
   const pillarsDir = join(steps.references, 'pillars')
   const results = await runPillars({
     pillars: plan.pillars,
@@ -152,6 +148,7 @@ async function review(
     pillars: results,
     verifier: { model: plan.verifierModel, output: { ...output, findings: verified } },
     evidence,
+    stack,
   })
   const report = writeReportFiles(out, data)
   const counts = { ...ZERO_FINDINGS }

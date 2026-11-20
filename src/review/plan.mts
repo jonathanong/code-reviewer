@@ -1,6 +1,7 @@
 import type { FollowUpContext } from './context.mts'
 import type { Effort, Pillar, SkippedPillar } from './finding.mts'
 import { chooseMode, securityPaths, type Mode, type ModeChoice } from './mode.mts'
+import type { StackSummary } from './stack.mts'
 import { isDocsOnly, isTestOrDocsOnly } from './triggers.mts'
 
 export type Model = 'haiku' | 'sonnet' | 'opus'
@@ -46,6 +47,8 @@ export type ReviewPlan = {
   verifierModel: Model
   skipped: SkippedPillar[]
   reasons: string[]
+  /** Present when the pull request is a member of a stack; `prepare` adds it. */
+  stack?: StackSummary
 }
 
 const DISPATCHED: readonly Pillar[] = [

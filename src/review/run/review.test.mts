@@ -192,6 +192,77 @@ describe('runReview', () => {
     expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain('## acme/widgets#4: Add widget')
   })
 
+  it('gives the pillars and the verifier the stack, and reports findings a later member fixes', async () => {
+    const stack = {
+      members: [
+        { number: 4, title: 'Add widget', headRef: 'a', baseRef: 'main', headSha: 's' },
+        {
+          number: 5,
+          title: 'Wire it',
+          headRef: 'b',
+          baseRef: 'a',
+          headSha: 's',
+          diff: 'stack/5/INDEX.md',
+        },
+      ],
+      index: 0,
+      rootBase: 'main',
+      rootIsDefault: true,
+      staleBase: false,
+    }
+    const prompts: string[] = []
+    const inner = claude({
+      verifier: () =>
+        result(
+          {
+            summary: 'S.',
+            pullRequestSummary: 'P.',
+            findings: [
+              {
+                pillar: 'rules',
+                severity: 'low',
+                title: 'Bad',
+                body: 'Fixed in #5: the wiring adds it.',
+                sources: [0],
+              },
+            ],
+            dropped: [],
+          },
+          1,
+        ),
+    })
+    const exec: Exec = async (command, args, options) => {
+      prompts.push(args[1] as string)
+      return inner(command, args, options)
+    }
+    const { out, steps, options } = setup({ exec }, PLAN, (dir) =>
+      writeFileSync(join(dir, 'stack.json'), JSON.stringify(stack)),
+    )
+    await runReview(steps, options)
+    const reviewers = prompts.filter((prompt) => prompt.includes('prompt text'))
+    expect(reviewers).toHaveLength(3)
+    for (const prompt of reviewers) expect(prompt).toContain('## Stack')
+    expect(readJson(out, 'report.json').stack.fixedLater).toEqual([{ finding: 0, pr: 5 }])
+    expect(readJson(out, 'review.json').findings[0]).toMatchObject({
+      severity: 'low',
+      body: 'Fixed in #5: the wiring adds it.',
+    })
+    expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain('### Stack (member 1 of 2')
+  })
+
+  it('leaves every prompt and the report without a stack for a flat pull request', async () => {
+    const prompts: string[] = []
+    const inner = claude()
+    const exec: Exec = async (command, args, options) => {
+      prompts.push(args[1] as string)
+      return inner(command, args, options)
+    }
+    const { out, steps, options } = setup({ exec })
+    await runReview(steps, options)
+    expect(prompts.some((prompt) => prompt.includes('## Stack'))).toBe(false)
+    expect(readJson(out, 'report.json').stack).toBeUndefined()
+  })
+
   it('writes a review.json that the post step accepts, with no report-only fields', async () => {
     const { out, steps, options } = setup()
     await runReview(steps, options)
