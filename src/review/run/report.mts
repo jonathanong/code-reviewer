@@ -39,27 +39,22 @@ export type ReportData = {
   reasons: string[]
   /** Set for a skipped review: why nothing ran. */
   skipReason?: string
-  /** What the pull request does, from the verifier. */
-  pullRequestSummary: string
-  /** The verifier's review summary. */
-  summary: string
+  pullRequestSummary: string // what the pull request does, from the verifier
+  summary: string // the verifier's review summary
   /** Null for a skipped review, which has no findings to derive one from. */
   verdict: Verdict | null
   findings: Finding[]
-  /** Open questions; absent in a report written before questions existed. */
-  questions?: Question[]
+  questions?: Question[] // absent in a report written before questions existed
+  postWarnings?: string[] // text over a target or narrating the review; absent in an older report
   /** Threads of earlier findings that are now fixed, to resolve after posting. */
   fixedThreadIds: string[]
   pillars: ReportPillar[]
   skipped: SkippedPillar[]
   skillSelection: SkillChoice
   verifier: { model: string; usage: Usage | null } | null
-  /** Absent when no evidence source is configured. */
-  evidence?: EvidenceReport
-  /** Absent for a pull request that is not in a stack. */
-  stack?: ReportStack
-  /** Absent for a first review, or when the head did not move since the last one. */
-  push?: ReportPush
+  evidence?: EvidenceReport // absent when no evidence source is configured
+  stack?: ReportStack // absent for a pull request that is not in a stack
+  push?: ReportPush // absent for a first review, or when the head did not move
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
 }
@@ -74,6 +69,7 @@ export type ReportInput = {
   reasons: string[]
   skipReason?: string
   verdict: Verdict | null
+  postWarnings?: string[] | undefined
   skipped: SkippedPillar[]
   skillSelection: SkillChoice
   pillars: readonly PillarResult[]
@@ -162,6 +158,7 @@ export function buildReport(input: ReportInput): ReportData {
     verdict: input.verdict,
     findings: output?.findings ?? [],
     questions: output?.questions ?? [],
+    postWarnings: input.postWarnings ?? [],
     fixedThreadIds: output?.fixedThreadIds ?? [],
     pillars: markDropped(input.pillars, output),
     skipped: input.skipped,

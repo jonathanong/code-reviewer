@@ -134,6 +134,8 @@ function setup(
     preview: vi.fn(async () => ({
       verdict: 'Comment',
       event: 'COMMENT',
+      warnings: [],
+      tooLong: [],
       reviews: [{ event: 'COMMENT', commit_id: SHA, body: 'Body.', comments: [] }],
     })) as never,
     plugins: vi.fn(async () => ({
@@ -176,14 +178,8 @@ describe('runReview', () => {
       questions: 0,
     })
     expect(calls).toEqual([])
-    for (const file of [
-      'skills.json',
-      'verifier.json',
-      'review.json',
-      'preview.md',
-      'report.json',
-      'report.md',
-    ]) {
+    const files = ['skills.json', 'verifier.json', 'review.json', 'preview.md', 'report.json']
+    for (const file of [...files, 'report.md']) {
       expect(readFileSync(join(out, file), 'utf8').length).toBeGreaterThan(0)
     }
     expect(readJson(out, 'skills.json').selected).toEqual([

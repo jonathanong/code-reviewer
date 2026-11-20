@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: posted text is short and free of review narration (no run)
+
+`pillars/_contract.md` gained a rule for posted text: lead with the defect and its consequence, one
+finding per comment, no narration of the review (pillar, what was checked, tool names, "the
+verifier"), no praise, no restating the diff, and link an open thread instead of restating it.
+`verifier.md` step 5 no longer asks the body to credit another reviewer at length. Every pillar
+prompt includes the contract, so every `bench` pillar row and every `bench-verifier` row is no
+longer comparable with earlier entries; body length and wording are the expected movement, recall
+is not. The length targets and the process-word check are deterministic code in `post`, not graded
+by the bench. No run was made.
+
 ## 2026-11-19: `blocking` is rarer and the verifier re-decides severity (no run)
 
 `pillars/_contract.md` now defines `blocking` by four conditions that must all hold (code that

@@ -335,8 +335,14 @@ describe('renderReport', () => {
     const data = buildReport(INPUT)
     const ask = { question: 'Is v1 gone?', askOf: 'product' as const, why: 'Rollout.' }
     expect(renderReport({ ...data, questions: [ask] })).toContain('- **Product:** Is v1 gone?')
-    const old = JSON.parse(JSON.stringify({ ...data, questions: undefined })) as typeof data
+    const old = JSON.parse(
+      JSON.stringify({ ...data, questions: undefined, postWarnings: undefined }),
+    ) as typeof data
     expect(renderReport(old)).not.toContain('### Questions')
+    expect(renderReport(old)).not.toContain('### Posted text')
+    expect(renderReport({ ...data, postWarnings: ['body too long'] })).toContain(
+      '### Posted text\n\n- body too long',
+    )
   })
 
   it('lists every raw finding per pillar, marking the dropped ones', () => {

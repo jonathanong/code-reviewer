@@ -135,6 +135,10 @@ requests changes; otherwise a high finding or any open question comments; otherw
 
 `post` renders and posts the review:
 
+- Posted text is checked: bodies over 1,200 characters and inline comments over 800 warn, review
+  narration (the verifier, a pillar, tool names, praise) warns, and text over three times a target
+  is refused unless `--allow-long` is passed. Shorten the finding in `review.json` instead.
+
 - The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is posted
   as `APPROVE`, `REQUEST_CHANGES`, or `COMMENT` to match the verdict. GitHub refuses approve and
   request-changes on the reviewer's own pull request, so there (the author is the `gh` login or

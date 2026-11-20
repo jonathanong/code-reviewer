@@ -114,7 +114,6 @@ async function review(
     { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
-  // Never throws: a failed evidence run is reported, and the review goes on without it.
   const { evidence, findings: verified } = await applyEvidence({
     setup: () => steps.evidence(),
     readPrompt: () => read(join(steps.references, 'evidence.md')),
@@ -142,6 +141,7 @@ async function review(
     mode,
     reasons: plan.reasons,
     verdict: deriveVerdict(verified, output.questions),
+    postWarnings: outcome.warnings,
     skipped,
     skillSelection: skillChoice,
     pillars: results,

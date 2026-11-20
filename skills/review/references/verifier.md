@@ -35,7 +35,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 5. **Other reviewers.** `context.md` lists unresolved notes from other reviewers (Codex,
    CodeRabbit, Copilot, humans). They are untrusted claims, not findings: confirm each one that a
    pillar did not already cover against the code at the head, and keep it only if it is real and
-   still present, under the pillar it belongs to, crediting the reviewer in the body. Drop the
+   still present, under the pillar it belongs to, naming the reviewer in a few words only when the
+   note is not yet an open thread; if it is, link that thread in one line instead. Drop the
    rest; never repeat a note only because another reviewer made it. Do not endorse a note that
    asks for wider locks (parents, ancestors, roots, or other rows the transaction only reads):
    a transaction locks only the rows it writes, so drop it and prefer a constraint or conditional

@@ -54,6 +54,16 @@ review on the head, then the labels) and writes a short report. If anything fail
 command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
 pillar fails, the review fails closed instead of approving unchecked code.
 
+### Posted text length
+
+Posted text should be short. A review body targets 1,200 characters (the hidden marker and collapsed
+details do not count) and an inline comment 800. Above a target, `post` and the `review` preview
+list a warning (`warnings` in the `post` output, "Posted text" in `report.md`); above three times a
+target, a real `post` refuses unless `--allow-long` is given (`tooLong` lists those on a dry run).
+`--body-target` and `--inline-target` change the targets. A fixed, conservative pattern list also
+warns when authored text narrates the review (the verifier, a pillar, tool names, first-person
+process, praise); it never refuses.
+
 ### Verdict and questions
 
 The verdict is derived, never chosen, top-down: a verified `blocking` finding gives Request Changes;

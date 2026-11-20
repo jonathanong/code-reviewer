@@ -38,6 +38,11 @@ function raw(finding: ReportFinding): string {
   return `- **[${finding.severity}]** ${finding.title}${where(finding)}${status}\n\n${quote(finding.body)}`
 }
 
+function renderPostWarnings(warnings: readonly string[]): string[] {
+  if (warnings.length === 0) return []
+  return [`### Posted text\n\n${warnings.map((warning) => `- ${warning}`).join('\n')}`]
+}
+
 function usageLine(usage: Usage | null): string {
   if (usage === null) return 'no usage recorded'
   const turns = usage.turns === null ? 'n/a' : String(usage.turns)
@@ -87,6 +92,7 @@ export function renderReport(data: ReportData): string {
           )
           .join('\n\n'),
     ...renderQuestions(data.questions ?? []),
+    ...renderPostWarnings(data.postWarnings ?? []),
     ...(data.fixedThreadIds.length === 0
       ? []
       : [

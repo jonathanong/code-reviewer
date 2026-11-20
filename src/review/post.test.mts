@@ -195,6 +195,46 @@ describe('postFinalReview event', () => {
   })
 })
 
+describe('postFinalReview posted text', () => {
+  const wordy = (body: string): ReviewInput => ({
+    ...input('low'),
+    findings: [{ pillar: 'rules', severity: 'low', title: 'T', body, path: 'a.ts', line: 1 }],
+  })
+
+  it('warns about long and narrating text without refusing', async () => {
+    const io = fakeIo()
+    const long = { ...wordy('The verifier confirmed it. ' + 'x'.repeat(900)), summary: '' }
+    const outcome = await postFinalReview(io, long, SHA)
+    expect(outcome.warnings).toEqual([
+      expect.stringContaining('inline comment on a.ts:1 is'),
+      expect.stringContaining('findings[0].body narrates the review'),
+    ])
+    expect(outcome.tooLong).toEqual([])
+    expect(io.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('refuses text over three times a target before posting, unless allowed', async () => {
+    const io = fakeIo()
+    const huge = wordy('x'.repeat(2500))
+    await expect(postFinalReview(io, huge, SHA)).rejects.toThrow(/allow-long/u)
+    expect(io.postReview).not.toHaveBeenCalled()
+    const allowed = await postFinalReview(io, huge, SHA, { allowLong: true })
+    expect(allowed.tooLong).toHaveLength(1)
+    expect(io.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('reports, but does not refuse, text over three times a target on a dry run', async () => {
+    const io = fakeIo()
+    const outcome = await postFinalReview(io, wordy('x'.repeat(2500)), SHA, { dryRun: true })
+    expect(outcome.tooLong).toHaveLength(1)
+    const custom = await postFinalReview(io, wordy('x'.repeat(50)), SHA, {
+      dryRun: true,
+      textLimits: { bodyTarget: 1200, inlineTarget: 10 },
+    })
+    expect(custom.warnings).toHaveLength(1)
+  })
+})
+
 describe('reviewStatus', () => {
   const body = (sha: string, verdict: Verdict) => reviewMarker(sha, verdict, 'high')
 

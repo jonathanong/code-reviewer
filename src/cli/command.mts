@@ -10,6 +10,7 @@ import {
   revokeFinalApproval,
   type PullTarget,
 } from '../review/index.mts'
+import { DEFAULT_TEXT_LIMITS } from '../review/concise.mts'
 import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
@@ -31,6 +32,28 @@ function target(values: { repo?: string[] | undefined; pr?: string | undefined }
   return { repo, pr: Number(values.pr) }
 }
 
+function positiveInt(value: string | undefined, name: string, fallback: number): number {
+  if (value === undefined) return fallback
+  const count = Number(value)
+  if (!Number.isInteger(count) || count < 1)
+    throw new Error(`--${name} must be a positive integer.`)
+  return count
+}
+
+function textLimits(values: {
+  'body-target'?: string | undefined
+  'inline-target'?: string | undefined
+}) {
+  return {
+    bodyTarget: positiveInt(values['body-target'], 'body-target', DEFAULT_TEXT_LIMITS.bodyTarget),
+    inlineTarget: positiveInt(
+      values['inline-target'],
+      'inline-target',
+      DEFAULT_TEXT_LIMITS.inlineTarget,
+    ),
+  }
+}
+
 function print(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
 }
@@ -45,6 +68,9 @@ function parse(args: string[]) {
       'head-sha': { type: 'string' },
       input: { type: 'string' },
       'dry-run': { type: 'boolean' },
+      'allow-long': { type: 'boolean' },
+      'body-target': { type: 'string' },
+      'inline-target': { type: 'string' },
       owner: { type: 'string' },
       force: { type: 'boolean' },
       requeue: { type: 'boolean' },
@@ -116,7 +142,11 @@ async function run(
       }
       const input = parseReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
       const dryRun = values['dry-run'] === true
-      const outcome = await postFinalReview(io, input, values['head-sha'], { dryRun })
+      const outcome = await postFinalReview(io, input, values['head-sha'], {
+        dryRun,
+        allowLong: values['allow-long'] === true,
+        textLimits: textLimits(values),
+      })
       if (dryRun) {
         print(outcome)
         return 0

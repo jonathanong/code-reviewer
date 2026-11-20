@@ -16,7 +16,9 @@ Stack block of a run prompt never appears); no score was re-measured for it. The
 and output schema later gained open questions and a derived verdict; see the 2026-11-19 entry in
 [HISTORY.md](HISTORY.md). No verifier row is re-measured for it. The contract's definition of `blocking` was also tightened
 and the verifier re-decides severity; no pillar or verifier row is re-measured for that, and
-severity agreement is not comparable with earlier rows.
+severity agreement is not comparable with earlier rows. The contract's posted-text rules (short,
+no review narration) are likewise not re-measured, and make every pillar and verifier row not
+comparable with earlier ones.
 
 Mined cases (8 real pull requests from `cases.json`):
 

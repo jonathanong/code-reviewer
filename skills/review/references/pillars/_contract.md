@@ -118,3 +118,8 @@ Return only JSON:
   the same to unwind once a consumer adopts it.
 - Put a GitHub `suggestion` block in the body only for an exact, minimal replacement of the
   commented lines.
+- Posted text is read by the author, so write it short. Lead with the defect and its consequence.
+  One finding per comment. Do not narrate the review: no pillar, no list of what was checked, no
+  tool names, no "the verifier". No praise. Do not restate the diff. When an open thread already
+  says it, do not say it again; link the thread in one line. A body target is 1,200 characters and
+  an inline comment 800; `code-reviewer post` warns above them and refuses above three times them.

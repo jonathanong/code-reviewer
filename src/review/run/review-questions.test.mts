@@ -27,7 +27,7 @@ const PLAN: ReviewPlan = {
 const result = (structured: unknown) =>
   JSON.stringify({ type: 'result', total_cost_usd: 0, num_turns: 1, structured_output: structured })
 
-async function run(questions: unknown[]) {
+async function run(questions: unknown[], warnings: string[] = []) {
   const out = mkdtempSync(join(tmpdir(), 'review-questions-'))
   dirs.push(out)
   const exec: Exec = async (_command, args) => {
@@ -49,7 +49,7 @@ async function run(questions: unknown[]) {
       return { headSha: 'd'.repeat(40), plan: PLAN }
     },
     abort: vi.fn(async () => undefined),
-    preview: async () => ({ verdict: 'Comment', reviews: [] }),
+    preview: async () => ({ verdict: 'Comment', warnings, tooLong: [], reviews: [] }),
     plugins: async () => ({
       enabled: [],
       installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
@@ -76,6 +76,13 @@ describe('runReview questions', () => {
     expect(JSON.parse(readFileSync(join(out, 'review.json'), 'utf8')).questions).toEqual([ask])
     expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain(
       'Why it matters: Sets the rollout.',
+    )
+  })
+
+  it('puts the posted-text warnings of the preview into the report', async () => {
+    const { out } = await run([], ['review body (part 1) is 1300 characters, over its 1200 target'])
+    expect(readFileSync(join(out, 'report.md'), 'utf8')).toContain(
+      '### Posted text\n\n- review body (part 1) is 1300 characters',
     )
   })
 

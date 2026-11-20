@@ -4,6 +4,7 @@ import {
   type SanitizedReview,
 } from '../review-payload/index.mts'
 import { buildReviews, DEFAULT_LIMITS, type BuildLimits } from './build.mts'
+import { checkPostedText, DEFAULT_TEXT_LIMITS, type TextLimits } from './concise.mts'
 import { chooseEvent, postReviews, withEvent, type Downgrade } from './event.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
@@ -19,6 +20,10 @@ export type PostOutcome = {
   event: ReviewEvent
   /** Set when the verdict went out as a COMMENT instead of its own event. */
   downgraded?: Downgrade
+  /** Posted text over a target, or narrating the review; never a refusal on its own. */
+  warnings: string[]
+  /** The warnings over three times the target, which a real post refuses without `allowLong`. */
+  tooLong: string[]
 }
 
 export const SHA_RE = /^[0-9a-f]{40}$/u
@@ -40,7 +45,12 @@ export async function postFinalReview(
   io: ReviewIo,
   input: ReviewInput,
   headSha: string,
-  options: { dryRun?: boolean; limits?: BuildLimits } = {},
+  options: {
+    dryRun?: boolean
+    limits?: BuildLimits
+    textLimits?: TextLimits
+    allowLong?: boolean
+  } = {},
 ): Promise<PostOutcome> {
   if (!SHA_RE.test(headSha)) throw new ReviewError('--head-sha must be a full lowercase SHA.')
   const current = await io.headSha()
@@ -56,15 +66,26 @@ export async function postFinalReview(
     buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS),
     choice.event,
   )
-  if (options.dryRun === true) return { verdict, reviews, urls: [], label: 'unchanged', ...choice }
+  const { warnings, tooLong } = checkPostedText(
+    input,
+    reviews,
+    options.textLimits ?? DEFAULT_TEXT_LIMITS,
+  )
+  const common = { verdict, reviews, warnings, tooLong }
+  if (options.dryRun === true) return { ...common, urls: [], label: 'unchanged', ...choice }
+  if (tooLong.length > 0 && options.allowLong !== true) {
+    throw new ReviewError(
+      `Posted text is over three times its target (${tooLong.join('; ')}); shorten it or pass --allow-long.`,
+    )
+  }
   const { urls, ...posted } = await postReviews(io, reviews)
   const sent = { ...choice, ...posted }
   if (verdict === 'Approve') {
     await io.addApprovalLabel()
-    return { verdict, reviews, urls, label: 'added', ...sent }
+    return { ...common, urls, label: 'added', ...sent }
   }
   const removed = await revokeFinalApproval(io)
-  return { verdict, reviews, urls, label: removed ? 'removed' : 'unchanged', ...sent }
+  return { ...common, urls, label: removed ? 'removed' : 'unchanged', ...sent }
 }
 
 export type ReviewStatus = {
