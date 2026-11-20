@@ -34,7 +34,8 @@ code-reviewer report --out DIR
 posting, so you can read the result first. `--tree` is a checkout at the pull request head and
 `--out` receives the run files; both become absolute paths. It claims the pull request (a head the
 newest review already covers is declined unless `--force`), runs `prepare`, asks Haiku to pick
-rule skills for the changed files, runs the pillars the plan chose (`--jobs` at a time, default 3,
+rule skills for the changed files (the review stops there, with nothing posted, when that call fails
+twice or no rule skill is installed), runs the pillars the plan chose (`--jobs` at a time, default 3,
 each retried once), runs the verifier, and writes:
 
 - `review.json`: the input `post` accepts. Post it after reading `preview.md`:

@@ -75,8 +75,8 @@ export type SelectionInput = {
 }
 
 /**
- * Picks the rule skills for the change. A failed call is tried once more, because a review that
- * continues with no selection runs without the shared rules.
+ * Picks the rule skills for the change. A failed call is tried once more; `review` stops on a
+ * choice that still carries an error.
  */
 export async function selectSkills(input: SelectionInput): Promise<SkillChoice> {
   const available = input.skills.length

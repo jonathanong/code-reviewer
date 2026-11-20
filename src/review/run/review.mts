@@ -81,6 +81,10 @@ async function review(
     cwd: tree,
   })
   writeJson(join(out, 'skills.json'), skillChoice)
+  // A review without its rule skills looks like any other review, so it fails instead.
+  if (skillChoice.error !== undefined) {
+    throw new ReviewError(`Skill selection failed, so no review was run: ${skillChoice.error}`)
+  }
   const run = { out, sinceSha: plan.sinceSha, hasRules: existsSync(join(out, 'rules', 'INDEX.md')) }
   const pillarsDir = join(steps.references, 'pillars')
   const results = await runPillars({
