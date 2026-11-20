@@ -1,13 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { isTrustedAuthor, parseTrustedAuthors, resolveTrustedAuthors } from './trust.mts'
-
-describe('parseTrustedAuthors', () => {
-  it('splits, trims, and drops empties', () => {
-    expect(parseTrustedAuthors(' a[bot] ,, B ,')).toEqual(['a[bot]', 'B'])
-    expect(parseTrustedAuthors(undefined)).toEqual([])
-  })
-})
+import { isTrustedAuthor, resolveTrustedAuthors } from './trust.mts'
 
 describe('isTrustedAuthor', () => {
   it('ignores a trailing [bot] on either side', () => {
@@ -26,23 +19,32 @@ describe('isTrustedAuthor', () => {
 })
 
 describe('resolveTrustedAuthors', () => {
-  it('adds the viewer to the allowlist', async () => {
-    const run = vi.fn(async () => '{"data":{"viewer":{"login":"Me"}}}')
-    await expect(resolveTrustedAuthors(run, ['App[bot]'])).resolves.toEqual(
-      new Set(['app[bot]', 'me']),
+  const viewer = vi.fn(async () => '{"data":{"viewer":{"login":"Me"}}}')
+  const noViewer = vi.fn(async () => {
+    throw new Error('Resource not accessible by integration')
+  })
+
+  it('trusts the gh viewer', async () => {
+    await expect(resolveTrustedAuthors(viewer, async () => undefined)).resolves.toEqual(
+      new Set(['me']),
     )
   })
 
-  it('falls back to the allowlist when viewer is unavailable', async () => {
-    const run = vi.fn(async () => {
-      throw new Error('Resource not accessible by integration')
-    })
-    await expect(resolveTrustedAuthors(run, ['app[bot]'])).resolves.toEqual(new Set(['app[bot]']))
-    await expect(resolveTrustedAuthors(run, [])).resolves.toEqual(new Set())
+  it('trusts the App identity when the installation token has no viewer', async () => {
+    await expect(resolveTrustedAuthors(noViewer, async () => 'My-App[bot]')).resolves.toEqual(
+      new Set(['my-app[bot]']),
+    )
+  })
+
+  it('trusts nobody when the identity lookup fails', async () => {
+    const failed = async () => {
+      throw new Error('GET /app failed')
+    }
+    await expect(resolveTrustedAuthors(noViewer, failed)).resolves.toEqual(new Set())
   })
 
   it('tolerates a response without a viewer', async () => {
     const run = vi.fn(async () => '{"data":{}}')
-    await expect(resolveTrustedAuthors(run, [])).resolves.toEqual(new Set())
+    await expect(resolveTrustedAuthors(run, async () => undefined)).resolves.toEqual(new Set())
   })
 })

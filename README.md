@@ -210,10 +210,15 @@ or `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`), otherwise the local `gh` login.
 
 `claim` and `status` trust a `<!-- final-review ... -->` marker only from the identity that posts
 reviews, so a review forged by someone else cannot decline a head or report approval. That
-identity is the authenticated GraphQL `viewer` plus the comma-separated logins in
-`CODE_REVIEWER_TRUSTED_AUTHORS`. An App installation token cannot query `viewer`, so under App
-auth set `CODE_REVIEWER_TRUSTED_AUTHORS=<app-slug>[bot]`; with neither, no marker is trusted and
-every head is re-reviewed (status never reports approval).
+identity is the reviewer's own: the authenticated GraphQL `viewer`, or under App auth the App's
+`<slug>[bot]`, looked up once per process with `GET /app` signed by the App JWT. An installation
+token cannot query `viewer`, which is why the App is asked for its own slug. No variable is needed.
+If the lookup fails nothing is trusted: every head is re-reviewed (status never reports approval),
+and `code-reviewer auth` prints `loginError` instead of `login`.
+
+Reviews from any other author, including one carrying a `final-review` marker, are not prior
+reviews. They reach the run as other reviewers' notes with the marker stripped, and the reviewer
+weighs them like any other comment.
 
 Under local `gh` auth the reviewer posts as you, so the pull request author shares the trusted
 identity when they are the same person. Use a GitHub App to separate the two.

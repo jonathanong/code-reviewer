@@ -326,6 +326,27 @@ describe('buildFollowUpContext', () => {
     expect(ctx.others.map((note) => note.author)).toEqual(['mallory', 'ghost', 'alice'])
   })
 
+  it('hands a marker-bearing review from another identity over as ordinary notes', () => {
+    const earlier = review({
+      id: 'E',
+      author: { login: 'old-app[bot]' },
+      state: 'APPROVED',
+      body: `Looks fine, one nit on retries.\n\n${reviewMarker(B, 'Approve', 'low')}`,
+    })
+    const own = review({ id: 'O', body: reviewMarker(A, 'Comment', 'low') })
+    const ctx = build(pull({ reviews: { nodes: [own, earlier] } }))
+    expect(ctx.reviewedSha).toBe(A)
+    expect(ctx.verdict).toBe('Comment')
+    expect(ctx.others).toEqual([
+      {
+        author: 'old-app[bot]',
+        where: `review approved @${A.slice(0, 7)}`,
+        text: 'Looks fine, one nit on retries.',
+      },
+    ])
+    expect(JSON.stringify(ctx)).not.toContain('final-review')
+  })
+
   it('matches trusted logins case-insensitively', () => {
     const body = reviewMarker(A, 'Approve', 'low')
     const ctx = build(pull({ reviews: { nodes: [review({ author: { login: 'Bot' }, body })] } }))

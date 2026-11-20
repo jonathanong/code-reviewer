@@ -5,7 +5,6 @@ import {
   createGhReviewIo,
   createGhLabelIo,
   createGhPrepareIo,
-  parseTrustedAuthors,
   repoSettings,
   type ReviewIo,
   type LabelIo,
@@ -37,6 +36,8 @@ import {
 
 export type ReviewDeps = {
   authMode(): GhAuth['mode']
+  /** The App's own review login, or why it could not be looked up; empty under a `gh` login. */
+  authIdentity(): Promise<{ login?: string; loginError?: string }>
   /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
   /**
@@ -70,7 +71,6 @@ export function createDefaultDeps(
   getAuth: () => GhAuth = createGhAuth,
   env: Record<string, string | undefined> = process.env,
 ): ReviewDeps {
-  const trusted = parseTrustedAuthors(env.CODE_REVIEWER_TRUSTED_AUTHORS)
   let auth: GhAuth | undefined
   let loaded: RepoConfigs | undefined
   const configDir = machineConfigDir(env)
@@ -88,19 +88,31 @@ export function createDefaultDeps(
     return read
   }
   const resolved = () => (auth ??= getAuth())
+  const identity = () => resolved().identity()
   const forTarget = (target: PullTarget) => {
     const { owner, name } = splitRepo(target.repo)
     return resolved().runner(owner, name)
   }
   return {
     authMode: () => resolved().mode,
+    authIdentity: async () => {
+      try {
+        const login = await identity()
+        return login === undefined ? {} : { login }
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        return {
+          loginError: `own identity lookup failed, so no review marker is trusted: ${reason}`,
+        }
+      }
+    },
     configs,
     targetConfig,
     createIo: (target) =>
       createGhReviewIo(
         target,
         forTarget(target),
-        trusted,
+        identity,
         async () => (await repoSettings({ configs, targetConfig }, target.repo)).labels.approval,
       ),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
@@ -109,7 +121,7 @@ export function createDefaultDeps(
         target,
         forTarget(target),
         runGit,
-        trusted,
+        identity,
         env.CODE_REVIEWER_CLONE_ROOT,
         configDir,
       ),

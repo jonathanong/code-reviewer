@@ -77,6 +77,53 @@ export type TokenProvider = (owner: string, repo?: string) => Promise<string>
 
 const REFRESH_MARGIN_MS = 5 * 60 * 1000
 
+/** One App-JWT-authenticated GitHub request, shared by installation lookup, tokens, and identity. */
+async function callApp(
+  config: AppConfig,
+  fetchJson: FetchJson,
+  now: () => number,
+  method: string,
+  path: string,
+): Promise<Record<string, unknown>> {
+  const jwt = createAppJwt(config.appId, config.privateKey, Math.floor(now() / 1000))
+  const response = await fetchJson(`${config.apiUrl}${path}`, {
+    method,
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: `Bearer ${jwt}`,
+      'x-github-api-version': '2022-11-28',
+    },
+  })
+  if (!response.ok) {
+    throw new AppAuthError(
+      `GitHub App request ${method} ${path} failed with ${response.status}.`,
+      response.status,
+    )
+  }
+  return (await response.json()) as Record<string, unknown>
+}
+
+/**
+ * The App's own review login, `<slug>[bot]`, from `GET /app`. A successful lookup is cached for
+ * the process; a failure is not, so a transient error does not stick.
+ */
+export function createAppIdentityProvider(
+  config: AppConfig,
+  fetchJson: FetchJson = fetch as unknown as FetchJson,
+  now: () => number = Date.now,
+): () => Promise<string> {
+  let login: string | undefined
+  return async () => {
+    if (login !== undefined) return login
+    const app = await callApp(config, fetchJson, now, 'GET', '/app')
+    if (typeof app.slug !== 'string' || app.slug === '') {
+      throw new AppAuthError('GitHub App response had no slug.')
+    }
+    login = `${app.slug}[bot]`
+    return login
+  }
+}
+
 /**
  * Mints installation tokens for an App and caches each until five minutes before it expires.
  * The installation is resolved from the repository unless the config pins one.
@@ -88,24 +135,7 @@ export function createInstallationTokenProvider(
 ): TokenProvider {
   const cache = new Map<string, CachedToken>()
   const installations = new Map<string, string>()
-  const call = async (method: string, path: string): Promise<Record<string, unknown>> => {
-    const jwt = createAppJwt(config.appId, config.privateKey, Math.floor(now() / 1000))
-    const response = await fetchJson(`${config.apiUrl}${path}`, {
-      method,
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${jwt}`,
-        'x-github-api-version': '2022-11-28',
-      },
-    })
-    if (!response.ok) {
-      throw new AppAuthError(
-        `GitHub App request ${method} ${path} failed with ${response.status}.`,
-        response.status,
-      )
-    }
-    return (await response.json()) as Record<string, unknown>
-  }
+  const call = (method: string, path: string) => callApp(config, fetchJson, now, method, path)
   const installationFor = async (owner: string, repo?: string): Promise<string> => {
     if (config.installationId !== undefined) return config.installationId
     const known = installations.get(owner)

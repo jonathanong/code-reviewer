@@ -96,7 +96,7 @@ describe('createGhReviewIo', () => {
         calls.push(args)
         return 'bug\nlgtm\n'
       },
-      [],
+      async () => undefined,
       async () => 'lgtm',
     )
     await expect(io.hasApprovalLabel()).resolves.toBe(true)
@@ -162,7 +162,7 @@ describe('createGhReviewIo', () => {
     const io = createGhReviewIo(
       target,
       async (args) => (calls.push(args), ''),
-      [],
+      async () => undefined,
       async () => 'ok, ship',
     )
     await io.removeApprovalLabel()

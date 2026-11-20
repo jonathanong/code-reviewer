@@ -56,6 +56,7 @@ function fakeLabelIo(): LabelIo {
 function deps(io: ReviewIo, input = '{}'): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
+    authIdentity: vi.fn(async () => ({})),
     configs: vi.fn(() => NO_CONFIGS),
     targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
     createIo: vi.fn(() => io),

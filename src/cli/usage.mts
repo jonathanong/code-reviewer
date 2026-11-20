@@ -17,7 +17,8 @@ code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]..
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
   auth reports whether gh calls use the GitHub App (CODE_REVIEWER_APP_ID with
-  CODE_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. queue lists open pull requests
+  CODE_REVIEWER_APP_PRIVATE_KEY or _PATH) or the local gh login. Under App auth it also prints
+  login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
   post, revoke and status use the label names from the machine config (<owner>.json, <owner>/<name>.json) and the
   repository's own .code-reviewer.json on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
@@ -43,9 +44,9 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
   from report.json.
   resolve resolves review threads of fixed findings.
-  Markers in earlier reviews count only from the posting identity (the gh or App viewer)
-  plus the comma-separated logins in CODE_REVIEWER_TRUSTED_AUTHORS (set it to <app-slug>[bot]
-  under App auth, where viewer is unavailable).
+  Markers in earlier reviews count only from the reviewer's own identity: the gh viewer, or under
+  App auth the App's <app-slug>[bot] from GET /app. If that lookup fails nothing is trusted, and
+  reviews from every other author are read as ordinary notes, never as a prior review.
   post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
   the header; inline comments where the diff allows, the rest in the body) and adds the "final
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request

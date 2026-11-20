@@ -31,15 +31,29 @@ describe('createGhPrepareIo diff', () => {
   )
 
   it('diffs in the tree when there is one', async () => {
-    const io = createGhPrepareIo(target, run, gitFake(), [], undefined, '/nowhere')
+    const io = createGhPrepareIo(
+      target,
+      run,
+      gitFake(),
+      async () => undefined,
+      undefined,
+      '/nowhere',
+    )
     expect(await io.diff('/tree')).toBe('LOCAL')
   })
 
   it('asks GitHub without a tree, or when git fails', async () => {
-    const io = createGhPrepareIo(target, run, gitFake(), [], undefined, '/nowhere')
+    const io = createGhPrepareIo(
+      target,
+      run,
+      gitFake(),
+      async () => undefined,
+      undefined,
+      '/nowhere',
+    )
     expect(await io.diff()).toBe('REMOTE')
     const git = vi.fn(async () => Promise.reject(new Error('no such commit')))
-    const broken = createGhPrepareIo(target, run, git, [], undefined, '/nowhere')
+    const broken = createGhPrepareIo(target, run, git, async () => undefined, undefined, '/nowhere')
     expect(await broken.diff('/tree')).toBe('REMOTE')
   })
 })
