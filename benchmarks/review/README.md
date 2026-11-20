@@ -9,6 +9,9 @@ not re-measured under the new name). Reviewer and selection cost
 $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
+Not re-measured since the 2026-11-19 snapshot change: the mined-case rows below were taken before
+the reviewer could read history, so they are not comparable with a run made now.
+
 Mined cases (8 real pull requests from `cases.json`):
 
 | Pillar      | Cases | Expected findings caught, with skills | Without | Runs that loaded every selected skill |
@@ -88,7 +91,9 @@ congruence, and history findings) use `"lines": null`, so any finding on the fil
 reviewer may rightly raise the same concern far from where a labeler guessed.
 
 This repository is private. `cases.json` holds cases mined from real pull requests, most of them in
-private repositories: a run clones each repository with the `gh` login and exports the head tree.
+private repositories: a run fetches each case's base and head commits with the `gh` login and
+checks the head out as a git repository with its history (see
+[Mined case checkouts](#mined-case-checkouts)).
 
 ### Fixture cases
 
@@ -251,12 +256,12 @@ pnpm exec code-reviewer bench \
   --pillar design --jobs 3
 ```
 
-For each case, the runner exports the pull request head with `git archive`, so the tree has no
-history. It writes the title, description, and a numbered diff (base and head line numbers on every
-line) into `.review/` inside that tree, then
-runs `claude -p` on Sonnet with only `Read`, `Grep`, and `Glob`. With no shell, network, or
-`gh`, the reviewer cannot look up the revert. Each pillar prompt is prefixed with the shared
-`_contract.md`.
+For each case, the runner prepares a snapshot (below). It writes the title, description, and a
+numbered diff (base and head line numbers on every line) into `.review/` inside that tree, then
+runs `claude -p` on Sonnet with the tools `review` gives that pillar (`pillarToolFlags`): `Read`,
+`Grep`, `Glob`, `Agent` and `Skill`, plus `git log` and `git show` through `Bash` for the
+`history` pillar. There is no other shell, network, or `gh`, so the reviewer cannot look up the
+revert. Each pillar prompt is prefixed with the shared `_contract.md`.
 
 Results are written to `<out>/raw/<pillar>/<case>.json`, then `summary.json` and `summary.md`. Use
 `--score-only` to re-score existing raw results, and `--case <id>` to run one case. Runs cost
@@ -267,6 +272,30 @@ decides which finding, if any, raises each labeled problem, even at a different 
 stores the assignment in the raw result. Judging is cached per model, so `--score-only --judge
 sonnet` re-scores for free after the first pass. Prefer judged numbers; location matching both
 credits unrelated findings at the right file and misses the right claim cited elsewhere.
+
+### Mined case checkouts
+
+A mined case's tree is a git checkout built from a per-repository cache under `<out>/cache`:
+
+- **Cache**: `<owner>__<name>.git`, a bare repository with an `origin` and no branch refspec. A case
+  populates it with `git fetch origin <baseSha> <headSha>` using the `gh` credential helper, so it
+  holds the full history of those two commits and nothing newer. It is neither shallow nor
+  filtered, and it is shared by the cases of a repository.
+- **Tree**: `git init`, with the cache's `objects` directory as an alternate (no copy of the
+  objects), `refs/remotes/origin/<base branch>` and `refs/remotes/origin/HEAD` at `baseSha`, and
+  HEAD detached at `headSha`. The base branch name comes from `gh pr view`. `git diff
+  origin/<base>...HEAD`, `git merge-base` and `git log origin/<base>..HEAD` work. The tree has no
+  remote, so nothing can be fetched into it, and `.review/` is in `.git/info/exclude`.
+- **Diff**: `<baseSha>...<headSha>`, taken from the cache.
+
+Fixture cases are not git checkouts: their tree is a copy of `head/` with no `.git`.
+
+What this does not hide: the cache of a repository also holds the commits fetched for its other
+cases, so a commit that is later than one case's head, such as a revert, can be present as an object
+when another case's head follows it. No ref reaches it, so `git log` and `git log --all` do not list
+it and it can be read only by naming its SHA, which the case does not contain. Treat a catch that
+cites a later commit as suspect. A cache made before this change (a directory without the `.git`
+suffix) holds every branch and is never read; delete it.
 
 ## Verifier
 
@@ -284,7 +313,7 @@ pnpm exec code-reviewer bench-verifier \
 of those pillar results that lack a current `--judge` assignment (default `sonnet`), so each input
 finding is labeled real (it raises a labeled problem) or noise. For each case it gathers every
 pillar's findings, plants a copy of each real finding under a second pillar, and makes one
-`claude -p` call (default Opus) in the same git-free snapshot with `verifier.md`, the congruence
+`claude -p` call (default Opus) in the same snapshot with `verifier.md`, the congruence
 pillar, and the findings as indexed JSON. The verifier returns the review with `sources` on every
 finding: the input indexes it confirms or merges. The snapshot also gets the same staged rule
 sources as `bench` (`--no-rules` has the same meaning), and the

@@ -10,6 +10,7 @@ import {
   SKILL_TOOLS,
   isolationArgs,
   pillarArgs,
+  pillarToolFlags,
 } from './claude-flags.mts'
 
 const value = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
@@ -86,5 +87,26 @@ describe('isolationArgs', () => {
       '--settings',
       '{"enabledPlugins":{}}',
     ])
+  })
+})
+
+describe('pillarToolFlags', () => {
+  it('gives a non-history pillar the pillar tools, without Skill for a control run', () => {
+    expect(pillarToolFlags('design')).toEqual({ tools: PILLAR_TOOLS, allowedTools: PILLAR_TOOLS })
+    expect(pillarToolFlags('design', false)).toEqual({
+      tools: PILLAR_TOOLS_NO_SKILLS,
+      allowedTools: PILLAR_TOOLS_NO_SKILLS,
+    })
+  })
+
+  it('limits the history pillar shell to git log and git show', () => {
+    expect(pillarToolFlags('history')).toEqual({
+      tools: `${PILLAR_TOOLS},Bash`,
+      allowedTools: `${PILLAR_TOOLS},Bash(git log:*),Bash(git show:*)`,
+    })
+    expect(pillarToolFlags('history', false)).toEqual({
+      tools: `${PILLAR_TOOLS_NO_SKILLS},Bash`,
+      allowedTools: `${PILLAR_TOOLS_NO_SKILLS},Bash(git log:*),Bash(git show:*)`,
+    })
   })
 })

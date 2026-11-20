@@ -6,6 +6,7 @@ import {
   PILLAR_TOOLS,
   PILLAR_TOOLS_NO_SKILLS,
   pillarArgs,
+  pillarToolFlags,
 } from '../run/claude-flags.mts'
 import { buildPillarPrompt, runPillar } from './runner.mts'
 
@@ -71,11 +72,11 @@ describe('runPillar', () => {
     const findings = await runPillar(
       item,
       '/snap',
-      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5 },
+      { pillar: 'design', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5 },
       exec,
     )
     expect(findings).toEqual({
-      findings: [{ pillar: 'history', severity: 'low', title: 'T', body: 'B' }],
+      findings: [{ pillar: 'design', severity: 'low', title: 'T', body: 'B' }],
       skills: [],
       usage: NO_USAGE,
     })
@@ -91,6 +92,7 @@ describe('runPillar', () => {
         model: 'opus',
         maxTurns: 5,
         effort: CLAUDE_EFFORT.full,
+        ...pillarToolFlags('design'),
       }),
     )
     expect(options).toEqual({ cwd: '/snap' })
@@ -101,7 +103,7 @@ describe('runPillar', () => {
     await runPillar(
       item,
       '/snap',
-      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, skills: false },
+      { pillar: 'design', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, skills: false },
       exec,
     )
     const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
@@ -114,11 +116,26 @@ describe('runPillar', () => {
     await runPillar(
       item,
       '/snap',
-      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, settings },
+      { pillar: 'design', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5, settings },
       exec,
     )
     const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
     expect(args[args.indexOf('--tools') + 1]).toBe(PILLAR_TOOLS)
     expect(JSON.parse(args[args.indexOf('--settings') + 1] as string)).toEqual(settings)
+  })
+
+  it('gives the history pillar the git history tools `review` gives it', async () => {
+    const exec = vi.fn(async () => output([]))
+    await runPillar(
+      item,
+      '/snap',
+      { pillar: 'history', pillarPrompt: 'Prompt', model: 'opus', maxTurns: 5 },
+      exec,
+    )
+    const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
+    expect(args[args.indexOf('--allowedTools') + 1]).toBe(
+      `${PILLAR_TOOLS},Bash(git log:*),Bash(git show:*)`,
+    )
+    expect(args[args.indexOf('--tools') + 1]).toBe(`${PILLAR_TOOLS},Bash`)
   })
 })

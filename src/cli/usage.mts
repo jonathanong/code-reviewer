@@ -51,8 +51,8 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
   the label before a re-review. status exits 0 only when the newest review approved the current
-  head and the label is present, or skipped the current head. bench runs each pillar prompt against labeled cases from a git-free
-  snapshot of the pre-merge head and scores recall and precision; --judge grades by claim
+  head and the label is present, or skipped the current head. bench runs each pillar prompt against labeled cases from a git checkout of the pre-merge head
+  (history up to it, no later commits) and scores recall and precision; --judge grades by claim
   with a model instead of by location. bench also records the skills each run loads and, for cases
   with expectedSkills (full plugin:skill names; an array entry is any-of), reports skills loaded and
   grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
