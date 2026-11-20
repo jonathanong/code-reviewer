@@ -22,6 +22,7 @@ const BLANK: Omit<TrackerRow, 'repo' | 'pr' | 'head' | 'state'> = {
   reason: null,
   reviewUrl: null,
   event: null,
+  downgraded: null,
   postedAt: null,
   runDir: null,
 }
@@ -116,7 +117,8 @@ export function recordPosted(io: TrackerIo, run: PostedRun): Recorded {
       verdict: run.outcome.verdict,
       counts,
       reviewUrl: run.outcome.urls[0] ?? null,
-      event: run.outcome.reviews[0]?.event ?? null,
+      event: run.outcome.event,
+      downgraded: run.outcome.downgraded ?? null,
       postedAt: io.now().toISOString(),
       runDir: dirname(resolve(run.input)),
     })

@@ -27,6 +27,7 @@ const input: ReviewInput = {
   effort: 'high',
   summary: '',
   skipped: [],
+  questions: [],
   findings: ['a', 'b'].map((title, line) => ({
     pillar: 'rules',
     severity: 'low' as const,
@@ -47,6 +48,9 @@ describe('retry after a partial post', () => {
       listFiles: async () => [{ filename: 'a.ts', patch: '@@ -0,0 +1,2 @@\n+x\n+y\n' }],
       listReviews: async () => reviews.map((body) => ({ body, author: 'bot' })),
       trustedAuthors: async () => new Set(['bot']),
+      pullAuthor: async () => 'dev',
+      changesRequested: async () => [],
+      dismissReview: async () => undefined,
       hasApprovalLabel: async () => false,
       postReview: vi.fn(async (review) => {
         if (reviews.length === 1 && failSecond) throw new Error('boom')

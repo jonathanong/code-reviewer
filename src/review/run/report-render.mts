@@ -1,6 +1,7 @@
 import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
+import { renderQuestions } from '../question.mts'
 import { locationText } from '../render.mts'
 import { renderPush } from './push-report.mts'
 import { renderStack } from './stack-report.mts'
@@ -35,6 +36,11 @@ function raw(finding: ReportFinding): string {
     ? ` — dropped${finding.droppedReason === undefined ? '' : `: ${finding.droppedReason}`}`
     : ' — kept'
   return `- **[${finding.severity}]** ${finding.title}${where(finding)}${status}\n\n${quote(finding.body)}`
+}
+
+function renderPostWarnings(warnings: readonly string[]): string[] {
+  if (warnings.length === 0) return []
+  return [`### Posted text\n\n${warnings.map((warning) => `- ${warning}`).join('\n')}`]
 }
 
 function usageLine(usage: Usage | null): string {
@@ -85,6 +91,8 @@ export function renderReport(data: ReportData): string {
             verified(finding, at, data.stack?.fixedLater.find((entry) => entry.finding === at)?.pr),
           )
           .join('\n\n'),
+    ...renderQuestions(data.questions ?? []),
+    ...renderPostWarnings(data.postWarnings ?? []),
     ...(data.fixedThreadIds.length === 0
       ? []
       : [

@@ -21,6 +21,7 @@ const NULLABLE_FIELDS = [
   'reason',
   'reviewUrl',
   'event',
+  'downgraded',
   'postedAt',
   'runDir',
 ] as const
@@ -82,7 +83,12 @@ export function foldRows(rows: readonly TrackerRow[]): TrackerRow[] {
       continue
     }
     const known = Object.entries(row).filter(([, value]) => value !== null)
-    folded.set(key, { ...earlier, ...Object.fromEntries(known) } as TrackerRow)
+    // A later post replaces the downgrade even with none: an old reason must not outlive it.
+    folded.set(key, {
+      ...earlier,
+      ...Object.fromEntries(known),
+      downgraded: row.downgraded,
+    } as TrackerRow)
   }
   return [...folded.values()]
 }

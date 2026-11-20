@@ -37,6 +37,7 @@ const OUTPUT: ReviewVerifierOutput = {
   findings: [real, later],
   sources: [[0], [1]],
   dropped: new Map(),
+  questions: [],
   fixedThreadIds: [],
   skills: [],
   usage: parseUsage({ total_cost_usd: 1, num_turns: 2 }),

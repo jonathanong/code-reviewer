@@ -13,6 +13,14 @@ import { DEFAULT_LABELS } from './settings.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 import { resolveTrustedAuthors, type TrustedAuthors } from './trust.mts'
 
+/** GitHub refused the request (HTTP 422), so it created nothing. */
+export class ReviewRejectedError extends Error {
+  constructor(message: string, options: { cause: unknown }) {
+    super(message, options)
+    this.name = 'ReviewRejectedError'
+  }
+}
+
 /** The GitHub reads and writes a review needs, injectable for tests. */
 export type ReviewIo = {
   headSha(): Promise<string>
@@ -21,6 +29,12 @@ export type ReviewIo = {
   listFiles(): Promise<ReviewFile[]>
   /** Review bodies with their author logins, oldest first. */
   listReviews(): Promise<{ body: string; author: string | null }[]>
+  /** Reviews that still request changes, with their author logins, oldest first. */
+  changesRequested(): Promise<{ id: number; body: string; author: string | null }[]>
+  /** Dismisses a review that requests changes; GitHub requires a message. */
+  dismissReview(id: number, message: string): Promise<void>
+  /** The pull request author's login; undefined when GitHub reports none. */
+  pullAuthor(): Promise<string | undefined>
   /** Logins whose `final-review` markers count; see `resolveTrustedAuthors`. */
   trustedAuthors(): Promise<TrustedAuthors>
   hasApprovalLabel(): Promise<boolean>
@@ -78,6 +92,32 @@ export function createGhReviewIo(
       ])
       return lines(out).map((line) => JSON.parse(line) as { body: string; author: string | null })
     },
+    async changesRequested() {
+      const out = await run([
+        'api',
+        '--paginate',
+        `${pull}/reviews?per_page=100`,
+        '-q',
+        '.[] | select(.state == "CHANGES_REQUESTED") | {id, body, author: .user.login} | @json',
+      ])
+      return lines(out).map(
+        (line) => JSON.parse(line) as { id: number; body: string; author: string | null },
+      )
+    },
+    async dismissReview(id, message) {
+      await run([
+        'api',
+        '--method',
+        'PUT',
+        `${pull}/reviews/${id}/dismissals`,
+        '-f',
+        `message=${message}`,
+      ])
+    },
+    async pullAuthor() {
+      const out = (await run(['api', pull, '-q', '.user.login'])).trim()
+      return out === '' ? undefined : out
+    },
     trustedAuthors: () => resolveTrustedAuthors(run, identity),
     async hasApprovalLabel() {
       const out = await run([
@@ -109,6 +149,11 @@ export function createGhReviewIo(
           '.html_url',
         ])
         return out.trim()
+      } catch (error) {
+        if (error instanceof Error && /HTTP 422/u.test(error.message)) {
+          throw new ReviewRejectedError('GitHub rejected the review (HTTP 422).', { cause: error })
+        }
+        throw error
       } finally {
         rmSync(dir, { recursive: true, force: true })
       }

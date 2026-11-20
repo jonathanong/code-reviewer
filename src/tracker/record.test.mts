@@ -67,6 +67,7 @@ describe('recordReview', () => {
         reason: null,
         reviewUrl: null,
         event: null,
+        downgraded: null,
         postedAt: null,
         runDir: join(FIXTURES, 'full'),
       },
@@ -157,6 +158,11 @@ describe('recordPosted', () => {
     reviews: [{ event: 'COMMENT' as const, commit_id: HEAD, body: 'b', comments: [] }],
     urls: ['https://example.test/review/1', 'https://example.test/review/2'],
     label: 'unchanged' as const,
+    event: 'COMMENT' as const,
+    downgraded: 'self-review' as const,
+    warnings: [],
+    tooLong: [],
+    dismissed: [],
   }
   const finding = (severity: 'blocking' | 'low') => ({
     pillar: 'rules' as const,
@@ -185,12 +191,13 @@ describe('recordPosted', () => {
       counts: { blocking: 1, high: 0, medium: 0, low: 2 },
       reviewUrl: 'https://example.test/review/1',
       event: 'COMMENT',
+      downgraded: 'self-review',
       postedAt: '2026-02-03T04:05:06.000Z',
       runDir: join(FIXTURES, 'full'),
     })
   })
 
-  it('records a post that produced no review link or event', () => {
+  it('records a post that produced no review link, and an event that was not downgraded', () => {
     const io = tracker()
     recordPosted(io, {
       repo: 'acme/widgets',
@@ -198,9 +205,23 @@ describe('recordPosted', () => {
       headSha: HEAD,
       input: 'review.json',
       findings: [],
-      outcome: { ...outcome, reviews: [], urls: [] },
+      outcome: {
+        verdict: 'Approve',
+        event: 'APPROVE',
+        reviews: [],
+        urls: [],
+        label: 'added',
+        warnings: [],
+        tooLong: [],
+        dismissed: [],
+      },
     })
-    expect(readRows(io).rows[0]).toMatchObject({ reviewUrl: null, event: null })
+    expect(readRows(io).rows[0]).toMatchObject({
+      verdict: 'Approve',
+      reviewUrl: null,
+      event: 'APPROVE',
+      downgraded: null,
+    })
   })
 
   it('reports a tracker failure and still returns', () => {

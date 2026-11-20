@@ -133,6 +133,9 @@ function setup(
     abort: vi.fn(async () => calls.push('abort')),
     preview: vi.fn(async () => ({
       verdict: 'Comment',
+      event: 'COMMENT',
+      warnings: [],
+      tooLong: [],
       reviews: [{ event: 'COMMENT', commit_id: SHA, body: 'Body.', comments: [] }],
     })) as never,
     plugins: vi.fn(async () => ({
@@ -172,16 +175,11 @@ describe('runReview', () => {
       review: join(out, 'review.json'),
       headSha: SHA,
       fixedThreadIds: [],
+      questions: 0,
     })
     expect(calls).toEqual([])
-    for (const file of [
-      'skills.json',
-      'verifier.json',
-      'review.json',
-      'preview.md',
-      'report.json',
-      'report.md',
-    ]) {
+    const files = ['skills.json', 'verifier.json', 'review.json', 'preview.md', 'report.json']
+    for (const file of [...files, 'report.md']) {
       expect(readFileSync(join(out, file), 'utf8').length).toBeGreaterThan(0)
     }
     expect(readJson(out, 'skills.json').selected).toEqual([
@@ -267,7 +265,7 @@ describe('runReview', () => {
     const { out, steps, options } = setup()
     await runReview(steps, options)
     const raw = readJson(out, 'review.json')
-    expect(Object.keys(raw).sort()).toEqual(['effort', 'findings', 'skipped', 'summary'])
+    expect(Object.keys(raw).sort().join()).toBe('effort,findings,questions,skipped,summary')
     expect(raw.effort).toBe('high')
     const parsed = parseReviewInput(raw)
     expect(parsed.findings).toHaveLength(1)

@@ -30,6 +30,7 @@ describe('parseReviewInput', () => {
       summary: '',
       skipped: [],
       findings: [],
+      questions: [],
     })
   })
 
@@ -46,7 +47,33 @@ describe('parseReviewInput', () => {
       summary: 'hi',
       skipped: [{ pillar: 'history', reason: 'no history' }],
       findings: [{ pillar: 'rules', severity: 'high', title: 'T', body: 'B' }],
+      questions: [],
     })
+  })
+
+  it('parses questions and rejects malformed ones', () => {
+    const ask = { question: ' Q? ', askOf: 'product', why: ' W ' }
+    expect(parseReviewInput({ questions: [ask] }).questions).toEqual([
+      { question: 'Q?', askOf: 'product', why: 'W' },
+    ])
+    expect(failure({ questions: 'x' })).toBe('questions must be an array.')
+    expect(failure({ questions: [null] })).toBe('questions[0] must be an object.')
+    expect(failure({ questions: [{ ...ask, askOf: 'me' }] })).toContain('questions[0].askOf')
+    expect(failure({ questions: [{ ...ask, why: ' ' }] })).toBe(
+      'questions[0].why must be a non-empty string.',
+    )
+    expect(failure({ questions: [{ ...ask, question: '' }] })).toContain('questions[0].question')
+  })
+
+  it('checks an optional verdict against the findings and questions', () => {
+    expect(parseReviewInput({ verdict: 'Approve' }).findings).toEqual([])
+    expect(
+      failure({ verdict: 'Approve', findings: [finding({ severity: 'blocking' })] }),
+    ).toContain('does not match')
+    expect(
+      failure({ verdict: 'Approve', questions: [{ question: 'Q', askOf: 'author', why: 'W' }] }),
+    ).toContain('(Comment)')
+    expect(failure({ verdict: 'Maybe' })).toContain('verdict must be one of')
   })
 
   it('ignores a non-string summary', () => {

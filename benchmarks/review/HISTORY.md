@@ -2,6 +2,46 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: posted text is short and free of review narration (no run)
+
+`pillars/_contract.md` gained a rule for posted text: lead with the defect and its consequence, one
+finding per comment, no narration of the review (pillar, what was checked, tool names, "the
+verifier"), no praise, no restating the diff, and link an open thread instead of restating it.
+`verifier.md` step 5 no longer asks the body to credit another reviewer at length. Every pillar
+prompt includes the contract, so every `bench` pillar row and every `bench-verifier` row is no
+longer comparable with earlier entries; body length and wording are the expected movement, recall
+is not. The length targets and the process-word check are deterministic code in `post`, not graded
+by the bench. No run was made.
+
+## 2026-11-19: `blocking` is rarer and the verifier re-decides severity (no run)
+
+`pillars/_contract.md` now defines `blocking` by four conditions that must all hold (code that
+runs, a path someone takes, introduced or made reachable by this pull request, a fix that needs a
+decision rather than a mechanical edit), with special cases: a wrong path behind a flag that ships
+off blocks only if it would stop the flag being turned on, a guard that fails open on an
+irreversible or money-moving action blocks, untested but correct-looking code does not, and a
+title or description problem is `medium` at most. The pillar bars were reconciled: correctness
+(a missing test is never blocking), congruence (`medium` at most), and rules (a rule a linter or CI
+check enforces is `high` at most). `verifier.md` decides severity anew rather than re-rating the
+pillar's, and a merged finding takes the severity the verifier decides, not the strongest. Every
+pillar prompt includes the contract, so every `bench` pillar row and every `bench-verifier` row,
+including severity agreement, is no longer comparable with earlier entries. Recall of expected
+findings is not expected to move, since a finding still counts when rated `high`; severity
+agreement on `blocking` cases may fall by design. No run was made.
+
+## 2026-11-19: the verifier may return open questions, which make the verdict Comment (no run)
+
+`verifier.md` gained a Questions step (ask only what the code and context cannot settle and whose
+answer could change the review; each question has `askOf` and a required `why`), a top-down
+Verdict rule (blocking finding: Request Changes; else a high finding or any open question:
+Comment; else Approve), and a `questions` array in its example output. The verifier output schema
+(shared by `bench-verifier` and `review`) gained an optional `questions` array, which the bench
+graders ignore. `context.md` gains an "Open questions from the last review" section only when the
+last review asked some, which no bench case has. A run with no questions returned and the same
+findings differs from before only by the added verifier text. No run was made. `bench-verifier`
+rows are not comparable with earlier entries: its prompt text and schema changed. Pillar rows
+(`bench`) are unaffected.
+
 ## 2026-11-19: the contract and verifier prompts gained a merge-resolution rule (no run)
 
 `pillars/_contract.md` gained a Merge resolutions section (judge the resolution, not the incoming

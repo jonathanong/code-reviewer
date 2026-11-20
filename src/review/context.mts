@@ -1,6 +1,8 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
 import { parseBodyFindings } from './body-findings.mts'
+import { latestInstance } from './last-review.mts'
 import { MARKER_RE, PART_MARKER_RE } from './post.mts'
+import { parseQuestions, type Question } from './question.mts'
 import { isTrustedAuthor } from './trust.mts'
 
 export type PriorFinding = {
@@ -33,6 +35,8 @@ export type FollowUpContext = {
   /** The conversation exceeded one query page, so older reviews or threads may be missing. */
   truncated: boolean
   unresolved: PriorFinding[]
+  /** Questions the last review asked, so a follow-up does not ask an answered one again. */
+  priorQuestions: Question[]
   others: OtherNote[]
 }
 
@@ -151,12 +155,8 @@ export function buildFollowUpContext(
     if (!markedIds.has(first.pullRequestReview?.id ?? '')) return []
     return priorFinding(thread, first.body) ?? []
   })
-  const latestSha = latest?.[1]
-  const bodyFindings = own
-    .filter((review) =>
-      [MARKER_RE, PART_MARKER_RE].some((re) => re.exec(review.body)?.[1] === latestSha),
-    )
-    .flatMap((review) => parseBodyFindings(review.body))
+  const lastReviews = latestInstance(own, latest?.[1])
+  const bodyFindings = lastReviews.flatMap((review) => parseBodyFindings(review.body))
   return {
     title: pull.title,
     author: pull.author?.login ?? null,
@@ -182,6 +182,7 @@ export function buildFollowUpContext(
       pull.reviews.pageInfo?.hasPreviousPage === true ||
       pull.reviewThreads.pageInfo?.hasPreviousPage === true,
     unresolved: [...unresolved, ...bodyFindings],
+    priorQuestions: lastReviews.flatMap((review) => parseQuestions(review.body)),
     others: othersFrom(pull, markedIds),
   }
 }

@@ -8,7 +8,7 @@ code-reviewer abort --repo owner/name --pr N [--requeue]
 code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
-code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run]
+code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run] [--allow-long] [--body-target N] [--inline-target N]
 code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
@@ -56,8 +56,14 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   Markers in earlier reviews count only from the reviewer's own identity: the gh viewer, or under
   App auth the App's <app-slug>[bot] from GET /app. If that lookup fails nothing is trusted, and
   reviews from every other author are read as ordinary notes, never as a prior review.
-  post renders verified findings as one or more COMMENT reviews (verdict, reviewed SHA and effort in
-  the header; inline comments where the diff allows, the rest in the body) and adds the "final
+  post renders verified findings as one or more reviews (verdict, reviewed SHA and effort in
+  the header; inline comments where the diff allows, the rest in the body). The first is submitted
+  as APPROVE, REQUEST_CHANGES or COMMENT to match the verdict, and as COMMENT, reported in the
+  output as event and downgraded, on the reviewer's own pull request, when the identity is unknown,
+  or when GitHub rejects the event with 422. Posted text over a target (default 1200 characters for a body, 800 for an inline comment,
+  hidden marker and collapsed details not counted in a body) and text that narrates the review
+  (the verifier, a pillar, tools, praise) are reported in warnings; over three times a target is
+  refused unless --allow-long (tooLong lists those). It adds the "final
   approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
   the label before a re-review. status exits 0 only when the newest review approved the current

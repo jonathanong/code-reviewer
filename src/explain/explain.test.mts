@@ -59,6 +59,93 @@ describe('explainRun', () => {
     expect(text).not.toContain('- 7')
   })
 
+  it('shows who each question is for and why it matters, and why that makes the verdict Comment', () => {
+    const text = explain('asked')
+    expect(text).toContain('## Verdict: Comment')
+    expect(text).toContain(
+      '2 open questions are still waiting for an answer. That means Comment: the reviewer cannot say yes or no until they are answered.',
+    )
+    expect(text).toContain(
+      'a blocking problem means Request Changes; otherwise a high-severity problem or any open question means Comment; otherwise Approve.',
+    )
+    expect(text).toContain(
+      '- For whoever owns the product decision: Is the v1 endpoint still called by anyone?\n  Why it matters: If it is, removing it breaks those callers.\n- For the author: Should retries stop after the first 4xx?\n  Why it matters: It decides whether the loop can run forever.',
+    )
+  })
+
+  it('names the blocking problem, and a high one with a question, as the reason', () => {
+    expect(explain('full')).toContain('A blocking problem means Request Changes.')
+    const files: Record<string, string> = {
+      '/run/review.json': JSON.stringify({
+        summary: 's',
+        findings: [{ severity: 'high', title: 'Leaks a handle', body: 'b' }],
+        questions: [{ question: 'Q?', askOf: 'author', why: 'W' }],
+      }),
+    }
+    const text = explainRun({ ...io, read: (path) => files[path] }, '/run')
+    expect(text).toContain(
+      'No blocking problem, but a high-severity one: Leaks a handle. Also, 1 open question is still waiting for an answer. That means Comment.',
+    )
+    const bare = explainRun(
+      {
+        ...io,
+        read: (path) =>
+          path === '/run/review.json'
+            ? '{"findings":[{"severity":"high","title":"T","body":""}]}'
+            : undefined,
+      },
+      '/run',
+    )
+    expect(bare).toContain('a high-severity one: T. That means Comment.')
+  })
+
+  it('falls back to the questions in report.json when review.json has none', () => {
+    const files: Record<string, string> = {
+      '/run/review.json': JSON.stringify({ summary: 's', findings: [] }),
+      '/run/report.json': JSON.stringify({
+        verdict: 'Comment',
+        questions: [{ question: 'From the report?', askOf: 'author', why: 'Because.' }],
+      }),
+    }
+    const text = explainRun({ ...io, read: (path) => files[path] }, '/run')
+    expect(text).toContain('- For the author: From the report?\n  Why it matters: Because.')
+    const empty: Record<string, string> = {
+      ...files,
+      '/run/review.json': JSON.stringify({ findings: [], questions: [] }),
+    }
+    expect(explainRun({ ...io, read: (path) => empty[path] }, '/run')).toContain(
+      '## Open questions\n\nNone.',
+    )
+  })
+
+  it('says when a verdict was posted as a different review event, and why', () => {
+    const head = '1'.repeat(40)
+    const posted = (event: string, downgraded: string | null) =>
+      JSON.stringify({
+        repo: 'acme/widgets',
+        pr: 4,
+        head,
+        state: 'posted',
+        event,
+        downgraded,
+      }) + '\n'
+    const withRows = (text: string) =>
+      explainRun(
+        { ...io, read: (path) => (path.endsWith('reviews.jsonl') ? text : io.read(path)) },
+        resolve(FIXTURES, 'full'),
+      )
+    expect(withRows(posted('COMMENT', 'self-review'))).toContain(
+      "On GitHub this was posted as a plain comment because the pull request is the reviewer's own, and GitHub does not let an account approve or request changes on its own pull request. The verdict above is still the reviewer's real conclusion.",
+    )
+    expect(withRows(posted('COMMENT', 'identity-unknown'))).toContain('could not confirm who wrote')
+    expect(withRows(posted('COMMENT', 'rejected'))).toContain('GitHub refused the verdict')
+    expect(withRows(posted('COMMENT', 'other'))).toContain('because other.')
+    expect(withRows(posted('APPROVE', null))).toContain('posted as APPROVE.')
+    expect(withRows(posted('COMMENT', null))).toContain('posted as a plain comment.')
+    expect(withRows(posted('REQUEST_CHANGES', null))).not.toContain('On GitHub this was posted')
+    expect(explain('full')).not.toContain('On GitHub this was posted')
+  })
+
   it('says what was not checked: failed and skipped areas, blocked sources, the stack', () => {
     const text = explain('full')
     expect(text).toContain('- Reviewed for: correctness, design.')
@@ -81,7 +168,7 @@ describe('explainRun', () => {
     const text = explain('review-only', { repo: 'acme/widgets', pr: 3, title: 'Rename things' })
     expect(headings(text)[0]).toBe('# acme/widgets#3: Rename things')
     expect(text).toContain(
-      '## Verdict: Approve\n\nNo blocking or high-severity problem was found.\n\nA small, safe change.',
+      '## Verdict: Approve\n\nNo blocking or high-severity problem was found, and no question is open. That means Approve.',
     )
     expect(text).toContain(
       '### 1. Worth fixing: Name does not match behavior\n\nWhere: `src/a.mts`\n\nThe reviewer gave no further explanation.',

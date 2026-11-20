@@ -36,6 +36,9 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
     listFiles: vi.fn(async () => []),
     listReviews: vi.fn(async () => []),
     trustedAuthors: vi.fn(async () => new Set(['bot'])),
+    pullAuthor: vi.fn(async () => 'dev'),
+    changesRequested: vi.fn(async () => []),
+    dismissReview: vi.fn(async () => undefined),
     hasApprovalLabel: vi.fn(async () => true),
     postReview: vi.fn(async () => 'https://example.test/r'),
     addApprovalLabel: vi.fn(async () => undefined),
@@ -149,6 +152,18 @@ describe('runReviewCommand', () => {
     expect(Array.isArray(printed.reviews)).toBe(true)
   })
 
+  it('uses the author prepare recorded instead of asking the host', async () => {
+    const { out } = capture()
+    const io = fakeIo()
+    const run = JSON.stringify({ findings: [], author: 'bot', headSha: SHA })
+    await runReviewCommand(
+      ['post', ...PR, '--head-sha', SHA, '--input', 'f.json', '--dry-run'],
+      deps(io, run),
+    )
+    expect(io.pullAuthor).not.toHaveBeenCalled()
+    expect(JSON.parse(out.join(''))).toMatchObject({ event: 'COMMENT', downgraded: 'self-review' })
+  })
+
   it('posts for real, completes the lifecycle, and prints the review count', async () => {
     const { out } = capture()
     const io = fakeIo()
@@ -159,6 +174,7 @@ describe('runReviewCommand', () => {
     expect(io.postReview).toHaveBeenCalledOnce()
     expect(JSON.parse(out.join(''))).toMatchObject({
       verdict: 'Approve',
+      event: 'APPROVE',
       reviews: 1,
       urls: ['https://example.test/r'],
       label: 'added',
@@ -180,7 +196,7 @@ describe('runReviewCommand', () => {
         state: 'posted',
         verdict: 'Approve',
         reviewUrl: 'https://example.test/r',
-        event: 'COMMENT',
+        event: 'APPROVE',
         postedAt: '2026-05-06T07:08:09.000Z',
       },
     ])

@@ -1,4 +1,6 @@
 import type { ReviewSide } from '../review-payload/index.mts'
+import { ASK_OF, type Question } from './question.mts'
+import { deriveVerdict, VERDICTS } from './render.mts'
 
 export const PILLARS = [
   'rules',
@@ -35,6 +37,7 @@ export type ReviewInput = {
   summary: string
   skipped: SkippedPillar[]
   findings: Finding[]
+  questions: Question[]
 }
 
 export class ReviewError extends Error {
@@ -113,19 +116,43 @@ function parseSkipped(raw: unknown, index: number): SkippedPillar {
   }
 }
 
+function parseQuestion(raw: unknown, index: number): Question {
+  const where = `questions[${index}]`
+  if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
+  return {
+    question: text(raw, 'question', where).trim(),
+    askOf: oneOf(ASK_OF, raw.askOf, `${where}.askOf`),
+    why: text(raw, 'why', where).trim(),
+  }
+}
+
 function list(record: Json, field: string): unknown[] {
   const value = record[field] ?? []
   if (!Array.isArray(value)) throw new ReviewError(`${field} must be an array.`)
   return value
 }
 
-/** Validates the verifier's collected findings; malformed input fails closed. */
+/**
+ * Validates the verifier's collected findings and questions; malformed input fails closed. An
+ * optional `verdict` must equal the one the findings and questions give.
+ */
 export function parseReviewInput(raw: unknown): ReviewInput {
   if (!isRecord(raw)) throw new ReviewError('Input must be a JSON object.')
-  return {
+  const review: ReviewInput = {
     effort: raw.effort === undefined ? 'high' : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
     skipped: list(raw, 'skipped').map(parseSkipped),
     findings: list(raw, 'findings').map(parseFinding),
+    questions: list(raw, 'questions').map(parseQuestion),
   }
+  if (raw.verdict !== undefined) {
+    const given = oneOf(VERDICTS, raw.verdict, 'verdict')
+    const derived = deriveVerdict(review.findings, review.questions)
+    if (given !== derived) {
+      throw new ReviewError(
+        `verdict ${given} does not match the findings and questions (${derived}); remove it to recompute.`,
+      )
+    }
+  }
+  return review
 }

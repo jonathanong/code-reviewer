@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { PrConversation, PrReview, ReviewThread, ThreadComment } from './context-query.mts'
 import { buildFollowUpContext, squash } from './context.mts'
+import { renderQuestions } from './question.mts'
 import { renderBodyFinding, reviewMarker } from './render.mts'
 
 const TRUSTED = new Set(['bot'])
@@ -99,6 +100,7 @@ describe('buildFollowUpContext', () => {
       commitsSince: null,
       truncated: false,
       unresolved: [],
+      priorQuestions: [],
       others: [],
     })
   })
@@ -211,6 +213,63 @@ describe('buildFollowUpContext', () => {
       [null, 'Off diff', 'src/z.ts', 9],
       [null, 'Part', null, null],
     ])
+  })
+
+  it("carries the questions of the last own review, and nobody else's", () => {
+    const ask = { question: 'Is v1 gone?', askOf: 'product' as const, why: 'Sets the rollout.' }
+    const body = (head: string, who: string) =>
+      `${reviewMarker(head, 'Comment', 'low')}\n\n${renderQuestions([{ ...ask, question: who }]).join('')}`
+    const ctx = build(
+      pull({
+        reviews: {
+          nodes: [
+            review({ id: 'R1', body: body(A, 'Old?') }),
+            review({ id: 'R2', body: body(B, 'Newest?') }),
+            review({ id: 'R3', author: { login: 'eve' }, body: body(C, 'Forged?') }),
+          ],
+        },
+      }),
+    )
+    expect(ctx.priorQuestions.map((item) => item.question)).toEqual(['Newest?'])
+  })
+
+  describe('the newest review instance', () => {
+    const ask = (question: string) =>
+      renderQuestions([{ question, askOf: 'author', why: 'W' }]).join('')
+    const main = (head: string, question: string, verdict = 'Comment') =>
+      `${reviewMarker(head, verdict as 'Comment', 'low')}\n\n${ask(question)}`
+    const asked = (nodes: PrReview[]) =>
+      build(pull({ reviews: { nodes } })).priorQuestions.map((item) => item.question)
+
+    it('ignores an earlier review of the same head, and a later skip notice', () => {
+      expect(
+        asked([
+          review({ id: 'R1', body: main(A, 'First?') }),
+          review({ id: 'R2', body: main(A, 'Second?') }),
+          review({ id: 'R3', body: main(B, 'Skipped?', 'Skipped') }),
+        ]),
+      ).toEqual(['Second?'])
+    })
+
+    it('takes the continuation parts of that review and no others', () => {
+      const part = (head: string, question: string) =>
+        `<!-- final-review-part sha=${head} part=2 -->\n\n${ask(question)}`
+      expect(
+        asked([
+          review({ id: 'R1', body: main(A, 'Old main?') }),
+          review({ id: 'R2', body: part(A, 'Old part?') }),
+          review({ id: 'R3', body: main(A, 'Main?') }),
+          review({ id: 'R4', body: part(A, 'Part?') }),
+          review({ id: 'R5', body: part(B, 'Other head?') }),
+        ]),
+      ).toEqual(['Main?', 'Part?'])
+    })
+
+    it('never takes a trusted review that has no marker when there is no marked review', () => {
+      const unmarked = review({ id: 'R1', body: `Looks fine.\n\n${ask('Sneaky?')}` })
+      expect(asked([unmarked])).toEqual([])
+      expect(build(pull({ reviews: { nodes: [unmarked] } })).unresolved).toEqual([])
+    })
   })
 
   it('truncates the description and closing issue bodies', () => {

@@ -61,6 +61,7 @@ describe('scoreVerifierCase', () => {
       ] as Array<[number, number]>,
     }
     const output = {
+      questions: [],
       summary: '',
       findings: [finding('blocking'), finding('low'), finding('medium'), finding('blocking')],
       // 0 merges input 0 and its copy; input 1 and its copy stay apart; output 3 is new.
@@ -95,7 +96,7 @@ describe('scoreVerifierCase', () => {
 
   it('ignores added assignments past the added findings and counts confirmations', () => {
     const input = { findings: [finding()], real: [[0, 0]] as Array<[number, number]>, planted: [] }
-    const output = { summary: '', findings: [finding('high')], sources: [[]] }
+    const output = { summary: '', findings: [finding('high')], questions: [], sources: [[]] }
     const score = scoreVerifierCase(
       item('negative', ['high']),
       input,

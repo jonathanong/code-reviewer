@@ -100,7 +100,7 @@ rather than label, or to review a head that is already reviewed. The command:
    against the documentation ([web-references](references/web-references.md)).
 
 It prints one line:
-`{claimed, mode, verdict, findings, costUsd, report, review, headSha, fixedThreadIds}`. It
+`{claimed, mode, verdict, findings, questions, costUsd, report, review, headSha, fixedThreadIds}`. It
 never posts. If it fails after the claim it drops the processing label itself and exits 1; when
 every pillar fails it fails the review, not approves it.
 
@@ -122,8 +122,10 @@ document connector (a first-party Claude Docs capability), put it in the session
 section for this pull request marked "draft", and give the human the link instead; otherwise show
 it inline. `report.md` holds the raw findings, the skills loaded and the cost by model. Ask
 whether to post. Post without asking only when the human has said this kind of review may be
-posted unattended. A human who wants a finding changed edits `review.json`; preview the result
-with `post --dry-run`.
+posted unattended. A human who wants a finding or question changed edits `review.json`; preview the result
+with `post --dry-run`. The verdict is derived from the findings and questions (a blocking finding
+requests changes; otherwise a high finding or any open question comments; otherwise approve), and
+`post` fails a `review.json` whose `verdict` field disagrees, so remove that field when editing.
 
 ## Step 4 - Post or drop
 
@@ -133,8 +135,22 @@ with `post --dry-run`.
 
 `post` renders and posts the review:
 
-- The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is always a COMMENT,
-  because GitHub does not let an author approve their own pull request.
+- Posted text is checked: bodies over 1,200 characters and inline comments over 800 warn, review
+  narration (the verifier, a pillar, tool names, praise) warns, and text over three times a target
+  is refused unless `--allow-long` is passed. Shorten the finding in `review.json` instead.
+
+- The top line is `[Approve]`, `[Request Changes]`, or `[Comment]`. The review is posted
+  as `APPROVE`, `REQUEST_CHANGES`, or `COMMENT` to match the verdict. GitHub refuses approve and
+  request-changes on the reviewer's own pull request, so there (the author is the `gh` login or
+  the App bot), when the reviewer's identity cannot be determined, or when GitHub rejects the event
+  with 422, it is posted once as `COMMENT`. `post` prints the `event` and, when it changed,
+  `downgraded` (`self-review`, `identity-unknown`, or `rejected`). The tag, marker, labels and
+  check run stay the source of truth for `status`; GitHub's review state is never read for the
+  verdict. An `APPROVE` clears an earlier request for changes by itself; after a `COMMENT` that no
+  longer requests changes, `post` dismisses the reviewer's own earlier changes-requested reviews
+  (trusted identity and marker only; the only dismissal the tool performs) and prints `dismissed`.
+  A failed or impossible dismissal is a warning naming the review left standing, not an error.
+- Open questions follow the finding index under a "Questions" heading.
 - Findings are tagged `[blocking]`, `[high]`, `[medium]`, or `[low]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.
 - A hidden marker records the reviewed SHA, the verdict, and the effort.

@@ -54,6 +54,48 @@ review on the head, then the labels) and writes a short report. If anything fail
 command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
 pillar fails, the review fails closed instead of approving unchecked code.
 
+### Posted text length
+
+Posted text should be short. A review body targets 1,200 characters (the hidden marker and collapsed
+details do not count) and an inline comment 800. Above a target, `post` and the `review` preview
+list a warning (`warnings` in the `post` output, "Posted text" in `report.md`); above three times a
+target, a real `post` refuses unless `--allow-long` is given (`tooLong` lists those on a dry run).
+`--body-target` and `--inline-target` change the targets. A fixed, conservative pattern list also
+warns when authored text narrates the review (the verifier, a pillar, tool names, first-person
+process, praise); it never refuses.
+
+### Verdict and questions
+
+The verdict is derived, never chosen, top-down: a verified `blocking` finding gives Request Changes;
+otherwise a `high` finding or an open question gives Comment; otherwise Approve. A failed pillar is
+listed as skipped and changes none of this, and a review where every pillar failed fails instead.
+The verifier may return `questions` (`question`, `askOf` `author` or `product`, and a required
+`why`: what the answer changes). A question is for something the code and context cannot settle,
+not a softened finding and not a request to explain code. Questions appear in `report.md` and under
+a "Questions" heading in the posted review body, and the next review of the pull request reads them
+as context so an answered one is not asked again. `post` recomputes the verdict from the findings
+and questions; a `verdict` field in `review.json` that disagrees fails the review.
+
+`post` submits the verdict as its own review event: Approve as `APPROVE`, Request Changes as
+`REQUEST_CHANGES`, Comment as `COMMENT` (on the first part of a split review; later parts are
+comments). GitHub refuses approve and request-changes on your own pull request, so when the
+author is the reviewer's identity (the `gh` login, or the App bot; the same identity that decides
+whose markers count) the review goes out as `COMMENT`. So it does when that identity cannot be
+determined, or when GitHub rejects the event with 422: it falls back to `COMMENT` once, and the
+`post` output says `event` and `downgraded` (`self-review`, `identity-unknown`, or `rejected`; the
+tracker's `posted` row and `explain` carry both), so a review is never lost. The author comes from
+the run's `context.json` when it is for the same head, and from the host otherwise. The first-line tag, hidden marker, labels and check run are unchanged and
+still decide `status`; GitHub's own review state is not trusted. An `APPROVE` clears the reviewer's earlier
+request for changes by itself, but a later `COMMENT` does not on GitHub, so the pull request would
+stay blocked after the blocking findings were fixed. When the review goes out as a `COMMENT` and the
+verdict no longer requests changes, `post` dismisses the reviewer's own earlier reviews that are
+still in the changes-requested state, with a one-line message that links the new review. "Own"
+means written by the trusted identity and carrying the hidden marker; nobody else's review is ever
+touched. This is the only dismissal the tool performs. If the identity is unknown, the lookup
+fails, or GitHub refuses a dismissal, the post still succeeds and `warnings` names each review left
+standing. `dismissed` in the output lists the dismissed review ids; a dry run lists what it would
+dismiss as `wouldDismiss` and dismisses nothing.
+
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
 plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of
@@ -106,7 +148,7 @@ Every `review` appends one row to a tracker, and `post` appends a `posted` row t
 one review run of one pull request head: repository, number, title, author, head SHA, mode (`full`,
 `light`, `follow-up` or `skip`), verdict, finding counts by severity, the number of open questions
 when `review.json` has a `questions` list, cost, start and finish times, the run directory, and a state:
-`reviewed` (produced, not posted), `posted` (with the review link and event), `skipped` or `failed`
+`reviewed` (produced, not posted), `posted` (with the review link, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
 (with the reason). A later row for the same repository, pull request and head replaces an earlier
 one, except that `posted` adds to the `reviewed` row it follows. `tracker` prints that folded state;
 CSV cells that begin with a spreadsheet formula character are prefixed with an apostrophe.
@@ -119,8 +161,11 @@ do not publish it. A tracker failure is reported as `trackerProblem` in the comm
 never fails a review or a post.
 
 `explain` prints a Markdown explainer for someone who has not read the code: what the pull request
-does, the verdict and the reason for it, each finding (claim, where, why it matters and what
-would fix it, most severe first), open questions, what was and was not checked, and the cost. It
+does, the verdict and why it is that verdict in plain words (a blocking finding: Request Changes; a
+high finding or an open question: Comment; otherwise Approve), the event it was posted as when that
+differs from the verdict (read from the tracker's `posted` row), each open question with who is asked
+and why it matters, each finding (claim, where, why it matters and what
+would fix it, most severe first), what was and was not checked, and the cost. It
 is built from `review.json`, `report.json`, `evidence.json` and `stack.json` in the run directory,
 any of which may be missing, and makes no model call and no network request. With `--repo` and
 `--pr` it uses the run directory of the latest tracked run, which must still exist. The skills put

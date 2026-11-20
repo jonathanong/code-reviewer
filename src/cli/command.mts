@@ -16,6 +16,7 @@ import { runLoopCommand } from './command-loop.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type ReviewDeps } from './deps.mts'
 import { explainCommand, trackerCommand } from './command-tracker.mts'
+import { postOptions } from './post-options.mts'
 import { recordPosted } from '../tracker/record.mts'
 import { REVIEW_USAGE } from './usage.mts'
 
@@ -45,6 +46,9 @@ function parse(args: string[]) {
       'head-sha': { type: 'string' },
       input: { type: 'string' },
       'dry-run': { type: 'boolean' },
+      'allow-long': { type: 'boolean' },
+      'body-target': { type: 'string' },
+      'inline-target': { type: 'string' },
       owner: { type: 'string' },
       force: { type: 'boolean' },
       requeue: { type: 'boolean' },
@@ -116,7 +120,10 @@ async function run(
       }
       const input = parseReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
       const dryRun = values['dry-run'] === true
-      const outcome = await postFinalReview(io, input, values['head-sha'], { dryRun })
+      const outcome = await postFinalReview(io, input, values['head-sha'], {
+        dryRun,
+        ...postOptions(values, (path) => deps.readFile(path), values.input, values['head-sha']),
+      })
       if (dryRun) {
         print(outcome)
         return 0

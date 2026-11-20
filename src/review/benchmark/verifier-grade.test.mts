@@ -65,6 +65,7 @@ describe('gradeAll', () => {
   it('judges added findings, then checks uncredited blocking and high findings', async () => {
     // Output 0 confirms a noise input, output 1 is added and raises the label, output 2 is added noise.
     const output = {
+      questions: [],
       summary: '',
       findings: [finding('high'), finding('blocking', 'label'), finding('high', 'noise')],
       sources: [[0], [], []],
@@ -114,7 +115,7 @@ describe('gradeAll', () => {
   })
 
   it('stages rules into the checker snapshot unless --no-rules', async () => {
-    const output = { summary: '', findings: [finding('high')], sources: [[]] }
+    const output = { summary: '', findings: [finding('high')], questions: [], sources: [[]] }
     const exec = async (_command: string, _args: string[], options?: { cwd?: string }) =>
       options?.cwd === undefined
         ? JSON.stringify({ structured_output: { matches: [] } })
@@ -129,8 +130,8 @@ describe('gradeAll', () => {
   })
 
   it('skips missing and failed runs, avoids snapshots with nothing to check, and logs failures', async () => {
-    const quiet = { summary: '', findings: [finding('low')], sources: [[0]] }
-    const strong = { summary: '', findings: [finding('high')], sources: [[]] }
+    const quiet = { summary: '', findings: [finding('low')], questions: [], sources: [[0]] }
+    const strong = { summary: '', findings: [finding('high')], questions: [], sources: [[]] }
     const other = { ...ITEM, id: 'p2' }
     const errored = { ...ITEM, id: 'e1' }
     const missing = { ...ITEM, id: 'm1' }

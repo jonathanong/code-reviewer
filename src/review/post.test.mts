@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, type Mock } from 'vitest'
 
+import { postReviews } from './event.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
-import type { ReviewIo } from './github.mts'
+import { ReviewRejectedError, type ReviewIo } from './github.mts'
 import { reviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
 import { reviewMarker, type Verdict } from './render.mts'
 
@@ -19,6 +20,9 @@ function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
     listFiles: vi.fn(async () => [{ filename: 'a.ts', patch: '@@ -1 +1 @@\n+x\n' }]),
     listReviews: vi.fn(async () => asReviews([])),
     trustedAuthors: vi.fn(async () => new Set(['bot'])),
+    pullAuthor: vi.fn(async () => 'dev'),
+    changesRequested: vi.fn(async () => []),
+    dismissReview: vi.fn(async () => undefined),
     hasApprovalLabel: vi.fn(async () => false),
     postReview: vi.fn(async () => 'https://example.test/review'),
     addApprovalLabel: vi.fn(async () => undefined),
@@ -32,6 +36,7 @@ function input(severity?: 'blocking' | 'high' | 'low'): ReviewInput {
     effort: 'high',
     summary: '',
     skipped: [],
+    questions: [],
     findings:
       severity === undefined
         ? []
@@ -88,6 +93,210 @@ describe('postFinalReview', () => {
       label: 'unchanged',
     })
     expect(clean.addApprovalLabel).not.toHaveBeenCalled()
+  })
+})
+
+describe('postFinalReview event', () => {
+  it('posts the verdict as its own event, on the first part only', async () => {
+    const approve = fakeIo()
+    await expect(postFinalReview(approve, input('low'), SHA)).resolves.toMatchObject({
+      event: 'APPROVE',
+    })
+    expect(approve.postReview.mock.calls[0]?.[0].event).toBe('APPROVE')
+    const changes = fakeIo()
+    await postFinalReview(changes, input('blocking'), SHA)
+    expect(changes.postReview.mock.calls[0]?.[0].event).toBe('REQUEST_CHANGES')
+    const comment = fakeIo()
+    const outcome = await postFinalReview(comment, input('high'), SHA)
+    expect(outcome).toMatchObject({ event: 'COMMENT' })
+    expect(outcome.downgraded).toBeUndefined()
+    expect(comment.pullAuthor).not.toHaveBeenCalled()
+    const many = fakeIo()
+    const wide = { ...input('low'), findings: input('low').findings.concat(input('low').findings) }
+    await postFinalReview(many, wide, SHA, {
+      limits: { maxComments: 1, maxBodyChars: 100_000 },
+    })
+    expect(many.postReview.mock.calls.map(([review]) => review.event)).toEqual([
+      'APPROVE',
+      'COMMENT',
+    ])
+  })
+
+  it("posts a COMMENT on the reviewer's own pull request, and says so", async () => {
+    const io = fakeIo({ pullAuthor: vi.fn(async () => 'Bot[bot]') })
+    const outcome = await postFinalReview(io, input('low'), SHA)
+    expect(outcome).toMatchObject({
+      verdict: 'Approve',
+      event: 'COMMENT',
+      downgraded: 'self-review',
+      label: 'added',
+    })
+    expect(io.postReview.mock.calls[0]?.[0].event).toBe('COMMENT')
+  })
+
+  it('posts a COMMENT when the identity cannot be determined', async () => {
+    const unknown = fakeIo({ trustedAuthors: vi.fn(async () => new Set<string>()) })
+    await expect(postFinalReview(unknown, input('blocking'), SHA)).resolves.toMatchObject({
+      event: 'COMMENT',
+      downgraded: 'identity-unknown',
+    })
+    const noAuthor = fakeIo({ pullAuthor: vi.fn(async () => undefined) })
+    await expect(postFinalReview(noAuthor, input('low'), SHA)).resolves.toMatchObject({
+      downgraded: 'identity-unknown',
+    })
+    const failed = fakeIo({
+      pullAuthor: vi.fn(async () => {
+        throw new Error('network')
+      }),
+    })
+    await expect(postFinalReview(failed, input('low'), SHA)).resolves.toMatchObject({
+      downgraded: 'identity-unknown',
+    })
+  })
+
+  it('retries once as a COMMENT when GitHub rejects the event, and reports it', async () => {
+    const postReview = vi
+      .fn<ReviewIo['postReview']>()
+      .mockRejectedValueOnce(new ReviewRejectedError('no', { cause: 'x' }))
+      .mockResolvedValueOnce('https://example.test/second')
+    const io = fakeIo({ postReview })
+    const outcome = await postFinalReview(io, input('blocking'), SHA)
+    expect(outcome).toMatchObject({
+      event: 'COMMENT',
+      downgraded: 'rejected',
+      urls: ['https://example.test/second'],
+    })
+    expect(postReview.mock.calls.map(([review]) => review.event)).toEqual([
+      'REQUEST_CHANGES',
+      'COMMENT',
+    ])
+  })
+
+  it('does not retry other failures, or a rejected COMMENT', async () => {
+    const broken = fakeIo({ postReview: vi.fn(async () => Promise.reject(new Error('boom'))) })
+    await expect(postFinalReview(broken, input('low'), SHA)).rejects.toThrow('boom')
+    expect(broken.postReview).toHaveBeenCalledOnce()
+    const rejected = fakeIo({
+      postReview: vi.fn(async () => Promise.reject(new ReviewRejectedError('no', { cause: 1 }))),
+    })
+    await expect(postFinalReview(rejected, input('high'), SHA)).rejects.toThrow(ReviewRejectedError)
+    expect(rejected.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('reports the event on a dry run without posting', async () => {
+    const io = fakeIo()
+    await expect(postFinalReview(io, input('low'), SHA, { dryRun: true })).resolves.toMatchObject({
+      event: 'APPROVE',
+      urls: [],
+    })
+    expect(io.postReview).not.toHaveBeenCalled()
+  })
+
+  it('posts nothing for a review with no parts', async () => {
+    await expect(postReviews(fakeIo(), [])).resolves.toEqual({ urls: [], event: 'COMMENT' })
+  })
+})
+
+describe('postFinalReview earlier requests for changes', () => {
+  const MARK = `<!-- final-review sha=${'a'.repeat(40)} verdict=Request-Changes effort=low -->`
+  const standing = (extra: Partial<MockIo> = {}) =>
+    fakeIo({
+      changesRequested: vi.fn(async () => [
+        { id: 11, author: 'bot', body: `${MARK}\n\nOld` },
+        { id: 12, author: 'eve', body: `${MARK}\n\nForged` },
+        { id: 13, author: 'bot', body: 'unmarked' },
+      ]),
+      ...extra,
+    })
+
+  it('dismisses only its own marked request for changes after a COMMENT, once posted', async () => {
+    const io = standing()
+    const outcome = await postFinalReview(io, input('high'), SHA)
+    expect(outcome).toMatchObject({ event: 'COMMENT', dismissed: [11] })
+    expect(io.dismissReview).toHaveBeenCalledOnce()
+    expect(io.dismissReview).toHaveBeenCalledWith(
+      11,
+      expect.stringContaining('https://example.test/r'),
+    )
+    expect(io.postReview.mock.invocationCallOrder[0]).toBeLessThan(
+      io.dismissReview.mock.invocationCallOrder[0] as number,
+    )
+  })
+
+  it('leaves it alone for APPROVE and REQUEST_CHANGES, and when the verdict still requests changes', async () => {
+    for (const severity of ['low', 'blocking'] as const) {
+      const io = standing()
+      await expect(postFinalReview(io, input(severity), SHA)).resolves.toMatchObject({
+        dismissed: [],
+      })
+      expect(io.changesRequested).not.toHaveBeenCalled()
+    }
+    const unknown = standing({ trustedAuthors: vi.fn(async () => new Set<string>()) })
+    const outcome = await postFinalReview(unknown, input('blocking'), SHA)
+    expect(outcome).toMatchObject({ downgraded: 'identity-unknown', dismissed: [] })
+    expect(unknown.changesRequested).not.toHaveBeenCalled()
+  })
+
+  it('does not fail the post when a dismissal fails, and names the review left standing', async () => {
+    const io = standing({
+      dismissReview: vi.fn(async () => {
+        throw new Error('403')
+      }),
+    })
+    const outcome = await postFinalReview(io, input('high'), SHA)
+    expect(outcome.dismissed).toEqual([])
+    expect(outcome.warnings).toEqual([expect.stringContaining('Review 11 still requests changes')])
+    expect(io.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('says what it would dismiss on a dry run, and dismisses nothing', async () => {
+    const io = standing()
+    const outcome = await postFinalReview(io, input('high'), SHA, { dryRun: true })
+    expect(outcome).toMatchObject({ dismissed: [], wouldDismiss: [11] })
+    expect(io.dismissReview).not.toHaveBeenCalled()
+    expect(io.postReview).not.toHaveBeenCalled()
+    const approve = await postFinalReview(standing(), input('low'), SHA, { dryRun: true })
+    expect(approve.wouldDismiss).toEqual([])
+  })
+})
+
+describe('postFinalReview posted text', () => {
+  const wordy = (body: string): ReviewInput => ({
+    ...input('low'),
+    findings: [{ pillar: 'rules', severity: 'low', title: 'T', body, path: 'a.ts', line: 1 }],
+  })
+
+  it('warns about long and narrating text without refusing', async () => {
+    const io = fakeIo()
+    const long = { ...wordy('The verifier confirmed it. ' + 'x'.repeat(900)), summary: '' }
+    const outcome = await postFinalReview(io, long, SHA)
+    expect(outcome.warnings).toEqual([
+      expect.stringContaining('inline comment on a.ts:1 is'),
+      expect.stringContaining('findings[0].body narrates the review'),
+    ])
+    expect(outcome.tooLong).toEqual([])
+    expect(io.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('refuses text over three times a target before posting, unless allowed', async () => {
+    const io = fakeIo()
+    const huge = wordy('x'.repeat(2500))
+    await expect(postFinalReview(io, huge, SHA)).rejects.toThrow(/allow-long/u)
+    expect(io.postReview).not.toHaveBeenCalled()
+    const allowed = await postFinalReview(io, huge, SHA, { allowLong: true })
+    expect(allowed.tooLong).toHaveLength(1)
+    expect(io.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('reports, but does not refuse, text over three times a target on a dry run', async () => {
+    const io = fakeIo()
+    const outcome = await postFinalReview(io, wordy('x'.repeat(2500)), SHA, { dryRun: true })
+    expect(outcome.tooLong).toHaveLength(1)
+    const custom = await postFinalReview(io, wordy('x'.repeat(50)), SHA, {
+      dryRun: true,
+      textLimits: { bodyTarget: 1200, inlineTarget: 10 },
+    })
+    expect(custom.warnings).toHaveLength(1)
   })
 })
 

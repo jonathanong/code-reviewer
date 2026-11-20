@@ -14,7 +14,7 @@ function f(overrides: Partial<Finding> = {}): Finding {
 }
 
 function input(findings: Finding[]): ReviewInput {
-  return { effort: 'high', summary: '', skipped: [], findings }
+  return { effort: 'high', summary: '', skipped: [], findings, questions: [] }
 }
 
 describe('placeFindings', () => {

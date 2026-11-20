@@ -175,7 +175,7 @@ describe('runReviewVerifierBenchCli', () => {
     const exec = vi.fn(async () => '')
     const h = harness(exec)
     const input = { findings: [FINDING], real: [], planted: [] }
-    const output = { summary: '', findings: [], sources: [] }
+    const output = { summary: '', findings: [], questions: [], sources: [] }
     const n1 = CASES[1] as never
     const graded = {
       judge: 'haiku',
@@ -233,7 +233,7 @@ describe('runReviewVerifierBenchCli', () => {
       JSON.stringify({ structured_output: { summary: 's', findings: [] } }),
     )
     const h = harness(exec)
-    const output = { summary: '', findings: [], sources: [] }
+    const output = { summary: '', findings: [], questions: [], sources: [] }
     h.store.set(
       'o/raw/p1.json',
       JSON.stringify({ input: { findings: [], real: [], planted: [] }, output }),

@@ -29,6 +29,8 @@ export type TrackerRow = {
   reviewUrl: string | null
   /** The GitHub review event of the posted review. */
   event: string | null
+  /** Why the verdict went out as a COMMENT: self-review, identity-unknown, or rejected. */
+  downgraded: string | null
   postedAt: string | null
   runDir: string | null
 }

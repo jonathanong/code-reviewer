@@ -1,14 +1,24 @@
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
+import { renderQuestions, type Question } from './question.mts'
 
-export type Verdict = 'Approve' | 'Request Changes' | 'Comment'
+export const VERDICTS = ['Approve', 'Request Changes', 'Comment'] as const
+export type Verdict = (typeof VERDICTS)[number]
 
 const SHORT_BODY_CHARS = 400
 const SHORT_BODY_LINES = 4
 
-/** Any blocking finding requests changes, any high finding comments, otherwise approve. */
-export function deriveVerdict(findings: readonly Finding[]): Verdict {
+/**
+ * Top-down: a blocking finding requests changes; else a high finding or an open question
+ * comments; else approve. A failed pillar changes none of this: it is listed as skipped, and a
+ * review where every pillar failed never reaches a verdict.
+ */
+export function deriveVerdict(
+  findings: readonly Finding[],
+  questions: readonly Question[],
+): Verdict {
   if (findings.some((finding) => finding.severity === 'blocking')) return 'Request Changes'
   if (findings.some((finding) => finding.severity === 'high')) return 'Comment'
+  if (questions.length > 0) return 'Comment'
   return 'Approve'
 }
 
@@ -78,7 +88,7 @@ function skippedSection(skipped: readonly SkippedPillar[]): string[] {
 
 /** Renders the review's top section: verdict, reviewed SHA, summary, and the finding index. */
 export function renderHeader(input: ReviewInput, headSha: string): string {
-  const verdict = deriveVerdict(input.findings)
+  const verdict = deriveVerdict(input.findings, input.questions)
   const index = sortFindings(input.findings).map((finding) => {
     const where = locationText(finding)
     return `- **${severityTag(finding.severity)}** ${finding.title}${where ? ` — ${where}` : ''}`
@@ -89,6 +99,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
     `Reviewed \`${headSha.slice(0, 12)}\` at ${input.effort} effort · ${counts(input.findings)}`,
     ...(input.summary ? [input.summary] : []),
     ...(index.length > 0 ? [index.join('\n')] : []),
+    ...renderQuestions(input.questions),
     ...skippedSection(input.skipped),
   ].join('\n\n')
 }
