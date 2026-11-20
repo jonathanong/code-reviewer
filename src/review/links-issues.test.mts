@@ -58,7 +58,7 @@ describe('prepareIssues', () => {
     ])
     const { linked, run } = setup(found)
     const result = await run(Array.from({ length: 12 }, (_, at) => `#${at + 10}`).join(' '))
-    expect((linked.mock.calls[0]?.[0] as unknown[]).length).toBe(8)
+    expect(linked.mock.calls[0]?.[0]).toHaveLength(8)
     expect(result.issues[0]?.title).toHaveLength(200)
     expect(result.issues[0]?.body).toHaveLength(1500)
     expect(result.issues[0]?.body.endsWith('…')).toBe(true)
