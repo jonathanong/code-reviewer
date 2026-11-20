@@ -69,6 +69,14 @@ describe('locationText', () => {
 describe('finding bodies', () => {
   it('keeps short bodies inline', () => {
     expect(renderFindingBody(f())).toBe('**[low]** Title\n\n<sub>rules</sub>\n\nBody')
+    const prevent = 'an oxlint rule banning x'
+    expect(renderFindingBody(f({ prevent }))).toBe(
+      `**[low]** Title\n\n<sub>rules</sub>\n\nBody\n\n**Prevent:** ${prevent}`,
+    )
+    expect(renderBodyFinding(f({ prevent }))).toContain(
+      `Body\n\n**Prevent:** ${prevent}\n\n</details>`,
+    )
+    expect(renderBodyFinding(f())).not.toContain('Prevent')
   })
 
   it('collapses bodies that are too long or have too many lines', () => {

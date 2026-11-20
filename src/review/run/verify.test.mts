@@ -97,6 +97,15 @@ describe('buildVerifierRunPrompt', () => {
 })
 
 describe('parseReviewVerifier', () => {
+  it('keeps the prevention note of a verified finding, and the schema allows it', () => {
+    const noted = { ...verified, prevent: 'a lint rule for x' }
+    const parsed = parseReviewVerifier(stream({ summary: 's', findings: [noted] }), 2)
+    expect(parsed.findings[0]?.prevent).toBe('a lint rule for x')
+    expect(REVIEW_VERIFIER_SCHEMA.properties.findings.items.properties.prevent).toEqual({
+      type: 'string',
+    })
+  })
+
   it('reads the summaries, the dropped reasons, and usage', () => {
     const parsed = parseReviewVerifier(
       stream({

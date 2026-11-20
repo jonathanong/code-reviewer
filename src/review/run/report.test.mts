@@ -331,6 +331,19 @@ describe('renderReport', () => {
     expect(markdown).toContain('> Line one.\n> Line two.')
   })
 
+  it('shows a finding prevention note under it, and nothing without one', () => {
+    const data = buildReport(INPUT)
+    const prevented = renderReport({
+      ...data,
+      findings: data.findings.map((finding) => ({
+        ...finding,
+        prevent: 'a test that loops the range',
+      })),
+    })
+    expect(prevented).toContain('> Line two.\n\n**Prevent:** a test that loops the range')
+    expect(markdown).not.toContain('Prevent')
+  })
+
   it('shows questions, and still renders a report written before questions existed', () => {
     const data = buildReport(INPUT)
     const ask = { question: 'Is v1 gone?', askOf: 'product' as const, why: 'Rollout.' }

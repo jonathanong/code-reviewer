@@ -45,18 +45,26 @@ function isShort(body: string): boolean {
   return body.length <= SHORT_BODY_CHARS && body.split('\n').length <= SHORT_BODY_LINES
 }
 
+/** The one-line prevention note, with its blank line; empty when the finding has none. */
+function preventLine(finding: Finding): string {
+  return finding.prevent === undefined ? '' : `\n\n**Prevent:** ${finding.prevent}`
+}
+
 /** Renders a finding: tag and title up front, short bodies inline, long bodies collapsed. */
 export function renderFindingBody(finding: Finding): string {
   const head = `**${severityTag(finding.severity)}** ${finding.title}\n\n<sub>${finding.pillar}</sub>`
   const body = isShort(finding.body) ? finding.body : detail('Details', finding.body)
-  return `${head}\n\n${body}`
+  return `${head}\n\n${body}${preventLine(finding)}`
 }
 
 /** Renders a finding that has no commentable diff line, for the review body. */
 export function renderBodyFinding(finding: Finding): string {
   const where = locationText(finding)
   const summary = `${severityTag(finding.severity)} ${finding.title}${where ? ` (${where})` : ''}`
-  return detail(summary.replace(/`/gu, ''), `<sub>${finding.pillar}</sub>\n\n${finding.body}`)
+  return detail(
+    summary.replace(/`/gu, ''),
+    `<sub>${finding.pillar}</sub>\n\n${finding.body}${preventLine(finding)}`,
+  )
 }
 
 const ORDER: readonly Severity[] = ['blocking', 'high', 'medium', 'low']

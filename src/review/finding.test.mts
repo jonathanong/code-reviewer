@@ -89,6 +89,17 @@ describe('parseReviewInput', () => {
     expect(failure({ effort: 'max' })).toBe('effort must be one of low, medium, high.')
   })
 
+  it('keeps a prevention note as one line and drops a blank one', () => {
+    expect(parseOne({ prevent: '  an oxlint\n rule   banning x ' })?.prevent).toBe(
+      'an oxlint rule banning x',
+    )
+    expect(parseOne({ prevent: '  ' })).not.toHaveProperty('prevent')
+    expect(parseOne({})).not.toHaveProperty('prevent')
+    expect(failure({ findings: [finding({ prevent: 3 })] })).toBe(
+      'findings[0].prevent must be a string.',
+    )
+  })
+
   it('accepts the approval check under skipped and derives the verdict with it', () => {
     const skipped = [{ pillar: 'approval-check', reason: 'did not finish' }]
     expect(parseReviewInput({ skipped }).skipped).toEqual(skipped)

@@ -25,7 +25,9 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    If the cited line does not hold the code the finding describes, correct `line` and `startLine`
    to the lines on the same side that do (pillars sometimes cite diff offsets), or drop the
    location. Read the cited ranges with an offset and limit, and grep the diff and large files
-   instead of reading them whole, so a large pull request fits in context.
+   instead of reading them whole, so a large pull request fits in context. Keep a finding's
+   `prevent` only when the finding is confirmed and the named check would stop the class of
+   mistake, not just this instance; drop it otherwise, or add one by the contract's rule.
 3. **Deduplicate** across pillars: the same path, an overlapping line range, and the same claim
    become one finding that keeps the clearest body and the severity you decide for the merged claim.
 4. **Re-review** (when `plan.sinceSha` or `plan.push` is set): for each previous finding, decide fixed, still present, or no
@@ -61,7 +63,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    what the answer changes about the review. Never ask what the description, `context.md`, the
    diff, or the tree already answers. An author reply or a later commit that answers a question
    in `context.md` settles it: do not ask it again. If it is still open and still matters, ask it
-   again once, in the same words.
+   again once, in the same words. A pillar's premise challenge (the contract's Premise rule) stays
+   a `medium` or `low` finding when its evidence shows the problem, and becomes a question when the
+   evidence only raises the doubt; either way drop it if it cites no evidence from the tree or
+   context, and never rate it `blocking` or `high` on that ground alone.
 9. **Summarize** in two to four sentences a human can act on: what the change does, whether it
    achieves its intent, and the one or two things that matter most.
 

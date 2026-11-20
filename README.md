@@ -64,6 +64,19 @@ target, a real `post` refuses unless `--allow-long` is given (`tooLong` lists th
 warns when authored text narrates the review (the verifier, a pillar, tool names, first-person
 process, praise); it never refuses.
 
+### Premise and prevention
+
+A reviewer may challenge whether a change should exist in this form (it solves the wrong problem,
+duplicates something already in the tree, or a much smaller change reaches the stated goal), but
+only with evidence from the tree or the context, as a `medium` or `low` finding that the verifier
+may turn into a question; never as `blocking` or `high` on that ground alone. These are prompt
+rules in the pillar contract, with no code check.
+
+A finding may carry `prevent`, one optional line naming a lint rule, type, test or CI guard that
+would stop the class of mistake. It is kept in `review.json`, shown as a `**Prevent:**` line under
+the finding in the posted comment and in `report.md`, and absent means nothing is rendered. A
+`prevent` over 160 characters warns like any over-long posted text.
+
 ### Verdict and questions
 
 The verdict is derived, never chosen, top-down: a verified `blocking` finding gives Request Changes;

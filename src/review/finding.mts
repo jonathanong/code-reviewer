@@ -32,6 +32,8 @@ export type Finding = {
   line?: number
   side?: ReviewSide
   startLine?: number
+  /** One line naming a mechanical check (lint rule, type, test, CI guard) that would stop this class of mistake. */
+  prevent?: string
 }
 
 export type ReviewInput = {
@@ -97,6 +99,16 @@ function parseLocation(record: Json, where: string): Partial<Finding> {
   return { path, line, side, startLine }
 }
 
+/** The optional one-line prevention note: whitespace collapsed, absent when blank. */
+function parsePrevent(record: Json, where: string): Pick<Finding, 'prevent'> {
+  if (record.prevent === undefined) return {}
+  if (typeof record.prevent !== 'string') {
+    throw new ReviewError(`${where}.prevent must be a string.`)
+  }
+  const prevent = record.prevent.replace(/\s+/gu, ' ').trim()
+  return prevent === '' ? {} : { prevent }
+}
+
 function parseFinding(raw: unknown, index: number): Finding {
   const where = `findings[${index}]`
   if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
@@ -106,6 +118,7 @@ function parseFinding(raw: unknown, index: number): Finding {
     title: text(raw, 'title', where).trim(),
     body: text(raw, 'body', where).trim(),
     ...parseLocation(raw, where),
+    ...parsePrevent(raw, where),
   }
 }
 
