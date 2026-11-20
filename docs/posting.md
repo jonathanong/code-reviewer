@@ -62,7 +62,7 @@ hidden marker: the verdict marker for the first part, the part marker for each l
 one per part is a confirmation, and the `post` output lists the ids as `reviewIds` (the tracker's
 `posted` row keeps the first as `reviewId` beside `reviewUrl`, taken from the confirmed review).
 A review POST that fails transiently is retried only after the read-back shows that part is not
-there (so a post that timed out but landed is never repeated), up to the same 3 tries and
+there (so a post that timed out but landed is not repeated once the read-back sees it), up to the same 3 tries and
 backoff; if it landed, `post` carries on with the review it found. If the reviewer's identity or
 the review list cannot be read, the post is not retried at all and says the review may have posted.
 GitHub's review list can lag behind a review it just accepted, so a read-back that misses a part
