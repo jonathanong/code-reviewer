@@ -206,8 +206,8 @@ review.
 ## Authentication and trust
 
 Calls use a GitHub App when one is configured, otherwise the local `gh` login. Configure the App
-with `app.json` in the machine config directory (the one above; `app.json` is reserved, never an
-owner's settings):
+with `app.json` in the config home, `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer` (the parent of
+the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it):
 
 ```json
 { "appId": "123", "privateKeyPath": "app.pem", "installationId": "456" }

@@ -13,7 +13,7 @@ afterEach(() => {
 describe('createGhAuth', () => {
   it('uses the local gh login without App credentials', async () => {
     const tokensFor = vi.fn()
-    const auth = createGhAuth({ CODE_REVIEWER_CONFIG_DIR: NO_CONFIG }, tokensFor)
+    const auth = createGhAuth({ XDG_CONFIG_HOME: NO_CONFIG }, tokensFor)
     expect(auth.mode).toBe('gh')
     await expect(auth.identity()).resolves.toBeUndefined()
     expect(auth.runner('o', 'r')).toBe(runGh)
@@ -38,7 +38,7 @@ describe('createGhAuth', () => {
   })
 
   it('defaults to process.env and the real token provider', () => {
-    vi.stubEnv('CODE_REVIEWER_CONFIG_DIR', NO_CONFIG)
+    vi.stubEnv('XDG_CONFIG_HOME', NO_CONFIG)
     vi.stubEnv('CODE_REVIEWER_APP_ID', '')
     expect(createGhAuth().mode).toBe('gh')
     vi.stubEnv('CODE_REVIEWER_APP_ID', '5')

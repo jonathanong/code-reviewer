@@ -11,18 +11,18 @@ import {
   type LabelNames,
 } from './settings-parse.mts'
 
-/** The GitHub App credentials file in the machine config directory, not an owner's settings. */
-export const APP_CONFIG_FILE = 'app.json'
+/** The reviewer's config home, `code-reviewer` under the XDG config home; `app.json` lives here. */
+export function configHome(env: Record<string, string | undefined>): string {
+  return join(env.XDG_CONFIG_HOME || join(env.HOME || homedir(), '.config'), 'code-reviewer')
+}
 
 /**
- * The machine config directory: `CODE_REVIEWER_CONFIG_DIR`, else `code-reviewer/repos` under the
- * XDG config home. It holds one `<owner>/<name>.json` per repository, and `<owner>.json` beside
- * that directory for the settings every repository of the owner shares.
+ * The machine config directory: `CODE_REVIEWER_CONFIG_DIR`, else `repos` in the config home. It
+ * holds one `<owner>/<name>.json` per repository, and `<owner>.json` beside that directory for
+ * the settings every repository of the owner shares.
  */
 export function machineConfigDir(env: Record<string, string | undefined>): string {
-  if (env.CODE_REVIEWER_CONFIG_DIR) return env.CODE_REVIEWER_CONFIG_DIR
-  const home = env.XDG_CONFIG_HOME || join(env.HOME || homedir(), '.config')
-  return join(home, 'code-reviewer', 'repos')
+  return env.CODE_REVIEWER_CONFIG_DIR || join(configHome(env), 'repos')
 }
 
 /** Another repository this one depends on without a package import (an HTTP API, a schema). */
@@ -161,9 +161,7 @@ export function loadRepoConfigs(dir: string): RepoConfigs {
       .filter((entry) => entry[kind]())
       .map((entry) => entry.name)
       .sort()
-  for (const name of names('isFile').filter(
-    (file) => file.endsWith('.json') && file !== APP_CONFIG_FILE,
-  )) {
+  for (const name of names('isFile').filter((file) => file.endsWith('.json'))) {
     byOwner.set(name.slice(0, -'.json'.length).toLowerCase(), read(name, 'owner'))
   }
   for (const owner of names('isDirectory')) {

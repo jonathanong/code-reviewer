@@ -2,7 +2,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 
-import { APP_CONFIG_FILE, machineConfigDir } from '../review/rules/config.mts'
+import { configHome } from '../review/rules/config.mts'
 import { AppAuthError, type AppAuthEnv, type AppConfig } from './app-auth.mts'
 
 /** File access for App config, injectable so tests never touch a real key. */
@@ -15,6 +15,8 @@ export type AppConfigFs = {
 
 const DEFAULT_KEY_FILE = 'app.pem'
 const KEYS = new Set(['appId', 'privateKeyPath', 'installationId'])
+
+export const APP_CONFIG_FILE = 'app.json'
 
 export const realAppConfigFs: AppConfigFs = {
   readText(path) {
@@ -113,14 +115,14 @@ function apiUrl(env: AppAuthEnv): string {
  * The GitHub App to authenticate as, or undefined to use the local `gh` login. When
  * `CODE_REVIEWER_APP_ID` is set the `CODE_REVIEWER_APP_*` variables win (for CI): the PEM text in
  * `CODE_REVIEWER_APP_PRIVATE_KEY` or a file named by `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and an
- * optional `CODE_REVIEWER_APP_INSTALLATION_ID`. Otherwise `app.json` in the machine config
- * directory (`appId`, optional `privateKeyPath` defaulting to `app.pem` beside it, optional
+ * optional `CODE_REVIEWER_APP_INSTALLATION_ID`. Otherwise `app.json` in the config home
+ * (`~/.config/code-reviewer`, beside the machine config directory) (`appId`, optional `privateKeyPath` defaulting to `app.pem` beside it, optional
  * `installationId`). A config that exists but is wrong throws, naming the file.
  */
 export function loadAppConfig(
   env: AppAuthEnv = process.env,
   fs: AppConfigFs = realAppConfigFs,
-  dir: string = machineConfigDir(env),
+  dir: string = configHome(env),
   platform: NodeJS.Platform = process.platform,
 ): AppConfig | undefined {
   const appId = env.CODE_REVIEWER_APP_ID?.trim()

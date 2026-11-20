@@ -182,7 +182,7 @@ describe('createDefaultDeps', () => {
 
   it('defaults to the environment-based auth', () => {
     vi.stubEnv('CODE_REVIEWER_APP_ID', '')
-    vi.stubEnv('CODE_REVIEWER_CONFIG_DIR', '/nonexistent/code-reviewer')
+    vi.stubEnv('XDG_CONFIG_HOME', '/nonexistent')
     expect(createDefaultDeps().authMode()).toBe('gh')
     vi.unstubAllEnvs()
   })

@@ -149,8 +149,14 @@ describe('loadAppConfig from app.json', () => {
 
 describe('loadAppConfig defaults', () => {
   it('uses the machine config directory and the real file system', () => {
-    const config = loadAppConfig({ CODE_REVIEWER_CONFIG_DIR: '/nonexistent/code-reviewer' })
-    expect(config).toBeUndefined()
+    expect(loadAppConfig({ XDG_CONFIG_HOME: '/nonexistent' })).toBeUndefined()
+  })
+
+  it('looks beside the repos directory, and CODE_REVIEWER_CONFIG_DIR does not move it', () => {
+    const seen: string[] = []
+    const fs: AppConfigFs = { readText: (path) => (seen.push(path), undefined), mode: () => 0 }
+    loadAppConfig({ XDG_CONFIG_HOME: '/xdg', CODE_REVIEWER_CONFIG_DIR: '/elsewhere' }, fs)
+    expect(seen).toEqual(['/xdg/code-reviewer/app.json'])
   })
 
   it('reads the real file system for a missing file and reports other errors', () => {

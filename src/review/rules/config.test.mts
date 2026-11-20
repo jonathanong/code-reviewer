@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { loadRepoConfigs, machineConfigDir, parseRepoConfig } from './config.mts'
+import { configHome, loadRepoConfigs, machineConfigDir, parseRepoConfig } from './config.mts'
 
 const FILE = 'acme/web.json'
 
@@ -165,7 +165,6 @@ describe('loadRepoConfigs', () => {
     writeFileSync(join(dir, 'Acme/notes.md'), 'skipped')
     writeFileSync(join(dir, 'Acme.json'), '{"labels":{"requested":"go"}}')
     writeFileSync(join(dir, 'README.md'), 'skipped')
-    writeFileSync(join(dir, 'app.json'), '{"appId":"1"}')
     const configs = loadRepoConfigs(dir)
     expect([...configs.byRepo.keys()]).toEqual(['acme/web', 'acme/bad'])
     expect(configs.byRepo.get('acme/web')?.consumes).toEqual([
@@ -182,6 +181,14 @@ describe('loadRepoConfigs', () => {
       byOwner: new Map(),
       problems: [],
     })
+  })
+})
+
+describe('configHome', () => {
+  it('is code-reviewer under XDG_CONFIG_HOME or HOME/.config, and holds the repos directory', () => {
+    expect(configHome({ XDG_CONFIG_HOME: '/x' })).toBe('/x/code-reviewer')
+    expect(configHome({ HOME: '/h' })).toBe('/h/.config/code-reviewer')
+    expect(machineConfigDir({ HOME: '/h' })).toBe('/h/.config/code-reviewer/repos')
   })
 })
 
