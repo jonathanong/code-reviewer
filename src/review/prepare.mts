@@ -3,12 +3,14 @@ import { join } from 'node:path'
 
 import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
-import { diffFileName, renderIndexFile, splitDiff } from './diff-files.mts'
 import { ReviewError, type Effort } from './finding.mts'
 import { numberDiff } from './numbered-diff.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
+import { summarizeStack } from './stack.mts'
+import { prepareStack } from './stack-prepare.mts'
+import { writeDiffDir, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
 
 export type PrepareOptions = {
@@ -30,19 +32,15 @@ export type PrepareSummary = {
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
   /** The rule sources staged under `out/rules`: linked repos, unavailable sources. */
+  /** Non-fatal problems, such as open pull requests that could not be listed. */
+  problems?: string[]
   rules: { related: string[]; consumers: string[]; missing: string[] }
 }
-
-type Write = (path: string, text: string) => void
 
 function writeDiff(out: string, name: string, patch: string, write: Write): string[] {
   const numbered = numberDiff(patch)
   write(join(out, `${name}.patch`), `${numbered}`)
-  const dir = join(out, name)
-  mkdirSync(dir, { recursive: true })
-  const files = splitDiff(numbered)
-  files.forEach((file, index) => write(join(dir, diffFileName(index)), file.text))
-  write(join(dir, 'INDEX.md'), renderIndexFile(files, dir))
+  writeDiffDir(join(out, name), numbered, write)
   return [`${name}.patch`, `${name}/INDEX.md`]
 }
 
@@ -88,7 +86,11 @@ export async function prepareReview(
   const subjects =
     options.tree === undefined ? undefined : await io.history(options.tree, context.baseSha, paths)
   const history = subjects === undefined ? undefined : historyHits(subjects)
-  const plan = planReview({
+  const { stack, problem } = await prepareStack(io, options.out, write, options.tree)
+  if (stack !== undefined) {
+    written.push('stack.json', ...stack.members.flatMap((member) => member.diff ?? []))
+  }
+  const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files),
     context,
@@ -98,6 +100,7 @@ export async function prepareReview(
     ...(since === undefined ? {} : { since }),
     ...(history === undefined ? {} : { history }),
   })
+  const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)
   written.push('plan.json')
   const sources = await io.ruleSources({
@@ -118,6 +121,7 @@ export async function prepareReview(
     lines: context.lines,
     mode: plan.mode,
     plan,
+    ...(problem === undefined ? {} : { problems: [problem] }),
     written,
     rules: {
       related: staged.related,

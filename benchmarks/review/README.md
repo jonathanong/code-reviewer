@@ -10,7 +10,9 @@ $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
 Not re-measured since the 2026-11-19 snapshot change: the mined-case rows below were taken before
-the reviewer could read history, so they are not comparable with a run made now.
+the reviewer could read history, so they are not comparable with a run made now. The contract and
+verifier prompts also gained a Stacks section after the last run (no bench case is stacked, so the
+Stack block of a run prompt never appears); no score was re-measured for it.
 
 Mined cases (8 real pull requests from `cases.json`):
 

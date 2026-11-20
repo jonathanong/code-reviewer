@@ -1,4 +1,5 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
+import { groupStacks } from './queue-stack.mts'
 import type { LabelNames } from './settings.mts'
 
 export type QueueEntry = {
@@ -9,6 +10,8 @@ export type QueueEntry = {
   isDraft: boolean
   updatedAt: string
   url: string
+  /** Set when the pull request is in a stack: the bottom pull request, its place, the stack size. */
+  stack?: { root: number; position: number; size: number }
 }
 
 const OWNER_RE = /^[A-Za-z0-9_.-]+$/u
@@ -90,5 +93,5 @@ export async function listQueue(
     search(run, scope, labels.requested, 'requested'),
     search(run, scope, labels.processing, 'in-progress'),
   ])
-  return [...inProgress, ...requested]
+  return groupStacks(run, [...inProgress, ...requested])
 }

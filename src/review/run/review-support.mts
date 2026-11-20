@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
 import type { ReviewInput } from '../finding.mts'
+import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
 import type { PluginInfo } from '../plugins.mts'
@@ -72,3 +73,20 @@ export function failedSkips(results: readonly PillarResult[]) {
 }
 
 export const ZERO_FINDINGS = { blocking: 0, high: 0, medium: 0, low: 0 }
+
+/** The result of a review that posted a skip and ran no model. */
+export function skipResult(mode: Mode, headSha: string, report: string): ReviewResult {
+  return {
+    ok: true,
+    summary: {
+      claimed: true,
+      mode,
+      verdict: null,
+      findings: ZERO_FINDINGS,
+      costUsd: 0,
+      report,
+      review: null,
+      headSha,
+    },
+  }
+}

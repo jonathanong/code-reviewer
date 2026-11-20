@@ -43,6 +43,11 @@ Requests reach the reviewer in two ways. Both end up as the same label, so GitHu
 The queue is keyed by `repo#pr`. A newer request for a queued pull request replaces the queued
 one, and a request for a pull request already being reviewed is noted for after it finishes.
 
+Each `queue` entry of a stacked pull request carries `stack: {root, position, size}`, and the
+rows of one stack are adjacent and bottom-up. Review only the members that were requested, in that
+order, and post one at a time, bottom-up. The other members of the stack are read-only context for
+`prepare`: never review, label, or post on a member that was not requested.
+
 ## Step 1 - Start or restart
 
 1. Check the rule plugins before any review:

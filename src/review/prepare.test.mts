@@ -8,6 +8,7 @@ import type { PrConversation } from './context-query.mts'
 import type { SinceDiff } from './plan.mts'
 import { prepareReview } from './prepare.mts'
 import type { PrepareIo } from './prepare-io.mts'
+import type { StackMember } from './stack.mts'
 import { reviewMarker } from './render.mts'
 
 const HEAD = 'a'.repeat(40)
@@ -77,6 +78,8 @@ function fakeIo({ reviewed = null, since, history = [], author, lines, paths }: 
     treeHead: vi.fn(async () => HEAD),
     history: vi.fn(async () => history),
     ruleSources: vi.fn(async () => ({ related: [], missing: ['x: none'] })),
+    stackInput: vi.fn(async () => ({ pr: 7, pulls: [] as StackMember[], defaultBranch: 'main' })),
+    memberDiff: vi.fn(async () => PATCH),
   } satisfies PrepareIo
 }
 
@@ -231,5 +234,43 @@ describe('prepareReview', () => {
     expect(summary.plan.reasons).toContain(
       'Small pull request (30 reviewable lines): light review.',
     )
+  })
+
+  it('writes stack.json, the later diffs, and a plan summary for a stacked pull request', async () => {
+    const io = fakeIo()
+    const pull = (number: number, headRef: string, baseRef: string) => ({
+      number,
+      title: `T${number}`,
+      headRef,
+      baseRef,
+      headSha: HEAD,
+    })
+    io.stackInput.mockResolvedValue({
+      pr: 7,
+      pulls: [pull(7, 'b', 'main'), pull(8, 'c', 'b')],
+      defaultBranch: 'main',
+    })
+    const summary = await prepareReview(io, { out })
+    expect(summary.written).toEqual(
+      expect.arrayContaining(['stack.json', join('stack', '8', 'INDEX.md')]),
+    )
+    expect(io.memberDiff).toHaveBeenCalledWith(
+      expect.objectContaining({ number: 8 }),
+      HEAD,
+      undefined,
+    )
+    expect(summary.plan.stack).toMatchObject({ members: [7, 8], index: 0, rootIsDefault: true })
+    expect(JSON.parse(read('plan.json')).stack.members).toEqual([7, 8])
+    expect(summary.problems).toBeUndefined()
+  })
+
+  it('treats the pull request as flat and reports a problem when open pull requests fail', async () => {
+    const io = fakeIo()
+    io.stackInput.mockRejectedValue(new Error('rate limited'))
+    const summary = await prepareReview(io, { out })
+    expect(summary.problems).toHaveLength(1)
+    expect(summary.plan.stack).toBeUndefined()
+    expect(existsSync(join(out, 'stack.json'))).toBe(false)
+    expect(summary.mode).toBe('full')
   })
 })

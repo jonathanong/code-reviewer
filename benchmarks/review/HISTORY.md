@@ -2,6 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-19: the contract and verifier prompts gained a stack block (no run)
+
+`pillars/_contract.md` gained a Stacks section and `verifier.md` a Stacks step: judge each finding
+against the top of the stack, and keep a finding a later member fixes as `low` with a `Fixed in #N:`
+prefix. The per-run Stack block that carries the members and the later diffs appears only in runs
+whose directory has `stack.json`, which bench cases never have, so the benchmark prompts differ from
+before only by the added reference text. No run was made; scores are not re-measured.
+
 ## 2026-11-19: history pillar runs load no settings file (no run)
 
 The history pillar is the one pillar with a shell. It passed `--setting-sources user`, so the
