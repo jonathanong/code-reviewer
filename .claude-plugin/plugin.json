@@ -1,6 +1,5 @@
 {
   "name": "code-reviewer",
-  "version": "0.1.0",
   "description": "Standing multi-pillar code reviewer: label-driven intake, follow-up reviews, and token-lean pillar dispatch.",
   "author": {
     "name": "Jonathan Ong"

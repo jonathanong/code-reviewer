@@ -9,8 +9,8 @@ Read applicable `AGENTS.md` and their declared adapter alias, otherwise
 `.agents/skills/final-reviewer/SKILL.md` from the launch directory if present.
 Local policy overrides these defaults; do not reload an already-read adapter or canonical skill.
 
-One long-running, attended session named `review-loop` runs in the code-reviewer
-checkout. It is the main checkout, not a worktree-isolated session, because it creates review
+One long-running, attended session named `review-loop` runs in any directory with the
+`code-reviewer` plugin enabled. It is not a worktree-isolated session, because it creates review
 worktrees for other repositories. It is local only, never CI, and it never merges.
 
 ## Adapter parameters

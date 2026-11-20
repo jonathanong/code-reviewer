@@ -20,8 +20,8 @@ Dependabot change to lockfiles only ([dispatch](references/dispatch.md) has the 
 the standing reviewer that other sessions ask, use the [review-loop](../review-loop/SKILL.md)
 skill, which calls this one per pull request.
 
-The CLI is `code-reviewer` (`pnpm exec code-reviewer` in the code-reviewer checkout; `help` lists
-the flags). Every subcommand prints a short JSON result. It authenticates as the GitHub App when
+The CLI is `code-reviewer`, which the plugin puts on `PATH` (`pnpm exec code-reviewer` when
+developing in a checkout; `help` lists the flags). Every subcommand prints a short JSON result. It authenticates as the GitHub App when
 `CODE_REVIEWER_APP_ID` and a key are set, otherwise with the local `gh` login (`code-reviewer auth`
 says which).
 

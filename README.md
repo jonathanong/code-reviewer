@@ -19,8 +19,10 @@ cd code-reviewer && pnpm install
 ```
 
 As a Claude Code plugin, add the marketplace `jonathanong/code-reviewer` and install the
-`code-reviewer` plugin. The standing reviewer session runs in this checkout; see
-[`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md).
+`code-reviewer` plugin. The plugin puts `code-reviewer` on the session's `PATH` and needs only
+Node 24, so the standing reviewer session runs from any directory; see
+[`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md). The checkout is for developing the
+reviewer and running benchmarks.
 
 ## Running a review
 
