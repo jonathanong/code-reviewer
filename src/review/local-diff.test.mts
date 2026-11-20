@@ -1,12 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { isDiffTooLarge, localPullDiff } from './local-diff.mts'
+import { localPullDiff } from './local-diff.mts'
 import { createGhPrepareIo } from './prepare-io.mts'
 
 const target = { repo: 'o/r', pr: 7 }
-const TOO_LARGE = new Error(
-  'could not find pull request diff: HTTP 406\nPullRequest.diff too_large',
-)
 
 function gitFake() {
   return vi.fn(async (args: readonly string[]) => {
@@ -14,17 +11,6 @@ function gitFake() {
     return args[2] === 'diff' ? 'LOCAL' : ''
   })
 }
-
-describe('isDiffTooLarge', () => {
-  it('matches the refusal GitHub gives above 300 files and nothing else', () => {
-    expect(isDiffTooLarge(TOO_LARGE)).toBe(true)
-    expect(isDiffTooLarge(new Error('the diff exceeded the maximum number of files (300)'))).toBe(
-      true,
-    )
-    expect(isDiffTooLarge(new Error('HTTP 404'))).toBe(false)
-    expect(isDiffTooLarge('too_large')).toBe(false)
-  })
-})
 
 describe('localPullDiff', () => {
   it('fetches the base and diffs the merge base against the head', async () => {
@@ -40,22 +26,20 @@ describe('localPullDiff', () => {
 })
 
 describe('createGhPrepareIo diff', () => {
-  const run = vi.fn(async (args: readonly string[]) => {
-    if (args[1] === 'diff') throw TOO_LARGE
-    return '{"baseRefOid":"bbb","headRefOid":"hhh"}'
-  })
+  const run = vi.fn(async (args: readonly string[]) =>
+    args[1] === 'diff' ? 'REMOTE' : '{"baseRefOid":"bbb","headRefOid":"hhh"}',
+  )
 
-  it('computes a diff GitHub refuses in the tree', async () => {
+  it('diffs in the tree when there is one', async () => {
     const io = createGhPrepareIo(target, run, gitFake(), [], undefined, '/nowhere')
     expect(await io.diff('/tree')).toBe('LOCAL')
   })
 
-  it('fails without a tree, and on any other error', async () => {
+  it('asks GitHub without a tree, or when git fails', async () => {
     const io = createGhPrepareIo(target, run, gitFake(), [], undefined, '/nowhere')
-    await expect(io.diff()).rejects.toBe(TOO_LARGE)
-    const other = new Error('HTTP 500')
-    const failing = vi.fn(async () => Promise.reject(other))
-    const broken = createGhPrepareIo(target, failing, gitFake(), [], undefined, '/nowhere')
-    await expect(broken.diff('/tree')).rejects.toBe(other)
+    expect(await io.diff()).toBe('REMOTE')
+    const git = vi.fn(async () => Promise.reject(new Error('no such commit')))
+    const broken = createGhPrepareIo(target, run, git, [], undefined, '/nowhere')
+    expect(await broken.diff('/tree')).toBe('REMOTE')
   })
 })

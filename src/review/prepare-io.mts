@@ -3,7 +3,7 @@ import { fetchConversation, type PrConversation } from './context-query.mts'
 import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
 import { createGhReviewIo } from './github.mts'
-import { isDiffTooLarge, localPullDiff } from './local-diff.mts'
+import { localPullDiff } from './local-diff.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
@@ -14,7 +14,7 @@ export type PrepareIo = {
   headSha(): Promise<string>
   /** Logins whose `final-review` markers count. */
   trusted(): Promise<TrustedAuthors>
-  /** The pull request diff; computed in `tree` when GitHub refuses one that large. */
+  /** The pull request diff: computed in `tree` when there is one, else asked of GitHub. */
   diff(tree?: string): Promise<string>
   /** The changed files with their changed line counts. */
   files(): Promise<ChangedFile[]>
@@ -52,11 +52,12 @@ export function createGhPrepareIo(
     headSha: () => io.headSha(),
     trusted: () => io.trustedAuthors(),
     async diff(tree) {
+      if (tree === undefined) return io.diff()
       try {
-        return await io.diff()
-      } catch (error) {
-        if (tree === undefined || !isDiffTooLarge(error)) throw error
-        return localPullDiff(target, run, git, tree)
+        return await localPullDiff(target, run, git, tree)
+      } catch {
+        // A checkout that cannot fetch or diff still gets GitHub's diff, when GitHub has one.
+        return io.diff()
       }
     },
     files: async () =>
