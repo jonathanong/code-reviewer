@@ -696,7 +696,7 @@
       "claude",
       [
         "-p",
-        "sha256:cef254ba5c798213168b96cbd723df065e7996f045ec24215a1ef23234b7101b",
+        "sha256:9f98a98aea66ee67797a0d497237dcb6997aa25ff786d4ba3394e54511c1ae75",
         "--model",
         "opus",
         "--output-format",
@@ -721,7 +721,7 @@
         "medium",
         "--add-dir",
         "/run",
-        "/Users/jong/vouchington-reviewer/.claude/worktrees/agent-a4f142bdbb1b92e3e/src/review/run/fixtures/references"
+        "<REFS>"
       ],
       {
         "cwd": "/tree",
@@ -735,7 +735,7 @@
       "claude",
       [
         "-p",
-        "sha256:cef254ba5c798213168b96cbd723df065e7996f045ec24215a1ef23234b7101b",
+        "sha256:9f98a98aea66ee67797a0d497237dcb6997aa25ff786d4ba3394e54511c1ae75",
         "--model",
         "opus",
         "--output-format",
@@ -758,7 +758,7 @@
         "medium",
         "--add-dir",
         "/run",
-        "/Users/jong/vouchington-reviewer/.claude/worktrees/agent-a4f142bdbb1b92e3e/src/review/run/fixtures/references"
+        "<REFS>"
       ],
       {
         "cwd": "/tree",

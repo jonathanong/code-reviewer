@@ -25,7 +25,11 @@ const EXPECTED = JSON.parse(
 const captured: Record<string, unknown> = {}
 const out = mkdtempSync(join(tmpdir(), 'cap-'))
 const swap = (text: string) =>
-  text.replaceAll(out, '<OUT>').replaceAll(STAGED, '<STAGED>').replaceAll(BARE, '<BARE>')
+  text
+    .replaceAll(out, '<OUT>')
+    .replaceAll(references, '<REFS>')
+    .replaceAll(STAGED, '<STAGED>')
+    .replaceAll(BARE, '<BARE>')
 let current = ''
 const exec = async (...call: unknown[]) => {
   const args = call[1] as string[]
