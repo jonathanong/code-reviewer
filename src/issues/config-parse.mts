@@ -6,8 +6,11 @@ export const DEFAULT_MAX_ISSUES_PER_DAY = 3
 /** The name a proposal about the reviewer itself carries. */
 export const REVIEWER_TARGET = 'code-reviewer'
 
+/** The name a proposal about a harness (the CLI a step ran through) carries. */
+export const HARNESS_TARGET = 'harness'
+
 export type IssueTarget = {
-  /** A rule plugin name, or `code-reviewer`. */
+  /** A rule plugin name, `code-reviewer`, or `harness`. */
   name: string
   /** `owner/name` where the issues go. */
   repo: string

@@ -1,6 +1,7 @@
 import { DEFAULT_SINCE_DAYS } from '../outcomes/collect.mts'
 import { readOutcomes } from '../outcomes/store.mts'
 import type { RepoConfigs } from '../review/rules/config.mts'
+import { readFailures } from '../tracker/failures.mts'
 import type { TrackerIo } from '../tracker/types.mts'
 import type { IssuesConfig } from './config-parse.mts'
 import { DAY_MS, fileIssues, type IssuesIo, type IssuesResult } from './file.mts'
@@ -35,8 +36,9 @@ export async function issuesCommand(
   if (!Number.isInteger(days) || days < 1) throw new Error('--since must be a positive integer.')
   const from = tracker.now().getTime() - days * DAY_MS
   const rows = readOutcomes(tracker).filter((row) => Date.parse(row.checkedAt) >= from)
+  const failures = readFailures(tracker).filter((row) => Date.parse(row.at) >= from)
   return fileIssues(
-    { config: resolveIssues(configs), rows, dryRun: values['dry-run'] === true },
+    { config: resolveIssues(configs), rows, failures, dryRun: values['dry-run'] === true },
     tracker,
     io,
   )

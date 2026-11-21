@@ -25,6 +25,12 @@ tracker is machine-local, the tool never syncs it, and it holds private pull req
 do not publish it. A tracker failure is reported as `trackerProblem` in the command's output and
 never fails a review or a post.
 
+When a step fails because of its harness (see [Filing issues](issues.md#what-is-proposed)), the
+tracker also appends one line per step to `harness-failures.jsonl` beside it:
+`{at, harness, step, kind, run}`, `run` being `repo#pr@head`, which keeps a review that is
+recorded twice from counting twice. It holds no error text. The kind comes from `report.json`'s
+`ran` list.
+
 `explain` prints a Markdown explainer for someone who has not read the code: what the pull request
 does, the verdict and why it is that verdict in plain words (a blocking finding: Request Changes; a
 high finding or an open question: Comment; otherwise Approve), the event it was posted as when that

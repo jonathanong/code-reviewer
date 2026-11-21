@@ -74,7 +74,7 @@ describe('skill selection', () => {
     const exec = limitedExec('', ['a', 'b'])
     const choice = await selectSkills({ ...input, models: fallbackModels('select'), exec })
     expect(choice.error).toContain('claude exited with 1')
-    expect(choice.ran).toEqual(RAN_B)
+    expect(choice.ran).toEqual({ ...RAN_B, failure: 'rate_limited' })
   })
 
   it('records the model of a run that returned no skills', async () => {

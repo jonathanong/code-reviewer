@@ -1,6 +1,8 @@
 import type { OutcomeRow } from '../outcomes/types.mts'
+import type { HarnessFailureRow } from '../tracker/failures.mts'
 import type { TrackerIo } from '../tracker/types.mts'
 import { DEFAULT_MAX_ISSUES_PER_DAY, type IssuesConfig, type IssueTarget } from './config-parse.mts'
+import { harnessProposals } from './harness-proposals.mts'
 import { issueProposals, markerOf, type IssueProposal } from './proposals.mts'
 import { appendFiled, readFiled, type FiledRow } from './record.mts'
 
@@ -22,6 +24,7 @@ export type IssuesResult = { filed: Filed[]; skipped: Skipped[]; dryRun: boolean
 type Input = {
   config: IssuesConfig | undefined
   rows: readonly OutcomeRow[]
+  failures?: readonly HarnessFailureRow[]
   dryRun: boolean
 }
 
@@ -91,7 +94,10 @@ export async function fileIssues(
     (row) => now.getTime() - Date.parse(row.filedAt) < DAY_MS,
   )
   const config = input.config ?? { maxPerDay: DEFAULT_MAX_ISSUES_PER_DAY, targets: [] }
-  for (const proposal of issueProposals(input.rows)) {
+  for (const proposal of [
+    ...issueProposals(input.rows),
+    ...harnessProposals(input.failures ?? []),
+  ]) {
     const { key } = proposal
     const target = config.targets.find((candidate) => candidate.name === proposal.target)
     if (target === undefined) {
