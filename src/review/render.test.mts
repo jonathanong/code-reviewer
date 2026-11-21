@@ -71,10 +71,10 @@ describe('finding bodies', () => {
     expect(renderFindingBody(f())).toBe('**[low]** Title\n\n<sub>rules</sub>\n\nBody')
     const prevent = 'an oxlint rule banning x'
     expect(renderFindingBody(f({ prevent }))).toBe(
-      `**[low]** Title\n\n<sub>rules</sub>\n\nBody\n\n**Prevent:** ${prevent}`,
+      `**[low]** Title\n\n<sub>rules</sub>\n\nBody\n\n<details><summary>For the fix</summary>\n\n**Prevent:** ${prevent}\n\n</details>`,
     )
     expect(renderBodyFinding(f({ prevent }))).toContain(
-      `Body\n\n**Prevent:** ${prevent}\n\n</details>`,
+      `Body\n\n<details><summary>For the fix</summary>\n\n**Prevent:** ${prevent}\n\n</details>\n\n</details>`,
     )
     expect(renderBodyFinding(f())).not.toContain('Prevent')
   })

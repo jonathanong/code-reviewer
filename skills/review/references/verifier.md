@@ -28,6 +28,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    instead of reading them whole, so a large pull request fits in context. Keep a finding's
    `prevent` only when the finding is confirmed and the named check would stop the class of
    mistake, not just this instance; drop it otherwise, or add one by the contract's rule.
+   Keep what the author must read in `body` and move exact steps, file lists, commands and
+   reproduction into `fix`, which is posted collapsed.
 3. **Deduplicate** across pillars: the same path, an overlapping line range, and the same claim
    become one finding that keeps the clearest body and the severity you decide for the merged claim.
 4. **Re-review** (when `plan.sinceSha` or `plan.push` is set): for each previous finding, decide fixed, still present, or no
@@ -124,6 +126,7 @@ Copy `skipped` from `plan.json` (plus any pillar that failed), then write `revie
       "severity": "blocking",
       "title": "...",
       "body": "...",
+      "fix": "optional",
       "path": "...",
       "line": 1
     }

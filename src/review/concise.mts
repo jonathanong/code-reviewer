@@ -1,5 +1,6 @@
 import type { SanitizedReview } from '../review-payload/index.mts'
 import type { ReviewInput } from './finding.mts'
+import { FIX_SUMMARY } from './render.mts'
 import { narrationWarnings } from './narration.mts'
 
 /** Targets in characters, not hard limits: over target warns, over three times refuses. */
@@ -32,6 +33,14 @@ export function visibleBody(body: string): string {
   return shown
 }
 
+/** An inline comment without its collapsed fix block: the length the reader sees. */
+export function visibleComment(body: string): string {
+  return body.replace(
+    new RegExp(`\\n*<details><summary>${FIX_SUMMARY}</summary>[\\s\\S]*?</details>`, 'gu'),
+    '',
+  )
+}
+
 type Measured = { what: string; length: number; target: number }
 
 function measure(reviews: readonly SanitizedReview[], limits: TextLimits): Measured[] {
@@ -43,14 +52,14 @@ function measure(reviews: readonly SanitizedReview[], limits: TextLimits): Measu
     },
     ...review.comments.map((comment) => ({
       what: `inline comment on ${comment.path}:${comment.line}`,
-      length: comment.body.length,
+      length: visibleComment(comment.body).length,
       target: limits.inlineTarget,
     })),
   ])
 }
 
 /**
- * Checks the posted text: length against the targets (the inline target counts the whole comment)
+ * Checks the posted text: length against the targets (the inline target counts the comment without its collapsed fix block)
  * and review-process narration in the authored fields. Everything here warns; `tooLong` is what a
  * real post refuses without `--allow-long`.
  */

@@ -3,7 +3,13 @@ import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
-import { parseAdvice, parseDependency, parseNotes } from './finding-extras.mts'
+import {
+  parseAdvice,
+  parseDependency,
+  parseFix,
+  parseNotes,
+  parsePrevent,
+} from './finding-extras.mts'
 import { PILLARS, pillarOf, type Pillar } from './pillar-name.mts'
 import { parseRaisedBy, type RaisedBy } from './raised-by.mts'
 
@@ -25,6 +31,8 @@ export type Finding = {
   line?: number
   side?: ReviewSide
   startLine?: number
+  /** What only whoever fixes this needs: exact steps, files, commands, reproduction. Posted collapsed. */
+  fix?: string
   /** One line naming a mechanical check (lint rule, type, test, CI guard) that would stop this class of mistake. */
   prevent?: string
   /** Another reviewer's open thread that raised the same problem; credited and linked when posted. */
@@ -102,16 +110,6 @@ function parseLocation(record: Json, where: string): Partial<Finding> {
   return { path, line, side, startLine }
 }
 
-/** The optional one-line prevention note: whitespace collapsed, absent when blank. */
-function parsePrevent(record: Json, where: string): Pick<Finding, 'prevent'> {
-  if (record.prevent === undefined) return {}
-  if (typeof record.prevent !== 'string') {
-    throw new ReviewError(`${where}.prevent must be a string.`)
-  }
-  const prevent = record.prevent.replace(/\s+/gu, ' ').trim()
-  return prevent === '' ? {} : { prevent }
-}
-
 function parseCredit(record: Json, where: string): Pick<Finding, 'raisedBy'> {
   const raisedBy = parseRaisedBy(record, where)
   return raisedBy === undefined ? {} : { raisedBy }
@@ -134,6 +132,7 @@ function parseFinding(raw: unknown, index: number): Finding {
     title: text(raw, 'title', where).trim(),
     body: text(raw, 'body', where).trim(),
     ...parseLocation(raw, where),
+    ...parseFix(raw, where),
     ...parsePrevent(raw, where),
     ...parseCredit(raw, where),
   }

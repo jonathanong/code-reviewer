@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) findings gain an optional `fix` field for fixer-only detail
+
+The pillar contract now narrows `body` to what is wrong and why it matters, and the pillar output
+schema, the verifier output schema (production and benchmark) and the approval-check schema gain an
+optional `fix` string for exact steps, file lists, commands and reproduction, which is posted
+collapsed. The verifier reference tells the verifier to move such detail into `fix`. Every pillar
+and verifier prompt and schema therefore differs: **all cases are no longer comparable with earlier
+entries until re-measured**, and no README row is re-measured. Pillars may now write shorter
+bodies, which could move which expected claim a judge finds in the body. No run was made.
+
 ## 2026-11-21: (no run) production verifier of a follow-up sees this machine's earlier review
 
 A production follow-up review (light, diff since the last reviewed commit) whose pull request has an

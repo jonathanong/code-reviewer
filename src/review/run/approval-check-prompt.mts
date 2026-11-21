@@ -36,6 +36,7 @@ export const APPROVAL_CHECK_SCHEMA = {
           line: { type: 'integer', minimum: 1 },
           side: { type: 'string', enum: ['LEFT', 'RIGHT'] },
           startLine: { type: 'integer', minimum: 1 },
+          fix: { type: 'string' },
           prevent: { type: 'string' },
         },
       },

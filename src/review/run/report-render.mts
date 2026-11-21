@@ -35,7 +35,8 @@ function verified(finding: Finding, index: number, fixedIn?: number): string {
   const later = fixedIn === undefined ? '' : ` (fixed in a later member, #${fixedIn})`
   const head = `${index + 1}. **[${finding.severity}]** ${finding.title}${where(finding)} (${finding.pillar})${later}`
   const prevent = finding.prevent === undefined ? '' : `\n\n**Prevent:** ${finding.prevent}`
-  return `${head}\n\n${quote(finding.body)}${prevent}${raisedByLine(finding.raisedBy)}`
+  const fix = finding.fix === undefined ? '' : `\n\n**For the fix:**\n\n${quote(finding.fix)}`
+  return `${head}\n\n${quote(finding.body)}${fix}${prevent}${raisedByLine(finding.raisedBy)}`
 }
 
 function raw(finding: ReportFinding): string {

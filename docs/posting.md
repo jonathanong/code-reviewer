@@ -78,7 +78,7 @@ reads and confirms nothing.
 ## Posted text length
 
 Posted text should be short. A review body targets 1,200 characters (the hidden marker and collapsed
-details do not count) and an inline comment 800. Above a target, `post` and the `review` preview
+details do not count) and an inline comment 800 (its collapsed `For the fix` section does not count). Above a target, `post` and the `review` preview
 list a warning (`warnings` in the `post` output, "Posted text" in `report.md`); above three times a
 target, a real `post` refuses unless `--allow-long` is given (`tooLong` lists those on a dry run).
 `--body-target` and `--inline-target` change the targets. A fixed, conservative pattern list also

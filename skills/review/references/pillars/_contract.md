@@ -129,7 +129,8 @@ Return only JSON:
     {
       "severity": "blocking | high | medium | low",
       "title": "One line a human understands without the body",
-      "body": "Why it matters, the evidence, and the concrete fix. Markdown.",
+      "body": "What is wrong and why it matters, for the human reading the review. Markdown.",
+      "fix": "optional: what only whoever fixes it needs: exact steps, files, commands, reproduction",
       "path": "repo/relative/path.ts",
       "line": 42,
       "side": "RIGHT",
@@ -164,6 +165,9 @@ Return only JSON:
   ignores produces a wrong result for every caller who sets it, even when the default path works.
   A pre-release or unpublished version does not lower severity: a wrong boundary or contract costs
   the same to unwind once a consumer adopts it.
+- `fix` is optional and goes under a collapsed "For the fix" heading: put exact steps, file lists,
+  commands, and reproduction there, and keep `body` to the defect and its consequence. Omit it
+  when `body` already says all there is to say.
 - `prevent` is optional and rare. When a finding is one instance of a class of mistake that a
   mechanical check could stop (a lint rule, a type, a test, a CI guard), put one short line in
   `prevent` that names that check, for example "an oxlint rule banning `==` on enum values".
