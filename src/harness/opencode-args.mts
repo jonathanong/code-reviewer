@@ -16,9 +16,30 @@ export function assertOpencodeCan(request: HarnessRun): void {
   }
 }
 
-/** The environment that confines a step: every tool denied except the read tools it may use. */
+/** Reads outside the working directory are allowed for exactly these directories and nothing else. */
+function externalDirectories(dirs: readonly string[]): Record<string, string> {
+  const rules: Record<string, string> = { '*': 'deny' }
+  for (const dir of dirs) {
+    const root = dir.replace(/\/+$/, '')
+    rules[root] = 'allow'
+    rules[`${root}/**`] = 'allow'
+  }
+  return rules
+}
+
+/**
+ * The environment that confines a step: every tool denied except the read tools it may use, and
+ * reads outside the working directory denied except in `addDirs`. Writes stay denied by `*`.
+ */
 export function opencodeEnv(request: HarnessRun): Record<string, string> {
-  const permission = { '*': 'deny', ...(request.can.files ? READ_PERMISSIONS : {}) }
+  const dirs = request.addDirs ?? []
+  const permission = {
+    '*': 'deny',
+    ...(request.can.files ? READ_PERMISSIONS : {}),
+    ...(request.can.files && dirs.length > 0
+      ? { external_directory: externalDirectories(dirs) }
+      : {}),
+  }
   return { OPENCODE_CONFIG_CONTENT: JSON.stringify({ permission }) }
 }
 

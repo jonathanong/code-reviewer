@@ -37,6 +37,10 @@ const args = (...rest: string[]) => [
 const READ_CONFIG = JSON.stringify({
   permission: { '*': 'deny', read: 'allow', grep: 'allow', glob: 'allow', list: 'allow' },
 })
+const envOf = (exec: ReturnType<typeof okExec>, call: number): string => {
+  const options = exec.mock.calls[call]?.[2] as { env: Record<string, string> }
+  return options.env['OPENCODE_CONFIG_CONTENT'] ?? ''
+}
 const lines = (...events: object[]) => events.map((event) => JSON.stringify(event)).join('\n')
 const start = { type: 'step_start' }
 const text = (value: string) => ({ type: 'text', part: { type: 'text', text: value } })
@@ -58,6 +62,29 @@ describe('opencode harness run', () => {
     expect(exec.mock.calls[0]?.[2]).toStrictEqual({
       env: { OPENCODE_CONFIG_CONTENT: '{"permission":{"*":"deny"}}' },
     })
+  })
+
+  it('allows reads in exactly the listed directories outside the working directory', async () => {
+    const exec = okExec()
+    await harness.run(request({ cwd: '/tree', addDirs: ['/run/', '/refs'] }), exec)
+    const config = JSON.parse(envOf(exec, 0))
+    expect(config.permission.external_directory).toStrictEqual({
+      '*': 'deny',
+      '/run': 'allow',
+      '/run/**': 'allow',
+      '/refs': 'allow',
+      '/refs/**': 'allow',
+    })
+    expect(config.permission['*']).toBe('deny')
+    expect(config.permission.edit).toBeUndefined()
+  })
+
+  it('grants no directory to a no-tools step or an empty list', async () => {
+    const exec = okExec()
+    await harness.run(request({ can: NO_TOOLS, addDirs: ['/run'] }), exec)
+    await harness.run(request({ addDirs: [] }), exec)
+    expect(envOf(exec, 0)).toBe('{"permission":{"*":"deny"}}')
+    expect(envOf(exec, 1)).toBe(READ_CONFIG)
   })
 
   it('passes effort, cwd and timeout, and its config wins over the request env', async () => {

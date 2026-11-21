@@ -6,8 +6,9 @@ const BINARY = 'opencode'
 
 /**
  * OpenCode, run headless with `opencode run`. It runs read-only steps: files and no tools. It
- * refuses shell and web grants it cannot confine, and ignores `explorer`, `skills`, `settings`,
- * `addDirs`, `transcript` and `maxTurns`.
+ * refuses shell and web grants it cannot confine, allows reads in `addDirs` through the
+ * `external_directory` permission, and ignores `explorer`, `skills`, `settings`,
+ * `transcript` and `maxTurns`.
  */
 export const harness: Harness = {
   name: 'opencode',
