@@ -29,7 +29,7 @@ export type PrepareIo = {
   /** The changed files with their changed line counts. */
   files(): Promise<ChangedFile[]>
   conversation(): Promise<PrConversation>
-  compare(base: string, head: string): Promise<SinceDiff>
+  compare(base: string, head: string, generatedPaths?: readonly string[]): Promise<SinceDiff>
   compareDiff(base: string, head: string): Promise<string>
   /** The open pull requests and the default branch, for stack detection. */
   stackInput(): Promise<{ pr: number; pulls: StackMember[]; defaultBranch: string }>
@@ -50,9 +50,9 @@ export type PrepareIo = {
   commitMessages(tree: string, baseSha: string, headSha: string): Promise<string[]>
   /** The commit checked out at `tree`. */
   treeHead(tree: string): Promise<string>
-  /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
   /** Readers for the rule sources: the base of `tree` and the clones under `clones`. */
   ruleSources(args: { clones?: string; tree?: string; baseSha: string }): Promise<Sources>
+  /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
   history(tree: string, base: string, paths: readonly string[]): Promise<string[] | undefined>
 }
 
@@ -63,6 +63,11 @@ type CompareJson = {
 
 const MAX_HISTORY_PATHS = 50
 const MAX_COMPARE_FILES = 300
+
+const changedFile = (file: { filename: string; additions?: number; deletions?: number }) => ({
+  path: file.filename,
+  lines: (file.additions ?? 0) + (file.deletions ?? 0),
+})
 
 export function createGhPrepareIo(
   target: PullTarget,
@@ -88,13 +93,9 @@ export function createGhPrepareIo(
         return io.diff()
       }
     },
-    files: async () =>
-      (await io.listFiles()).map((file) => ({
-        path: file.filename,
-        lines: (file.additions ?? 0) + (file.deletions ?? 0),
-      })),
+    files: async () => (await io.listFiles()).map(changedFile),
     conversation: () => fetchConversation(target, run),
-    async compare(base, head) {
+    async compare(base, head, generatedPaths) {
       let parsed: CompareJson
       try {
         parsed = JSON.parse(await run(['api', compareUrl(base, head)])) as CompareJson
@@ -108,12 +109,7 @@ export function createGhPrepareIo(
         paths: files.map((file) => file.filename),
         // The compare API lists at most 300 files; more means the since-diff is a rewrite.
         ...(files.length >= MAX_COMPARE_FILES ? { truncated: true } : {}),
-        lines: reviewableLines(
-          files.map((file) => ({
-            path: file.filename,
-            lines: (file.additions ?? 0) + (file.deletions ?? 0),
-          })),
-        ),
+        lines: reviewableLines(files.map(changedFile), generatedPaths),
       }
     },
     async stackInput() {

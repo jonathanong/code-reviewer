@@ -1,5 +1,6 @@
 import type { Effort } from './finding.mts'
 import type { PlanInput } from './plan.mts'
+import { DEFAULT_PLAN_VALUES } from './plan-settings.mts'
 import type { LightPush } from './push-types.mts'
 import {
   isDependencyFile,
@@ -21,15 +22,30 @@ export type ModeChoice = {
   skipReason?: string
 }
 
-/** A first review of at most this many changed lines, with no security trigger path, is light. */
-export const SMALL_PR_LINES = 100
-
 const DEPENDABOT_LOGINS: readonly string[] = ['dependabot[bot]', 'app/dependabot']
 
-/** `dependabot` alone is also a possible human login, so it counts only for a bot account. */
-export function isDependabot(login: string | null | undefined, isBot: boolean): boolean {
+/** A login without GitHub's `app/` prefix and `[bot]` suffix, lowercased: the forms of one account compare equal. */
+const accountName = (login: string) =>
+  login
+    .toLowerCase()
+    .replace(/^app\//u, '')
+    .replace(/\[bot\]$/u, '')
+
+/**
+ * `dependabot` alone is also a possible human login, so it counts only for a bot account. A login
+ * in `skipAuthors` (the configured accounts) is reviewed the same way.
+ */
+export function isDependabot(
+  login: string | null | undefined,
+  isBot: boolean,
+  skipAuthors: readonly string[] = [],
+): boolean {
   if (login === null || login === undefined) return false
-  return DEPENDABOT_LOGINS.includes(login) || (isBot && login === 'dependabot')
+  return (
+    DEPENDABOT_LOGINS.includes(login) ||
+    (isBot && login === 'dependabot') ||
+    skipAuthors.some((author) => accountName(author) === accountName(login))
+  )
 }
 
 const full = (effort: Effort): ModeChoice => ({ mode: 'full', effort, sinceSha: null })
@@ -68,15 +84,17 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
  * and workflow files by design, so those do not count for it.
  */
 export function securityPaths(input: PlanInput, paths: readonly string[]): string[] {
-  const hits = securityTriggers(paths)
-  if (!isDependabot(input.authorLogin, input.authorIsBot === true)) return hits
+  const { securityPaths: extra, skipAuthors } = input.values ?? DEFAULT_PLAN_VALUES
+  const hits = securityTriggers(paths, extra)
+  if (!isDependabot(input.authorLogin, input.authorIsBot === true, skipAuthors)) return hits
   return hits.filter((path) => !isDependencyFile(path))
 }
 
 /** Chooses skip, light, or full, and the effort the plan records for it. */
 export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   const { context, requested } = input
-  const dependabot = isDependabot(input.authorLogin, input.authorIsBot === true)
+  const values = input.values ?? DEFAULT_PLAN_VALUES
+  const dependabot = isDependabot(input.authorLogin, input.authorIsBot === true, values.skipAuthors)
   if (dependabot && input.paths.length > 0 && input.paths.every(isLockfile)) {
     if (requested === undefined) {
       const skipReason = 'Dependabot pull request that changes only lockfiles: no review.'
@@ -100,8 +118,9 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
     return light(null)
   }
   // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
-  const handWritten = input.paths.filter((path) => !isGenerated(path))
-  if (input.reviewableLines <= SMALL_PR_LINES && securityTriggers(handWritten).length === 0) {
+  const handWritten = input.paths.filter((path) => !isGenerated(path, values.generatedPaths))
+  const small = input.reviewableLines <= values.smallChangeLines
+  if (small && securityTriggers(handWritten, values.securityPaths).length === 0) {
     reasons.push(`Small pull request (${input.reviewableLines} reviewable lines): light review.`)
     return light(null)
   }

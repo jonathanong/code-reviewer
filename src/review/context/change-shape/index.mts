@@ -1,4 +1,4 @@
-import { SMALL_PR_LINES } from '../../mode.mts'
+import { SMALL_PR_LINES } from '../../plan-settings.mts'
 import { reviewableLines } from '../../triggers.mts'
 import type { ContextDeps, ContextInput, SectionBuilder } from '../types.mts'
 import { summarize } from './analyze.mts'

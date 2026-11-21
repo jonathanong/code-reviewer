@@ -2,6 +2,7 @@ import type { FollowUpContext } from './context.mts'
 import type { Effort, SkippedPillar } from './finding.mts'
 import { DISPATCHED_PILLARS, type Pillar } from './pillar-name.mts'
 import { applyPillarSettings } from './plan-pillars.mts'
+import type { PlanValues } from './plan-settings.mts'
 import { NO_PILLARS, type PillarSettings } from './pillars-settings.mts'
 import { chooseMode, securityPaths, type Mode, type ModeChoice } from './mode.mts'
 import type { LightPush } from './push-types.mts'
@@ -41,6 +42,8 @@ export type PlanInput = {
   authorIsBot?: boolean
   /** Built-in pillars to skip and extra pillars to run; none when absent. */
   pillars?: PillarSettings
+  /** Configured paths, authors and size threshold; the defaults when absent. */
+  values?: PlanValues
 }
 
 export type ReviewPlan = {

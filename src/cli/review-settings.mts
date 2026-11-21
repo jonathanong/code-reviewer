@@ -1,22 +1,40 @@
 import {
+  EFFORTS,
   reportCheckRun,
   repoSettings,
   type CheckRunResult,
   type CheckRunStep,
+  type Effort,
   type LabelNames,
   type PullTarget,
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import { requirePillars, type PillarSettings } from '../review/pillars-settings.mts'
+import { resolvePlanValues, type PlanValues } from '../review/plan-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export async function labelsFor(deps: ReviewDeps, repo: string): Promise<LabelNames> {
   return (await repoSettings(deps, repo)).labels
 }
 
-/** The pillars a review of `repo` runs with; throws when the config leaves a mode with none. */
-export async function pillarsFor(deps: ReviewDeps, repo: string): Promise<PillarSettings> {
-  return requirePillars(deps.configs(), repo, (await deps.targetConfig(repo)).config)
+/** Parses `--effort`; undefined when not given. */
+export function effort(value: string | undefined): Effort | undefined {
+  if (value === undefined) return undefined
+  const found = EFFORTS.find((candidate) => candidate === value)
+  if (found === undefined) throw new Error(`--effort must be one of ${EFFORTS.join(', ')}.`)
+  return found
+}
+
+/** What `prepare` reads from the config: the pillars and the plan values, from one read of the repository's file. */
+export async function prepareSettingsFor(
+  deps: ReviewDeps,
+  repo: string,
+): Promise<{ pillars: PillarSettings; values: PlanValues }> {
+  const own = (await deps.targetConfig(repo)).config
+  return {
+    pillars: requirePillars(deps.configs(), repo, own),
+    values: resolvePlanValues(deps.configs(), repo, own),
+  }
 }
 
 /**

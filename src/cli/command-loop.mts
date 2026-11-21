@@ -1,5 +1,4 @@
 import {
-  EFFORTS,
   STARTED,
   abortReview,
   abortedStep,
@@ -18,7 +17,6 @@ import {
   settingsProblems,
   skipPullRequest,
   skippedStep,
-  type Effort,
   type PullTarget,
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
@@ -29,7 +27,8 @@ import { resolveLimits } from '../review/limits-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { describePillars, resolvePillars } from '../review/pillars-settings.mts'
-import { checkRunFor, labelsFor, pillarsFor } from './review-settings.mts'
+import { checkRunFor, effort, labelsFor, prepareSettingsFor } from './review-settings.mts'
+import { resolvePlanValues } from '../review/plan-settings.mts'
 
 export type LoopValues = {
   owner?: string | undefined
@@ -42,13 +41,6 @@ export type LoopValues = {
   tree?: string | undefined
   clones?: string | undefined
   thread?: string[] | undefined
-}
-
-function effort(value: string | undefined): Effort | undefined {
-  if (value === undefined) return undefined
-  const found = EFFORTS.find((candidate) => candidate === value)
-  if (found === undefined) throw new Error(`--effort must be one of ${EFFORTS.join(', ')}.`)
-  return found
 }
 
 /**
@@ -83,6 +75,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
     approvalCheck: resolveApprovalCheck(configs, scope),
     rulePlugins: resolveRulePlugins(configs, scope, target?.config),
     pillars: describePillars(resolvePillars(configs, scope, target?.config)),
+    plan: resolvePlanValues(configs, scope, target?.config),
     // What each step runs on; a pillar with no setting follows the plan (see docs/configuration.md).
     models: {
       steps: modelTable(models.plan),
@@ -161,7 +154,7 @@ export async function prepareCommand(
   const requested = effort(values.effort)
   return prepareReview(deps.createPrepareIo(target()), {
     out: values.out,
-    pillars: await pillarsFor(deps, target().repo),
+    ...(await prepareSettingsFor(deps, target().repo)),
     ...(requested === undefined ? {} : { requested }),
     ...(values.tree === undefined ? {} : { tree: values.tree }),
     ...(values.clones === undefined ? {} : { clones: values.clones }),
