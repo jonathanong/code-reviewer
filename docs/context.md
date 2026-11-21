@@ -28,6 +28,15 @@ sentence with a block that says skills quoted in full are not to be loaded; a re
 A configured pillar
 with a `run` command gets no line, since its command is its whole prompt.
 
+Excerpts stay alongside the Skill loads because a pilot of the `replace` instruction did not justify
+the switch ([benchmark history](../benchmarks/review/HISTORY.md), 2026-11-21 pilot). Every expected
+claim was still found and the pillar took fewer turns, but cost did not fall, and the instruction
+was followed imprecisely: one run loaded no skill at all, including skills that were not quoted, and
+others still loaded a quoted one. A skill written as prose is never quoted in full, so skipping its
+load loses rules. The pillar contract tells the pillar to load every matching skill, and `replace`
+can only override that later in the same prompt; a pillar that reads two opposed instructions is
+what the pilot measured.
+
 The pillars get `rule-excerpts` (for the selected skills only), `changed-line-history` and
 `linked-regressions`. They do not get `change-shape`, and never a section about other reviewers
 or past reviews: pillars are independent finders and must not be anchored by other reviewers'

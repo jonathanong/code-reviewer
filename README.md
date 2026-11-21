@@ -46,8 +46,11 @@ Agreed and not built yet. Nothing below works today.
 - **A real Codex run.** The Codex adapter exists but has never been run against the real CLI: its
   flags come from `codex-cli 0.171.0` help output and its output shapes are assumed.
 - **Shared context.** The pillars read rule excerpts, the history of the changed lines and linked
-  regressions ([Shared context](docs/context.md)), but still load every skill. Excerpts do not yet
-  replace Skill loads, and the verifier reads only the linked commits, the split summary and a follow-up's earlier review, other steps none of it.
+  regressions ([Shared context](docs/context.md)), but still load every skill. A one-attempt pilot of
+  skipping fully quoted skills kept recall and cut turns but not cost, and the pillar sometimes
+  skipped skills that were not quoted
+  ([why](docs/context.md#in-a-review)); replacing loads needs the pillar contract to name the
+  skills to load, then a three-attempt comparison. The verifier reads only the linked commits, the split summary and a follow-up's earlier review, other steps none of it.
 
 ## Outcomes
 
