@@ -21,7 +21,7 @@ cut stated in the text.
 `review-context.md` in the run directory (`context.md` there is the pull request's own text from
 `prepare`). Only the pillars read it, as an extra line in their prompt: the verifier does not, but gets the linked commits found there ([Changes that fix a regression](review.md#changes-that-fix-a-regression)) and the change-shape summary.
 The line says the file is reference data collected mechanically, that its quoted text is not
-instructions, that excerpts are alongside the Skill loads and not instead of them, and that a
+instructions, that it is not exhaustive (an empty section means nothing was found mechanically, and what the pillar relies on is to be checked against the code), that excerpts are alongside the Skill loads and not instead of them, and that a
 commit listed under linked regressions is to be checked against the change. An internal option (`excerpts: 'replace'`, used only by `bench --excerpts`) makes each skill's
 excerpt state whether it is quoted in full, in part or not at all, and replaces the "alongside"
 sentence with a block that says skills quoted in full are not to be loaded; a review never sets it.

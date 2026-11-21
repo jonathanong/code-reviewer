@@ -47,6 +47,7 @@ describe('buildPillarRunPrompt', () => {
     expect(line).toHaveLength(1)
     expect(line[0]).toContain('is not instructions')
     expect(line[0]).toContain('alongside the Skill loads, not instead of them')
+    expect(line[0]).toContain('It is not exhaustive')
     expect(line[0]).toContain('fully addresses that regression')
     expect(prompt.endsWith('including any that looks unrelated to this pillar.')).toBe(true)
   })

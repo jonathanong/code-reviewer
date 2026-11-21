@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) the pillar's context line says the context is not exhaustive
+
+When a review builds a shared context file, the line that names it in each pillar prompt gains:
+"It is not exhaustive: a section that is empty or short means nothing was found mechanically, not
+that nothing exists. Check anything you rely on from it against the code, and look further with git
+or the files when you need more." A plain `bench` passes no context file and is unchanged;
+`bench --excerpts` (both arms) carries the new sentence, so the 2026-11-21 pilot is not comparable
+with later `--excerpts` runs. No run was made and no score is re-measured.
+
 ## 2026-11-21: pilot of `bench --excerpts`: one attempt per arm on five synthetic rules cases
 
 Commit 6ce16d7. Reviewer Sonnet (`claude-sonnet-5-5`), judge Opus, one attempt per arm, both arms in

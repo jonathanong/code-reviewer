@@ -325,7 +325,7 @@
       "claude",
       [
         "-p",
-        "sha256:96a15022c6d4d0626f41915f5c99207bd7c0493262110a62a60362e2ad65207d",
+        "sha256:2f1915915b485c2cd05301558b72dc1fb63eedaf9ab592b3afd4098e734dd92c",
         "--model",
         "sonnet",
         "--output-format",
@@ -365,7 +365,7 @@
       "claude",
       [
         "-p",
-        "sha256:fe78cc9eef9c2d9ebb15f7efa6dc8d15dc7467477e4fb6a8fda9f7dae0432536",
+        "sha256:836f9c7020722d3ce87ae2284b4a8e3b9484b3570708669e654d429b60d6f805",
         "--model",
         "sonnet",
         "--output-format",
