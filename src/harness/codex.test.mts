@@ -15,6 +15,7 @@ const request = (overrides: Partial<HarnessRun> = {}): HarnessRun => ({
   maxTurns: 4,
   schema: { type: 'object' },
   can: READ_ONLY,
+  readsOutsideCheckout: true,
   ...overrides,
 })
 const after = (args: string[], flag: string) => args[args.indexOf(flag) + 1] ?? ''
@@ -52,6 +53,8 @@ describe('codex harness run', () => {
       last,
       '-c',
       'web_search="disabled"',
+      '-c',
+      'project_doc_max_bytes=0',
       '--',
       'P',
     ])
@@ -113,6 +116,7 @@ describe('codex harness run', () => {
   })
 
   it.each([
+    ['reads-outside', { readsOutsideCheckout: false }, 'reads outside the checkout'],
     ['no-tools', { can: NO_TOOLS }, 'no-tools steps'],
     ['shell', { can: { ...READ_ONLY, shell: ['git log'] } }, 'shell prefixes'],
     ['web', { can: { ...READ_ONLY, web: ['a.test'] } }, 'web hosts'],
@@ -132,7 +136,7 @@ describe('codex harness run', () => {
       inputTokens: 1200,
       outputTokens: 30,
       cacheReadTokens: 800,
-      cacheCreationTokens: null,
+      cacheCreationTokens: 50,
       costUsd: null,
     }
     expect(result.usage).toStrictEqual({
@@ -154,6 +158,38 @@ describe('codex harness run', () => {
 
   it.each([undefined, '', 'not json'])('rejects an unparseable final message %j', async (text) => {
     await expect(harness.run(request(), fakeExec(text))).rejects.toThrow(ReviewError)
+  })
+
+  it('treats an error event followed by a completed turn as a success', async () => {
+    const stdout = `${fixture('codex-error.jsonl')}${fixture('codex-ok.jsonl')}`
+    const result = await harness.run(request(), fakeExec('{"answer":4}', stdout))
+    expect(result.structured).toStrictEqual({ answer: 4 })
+  })
+
+  it('writes a strict schema and drops the nulls it forced on optional properties', async () => {
+    let written: unknown
+    const exec = vi.fn(async (_c: string, args: string[]) => {
+      written = JSON.parse(readFileSync(after(args, '--output-schema'), 'utf8'))
+      writeFileSync(after(args, '-o'), '{"a":1,"b":null}')
+      return fixture('codex-ok.jsonl')
+    })
+    const schema = { type: 'object', required: ['a'], properties: { a: {}, b: { type: 'string' } } }
+    const result = await harness.run(request({ schema }), exec)
+    expect(written).toMatchObject({ required: ['a', 'b'], additionalProperties: false })
+    expect(result.structured).toStrictEqual({ a: 1 })
+  })
+
+  it('keeps the usage of a completed turn when the answer is rejected', async () => {
+    const run = harness.run(request(), fakeExec('not json'))
+    await expect(run).rejects.toBeInstanceOf(ReviewError)
+    const error = await run.catch((caught: unknown) => caught)
+    expect(harness.describeFailure(error).usage).toMatchObject({ turns: 1, inputTokens: 1200 })
+  })
+
+  it('has no usage to keep when no turn completed', async () => {
+    const run = harness.run(request(), fakeExec(undefined, fixture('codex-error.jsonl')))
+    const error = await run.catch((caught: unknown) => caught)
+    expect(harness.describeFailure(error)).toMatchObject({ usage: null })
   })
 
   it('rejects an error event printed with a zero exit', async () => {

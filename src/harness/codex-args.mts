@@ -4,9 +4,14 @@ import type { HarnessRun } from './types.mts'
 /**
  * Throws before anything runs when the step needs what Codex cannot confine. Codex reads files
  * through its one shell tool, so it cannot offer "no tools", nor allow only some shell prefixes
- * or web hosts; those are refused, never loosened.
+ * or web hosts. Its read-only sandbox also reads the whole disk, and no supported flag limits
+ * that to the checkout, so a step runs only on a candidate the machine config marks
+ * `readsOutsideCheckout`. All of these are refused, never loosened.
  */
 export function assertCodexCan(request: HarnessRun): void {
+  if (request.readsOutsideCheckout !== true) {
+    throw new HarnessRefusal(`codex cannot confine: reads outside the checkout (${request.label})`)
+  }
   if (!request.can.files) {
     throw new HarnessRefusal(`codex cannot confine: no-tools steps (${request.label})`)
   }
@@ -44,6 +49,8 @@ export function codexArgs(request: HarnessRun, files: CodexFiles): string[] {
     files.lastMessage,
     '-c',
     'web_search="disabled"',
+    '-c',
+    'project_doc_max_bytes=0',
     ...(request.effort === undefined ? [] : ['-c', `model_reasoning_effort="${request.effort}"`]),
     '--',
     request.prompt,

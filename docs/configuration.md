@@ -337,7 +337,7 @@ models:
 ```
 
 Which harness and model each step runs on. `tiers` name `small`, `medium` and `large`, each an
-ordered list of `{harness, model}` candidates; unset, they are Claude's `haiku`, `sonnet` and
+ordered list of `{harness, model}` candidates (a Codex candidate also needs `readsOutsideCheckout: true`, accepting that it may read files outside the checkout, or it refuses every step); unset, they are Claude's `haiku`, `sonnet` and
 `opus`. `steps` maps a step to a tier name or to its own ordered list. The steps are `select`,
 `pillars`, `pillar.<name>` (for a built-in or a configured pillar), `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
 pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; light reviews

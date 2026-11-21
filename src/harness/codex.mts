@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { assertCodexCan, codexArgs } from './codex-args.mts'
+import { dropOptionalNulls, strictSchema } from './codex-schema.mts'
 import { codexUsage, describeCodexFailure, readCodexAnswer } from './codex-output.mts'
 import type { FailureClass, Harness, HarnessResult, HarnessRun } from './types.mts'
 
@@ -27,15 +28,16 @@ export const harness: Harness = {
     const dir = mkdtempSync(join(tmpdir(), 'codex-step-'))
     try {
       const files = { schema: join(dir, 'schema.json'), lastMessage: join(dir, 'last.txt') }
-      writeFileSync(files.schema, JSON.stringify(request.schema))
+      writeFileSync(files.schema, JSON.stringify(strictSchema(request.schema)))
       const stdout = await exec(BINARY, codexArgs(request, files), {
         ...(request.cwd === undefined ? {} : { cwd: request.cwd }),
         ...(request.timeoutMs === undefined ? {} : { timeoutMs: request.timeoutMs }),
         ...(request.env === undefined ? {} : { env: request.env }),
       })
       const last = readLast(files.lastMessage)
-      const structured = readCodexAnswer(stdout, last, request.label)
       const usage = codexUsage(stdout, request.model)
+      const answer = readCodexAnswer(stdout, last, request.label, usage)
+      const structured = dropOptionalNulls(answer, request.schema)
       return { structured, skills: [], usage, reportedUsage: usage }
     } finally {
       rmSync(dir, { recursive: true, force: true })

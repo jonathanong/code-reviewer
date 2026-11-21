@@ -11,13 +11,16 @@ function candidate(raw: unknown, where: string, problems: string[]): Candidate |
     return undefined
   }
   const before = problems.length
-  problems.push(...unknownKeys(raw, ['harness', 'model'], where))
+  problems.push(...unknownKeys(raw, ['harness', 'model', 'readsOutsideCheckout'], where))
   const { harness, model } = raw
   if (typeof harness !== 'string' || !HARNESS_NAMES.includes(harness)) {
     problems.push(`${where}: "harness" must be one of ${HARNESS_NAMES.join(', ')}`)
   }
   if (typeof model !== 'string' || model.trim() === '') {
     problems.push(`${where}: "model" must be a non-empty string`)
+  }
+  if (raw.readsOutsideCheckout !== undefined && raw.readsOutsideCheckout !== true) {
+    problems.push(`${where}: "readsOutsideCheckout" must be true when set`)
   }
   return problems.length === before ? (raw as Candidate) : undefined
 }

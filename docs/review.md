@@ -32,7 +32,15 @@ Codex (`src/harness/codex.mts`) is a fourth, run as `codex exec --json` in its `
 are loaded, and web search is off. The schema goes in through `--output-schema` and the answer is
 read from the `-o` file. Codex reads files through its one shell tool, so it refuses no-tools steps
 and shell and web grants, before starting anything. The sandbox already reads the run directory, so
-`addDirs` is not passed (Codex's `--add-dir` grants write access). It ignores `explorer`, `skills`,
+`addDirs` is not passed (Codex's `--add-dir` grants write access). `project_doc_max_bytes=0` stops
+Codex loading the checkout's `AGENTS.md`, so a pull request cannot change the instructions that
+govern its own review. The schema is rewritten for Codex's strict structured outputs (every
+property required, optional ones also accepting null, no extra properties) and the nulls are
+dropped from the answer. Codex's read-only sandbox reads the whole disk, and no supported flag
+limits that to the checkout and run directory, so a diff could steer a step to read a file outside
+them and send it to the provider. Unlike Claude, Grok and OpenCode, which bound reads to the
+checkout and `addDirs`, Codex refuses every step unless its candidate in `models` sets
+`readsOutsideCheckout: true`, which only machine config may do. It ignores `explorer`, `skills`,
 `settings`, `transcript` and `maxTurns`, and reports no cost. A usage-limit message is classified as
 a rate limit too long to wait out. **Codex has not yet been run against the real CLI**: the adapter
 is built from `codex-cli 0.171.0` help output, and the event shapes it reads are assumed.

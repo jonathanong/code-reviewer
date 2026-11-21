@@ -114,6 +114,24 @@ describe('runStep across harnesses', () => {
   })
 })
 
+describe('runStep with a candidate that accepts reads outside the checkout', () => {
+  it('hands the acceptance to the adapter for that candidate only', async () => {
+    seen.length = 0
+    failures.length = 0
+    const { clock } = runtime(0)
+    await runStep(
+      REQUEST,
+      [{ harness: 'slow', model: 'x', readsOutsideCheckout: true }],
+      exec,
+      clock,
+    )
+    await runStep(REQUEST, [{ harness: 'slow', model: 'x' }], exec, clock)
+    const [accepted, plain] = seen as [HarnessRun, HarnessRun]
+    expect(accepted.readsOutsideCheckout).toBe(true)
+    expect('readsOutsideCheckout' in plain).toBe(false)
+  })
+})
+
 describe('runStep when an adapter refuses the step', () => {
   it('moves to the next candidate at once, without waiting', async () => {
     calls.length = 0
