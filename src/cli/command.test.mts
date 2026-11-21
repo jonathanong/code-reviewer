@@ -76,6 +76,7 @@ function memoryTracker(): MemoryTracker {
     files,
     read: (path) => files.get(path),
     append: (path, text) => void files.set(path, `${files.get(path) ?? ''}${text}`),
+    write: (path, text) => void files.set(path, text),
     now: () => new Date('2026-05-06T07:08:09.000Z'),
   }
 }
@@ -98,6 +99,7 @@ function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
     guideReader: vi.fn(() => vi.fn(async () => '')),
     runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
+    findClone: vi.fn(() => vi.fn(async () => undefined)),
     tracker: vi.fn(() => tracker),
     listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),
     pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
@@ -344,7 +346,7 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, bench, bench-verifier, or bench-selection.',
+      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, bench, bench-verifier, or bench-selection.',
     )
   })
 

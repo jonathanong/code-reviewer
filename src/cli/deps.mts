@@ -22,7 +22,7 @@ import {
   type PluginInfo,
 } from '../review/plugins.mts'
 import { loadRepoConfigs, machineConfigDir, type RepoConfigs } from '../review/rules/config.mts'
-import { createGuideReader, type GuideReader } from '../review/rules/evidence-guide.mts'
+import { cloneOf, createGuideReader, type GuideReader } from '../review/rules/evidence-guide.mts'
 import {
   apiFileReader,
   readTargetConfig,
@@ -56,6 +56,8 @@ export type ReviewDeps = {
   /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
   runner(owner: string, repo?: string): RunTextCommand
   readFile(path: string): string
+  /** The local clone of `repo` under `clones`, else `CODE_REVIEWER_CLONE_ROOT`; undefined when there is none. */
+  findClone(clones: string | undefined): (repo: string) => Promise<string | undefined>
   /** The machine-local tracker: its state directory, files and clock. */
   tracker(): TrackerIo
   /** The Claude Code plugins enabled for this session's user and project. */
@@ -138,6 +140,15 @@ export function createDefaultDeps(
       createGuideReader({ clones: clones ?? env.CODE_REVIEWER_CLONE_ROOT, git: runGit }),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
+    findClone: (clones) => async (repo) => {
+      const root = clones ?? env.CODE_REVIEWER_CLONE_ROOT
+      if (root === undefined) return undefined
+      try {
+        return await cloneOf(root, repo.toLowerCase(), runGit)
+      } catch {
+        return undefined
+      }
+    },
     tracker: () => createTrackerIo(env),
     listPlugins: async () => {
       const { defaultExec } = await import('../review/benchmark/exec.mts')

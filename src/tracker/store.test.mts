@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -62,6 +62,15 @@ describe('tracker io', () => {
     io.append(file, 'b\n')
     expect(io.read(file)).toBe('a\nb\n')
     expect(io.now()).toBeInstanceOf(Date)
+  })
+
+  it('replaces a file atomically, leaving no temporary file behind', () => {
+    const io = tracker()
+    const file = join(io.dir, 'f')
+    io.write(file, 'one\n')
+    io.write(file, 'two\n')
+    expect(io.read(file)).toBe('two\n')
+    expect(readdirSync(io.dir)).toEqual(['f'])
   })
 
   it('rethrows a read error that is not a missing file', () => {

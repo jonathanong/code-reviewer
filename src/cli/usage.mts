@@ -16,6 +16,8 @@ code-reviewer status --repo owner/name --pr N
 code-reviewer plugins [--require NAME]...
 code-reviewer tracker [--repo owner/name]... [--since ISO_DATE] [--state reviewed|posted|skipped|failed] [--format json|csv|markdown]
 code-reviewer explain (--run DIR | --repo owner/name --pr N)
+code-reviewer outcomes (--repo owner/name... | --owner LOGIN) [--pr N] [--since DAYS] [--clones DIR]
+code-reviewer outcomes digest [--day YYYY-MM-DD] [--out DIR]
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
@@ -60,6 +62,9 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   explain prints a Markdown explainer of one review for a reader who has not read the code, from the
   files in its run directory; it makes no model call. A tracker error is reported as trackerProblem
   and never fails a review or a post.
+  outcomes reads GitHub (never writes) for each review the tracker shows as posted in the last --since days
+  (default 30), and records what became of each finding in outcomes.jsonl beside the tracker. outcomes digest
+  writes outcomes-DAY.md from those rows. See docs/outcomes.md.
   Markers in earlier reviews count only from the reviewer's own identity: the gh viewer, or under
   App auth the App's <app-slug>[bot] from GET /app. If that lookup fails nothing is trusted, and
   reviews from every other author are read as ordinary notes, never as a prior review.
