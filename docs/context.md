@@ -35,8 +35,8 @@ The whole build has one deadline, `CONTEXT_DEADLINE_MS` (60 seconds), which also
 review goes on and `report.md` says under "Pillars" that the context was not built and why. A
 review never fails because of context.
 
-OpenCode ignores `addDirs`, so an OpenCode pillar may not be able to read the run directory, this
-file included; Claude and Grok add it.
+Every harness is given the run directory: Claude and Grok add it with `--add-dir`, OpenCode through
+an `external_directory` permission rule that allows reads there and denies other outside paths.
 
 ## Rule excerpts
 

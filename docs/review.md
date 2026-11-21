@@ -19,10 +19,10 @@ needs shell prefixes or web hosts, because it cannot confine them, before starti
 
 OpenCode (`src/harness/opencode.mts`) is a third, run as `opencode run --format json --pure`. It
 runs read-only steps: file reads and searches, or no tools. It confines the step with a deny-all
-permission config in `OPENCODE_CONFIG_CONTENT` that allows only the read tools, so the user's shell
-and MCP tools are gone, and it refuses shell prefixes and web hosts before starting anything. It
+permission config in `OPENCODE_CONFIG_CONTENT` that allows only the read tools (plus reads in
+`addDirs`, through an `external_directory` rule), so the user's shell and MCP tools are gone, and it refuses shell prefixes and web hosts before starting anything. It
 has no schema flag, so the prompt asks for one JSON object and the reply is checked for the
-schema's required keys. It ignores `explorer`, `skills`, `settings`, `addDirs`, `transcript` and
+schema's required keys. It ignores `explorer`, `skills`, `settings`, `transcript` and
 `maxTurns`, so the turn limit is not enforced. At its free usage limit OpenCode prints nothing and hangs, so
 the step ends at its timeout; the adapter reads the limit from the error log and reports the
 failure as a rate limit too long to wait out, and the step moves to its next candidate.
