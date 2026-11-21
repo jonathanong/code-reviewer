@@ -1,11 +1,12 @@
+import { harness } from '../../harness/claude.mts'
+import { EFFORT, type HarnessRun } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
-import { describeFailure, parseUsage, resultEvent, type Usage } from '../benchmark/usage.mts'
+import type { Usage } from '../benchmark/usage.mts'
 import type { Finding } from '../finding.mts'
 import type { EvidenceSource } from '../rules/evidence-parse.mts'
-import { CLAUDE_EFFORT, evidenceToolFlags, pillarArgs } from './claude-flags.mts'
 import { EVIDENCE_OUTPUT_SCHEMA, validateEvidenceOutput } from './evidence-schema.mts'
 import type { EvidenceOutput } from './evidence-types.mts'
-import { readStream } from './stream-output.mts'
+import { evidenceCapabilities } from './pillar-capabilities.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS, type FailedAttempt } from './types.mts'
 
 /** The evidence run needs no deep reasoning, only careful reading and querying. */
@@ -86,38 +87,35 @@ export async function runEvidenceModel(
     now?: () => Date
   },
 ): Promise<EvidenceRun> {
-  const args = pillarArgs({
+  const request: HarnessRun = {
     prompt: buildEvidenceRunPrompt(input, options.now?.()),
+    label: 'Evidence run',
     model: EVIDENCE_MODEL,
     maxTurns: REVIEW_MAX_TURNS,
-    effort: CLAUDE_EFFORT[options.mode],
     schema: EVIDENCE_OUTPUT_SCHEMA,
-    explorer: false,
-    ...evidenceToolFlags(input.sources.flatMap(({ source }) => source.commands)),
+    can: evidenceCapabilities(input.sources.flatMap(({ source }) => source.commands)),
+    cwd: options.tree,
+    timeoutMs: RUN_TIMEOUT_MS,
+    env: evidenceEnv(input.sources.map(({ source }) => source)),
+    effort: EFFORT[options.mode],
+    transcript: true,
     ...(options.settings === undefined ? {} : { settings: options.settings }),
-  })
+  }
   const known = {
     sources: input.sources.map(({ source }) => source.name),
     findings: input.findings.map((_, index) => findingId(index)),
   }
   const failedAttempts: FailedAttempt[] = []
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    let stdout: string | undefined
+    let reported: Usage | null = null
     try {
-      stdout = await options.exec('claude', args, {
-        cwd: options.tree,
-        timeoutMs: RUN_TIMEOUT_MS,
-        env: evidenceEnv(input.sources.map(({ source }) => source)),
-      })
-      const { structured, usage } = readStream(stdout, 'Evidence run')
+      const run = await harness.run(request, options.exec)
+      reported = run.reportedUsage
+      const { structured, usage } = run
       return { output: validateEvidenceOutput(structured, known), usage, failedAttempts }
     } catch (error) {
-      const { message, usage } = describeFailure(error)
-      const event = stdout === undefined ? undefined : resultEvent(stdout)
-      failedAttempts.push({
-        error: message,
-        usage: usage ?? (event === undefined ? null : parseUsage(event)),
-      })
+      const { message, usage } = harness.describeFailure(error)
+      failedAttempts.push({ error: message, usage: usage ?? reported })
     }
   }
   return { error: (failedAttempts.at(-1) as FailedAttempt).error, failedAttempts }

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { ReviewError } from '../finding.mts'
-import { parsePillarOutput, readStream } from './stream-output.mts'
+import { readStream, readTranscript } from '../../harness/claude-stream.mts'
+import { ReviewError, type Pillar } from '../finding.mts'
+import { parsePillarOutput } from './pillar-output.mts'
 
 const NO_USAGE = {
   costUsd: null,
@@ -16,13 +17,13 @@ const NO_USAGE = {
 
 const output = (findings: unknown) => JSON.stringify({ structured_output: { findings } })
 
+const parse = (stdout: string, pillar: Pillar) =>
+  parsePillarOutput(readTranscript(stdout, 'Pillar run'), pillar)
+
 describe('parsePillarOutput', () => {
   it('tags findings with the pillar', () => {
     expect(
-      parsePillarOutput(
-        output([{ severity: 'high', title: 'T', body: 'B', path: 'a.ts', line: 2 }]),
-        'design',
-      ),
+      parse(output([{ severity: 'high', title: 'T', body: 'B', path: 'a.ts', line: 2 }]), 'design'),
     ).toEqual({
       findings: [
         {
@@ -38,7 +39,7 @@ describe('parsePillarOutput', () => {
       skills: [],
       usage: NO_USAGE,
     })
-    expect(parsePillarOutput(output([]), 'design')).toEqual({
+    expect(parse(output([]), 'design')).toEqual({
       findings: [],
       skills: [],
       usage: NO_USAGE,
@@ -88,7 +89,7 @@ describe('parsePillarOutput', () => {
       JSON.stringify(user(tool('Skill', { skill: 'x:y' }, 's7'), done('s7'))),
       JSON.stringify({ type: 'result', structured_output: { findings: [] } }),
     ].join('\n')
-    expect(parsePillarOutput(stream, 'rules')).toEqual({
+    expect(parse(stream, 'rules')).toEqual({
       findings: [],
       skills: ['no-mistakes-rules:testing-rules', 'skills:bounded-iteration'],
       usage: NO_USAGE,
@@ -113,7 +114,7 @@ describe('parsePillarOutput', () => {
         structured_output: { findings: [] },
       }),
     ].join('\n')
-    expect(parsePillarOutput(stream, 'rules').usage).toEqual({
+    expect(parse(stream, 'rules').usage).toEqual({
       costUsd: 0.42,
       turns: 7,
       durationMs: 1234,
@@ -132,25 +133,21 @@ describe('parsePillarOutput', () => {
       usage: { input_tokens: 'many' },
       structured_output: { findings: [] },
     })
-    expect(parsePillarOutput(old, 'rules').usage).toEqual({ ...NO_USAGE, costUsd: 1.5 })
+    expect(parse(old, 'rules').usage).toEqual({ ...NO_USAGE, costUsd: 1.5 })
   })
 
   it('rejects non-JSON output and missing structured findings', () => {
-    expect(() => parsePillarOutput('nope', 'rules')).toThrow('Pillar run did not print JSON.')
+    expect(() => parse('nope', 'rules')).toThrow('Pillar run did not print JSON.')
     for (const text of ['null', '{}', JSON.stringify({ structured_output: {} }), output('x')]) {
-      expect(() => parsePillarOutput(text, 'rules')).toThrow(ReviewError)
+      expect(() => parse(text, 'rules')).toThrow(ReviewError)
     }
     const empty = JSON.stringify({ structured_output: null })
-    expect(() => parsePillarOutput(empty, 'rules')).toThrow(ReviewError)
-    expect(() => parsePillarOutput('null', 'rules')).toThrow(
-      'Pillar run returned no structured findings.',
-    )
+    expect(() => parse(empty, 'rules')).toThrow(ReviewError)
+    expect(() => parse('null', 'rules')).toThrow('Pillar run returned no structured findings.')
   })
 
   it('fails closed on non-object findings', () => {
-    expect(() => parsePillarOutput(output([null]), 'rules')).toThrow(
-      'findings[0] must be an object.',
-    )
+    expect(() => parse(output([null]), 'rules')).toThrow('findings[0] must be an object.')
   })
 })
 
@@ -174,14 +171,14 @@ describe('a run with a subagent', () => {
   })
 
   it('takes findings from the last event with structured output and usage from the last result', () => {
-    const parsed = parsePillarOutput([early, last].join('\n'), 'design')
+    const parsed = parse([early, last].join('\n'), 'design')
     expect(parsed.findings.map((finding) => finding.title)).toEqual(['final'])
     expect(parsed.usage.costUsd).toBe(0.9)
     expect(parsed.usage.turns).toBe(8)
   })
 
   it('skips a trailing result whose structured output is null but takes its usage', () => {
-    const parsed = parsePillarOutput([early, nullAnswer].join('\n'), 'design')
+    const parsed = parse([early, nullAnswer].join('\n'), 'design')
     expect(parsed.findings.map((finding) => finding.title)).toEqual(['early'])
     expect(parsed.usage.costUsd).toBe(0.2)
   })

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { Finding } from '../finding.mts'
 import type { EvidenceSource } from '../rules/evidence-parse.mts'
-import { evidenceToolFlags } from './claude-flags.mts'
+import { claudeTools } from '../../harness/claude-args.mts'
+import { evidenceCapabilities } from './pillar-capabilities.mts'
 import {
   EVIDENCE_MODEL,
   buildEvidenceRunPrompt,
@@ -72,14 +73,16 @@ const result = (structured: unknown, cost = 0.4) =>
     structured_output: structured,
   })
 
-describe('evidenceToolFlags', () => {
+describe('evidence tool grants', () => {
   it('offers Bash and allows only the given prefixes, once each, beside the read tools', () => {
-    expect(evidenceToolFlags(['aws logs get-query-results', 'aws logs get-query-results'])).toEqual(
-      {
-        tools: 'Read,Grep,Glob,Bash',
-        allowedTools: 'Read,Grep,Glob,Bash(aws logs get-query-results:*)',
-      },
-    )
+    expect(
+      claudeTools(
+        evidenceCapabilities(['aws logs get-query-results', 'aws logs get-query-results']),
+      ),
+    ).toEqual({
+      tools: 'Read,Grep,Glob,Bash',
+      allowedTools: 'Read,Grep,Glob,Bash(aws logs get-query-results:*)',
+    })
   })
 })
 

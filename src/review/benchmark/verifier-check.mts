@@ -1,7 +1,9 @@
+import { harness } from '../../harness/claude.mts'
+import { READ_ONLY, type HarnessRun } from '../../harness/types.mts'
 import { ReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
-import { parseUsage, resultEvent, type Usage } from './usage.mts'
+import { SKILL_READER } from '../run/pillar-capabilities.mts'
+import type { Usage } from './usage.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 
 /** Whether a finding's claim is true of the code at the reviewed head. */
@@ -58,33 +60,22 @@ export function buildCheckPrompt(
   ].join('\n\n')
 }
 
-export function checkArgs(
+export function checkRequest(
   prompt: string,
   model: string,
   maxTurns: number,
   skills = false,
   settings?: object,
-): string[] {
-  const tools = skills ? SKILL_TOOLS : READ_ONLY_TOOLS
-  return [
-    '-p',
+): HarnessRun {
+  return {
     prompt,
-    '--model',
+    label: 'Check run',
     model,
-    '--output-format',
-    'json',
-    '--json-schema',
-    JSON.stringify(CHECK_SCHEMA),
-    '--tools',
-    tools,
-    '--allowedTools',
-    tools,
-    '--permission-mode',
-    'dontAsk',
-    '--max-turns',
-    String(maxTurns),
-    ...isolationArgs(settings),
-  ]
+    maxTurns,
+    schema: CHECK_SCHEMA,
+    can: skills ? SKILL_READER : READ_ONLY,
+    ...(settings === undefined ? {} : { settings }),
+  }
 }
 
 type Verdict = Check & { index: number }
@@ -99,9 +90,8 @@ function isVerdict(value: unknown): value is Verdict {
  * Maps verdicts to the listed indexes. Malformed verdicts and those for unlisted or repeated
  * indexes are dropped, so their findings stay unchecked rather than counting as refuted.
  */
-export function parseChecks(stdout: string, indexes: readonly number[]): Map<number, Check> {
-  const parsed = JSON.parse(stdout) as { structured_output?: { verdicts?: unknown } } | null
-  const verdicts = parsed?.structured_output?.verdicts
+export function parseChecks(structured: unknown, indexes: readonly number[]): Map<number, Check> {
+  const verdicts = (structured as { verdicts?: unknown } | null | undefined)?.verdicts
   if (!Array.isArray(verdicts)) throw new ReviewError('Check run returned no verdicts.')
   const checks = new Map<number, Check>()
   for (const verdict of (verdicts as unknown[]).filter(isVerdict)) {
@@ -124,13 +114,18 @@ export async function checkFindings(
 ): Promise<{ checks: Map<number, Check>; usage: Usage | null }> {
   if (indexes.length === 0) return { checks: new Map(), usage: null }
   const rules = hasRulesIndex(dir)
-  const args = checkArgs(
-    buildCheckPrompt(findings, indexes, rules),
-    run.model,
-    run.maxTurns,
-    rules,
-    run.settings,
+  const { structured, usage } = await harness.run(
+    {
+      ...checkRequest(
+        buildCheckPrompt(findings, indexes, rules),
+        run.model,
+        run.maxTurns,
+        rules,
+        run.settings,
+      ),
+      cwd: dir,
+    },
+    exec,
   )
-  const stdout = await exec('claude', args, { cwd: dir })
-  return { checks: parseChecks(stdout, indexes), usage: parseUsage(resultEvent(stdout)) }
+  return { checks: parseChecks(structured, indexes), usage }
 }

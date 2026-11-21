@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { parseUsage } from '../benchmark/usage.mts'
+import { parseUsage } from '../../harness/claude-usage.mts'
 import type { Finding } from '../finding.mts'
 import { buildReport, costBreakdown, flattenFindings, type ReportInput } from './report.mts'
 import { rerenderReport, writeReportFiles } from './report-file.mts'

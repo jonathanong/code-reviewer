@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { claudeArgs } from '../../harness/claude-args.mts'
+import { readResult } from '../../harness/claude-stream.mts'
 import type { Finding } from '../finding.mts'
-import { buildCheckPrompt, checkArgs, checkFindings, parseChecks } from './verifier-check.mts'
+import { buildCheckPrompt, checkFindings, checkRequest, parseChecks } from './verifier-check.mts'
 
 const finding = (title: string): Finding => ({
   pillar: 'design',
@@ -9,6 +11,9 @@ const finding = (title: string): Finding => ({
   title,
   body: 'b',
 })
+
+const parse = (stdout: string, indexes: readonly number[]) =>
+  parseChecks(readResult(stdout).structured, indexes)
 
 const out = (verdicts: unknown, costUsd?: number) =>
   JSON.stringify({ type: 'result', total_cost_usd: costUsd, structured_output: { verdicts } })
@@ -27,23 +32,23 @@ describe('verifier check', () => {
   })
 
   it('passes read-only tools and the schema', () => {
-    const args = checkArgs('P', 'opus', 7)
+    const args = claudeArgs(checkRequest('P', 'opus', 7))
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])
     expect(args[args.indexOf('--max-turns') + 1]).toBe('7')
     expect(args).toContain('--strict-mcp-config')
     expect(args).not.toContain('--settings')
     const settings = { enabledPlugins: { 'skills@m': true } }
-    const isolated = checkArgs('P', 'opus', 7, false, settings)
+    const isolated = claudeArgs(checkRequest('P', 'opus', 7, false, settings))
     expect(JSON.parse(isolated[isolated.indexOf('--settings') + 1] as string)).toEqual(settings)
     expect(args).toContain('Read,Grep,Glob')
-    expect(checkArgs('P', 'opus', 7, true)).toContain('Read,Grep,Glob,Skill')
+    expect(claudeArgs(checkRequest('P', 'opus', 7, true))).toContain('Read,Grep,Glob,Skill')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string).required).toEqual([
       'verdicts',
     ])
   })
 
   it('keeps the first verdict per listed index', () => {
-    const checks = parseChecks(
+    const checks = parse(
       out([
         { index: 1, holds: false, reason: 'no' },
         { index: 1, holds: true, reason: 'dup' },
@@ -52,12 +57,12 @@ describe('verifier check', () => {
       [1, 2],
     )
     expect([...checks]).toEqual([[1, { holds: false, reason: 'no' }]])
-    expect(() => parseChecks('null', [1])).toThrow('no verdicts')
-    expect(() => parseChecks(out('x'), [1])).toThrow('no verdicts')
+    expect(() => parse('null', [1])).toThrow('no verdicts')
+    expect(() => parse(out('x'), [1])).toThrow('no verdicts')
   })
 
   it('drops malformed verdicts so their findings stay unchecked', () => {
-    const checks = parseChecks(
+    const checks = parse(
       out([
         null,
         'x',

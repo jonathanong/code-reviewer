@@ -1,12 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { harness } from '../../harness/claude.mts'
+import { NO_TOOLS } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
-import { addUsage, describeFailure } from '../benchmark/usage.mts'
+import { addUsage } from '../benchmark/usage.mts'
 import type { PluginInstall } from '../plugins.mts'
 import { parseFrontmatter } from '../rules/collect.mts'
-import { isolationArgs } from './claude-flags.mts'
-import { readStream } from './stream-output.mts'
 import { SELECT_TIMEOUT_MS, type SkillChoice } from './types.mts'
 
 /** A rule skill offered for selection; `name` is the full `plugin:skill` the Skill tool takes. */
@@ -99,28 +99,21 @@ export async function selectSkills(input: SelectionInput): Promise<SkillChoice> 
 /** One cheap Haiku call, with no tools. */
 async function selectOnce(input: SelectionInput, available: number): Promise<SkillChoice> {
   const prompt = buildSelectionPrompt(input.title, input.index, input.skills, input.excerpt)
-  const args = [
-    '-p',
-    prompt,
-    '--model',
-    'haiku',
-    '--output-format',
-    'stream-json',
-    '--verbose',
-    '--json-schema',
-    JSON.stringify(SKILL_SELECTION_SCHEMA),
-    '--tools',
-    '',
-    '--permission-mode',
-    'dontAsk',
-    '--max-turns',
-    '3',
-    ...isolationArgs(input.settings),
-  ]
   try {
-    const { structured, usage } = readStream(
-      await input.exec('claude', args, { cwd: input.cwd, timeoutMs: SELECT_TIMEOUT_MS }),
-      'Skill selection',
+    const { structured, usage } = await harness.run(
+      {
+        prompt,
+        label: 'Skill selection',
+        model: 'haiku',
+        maxTurns: 3,
+        schema: SKILL_SELECTION_SCHEMA,
+        can: NO_TOOLS,
+        cwd: input.cwd,
+        timeoutMs: SELECT_TIMEOUT_MS,
+        transcript: true,
+        ...(input.settings === undefined ? {} : { settings: input.settings }),
+      },
+      input.exec,
     )
     const chosen = (structured as { skills?: unknown } | undefined)?.skills
     if (!Array.isArray(chosen))
@@ -131,7 +124,7 @@ async function selectOnce(input: SelectionInput, available: number): Promise<Ski
     ]
     return { selected, available, usage }
   } catch (error) {
-    const { message, usage } = describeFailure(error)
+    const { message, usage } = harness.describeFailure(error)
     return { selected: [], available, error: message, usage }
   }
 }

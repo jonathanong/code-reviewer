@@ -5,6 +5,11 @@ code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs 
 code-reviewer report --out DIR
 ```
 
+Every model call is one headless step run through a harness adapter in `src/harness/`. A step
+asks for capabilities (read-only file tools, skills, an explorer subagent, shell limited to command
+prefixes, web fetch limited to hosts, or no tools), and the adapter turns them into the CLI's flags
+and reads its output. Claude Code is the one adapter.
+
 [`run`](run.md) is the unattended path. `review` runs one pull request end to end with headless `claude -p` calls and stops before
 posting, so you can read the result first. `--tree` is a checkout at the pull request head and
 `--out` receives the run files; both become absolute paths. It claims the pull request (a head the

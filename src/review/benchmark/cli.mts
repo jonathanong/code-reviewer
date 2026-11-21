@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
+import { harness } from '../../harness/claude.mts'
 import { PILLARS, type Pillar } from '../finding.mts'
 import { caseSelector, defaultSelectStep, type SelectStep } from './case-selection.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
@@ -11,7 +12,6 @@ import { benchPlugins } from './plugin-settings.mts'
 import { runPillar } from './runner.mts'
 import { scoreAll, type Options } from './score-all.mts'
 import { NO_RULES, stageCaseRules } from './rules.mts'
-import { describeFailure } from './usage.mts'
 import { defaultExec, prepareSnapshot, type Exec, type Snapshot } from './snapshot.mts'
 
 export type BenchDeps = {
@@ -128,7 +128,7 @@ async function runAll(
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
       result = { findings, skills, skillTool: !options.noRules, usage, ...seen }
     } catch (error) {
-      const { message, usage } = describeFailure(error)
+      const { message, usage } = harness.describeFailure(error)
       result = { error: message, ...(usage === null ? {} : { usage }), ...seen }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
