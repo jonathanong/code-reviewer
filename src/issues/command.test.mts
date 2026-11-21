@@ -61,6 +61,22 @@ describe('issuesCommand', () => {
     expect(calls).toEqual([])
   })
 
+  it('proposes a harness from recorded failures inside the window only', async () => {
+    const tracker = seeded([])
+    const file = `${tracker.dir}/harness-failures.jsonl`
+    const row = (at: string) =>
+      `${JSON.stringify({ at, harness: 'claude', step: 'verifier', kind: 'crash', run: at })}\n`
+    const recent = new Date(NOW.getTime() - DAY_MS).toISOString()
+    const old = new Date(NOW.getTime() - 60 * DAY_MS).toISOString()
+    tracker.append(file, row(recent).repeat(3))
+    tracker.append(file, row(old).repeat(5))
+    const body = JSON.stringify({ issues: { targets: [{ name: 'harness', repo: 'acme/r' }] } })
+    const configs = configsOf({ acme: body })
+    const { io } = fakeIssuesIo()
+    const { result } = await issuesCommand({ 'dry-run': true }, configs, tracker, io)
+    expect(result.filed).toEqual([{ key: 'harness:claude:crash', repo: 'acme/r', url: null }])
+  })
+
   it('files nothing when no issues key is configured', async () => {
     const { io, calls } = fakeIssuesIo()
     const { result } = await issuesCommand({}, NO_CONFIGS, seeded(), io)

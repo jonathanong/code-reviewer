@@ -105,9 +105,33 @@ describe('runStep', () => {
     const { runtime } = fakeRuntime(0)
     const failure = await runStep(REQUEST, [A, B], exec, runtime).catch((error: unknown) => error)
     expect(failure).toBeInstanceOf(StepFailure)
-    expect((failure as StepFailure).ran).toEqual({ harness: 'claude', model: 'b', waitedMs: 0 })
+    expect((failure as StepFailure).ran).toEqual({
+      harness: 'claude',
+      model: 'b',
+      waitedMs: 0,
+      failure: 'overloaded',
+    })
     expect((failure as StepFailure).message).toContain('claude exited with 1')
     expect((failure as StepFailure).cause).toBeInstanceOf(ExecError)
+  })
+
+  it('marks a crash that printed no result, and leaves a model-side failure unmarked', async () => {
+    const crash = fakeExec({ a: [new ExecError('claude exited with 1', 1, '', undefined)] })
+    const crashed = await runStep(REQUEST, [A], crash.exec, fakeRuntime(0).runtime).catch(
+      (error: unknown) => error,
+    )
+    expect((crashed as StepFailure).ran.failure).toBe('crash')
+    const answered = new ExecError(
+      'claude exited with 1',
+      1,
+      JSON.stringify({ type: 'result', is_error: true, subtype: 'error_max_turns' }),
+      undefined,
+    )
+    const turns = fakeExec({ a: [answered] })
+    const limited = await runStep(REQUEST, [A], turns.exec, fakeRuntime(0).runtime).catch(
+      (error: unknown) => error,
+    )
+    expect((limited as StepFailure).ran).toEqual({ harness: 'claude', model: 'a', waitedMs: 0 })
   })
 
   it('moves an auth failure to the next candidate without waiting', async () => {

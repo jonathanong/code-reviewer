@@ -413,13 +413,14 @@ reported, the review goes on, and a review missing a step never approves.
 issues:
   maxPerDay: 3 # optional, an integer of at least 1; default 3
   targets:
-    - name: example-rules # a rule plugin name, or `code-reviewer` for the reviewer itself
+    - name: example-rules # a rule plugin name, `code-reviewer` for the reviewer itself, or `harness`
       repo: owner/name # where issues for it go
       labels: [from-code-reviewer] # optional
 ```
 
 Absent means `code-reviewer issues` files nothing, and so does a proposal whose plugin has no
-target. `maxPerDay` caps issues filed in any 24 hours across all targets. A target name may be
+target. Failures of a harness (`claude`, `grok`, `opencode`) are filed only to a target named
+`harness`; without one they are never filed. `maxPerDay` caps issues filed in any 24 hours across all targets. A target name may be
 listed once. Any wrong shape is a problem naming the file and key, the whole `issues` key is
 ignored, and `code-reviewer issues` exits 2. It is machine-only: a repository's own file cannot
 set it, and says `issues is machine-only; ignored`. Unlike the per-repository keys it is not scoped

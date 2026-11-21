@@ -2,6 +2,7 @@ import { dirname, join, resolve } from 'node:path'
 
 import { SEVERITIES, type Finding } from '../review/finding.mts'
 import type { PostOutcome } from '../review/post.mts'
+import { recordFailures } from './failures.mts'
 import { asNumber, asRecord, asString, readJson } from './json.mts'
 import { appendRow } from './store.mts'
 import type { Counts, TrackerIo, TrackerMode, TrackerRow } from './types.mts'
@@ -63,6 +64,9 @@ export function recordReview(io: TrackerIo, run: ReviewRun): Recorded {
     const context = readJson((path) => io.read(path), join(run.out, 'context.json'))
     const plan = readJson((path) => io.read(path), join(run.out, 'plan.json'))
     const review = readJson((path) => io.read(path), join(run.out, 'review.json'))
+    const report = readJson((path) => io.read(path), join(run.out, 'report.json'))
+    const head = asString(summary.headSha) ?? asString(context.headSha) ?? ''
+    recordFailures(io, `${run.repo}#${run.pr}@${head}`, report.ran)
     const questions = Array.isArray(review.questions) ? review.questions.length : null
     const followUp = asString(plan.sinceSha) !== null
     const mode = (followUp ? 'follow-up' : asString(summary.mode)) as TrackerMode | null
@@ -72,7 +76,7 @@ export function recordReview(io: TrackerIo, run: ReviewRun): Recorded {
       ...BLANK,
       repo: run.repo,
       pr: run.pr,
-      head: asString(summary.headSha) ?? asString(context.headSha) ?? '',
+      head,
       state,
       title: asString(context.title),
       author: asString(context.author),

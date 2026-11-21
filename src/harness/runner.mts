@@ -1,12 +1,19 @@
 import type { Exec } from '../review/benchmark/exec.mts'
 import { addUsage, type Usage } from '../review/benchmark/usage.mts'
 import { harness as claude } from './claude.mts'
+import { harnessFailureKind, type HarnessFailureKind } from './failure-kind.mts'
 import { HarnessRefusal } from './refusal.mts'
 import { harnessNamed } from './registry.mts'
 import type { Candidate, Harness, HarnessResult, HarnessRun } from './types.mts'
 
 /** Which harness and model ran a step, and how long it waited out rate limits first. */
-export type StepRan = { harness: string; model: string; waitedMs: number }
+export type StepRan = {
+  harness: string
+  model: string
+  waitedMs: number
+  /** Set only on a failed step whose failure is the harness's. */
+  failure?: HarnessFailureKind
+}
 
 /** What a step does around its model calls; tests inject `sleep` and `now`. */
 export type StepRuntime = {
@@ -126,7 +133,13 @@ export async function runStep(
         }
         const moveOn = waits || failure.kind === 'auth' || error instanceof HarnessRefusal
         if (!moveOn || last) {
-          throw new StepFailure(message, failedUsage, ran, error)
+          const kind = harnessFailureKind(error, failure)
+          throw new StepFailure(
+            message,
+            failedUsage,
+            kind === undefined ? ran : { ...ran, failure: kind },
+            error,
+          )
         }
         break
       }

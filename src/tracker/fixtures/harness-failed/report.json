@@ -1,0 +1,14 @@
+{
+  "ran": [
+    { "step": "selection", "harness": "claude", "model": "m", "waitedMs": 0 },
+    { "step": "security", "harness": "claude", "model": "m", "waitedMs": 0, "failure": "timeout" },
+    {
+      "step": "my-private-pillar",
+      "harness": "grok",
+      "model": "m",
+      "waitedMs": 0,
+      "failure": "crash"
+    },
+    { "step": "design", "harness": "claude", "model": "m", "waitedMs": 0, "failure": "not-a-kind" }
+  ]
+}
