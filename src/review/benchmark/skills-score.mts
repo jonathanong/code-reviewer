@@ -1,4 +1,4 @@
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
 
 export type SkillOutcome = 'grounded' | 'ungrounded' | 'loaded-missed' | 'missed'

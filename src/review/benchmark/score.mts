@@ -1,4 +1,5 @@
-import type { Finding, Pillar, Severity } from '../finding.mts'
+import type { Finding, Severity } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
 import type { BaselineSummary } from './baseline.mts'
 import type { Usage } from './usage.mts'

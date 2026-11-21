@@ -2,7 +2,7 @@ import { describeStepFailure } from '../../harness/runner.mts'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { PILLARS } from '../finding.mts'
+import { PILLARS } from '../pillar-name.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
 import type { BenchDeps } from './cli.mts'
 import { pool } from '../run/pool.mts'

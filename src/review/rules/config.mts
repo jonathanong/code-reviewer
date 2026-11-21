@@ -16,6 +16,7 @@ import type { EvidenceSource } from './evidence-parse.mts'
 import type { ReferenceSource } from './references-parse.mts'
 import type { LimitsConfig } from './limits-parse.mts'
 import { parseMachineKeys } from './machine-keys.mts'
+import { parsePillars, type PillarsConfig } from './pillars-parse.mts'
 import type { RunConfig } from './run-parse.mts'
 import {
   parseCheckRun,
@@ -71,6 +72,8 @@ export type RepoConfig = {
   limits?: LimitsConfig
   /** Machine config only: it files issues in other repositories, so a reviewed repository cannot turn it on. */
   issues?: IssuesConfig
+  /** Built-in pillars to skip and extra pillars to run; a reviewed repository's own file may set it. */
+  pillars?: PillarsConfig
   problems: string[]
 }
 
@@ -92,6 +95,7 @@ const KEYS = new Set([
   'models',
   'limits',
   'issues',
+  'pillars',
 ])
 
 type Json = Record<string, unknown>
@@ -126,11 +130,13 @@ export function parseRepoConfig(
     problems.push(`${file}: "consumes" is repo-level only; ignored`)
   }
   const machine = parseMachineKeys(scope, raw, file, problems)
+  const pillars = parsePillars(raw.pillars, `${file} pillars`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
     ...(checkRun === undefined ? {} : { checkRun }),
     ...machine,
+    ...(pillars === undefined ? {} : { pillars }),
     problems,
   }
 }

@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 
-import { ReviewError, PILLARS, SEVERITIES, type Pillar, type Severity } from '../finding.mts'
+import { ReviewError, SEVERITIES, type Severity } from '../finding.mts'
+import { PILLARS, type Pillar } from '../pillar-name.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 
 export type ExpectedFinding = {

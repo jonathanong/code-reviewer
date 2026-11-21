@@ -70,15 +70,16 @@ export function fakeDeps(mode: 'app' | 'gh' = 'app') {
   const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
   const runner = vi.fn(() => run)
   const createLabelIo = vi.fn(() => labelIo)
+  const configs = vi.fn(() => CONFIGS)
   const deps = {
     authMode: vi.fn(() => mode),
     authIdentity: vi.fn(async () => (mode === 'app' ? { login: 'my-app[bot]' } : {})),
-    configs: vi.fn(() => CONFIGS),
+    configs,
     targetConfig,
     createLabelIo,
     createIo: vi.fn(() => ({ headSha: async () => 'h'.repeat(40) })),
     createPrepareIo: vi.fn(() => prepareIo),
     runner,
   } as unknown as ReviewDeps
-  return { deps, labelIo, prepareIo, run, runner, createLabelIo }
+  return { deps, labelIo, prepareIo, run, runner, createLabelIo, configs }
 }

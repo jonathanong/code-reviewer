@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import { runPillars, type PillarsInput } from './pillars.mts'
 
 const dirs: string[] = []

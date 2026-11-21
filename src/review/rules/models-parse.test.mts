@@ -25,6 +25,15 @@ describe('parseModels', () => {
     })
   })
 
+  it('accepts a step for a configured pillar, which falls back like a built-in one', () => {
+    const { config, problems } = parse({ steps: { 'pillar.a11y': 'large', pillars: 'small' } })
+    expect(problems).toEqual([])
+    expect(config?.steps).toEqual({ 'pillar.a11y': 'large', pillars: 'small' })
+    expect(parse({ steps: { 'pillar.A11y': 'large' } }).problems.join()).toContain(
+      'unknown key "pillar.A11y"',
+    )
+  })
+
   it('treats an absent key as unset and an empty object as no change', () => {
     expect(parse(undefined)).toEqual({ config: undefined, problems: [] })
     expect(parse({})).toEqual({ config: {}, problems: [] })

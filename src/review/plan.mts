@@ -1,5 +1,8 @@
 import type { FollowUpContext } from './context.mts'
-import type { Effort, Pillar, SkippedPillar } from './finding.mts'
+import type { Effort, SkippedPillar } from './finding.mts'
+import { DISPATCHED_PILLARS, type Pillar } from './pillar-name.mts'
+import { applyPillarSettings } from './plan-pillars.mts'
+import { NO_PILLARS, type PillarSettings } from './pillars-settings.mts'
 import { chooseMode, securityPaths, type Mode, type ModeChoice } from './mode.mts'
 import type { LightPush } from './push-types.mts'
 import type { StackSummary } from './stack.mts'
@@ -36,6 +39,8 @@ export type PlanInput = {
   authorLogin?: string | null
   /** The author is a bot account (GitHub actor type `Bot`). */
   authorIsBot?: boolean
+  /** Built-in pillars to skip and extra pillars to run; none when absent. */
+  pillars?: PillarSettings
 }
 
 export type ReviewPlan = {
@@ -59,27 +64,18 @@ export type ReviewPlan = {
   stack?: StackSummary
 }
 
-const DISPATCHED: readonly Pillar[] = [
-  'rules',
-  'correctness',
-  'design',
-  'blast-radius',
-  'security',
-  'history',
-]
-
 function selectPillars(input: PlanInput, choice: ModeChoice, paths: string[]) {
   const why = new Map<Pillar, string>()
   const run = new Set<Pillar>()
   const security = securityPaths(input, paths)
-  const reasonFor = (text: string) => DISPATCHED.forEach((name) => why.set(name, text))
+  const reasonFor = (text: string) => DISPATCHED_PILLARS.forEach((name) => why.set(name, text))
   if (choice.push !== undefined) {
     run.add('correctness')
     reasonFor('Light re-review of a push that only merges the base or rewrites history.')
   } else if (choice.sinceSha !== null) {
     run.add('correctness')
     for (const finding of input.context.unresolved) {
-      const pillar = DISPATCHED.find((name) => name === finding.pillar)
+      const pillar = DISPATCHED_PILLARS.find((name) => name === finding.pillar)
       if (pillar !== undefined) run.add(pillar)
     }
     reasonFor('Low-effort follow-up without an open finding.')
@@ -102,7 +98,14 @@ function selectPillars(input: PlanInput, choice: ModeChoice, paths: string[]) {
   else if (!why.has('history')) {
     why.set('history', input.history === undefined ? 'History not checked.' : 'No reverts found.')
   }
-  return { run, why, security }
+  const settings = input.pillars ?? NO_PILLARS
+  const open = input.context.unresolved.map((finding) => finding.pillar)
+  const extra = applyPillarSettings(run, why, settings, {
+    mode: choice.mode === 'light' ? 'light' : 'full',
+    merge: choice.push !== undefined,
+    open,
+  })
+  return { run, why, security, extra }
 }
 
 /** Picks mode, effort, pillars, and model tiers mechanically, so the session spends no tokens on it. */
@@ -122,7 +125,7 @@ export function planReview(input: PlanInput): ReviewPlan {
       sinceSha,
       pillars: [],
       verifierModel: 'haiku',
-      skipped: DISPATCHED.map((pillar) => ({ pillar, reason })),
+      skipped: DISPATCHED_PILLARS.map((pillar) => ({ pillar, reason })),
       reasons,
     }
   }
@@ -133,15 +136,19 @@ export function planReview(input: PlanInput): ReviewPlan {
       : sinceSha === null
         ? input.paths
         : (input.since as SinceDiff).paths
-  const { run, why, security } = selectPillars(input, choice, paths)
+  const { run, why, security, extra } = selectPillars(input, choice, paths)
   if (security.length > 0) reasons.push(`Security trigger: ${security.slice(0, 5).join(', ')}.`)
   const docsOnly = choice.push === undefined && isDocsOnly(paths)
-  const pillars = DISPATCHED.filter((pillar) => run.has(pillar)).map((pillar) => ({
-    pillar,
-    model: (docsOnly || pillar === 'history' ? 'haiku' : 'sonnet') satisfies Model as Model,
-  }))
+  const pillars: ReviewPlan['pillars'] = [
+    ...DISPATCHED_PILLARS.filter((pillar) => run.has(pillar)).map((pillar) => ({
+      pillar,
+      model: (docsOnly || pillar === 'history' ? 'haiku' : 'sonnet') satisfies Model as Model,
+    })),
+    // A configured pillar always plans the medium tier, whatever the change.
+    ...extra.map((pillar) => ({ pillar, model: 'sonnet' as const })),
+  ]
   const verifierModel: Model = mode === 'light' ? 'sonnet' : 'opus'
-  const skipped = DISPATCHED.filter((pillar) => !run.has(pillar)).map((pillar) => ({
+  const skipped = DISPATCHED_PILLARS.filter((pillar) => !run.has(pillar)).map((pillar) => ({
     pillar,
     reason: why.get(pillar) as string,
   }))

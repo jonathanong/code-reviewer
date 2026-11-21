@@ -1,6 +1,7 @@
 import { isObject } from '../../harness/json.mts'
 import type { HarnessResult } from '../../harness/types.mts'
-import { ReviewError, parseReviewInput, type Finding, type Pillar } from '../finding.mts'
+import { ReviewError, parseReviewInput, type Finding } from '../finding.mts'
+import { type Pillar } from '../pillar-name.mts'
 import type { Usage } from '../benchmark/usage.mts'
 
 export type PillarOutput = { findings: Finding[]; skills: string[]; usage: Usage }

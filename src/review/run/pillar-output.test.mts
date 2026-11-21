@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { readStream, readTranscript } from '../../harness/claude-stream.mts'
-import { ReviewError, type Pillar } from '../finding.mts'
+import { ReviewError } from '../finding.mts'
+import { type Pillar } from '../pillar-name.mts'
 import { parsePillarOutput } from './pillar-output.mts'
 
 const NO_USAGE = {

@@ -7,10 +7,16 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
+import { requirePillars, type PillarSettings } from '../review/pillars-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export async function labelsFor(deps: ReviewDeps, repo: string): Promise<LabelNames> {
   return (await repoSettings(deps, repo)).labels
+}
+
+/** The pillars a review of `repo` runs with; throws when the config leaves a mode with none. */
+export async function pillarsFor(deps: ReviewDeps, repo: string): Promise<PillarSettings> {
+  return requirePillars(deps.configs(), repo, (await deps.targetConfig(repo)).config)
 }
 
 /**

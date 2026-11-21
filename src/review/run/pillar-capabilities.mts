@@ -1,5 +1,5 @@
 import { READ_ONLY, type Capabilities } from '../../harness/types.mts'
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 
 /** The pillars that may look things up in the configured web references. */
 export const WEB_PILLARS: readonly Pillar[] = ['correctness', 'security']

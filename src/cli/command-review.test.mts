@@ -20,7 +20,7 @@ import { postFinalReview } from '../review/post.mts'
 import { runReview, type ReviewSteps } from '../review/run/review.mts'
 import { abortCommand, claimCommand, prepareCommand, skipCommand } from './command-loop.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
-import { NO_CONFIGS } from '../review/rules/config.mts'
+import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import type { ReviewDeps } from './deps.mts'
 
 afterEach(() => vi.clearAllMocks())
@@ -31,6 +31,7 @@ const configs = vi.fn(() => NO_CONFIGS)
 const guideReader = vi.fn(() => guide)
 const deps = {
   configs,
+  targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
   guideReader,
   createIo: vi.fn(() => ({})),
   pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
@@ -117,8 +118,9 @@ describe('reviewCommand', () => {
       commands: ['aws logs get-query-results'],
       env: {},
     }
-    // The web references, the approval check, the rule plugins, the models and the limits read the configs first, when wired.
+    // The pillars, the web references, the approval check, the rule plugins, the models and the limits read the configs first, when wired.
     configs
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
@@ -138,11 +140,32 @@ describe('reviewCommand', () => {
 
   it('wires the web references from the machine config only', async () => {
     const reference = { name: 'aws', description: 'Docs.', domains: ['docs.aws.amazon.com'] }
-    configs.mockReturnValueOnce({
+    configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
       ...NO_CONFIGS,
       byRepo: new Map([['acme/widgets', { consumes: [], references: [reference], problems: [] }]]),
     })
     expect((await steps()).wired.webReferences).toEqual([reference])
+  })
+
+  it('hands the review the pillars the config sets, and refuses before claiming when it leaves none', async () => {
+    const set = (pillars: unknown) =>
+      configs.mockReturnValueOnce({
+        ...NO_CONFIGS,
+        byRepo: new Map([
+          ['acme/widgets', parseRepoConfig(JSON.stringify({ pillars }), 'acme/widgets.json')],
+        ]),
+      })
+    expect((await steps()).wired.pillars).toEqual({ disabled: [], extra: [] })
+    vi.clearAllMocks()
+    set({ disabled: ['design'] })
+    expect((await steps()).wired.pillars).toEqual({ disabled: ['design'], extra: [] })
+    vi.clearAllMocks()
+    set({ disabled: ['rules', 'correctness', 'design', 'blast-radius', 'security', 'history'] })
+    await expect(reviewCommand({ out: 'o', tree: 't' }, TARGET, deps)).rejects.toThrow(
+      'every built-in pillar is disabled',
+    )
+    expect(runReview).not.toHaveBeenCalled()
+    expect(claimCommand).not.toHaveBeenCalled()
   })
 
   it('has no web references without a machine list', async () => {
@@ -152,10 +175,13 @@ describe('reviewCommand', () => {
   it('runs the approval check unless a machine config switches it off', async () => {
     expect((await steps()).wired.approvalCheck).toBe(true)
     vi.clearAllMocks()
-    configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
-      ...NO_CONFIGS,
-      byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
-    })
+    configs
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce({
+        ...NO_CONFIGS,
+        byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
+      })
     expect((await steps()).wired.approvalCheck).toBe(false)
   })
 
@@ -163,6 +189,7 @@ describe('reviewCommand', () => {
     expect((await steps()).wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
     vi.clearAllMocks()
     configs
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce({

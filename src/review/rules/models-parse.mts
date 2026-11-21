@@ -1,5 +1,5 @@
 import { HARNESS_NAMES } from '../../harness/registry.mts'
-import { STEP_NAMES, TIERS, type Candidate, type ModelConfig, type Tier } from '../models.mts'
+import { TIERS, isStepName, type Candidate, type ModelConfig, type Tier } from '../models.mts'
 import { isRecord, unknownKeys } from './settings-parse.mts'
 
 const isTier = (value: unknown): value is Tier => TIERS.some((tier) => tier === value)
@@ -50,11 +50,11 @@ function parseSteps(raw: unknown, where: string, problems: string[]): ModelConfi
     problems.push(`${where}: must be an object`)
     return undefined
   }
-  problems.push(...unknownKeys(raw, STEP_NAMES, where))
+  const names = Object.keys(raw).filter(isStepName)
+  problems.push(...unknownKeys(raw, names, where))
   const steps: NonNullable<ModelConfig['steps']> = {}
-  for (const step of STEP_NAMES) {
+  for (const step of names) {
     const value = raw[step]
-    if (value === undefined) continue
     if (typeof value === 'string') {
       if (isTier(value)) steps[step] = value
       else problems.push(`${where}.${step}: unknown tier "${value}"; use ${TIERS.join(', ')}`)

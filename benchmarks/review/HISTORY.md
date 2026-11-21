@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) security pillar no longer calls /security-review
+
+`pillars/security.md` lost its "Built-in reviewer" section, which told the pillar to run a host's
+`/security-review` command when one existed. No built-in prompt calls a harness's native reviewer
+any more, so a security run reviews directly on every harness. Every `bench` security pillar row
+(the security cases in `cases.json` and `synthetic.json`) and every verifier row that takes
+security findings from the saved pillar output is no longer comparable with earlier entries; the
+other pillars' prompts are unchanged. No run was made and no score is re-measured.
+
 ## 2026-11-20: bench output gained per-model token figures (no run)
 
 `bench`, `bench-selection` and `bench-verifier` now report, per model and arm, input, cache-read,

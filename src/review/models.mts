@@ -11,7 +11,7 @@ import {
   type StepRuntime,
 } from '../harness/runner.mts'
 import type { Candidate } from '../harness/types.mts'
-import { PILLARS } from './finding.mts'
+import { PILLARS } from './pillar-name.mts'
 import type { Model } from './plan.mts'
 
 export type { Candidate } from '../harness/types.mts'
@@ -66,6 +66,13 @@ export const STEP_NAMES: readonly string[] = [
   ...PILLARS.map((pillar) => `pillar.${pillar}`),
 ]
 
+/** A step for a configured pillar: `pillar.` and its name. */
+export const EXTRA_PILLAR_STEP = /^pillar\.[a-z][a-z0-9-]*$/u
+
+/** Whether a config or `--model` may name `step`: a fixed step, or one for a configured pillar. */
+export const isStepName = (step: string): boolean =>
+  STEP_NAMES.includes(step) || EXTRA_PILLAR_STEP.test(step)
+
 const DEFAULT_TIER_OF: Record<Model, Tier> = { haiku: 'small', sonnet: 'medium', opus: 'large' }
 
 /** The tier a planned model name stands for; `plan.json` still records the model names. */
@@ -107,8 +114,10 @@ export function parseModelOverrides(values: readonly string[]): Record<string, C
     const match = /^([^=]+)=([^:=]+):(.+)$/u.exec(value)
     if (match === null) throw new Error(`--model ${value}: expected step=harness:model.`)
     const [, step, harness, model] = match as unknown as [string, string, string, string]
-    if (!STEP_NAMES.includes(step)) {
-      throw new Error(`--model ${value}: unknown step "${step}"; use ${STEP_NAMES.join(', ')}.`)
+    if (!isStepName(step)) {
+      throw new Error(
+        `--model ${value}: unknown step "${step}"; use ${STEP_NAMES.join(', ')}, or pillar.<name> for a configured pillar.`,
+      )
     }
     if (!HARNESS_NAMES.includes(harness)) {
       throw new Error(

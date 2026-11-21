@@ -5,6 +5,7 @@ import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { resolveModels } from '../review/models-settings.mts'
+import { pillarsFor } from './review-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
 import { recordReview } from '../tracker/record.mts'
 import {
@@ -56,6 +57,7 @@ export async function reviewCommand(
     ...(values.clones === undefined ? {} : { clones: resolve(values.clones) }),
   }
   const targetOf = () => target
+  const pillars = await pillarsFor(deps, target.repo)
   const tracker = deps.tracker()
   const startedAt = tracker.now().toISOString()
   const result = await runReview(
@@ -78,6 +80,8 @@ export async function reviewCommand(
       approvalCheck: resolveApprovalCheck(deps.configs(), target.repo).enabled,
       // Machine config only: an enabled plugin loads its hooks too, so a repository cannot pick them.
       rulePlugins: resolveRulePlugins(deps.configs(), target.repo).names,
+      // Machine or repository config; a repository may switch off or add pillars of its own.
+      pillars,
       // Machine config, then --model: a repository cannot choose which model reads its code.
       models: {
         plan: resolveModels(deps.configs(), target.repo, overrides).plan,

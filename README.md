@@ -45,8 +45,6 @@ Agreed and not built yet. Nothing below works today.
 
 - **Other harnesses and free tiers.** An adapter for Codex, and selecting the Grok and OpenCode
   adapters by config, which the harness registry takes with one line each. Free models never run the verifier.
-- **Extensible pillars.** Config adds a pillar as a trigger an agent decides, the modes it runs
-  in, and a command to run. Its findings go through the verifier like any other.
 - **Shared context.** One cheap run builds what every pillar needs once: the relevant rule text
   quoted verbatim with a link to the full skill, the history of the changed lines, linked
   regressions, and past reviews.

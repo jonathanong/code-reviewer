@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import { casesForPillar, type EvalCase } from './cases.mts'
 import type { BenchDeps } from './cli.mts'
 import { assertBaseline, baselineNotes, compareBaseline, readBaseline } from './baseline.mts'

@@ -1,6 +1,7 @@
 import type { StepRan } from '../../harness/runner.mts'
 import type { Usage } from '../benchmark/usage.mts'
-import type { Finding, Pillar } from '../finding.mts'
+import type { Finding } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 
 /** Per-attempt cost of a pillar run that failed before it produced findings. */
 export type FailedAttempt = { error: string; usage: Usage | null }

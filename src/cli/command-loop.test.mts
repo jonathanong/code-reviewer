@@ -26,6 +26,7 @@ import {
   resolveThreads,
   skipPullRequest,
 } from '../review/index.mts'
+import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import { runLoopCommand, skipCommand } from './command-loop.mts'
 import { BOB, BOB_LABELS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
 
@@ -42,6 +43,16 @@ const UNSET = {
   approvalCheck: { enabled: true, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
   limits: { maxCostUsd: null, from: null },
+  pillars: {
+    disabled: [],
+    extra: [],
+    modes: {
+      light: ['rules', 'correctness', 'security'],
+      full: ['rules', 'correctness', 'design', 'blast-radius', 'security', 'history'],
+    },
+    from: { disabled: 'default', extra: 'default' },
+    problems: [],
+  },
   models: {
     steps: {
       select: [{ harness: 'claude', model: 'haiku' }],
@@ -263,6 +274,7 @@ describe('runLoopCommand', () => {
         approvalCheck: { enabled: false, from: 'machine owner' },
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
         limits: { maxCostUsd: 1.5, from: 'machine owner' },
+        pillars: UNSET.pillars,
         models: {
           steps: {
             ...UNSET.models.steps,
@@ -318,6 +330,26 @@ describe('runLoopCommand', () => {
       )
     })
 
+    it('prints the pillars the repository file sets and what may run per mode', async () => {
+      const { deps } = fakeDeps()
+      const pillars = { disabled: ['history'], extra: [{ name: 'a11y', prompt: 'Look.' }] }
+      targetConfig.mockResolvedValueOnce({
+        config: parseRepoConfig(JSON.stringify({ pillars }), 'acme/c/.code-reviewer.json'),
+        problems: [],
+      })
+      const printed = (await runLoopCommand('settings', { repo: ['acme/c'] }, target, deps)) as {
+        pillars: { modes: unknown; from: unknown; extra: unknown }
+      }
+      expect(printed.pillars).toMatchObject({
+        from: { disabled: 'repository file', extra: 'repository file' },
+        extra: [{ name: 'a11y', modes: ['full'], uses: 'prompt' }],
+        modes: {
+          light: ['rules', 'correctness', 'security'],
+          full: ['rules', 'correctness', 'design', 'blast-radius', 'security', 'a11y'],
+        },
+      })
+    })
+
     it('prints evidence source names only, never commands or env values', async () => {
       const { deps } = fakeDeps()
       const printed = JSON.stringify(
@@ -358,7 +390,33 @@ describe('runLoopCommand', () => {
     await expect(runLoopCommand('prepare', { out: '/o' }, target, deps)).resolves.toEqual({
       headSha: 'h',
     })
-    expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, { out: '/o' })
+    expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
+      out: '/o',
+      pillars: { disabled: [], extra: [] },
+    })
+  })
+
+  it('plans with the pillars the config sets, and refuses when it leaves none to run', async () => {
+    const { deps, prepareIo, configs } = fakeDeps()
+    const set = (pillars: unknown) =>
+      configs.mockReturnValueOnce({
+        ...NO_CONFIGS,
+        byRepo: new Map([
+          ['acme/widgets', parseRepoConfig(JSON.stringify({ pillars }), 'acme/widgets.json')],
+        ]),
+      })
+    set({ disabled: ['history'] })
+    await runLoopCommand('prepare', { out: '/o' }, target, deps)
+    expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
+      out: '/o',
+      pillars: { disabled: ['history'], extra: [] },
+    })
+    vi.mocked(prepareReview).mockClear()
+    set({ disabled: ['rules', 'correctness', 'design', 'blast-radius', 'security', 'history'] })
+    await expect(runLoopCommand('prepare', { out: '/o' }, target, deps)).rejects.toThrow(
+      'every built-in pillar is disabled and no extra pillar runs in light reviews',
+    )
+    expect(prepareReview).not.toHaveBeenCalled()
   })
 
   it('passes effort and tree through to prepare', async () => {
@@ -374,6 +432,7 @@ describe('runLoopCommand', () => {
       requested: 'high',
       tree: '/t',
       clones: '/c',
+      pillars: { disabled: [], extra: [] },
     })
     await expect(
       runLoopCommand('prepare', { out: '/o', effort: 'extreme' }, target, deps),
