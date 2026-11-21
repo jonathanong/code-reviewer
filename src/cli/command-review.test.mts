@@ -152,22 +152,16 @@ describe('reviewCommand', () => {
       env: {},
     }
     // The pillars, the web references, the approval check, the rule plugins, the models and the limits read the configs first, when wired.
-    configs
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce({
-        ...NO_CONFIGS,
-        byRepo: new Map([['acme/widgets', { consumes: [], evidence: [source], problems: [] }]]),
-      })
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], evidence: [source], problems: [] }]]),
+    })
     const { wired } = await steps({ out: 'o', tree: 't', clones: 'c' })
     const setup = await wired.evidence()
     expect(setup.sources).toEqual([source])
     expect(guideReader).toHaveBeenCalledWith(resolve('c'))
     expect(setup.readGuide).toBe(guide)
+    configs.mockReturnValue(NO_CONFIGS)
     expect((await wired.evidence()).sources).toEqual([])
   })
 
@@ -191,21 +185,16 @@ describe('reviewCommand', () => {
 
   it('wires the web references from the machine config only', async () => {
     const reference = { name: 'aws', description: 'Docs.', domains: ['docs.aws.amazon.com'] }
-    configs
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce({
-        ...NO_CONFIGS,
-        byRepo: new Map([
-          ['acme/widgets', { consumes: [], references: [reference], problems: [] }],
-        ]),
-      })
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], references: [reference], problems: [] }]]),
+    })
     expect((await steps()).wired.webReferences).toEqual([reference])
   })
 
   it('hands the review the pillars the config sets, and refuses before claiming when it leaves none', async () => {
     const set = (pillars: unknown) =>
-      configs.mockReturnValueOnce({
+      configs.mockReturnValue({
         ...NO_CONFIGS,
         byRepo: new Map([
           ['acme/widgets', parseRepoConfig(JSON.stringify({ pillars }), 'acme/widgets.json')],
@@ -268,7 +257,7 @@ describe('reviewCommand', () => {
       'trusted',
     )
     expect(own.analysis).toBeUndefined()
-    targetConfig.mockResolvedValue({ config: own, problems: own.problems })
+    targetConfig.mockResolvedValue({ config: own, problems: [] })
     configs.mockReturnValue({
       ...NO_CONFIGS,
       byRepo: new Map([['acme/widgets', { consumes: [], trustRepoConfig: true, problems: [] }]]),
@@ -291,29 +280,20 @@ describe('reviewCommand', () => {
   it('runs the approval check unless a machine config switches it off', async () => {
     expect((await steps()).wired.approvalCheck).toBe(true)
     vi.clearAllMocks()
-    configs
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce({
-        ...NO_CONFIGS,
-        byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
-      })
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
+    })
     expect((await steps()).wired.approvalCheck).toBe(false)
   })
 
   it('uses the default rule plugins unless a machine config lists others, even none', async () => {
     expect((await steps()).wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
     vi.clearAllMocks()
-    configs
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce(NO_CONFIGS)
-      .mockReturnValueOnce({
-        ...NO_CONFIGS,
-        byRepo: new Map([['acme/widgets', { consumes: [], rulePlugins: [], problems: [] }]]),
-      })
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], rulePlugins: [], problems: [] }]]),
+    })
     expect((await steps()).wired.rulePlugins).toEqual([])
   })
 
@@ -419,6 +399,24 @@ describe('reviewCommand', () => {
       'limits.maxCostUsd',
     )
     expect(runReview).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [
+      'a problem in any machine key',
+      'acme/widgets.json labels.requested: must be a string; ignored',
+      [],
+    ],
+    ['a problem in the repository file', undefined, ['acme/widgets/.code-reviewer.json: bad key']],
+  ])('stops before any claim or model step on %s', async (_name, machine, own) => {
+    configs.mockReturnValue({ ...NO_CONFIGS, problems: machine === undefined ? [] : [machine] })
+    targetConfig.mockResolvedValueOnce({ config: undefined, problems: own })
+    await expect(reviewCommand({ out: 'o', tree: 't' }, TARGET, deps)).rejects.toThrow(
+      /^settings invalid: .*(labels\.requested|code-reviewer\.json)/u,
+    )
+    for (const call of [runReview, claimCommand, prepareCommand])
+      expect(call).not.toHaveBeenCalled()
+    expect(deps.exec).not.toHaveBeenCalled()
   })
 
   it('previews with a dry run', async () => {

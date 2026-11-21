@@ -11,6 +11,7 @@ import {
 import { splitRepo } from '../gh-cli/index.mts'
 import { requirePillars, type PillarSettings } from '../review/pillars-settings.mts'
 import { resolvePlanValues, type PlanValues } from '../review/plan-settings.mts'
+import { requireValidConfig } from './config-check.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export async function labelsFor(deps: ReviewDeps, repo: string): Promise<LabelNames> {
@@ -30,7 +31,7 @@ export async function prepareSettingsFor(
   deps: ReviewDeps,
   repo: string,
 ): Promise<{ pillars: PillarSettings; values: PlanValues }> {
-  const own = (await deps.targetConfig(repo)).config
+  const own = (await requireValidConfig(deps, repo)).config
   return {
     pillars: requirePillars(deps.configs(), repo, own),
     values: resolvePlanValues(deps.configs(), repo, own),

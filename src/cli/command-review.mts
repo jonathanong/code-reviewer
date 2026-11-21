@@ -5,7 +5,8 @@ import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { resolveAnalysis } from '../review/analysis-settings.mts'
-import { requireLimits } from '../review/limits-settings.mts'
+import { resolveLimits } from '../review/limits-settings.mts'
+import { requireValidConfig } from './config-check.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { requirePillars } from '../review/pillars-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
@@ -57,9 +58,10 @@ export async function reviewCommand(
     ...(values.clones === undefined ? {} : { clones: resolve(values.clones) }),
   }
   const targetOf = () => target
-  const own = (await deps.targetConfig(target.repo)).config
+  // Before any claim or model step: a configuration problem stops the review, as it stops `run`.
+  const own = (await requireValidConfig(deps, target.repo)).config
   const pillars = requirePillars(deps.configs(), target.repo, own)
-  const limits = requireLimits(deps.configs(), target.repo)
+  const limits = resolveLimits(deps.configs(), target.repo)
   const tracker = deps.tracker()
   const startedAt = tracker.now().toISOString()
   const running = runReview(

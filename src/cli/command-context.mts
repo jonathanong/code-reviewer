@@ -8,6 +8,7 @@ import { buildContext } from '../review/context/build.mts'
 import { renderContext } from '../review/context/render.mts'
 import type { ContextDeps, ContextSkill } from '../review/context/types.mts'
 import { listRuleSkillFiles } from '../review/run/select-skills.mts'
+import { requireValidConfig } from './config-check.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export type ContextValues = {
@@ -44,6 +45,7 @@ export async function contextCommand(
   if (repo === undefined || values.pr === undefined || values.tree === undefined) {
     throw new Error('context needs --repo, --pr and --tree.')
   }
+  const own = (await requireValidConfig(deps, repo)).config
   const pr = Number(values.pr)
   const tree = resolve(values.tree)
   const head = (await deps.exec('git', ['-C', tree, 'rev-parse', 'HEAD'])).trim()
@@ -57,7 +59,6 @@ export async function contextCommand(
     'baseRefOid',
   ])
   const { baseRefOid } = JSON.parse(view) as { baseRefOid: string }
-  const own = (await deps.targetConfig(repo)).config
   const plugins = resolveRulePlugins(deps.configs(), repo, own).names
   const { installs } = await deps.pluginInfo()
   const unreadable: string[] = []

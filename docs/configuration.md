@@ -12,9 +12,14 @@ merge by label name.
    file. It is read from the repository's default branch, never from the pull request, so a pull
    request cannot change its own settings. `prepare` reads it from the clone's `origin/HEAD`, or
    through the GitHub API without a clone; the other commands read it through the API once per
-   repository they act on. A missing file is no config; any other read failure is reported as a
-   problem and the lower layers apply.
+   repository they act on. A missing file is no config; any other read failure is a problem.
 3. Built-in defaults.
+
+A problem in any of these files, in any key, for the repository or its owner stops `run`,
+`review`, `claim`, `abort`, `skip`, `prepare`, `post` and `context` before any work, with
+`settings invalid:` and a message naming the file and key; nothing is claimed, posted or sent to
+a model. The reviewed repository's own file counts, as it stands on its default branch. `settings`
+and `doctor` print the problems and do not fail.
 
 Every config file is YAML or JSON, chosen by the name's ending: `.yaml` and `.yml` are YAML;
 `.json` and `.jsonc` are JSON with comments and trailing commas allowed (JSONC). The same names
@@ -267,8 +272,7 @@ lists add to the built-in ones and never replace them. They also add across laye
 repository file, the machine owner file and the repository's own file all contribute.
 `smallChangeLines` comes from the highest layer that sets it. A repository's own file can only
 make a review stricter on its own; the settings that reduce review need `trustRepoConfig` or a
-machine file. A refused or invalid value is a problem naming the file and key, and only that value
-is ignored. `code-reviewer settings` prints the resolved values, with the built-in Dependabot rule listed under `authors`. The change-shape context section
+machine file. A refused or invalid value is a problem naming the file and key. `code-reviewer settings` prints the resolved values, with the built-in Dependabot rule listed under `authors`. The change-shape context section
 keeps the built-in thresholds.
 
 ## `pillars`
@@ -380,7 +384,7 @@ limits:
 
 | Key                      | Meaning                                                             | Default | Range / type     |
 | ------------------------ | ------------------------------------------------------------------- | ------- | ---------------- |
-| `maxCostUsd`             | Cost ceiling per review, in US dollars. Absent means no ceiling.    | none    | number above 0   |
+| `maxCostUsd`             | Cost ceiling per review, in US dollars; see below.                  | 25      | number above 0   |
 | `runTimeoutSeconds`      | Time one pillar, verifier, evidence or approval-check run may take. | 1800    | integer 60-14400 |
 | `selectTimeoutSeconds`   | Time the skill-selection call may take.                             | 120     | integer 10-1800  |
 | `contextDeadlineSeconds` | Time the whole context build may take; see [context](context.md).   | 60      | integer 5-600    |
@@ -392,14 +396,15 @@ without `trustRepoConfig`, says `limits is machine-only; ignored`. Unlike the ot
 each `limits` key resolves on its own: the highest machine layer that sets that key wins, a key no
 layer sets takes the default, so a repository file that sets only `pillarJobs` keeps the owner
 file's `maxCostUsd`. A bad value, an out-of-range number or an unknown key is a problem naming the
-file and key, and `review` stops with it before claiming anything, so a ceiling is never dropped
-silently. `code-reviewer settings` prints every resolved value (`maxCostUsd` is `null` for no
-ceiling). `bench` ignores this key. The posted-text length targets (1,200 and 800 characters),
+file and key, and the commands above stop with it before claiming anything, so a ceiling is
+never dropped silently. `code-reviewer settings` prints every resolved value, and `maxCostFrom` says which
+machine layer set `maxCostUsd` (`null` means the built-in default of 25). `bench` ignores this key. The posted-text length targets (1,200 and 800 characters),
 the caps in the context sections and the other fixed numbers stay fixed; `post` takes
 `--body-target` and `--inline-target` for one run.
 
-The ceiling is a circuit breaker against a runaway run, not a budget to tune a review to. Set it
-well above what a normal review costs, so only a run that has gone wrong reaches it. Before it
+The ceiling is a circuit breaker against a runaway run, not a budget to tune a review to. A
+normal review costs a few dollars, so the default of 25 is reached only by a run that has gone
+wrong; raise it for very large pull requests. Before it
 starts each step, a review compares the cost its steps have reported so far with `maxCostUsd`. At
 or above it the step does not start and the review stops whole: it fails with
 `cost ceiling reached ($X of $Y)` and the name of the step that did not start, writes no

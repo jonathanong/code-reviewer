@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { limitsProblems, parseMaxCost, requireLimits, resolveLimits } from './limits-settings.mts'
+import { DEFAULT_MAX_COST_USD } from './rules/limits-parse.mts'
+import { parseMaxCost, resolveLimits } from './limits-settings.mts'
 import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './rules/config.mts'
 
 const file = (limits: unknown) =>
@@ -20,15 +21,17 @@ const DEFAULTS = {
 }
 
 describe('resolveLimits', () => {
-  it('has no ceiling when no machine file sets one', () => {
+  it('has the default ceiling when no machine file sets one', () => {
     expect(resolveLimits(NO_CONFIGS, 'acme/widgets')).toEqual({
       ...DEFAULTS,
-      maxCostUsd: undefined,
+      maxCostUsd: DEFAULT_MAX_COST_USD,
+      maxCostFrom: null,
       from: null,
     })
     expect(resolveLimits(configs({}), 'acme/widgets')).toEqual({
       ...DEFAULTS,
-      maxCostUsd: undefined,
+      maxCostUsd: DEFAULT_MAX_COST_USD,
+      maxCostFrom: null,
       from: null,
     })
   })
@@ -38,11 +41,13 @@ describe('resolveLimits', () => {
     expect(resolveLimits(both, 'acme/widgets')).toEqual({
       ...DEFAULTS,
       maxCostUsd: 2,
+      maxCostFrom: 'machine repo',
       from: 'machine repo',
     })
     expect(resolveLimits(both, 'acme')).toEqual({
       ...DEFAULTS,
       maxCostUsd: 9,
+      maxCostFrom: 'machine owner',
       from: 'machine owner',
     })
   })
@@ -57,7 +62,8 @@ describe('resolveLimits', () => {
       selectTimeoutSeconds: 30,
       contextDeadlineSeconds: 90,
       pillarJobs: 5,
-      maxCostUsd: undefined,
+      maxCostUsd: DEFAULT_MAX_COST_USD,
+      maxCostFrom: null,
       from: 'machine repo',
     })
     expect(resolveLimits(both, 'acme')).toMatchObject({
@@ -77,6 +83,7 @@ describe('resolveLimits', () => {
       maxCostUsd: 9,
       runTimeoutSeconds: 600,
       pillarJobs: 5,
+      maxCostFrom: 'machine owner',
       from: 'machine repo',
     })
   })
@@ -85,6 +92,7 @@ describe('resolveLimits', () => {
     expect(resolveLimits(configs(undefined, { maxCostUsd: 9 }), 'acme/widgets')).toEqual({
       ...DEFAULTS,
       maxCostUsd: 9,
+      maxCostFrom: 'machine owner',
       from: 'machine owner',
     })
   })
@@ -101,25 +109,5 @@ describe('parseMaxCost', () => {
 
   it.each(['0', '-2', 'abc', '', ' ', 'Infinity', 'NaN'])('rejects %j', (value) => {
     expect(() => parseMaxCost(value)).toThrow('--max-cost must be a number')
-  })
-})
-
-describe('requireLimits', () => {
-  const bad = {
-    ...NO_CONFIGS,
-    problems: [
-      'Acme/Widgets.json limits.maxCostUsd: must be a number greater than 0; limits ignored',
-      'acme/other.json limits.pillarJobs: bad; limits ignored',
-      'acme/widgets.json pillars: other key',
-    ],
-  }
-
-  it('lists only the limits problems of this repository or its owner', () => {
-    expect(limitsProblems(bad, 'acme/widgets')).toHaveLength(1)
-  })
-
-  it('throws naming the problem, and otherwise resolves', () => {
-    expect(() => requireLimits(bad, 'acme/widgets')).toThrow('limits.maxCostUsd')
-    expect(requireLimits(configs({ pillarJobs: 4 }), 'acme/widgets').pillarJobs).toBe(4)
   })
 })

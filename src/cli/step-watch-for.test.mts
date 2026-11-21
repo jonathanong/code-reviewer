@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_MAX_COST_USD } from '../review/rules/limits-parse.mts'
 import { resolveLimits } from '../review/limits-settings.mts'
 import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import type { ReviewDeps } from './deps.mts'
@@ -24,9 +25,9 @@ function fakeDeps() {
 }
 
 describe('stepWatchFor', () => {
-  it('has no ceiling when neither the flag nor a machine file sets one', () => {
+  it('has the default ceiling when neither the flag nor a machine file sets one', () => {
     const { deps } = fakeDeps()
-    expect(stepWatchFor({}, limitsOf(NO_CONFIGS), deps).ceilingUsd).toBeUndefined()
+    expect(stepWatchFor({}, limitsOf(NO_CONFIGS), deps).ceilingUsd).toBe(DEFAULT_MAX_COST_USD)
   })
 
   it('takes the ceiling from the machine config', () => {

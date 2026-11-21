@@ -14,6 +14,9 @@ export type LimitsConfig = {
   pillarJobs?: number
 }
 
+/** The cost ceiling a review has when no config or `--max-cost` sets one, in US dollars. */
+export const DEFAULT_MAX_COST_USD = 25
+
 type IntKey = 'runTimeoutSeconds' | 'selectTimeoutSeconds' | 'contextDeadlineSeconds' | 'pillarJobs'
 
 /** Each whole-number limit: its built-in value and the range a config may choose from. */

@@ -15,6 +15,6 @@ export function stepWatchFor(
   return createStepWatch({
     ...(values.quiet === true ? {} : { write: (line: string) => deps.progress(line) }),
     now: () => deps.tracker().now().getTime(),
-    ...(ceilingUsd === undefined ? {} : { ceilingUsd }),
+    ceilingUsd,
   })
 }

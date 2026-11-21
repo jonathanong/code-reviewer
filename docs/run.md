@@ -8,7 +8,7 @@ code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medi
 a session that dispatches it without watching. It:
 
 1. Checks the preconditions: every configured rule plugin (by default `no-mistakes-rules` and `jong-skills`; see [`rulePlugins`](configuration.md#ruleplugins)) is enabled at user scope,
-   the machine config and the repository's own file have no problems, and auth resolves.
+   the machine config and the repository's own file have no problems (the same check `review` makes), and auth resolves.
 2. Reads the pull request and declines it (a no-op) when the newest trusted review already covers
    the head, another session holds it, or an unposted review of this head waits in a run
    directory. `--force` skips these checks.
@@ -23,7 +23,7 @@ a session that dispatches it without watching. It:
 Progress goes to stderr: the lines `review` writes for each step (see
 [Progress and the cost ceiling](review.md#progress-and-the-cost-ceiling)), which `--quiet` turns
 off. Stdout is exactly one JSON line. `--max-cost USD` sets the review's cost ceiling (a circuit breaker for runaway runs) over
-[`limits.maxCostUsd`](configuration.md#limits); a bad value fails the precondition check.
+[`limits.maxCostUsd`](configuration.md#limits), which is 25 US dollars by default (a normal review costs a few dollars; raise it for very large pull requests); a bad value fails the precondition check.
 
 ## Exit codes
 

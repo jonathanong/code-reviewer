@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 
 import { DEFAULT_LABELS, type LabelNames } from '../review/index.mts'
 import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
+import { DEFAULT_MAX_COST_USD } from '../review/rules/limits-parse.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export const BOB = { repo: 'bob/c', pr: 4 }
@@ -56,7 +57,7 @@ const CONFIGS: RepoConfigs = {
     ],
   ]),
   byRepo: new Map([['acme/b', config('acme/b.json', { labels: { processing: 'busy' } })]]),
-  problems: ['bob.json: bad'],
+  problems: [],
 }
 
 /** acme/c keeps its own file: it renames the requested label and sets a check run. */
@@ -72,13 +73,14 @@ export const targetConfig = vi.fn(async (repo: string) =>
     : { config: undefined, problems: [] },
 )
 
-export function fakeDeps(mode: 'app' | 'gh' = 'app') {
+/** `problems` are the machine config's problems; none unless a test is about them. */
+export function fakeDeps(mode: 'app' | 'gh' = 'app', problems: string[] = []) {
   const labelIo = { labels: vi.fn(), add: vi.fn(), remove: vi.fn() }
   const prepareIo = {} as ReturnType<ReviewDeps['createPrepareIo']>
   const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
   const runner = vi.fn(() => run)
   const createLabelIo = vi.fn(() => labelIo)
-  const configs = vi.fn(() => CONFIGS)
+  const configs = vi.fn(() => ({ ...CONFIGS, problems }))
   const deps = {
     authMode: vi.fn(() => mode),
     checkInstallation: vi.fn(async () => undefined),
@@ -93,9 +95,10 @@ export function fakeDeps(mode: 'app' | 'gh' = 'app') {
   return { deps, labelIo, prepareIo, run, runner, createLabelIo, configs }
 }
 
-/** `settings` prints these whole-number limits when no machine file sets them. */
+/** `settings` prints these limits when no machine file sets them. */
 
 export const LIMIT_DEFAULTS = {
+  maxCostUsd: DEFAULT_MAX_COST_USD,
   runTimeoutSeconds: 1800,
   selectTimeoutSeconds: 120,
   contextDeadlineSeconds: 60,

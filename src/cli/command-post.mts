@@ -9,6 +9,7 @@ import {
 import { savePostedFindings } from '../tracker/posted-file.mts'
 import { recordPosted } from '../tracker/record.mts'
 import type { ReviewDeps } from './deps.mts'
+import { requireValidConfig } from './config-check.mts'
 import { postOptions, type PostValues } from './post-options.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
 
@@ -37,6 +38,7 @@ export async function postCommand(
   }
   const headSha = values['head-sha']
   const input = parseReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
+  await requireValidConfig(deps, pull.repo)
   const dryRun = values['dry-run'] === true
   const outcome = await postFinalReview(deps.createIo(pull), input, headSha, {
     dryRun,
