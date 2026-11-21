@@ -127,4 +127,14 @@ describe('contextCommand', () => {
       '--repo, --pr and --tree',
     )
   })
+
+  it('stops on a configuration problem before reading the checkout', async () => {
+    const { deps, calls } = fake()
+    const problem = 'acme/widgets/.code-reviewer.json: bad'
+    const bad = { ...deps, targetConfig: async () => ({ config: undefined, problems: [problem] }) }
+    await expect(contextCommand(base, bad as unknown as ReviewDeps)).rejects.toThrow(
+      /^settings invalid: acme\/widgets/u,
+    )
+    expect(calls).toEqual([])
+  })
 })

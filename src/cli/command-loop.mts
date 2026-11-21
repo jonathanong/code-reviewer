@@ -24,6 +24,7 @@ import { modelTable } from '../review/models.mts'
 import { analysisSummary } from '../review/analysis-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { resolveLimits } from '../review/limits-settings.mts'
+import { requireValidConfig } from './config-check.mts'
 import { authCommand } from './command-auth.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
@@ -95,6 +96,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
 
 /** Takes a requested review; the outcome says whether it was claimed. */
 export async function claimCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
+  await requireValidConfig(deps, target().repo)
   const force = values.force === true
   const status = force ? undefined : await reviewStatus(deps.createIo(target()))
   const outcome = await claimReview(
@@ -111,6 +113,7 @@ export async function claimCommand(values: LoopValues, target: () => PullTarget,
 
 /** Drops the in-progress label; `--requeue` asks again. */
 export async function abortCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
+  await requireValidConfig(deps, target().repo)
   const labels = await abortReview(
     deps.createLabelIo(target()),
     await labelsFor(deps, target().repo),
@@ -134,6 +137,7 @@ export async function skipCommand(
   if (values.reason === undefined || values.reason.trim() === '') {
     throw new Error('skip needs --reason.')
   }
+  await requireValidConfig(deps, target().repo)
   const { headSha, url, ...labels } = await skipPullRequest(
     deps.createIo(target()),
     deps.createLabelIo(target()),

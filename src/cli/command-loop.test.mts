@@ -255,7 +255,7 @@ describe('runLoopCommand', () => {
 
   describe('settings', () => {
     it('prints the resolved settings and the problems of the owner files', async () => {
-      const { deps } = fakeDeps()
+      const { deps } = fakeDeps('app', ['bob.json: bad'])
       await expect(runLoopCommand('settings', { owner: 'bob' }, target, deps)).resolves.toEqual({
         scope: 'bob',
         labels: BOB_LABELS,
@@ -439,7 +439,7 @@ describe('runLoopCommand', () => {
   it('plans with the pillars the config sets, and refuses when it leaves none to run', async () => {
     const { deps, prepareIo, configs } = fakeDeps()
     const set = (pillars: unknown) =>
-      configs.mockReturnValueOnce({
+      configs.mockReturnValue({
         ...NO_CONFIGS,
         byRepo: new Map([
           ['acme/widgets', parseRepoConfig(JSON.stringify({ pillars }), 'acme/widgets.json')],

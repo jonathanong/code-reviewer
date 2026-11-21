@@ -48,25 +48,6 @@ export function resolveLimits(configs: RepoConfigs, scope: string): LimitSetting
   }
 }
 
-/** The config problems about `limits` in the machine files of this repository or its owner. */
-export function limitsProblems(configs: RepoConfigs, repo: string): string[] {
-  const lower = repo.toLowerCase()
-  const owner = lower.split('/')[0] as string
-  return configs.problems.filter((problem) => {
-    const text = problem.toLowerCase()
-    return (
-      (text.startsWith(`${owner}.`) || text.startsWith(`${lower}.`)) && /\blimits\b/u.test(text)
-    )
-  })
-}
-
-/** The limits a review runs with; throws on a bad `limits` value, so a ceiling is never dropped silently. */
-export function requireLimits(configs: RepoConfigs, repo: string): LimitSettings {
-  const problems = limitsProblems(configs, repo)
-  if (problems.length > 0) throw new Error(`settings invalid: ${problems.join('; ')}`)
-  return resolveLimits(configs, repo)
-}
-
 /** `--max-cost USD`: a number above zero. Throws a message fit for a usage error. */
 export function parseMaxCost(value: string | undefined): number | undefined {
   if (value === undefined) return undefined

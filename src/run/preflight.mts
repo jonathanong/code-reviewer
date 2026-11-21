@@ -17,6 +17,7 @@ import { foldRows, readRows } from '../tracker/store.mts'
 import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
 import { labelsFor } from '../cli/review-settings.mts'
+import { requireValidConfig } from '../cli/config-check.mts'
 
 /** A missing plugin, a bad setting, unresolvable auth or a bad flag: nothing was claimed or posted. */
 export class Precondition extends Error {}
@@ -63,16 +64,6 @@ export function parseFlags(values: FlagValues): RunFlags {
   return { pull, post, force: values.force === true }
 }
 
-/** Config problems that name this repository's or its owner's machine files, in lowercase compare. */
-function configProblems(deps: ReviewDeps, repo: string): string[] {
-  const lower = repo.toLowerCase()
-  const owner = lower.split('/')[0] as string
-  return deps.configs().problems.filter((problem) => {
-    const text = problem.toLowerCase()
-    return text.startsWith(`${owner}.`) || text.startsWith(`${lower}.`)
-  })
-}
-
 /**
  * Fails fast, before any claim: the machine config and the repository's own file have no
  * problems, every configured rule plugin is enabled at user scope (where a headless run loads it),
@@ -89,9 +80,7 @@ export async function checkPreconditions(deps: ReviewDeps, repo: string): Promis
     throw error
   }
   const failure = async (): Promise<string | undefined> => {
-    const target = await deps.targetConfig(repo)
-    const problems = [...configProblems(deps, repo), ...target.problems]
-    if (problems.length > 0) return `settings invalid: ${problems.join('; ')}`
+    const target = await requireValidConfig(deps, repo)
     const { installs } = await deps.pluginInfo()
     const { names } = resolveRulePlugins(deps.configs(), repo, target.config)
     const missing = unloadableRulePlugins(installs, names)
