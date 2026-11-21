@@ -36,7 +36,12 @@ async function run(args: string[], env: Record<string, string>) {
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => (out.push(String(chunk)), true))
   vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => (err.push(String(chunk)), true))
   const gh = vi.fn(async (ghArgs: string[]) => (ghArgs[1] === 'list' ? '[]' : 'url\n'))
-  const auth = { mode: 'gh' as const, identity: async () => undefined, runner: () => gh }
+  const auth = {
+    mode: 'gh' as const,
+    identity: async () => undefined,
+    runner: () => gh,
+    checkInstallation: async () => undefined,
+  }
   const code = await runReviewCommand(
     args,
     createDefaultDeps(() => auth, env),

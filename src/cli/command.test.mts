@@ -90,6 +90,7 @@ const rowsOf = (tracker: MemoryTracker) =>
 function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
+    checkInstallation: vi.fn(async () => undefined),
     authIdentity: vi.fn(async () => ({})),
     configs: vi.fn(() => NO_CONFIGS),
     targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
@@ -131,6 +132,7 @@ function capture() {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
 })
 
 describe('runReviewCommand', () => {
@@ -466,6 +468,9 @@ describe('runReviewCommand', () => {
 describe('runReviewCommand default dependencies', () => {
   it('reads input from disk, builds a gh io, and delegates bench', async () => {
     const { err } = capture()
+    // No App on this machine: the real auth is the gh login, so no network is touched.
+    vi.stubEnv('XDG_CONFIG_HOME', '/nonexistent/code-reviewer')
+    vi.stubEnv('CODE_REVIEWER_APP_ID', '')
     const dir = mkdtempSync(join(tmpdir(), 'review-cmd-'))
     try {
       const file = join(dir, 'findings.json')

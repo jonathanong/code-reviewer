@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   AppAuthError,
+  AppNotInstalledError,
   createAppIdentityProvider,
   createAppJwt,
   createInstallationTokenProvider,
+  isAppConfigFailure,
   type AppConfig,
   type FetchJson,
 } from './app-auth.mts'
@@ -79,10 +81,12 @@ describe('createInstallationTokenProvider', () => {
     )
     const provider = createInstallationTokenProvider(CONFIG, fetchJson, () => T0)
     await provider('acme')
+    await provider('acme')
     await provider('acme', 'widgets')
     expect(fetchJson.mock.calls.map(([url]) => url)).toEqual([
       'https://api.test/orgs/acme/installation',
       'https://api.test/app/installations/5/access_tokens',
+      'https://api.test/repos/acme/widgets/installation',
     ])
   })
 
@@ -111,7 +115,78 @@ describe('createInstallationTokenProvider', () => {
     const missing = fakeFetch(() => ({ ok: false, status: 404 }))
     await expect(
       createInstallationTokenProvider(CONFIG, missing, () => T0)('nobody'),
-    ).rejects.toThrow('GET /users/nobody/installation failed with 404')
+    ).rejects.toMatchObject({ name: 'AppNotInstalledError', owner: 'nobody', repo: undefined })
+  })
+
+  it('reports an owner without the App as not installed, keeping the 404 as the cause', async () => {
+    const missing = fakeFetch(() => ({ ok: false, status: 404 }))
+    const error = await createInstallationTokenProvider(
+      CONFIG,
+      missing,
+      () => T0,
+    )('nobody').catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(AppNotInstalledError)
+    expect(error).toBeInstanceOf(AppAuthError)
+    expect(error).toMatchObject({ owner: 'nobody', status: 404 })
+    expect((error as AppNotInstalledError).cause).toMatchObject({ status: 404 })
+  })
+
+  it('reports a repository the installation does not cover as not installed for that repository', async () => {
+    const missing = fakeFetch(() => ({ ok: false, status: 404 }))
+    const error = await createInstallationTokenProvider(
+      CONFIG,
+      missing,
+      () => T0,
+    )('acme', 'secret').catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(AppNotInstalledError)
+    expect(error).toMatchObject({ owner: 'acme', repo: 'secret' })
+    expect(missing).toHaveBeenCalledOnce()
+  })
+
+  it('looks up each repository on its own, so an uncovered one is not hidden by a covered one', async () => {
+    const fetchJson = fakeFetch((url) =>
+      url.endsWith('/repos/acme/other/installation')
+        ? { ok: false, status: 404 }
+        : url.endsWith('/installation')
+          ? { body: { id: 7 } }
+          : { body: { token: 't', expires_at: expiry(T0 + 3_600_000) } },
+    )
+    const provider = createInstallationTokenProvider(CONFIG, fetchJson, () => T0)
+    await expect(provider('acme', 'covered')).resolves.toBe('t')
+    await expect(provider('acme', 'covered')).resolves.toBe('t')
+    await expect(provider('acme', 'other')).rejects.toBeInstanceOf(AppNotInstalledError)
+  })
+
+  it('turns an unusable private key into a configuration error naming the source', async () => {
+    const provider = createInstallationTokenProvider(
+      { ...CONFIG, privateKey: 'not a key' },
+      fakeFetch(() => ({})),
+      () => T0,
+    )
+    const error = await provider('acme').catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(AppAuthError)
+    expect(isAppConfigFailure(error)).toBe(true)
+    expect((error as AppAuthError).cause).toBeInstanceOf(Error)
+  })
+
+  it('treats a 5xx or a network error as transient, not configuration', () => {
+    expect(isAppConfigFailure(new AppAuthError('x', 503))).toBe(false)
+    expect(isAppConfigFailure(new TypeError('fetch failed'))).toBe(false)
+    expect(isAppConfigFailure(new AppAuthError('x', 403))).toBe(true)
+    expect(isAppConfigFailure(new AppAuthError('no slug'))).toBe(true)
+  })
+
+  it('keeps other lookup failures as plain App errors', async () => {
+    for (const status of [401, 403, 500]) {
+      const failing = fakeFetch(() => ({ ok: false, status }))
+      const error = await createInstallationTokenProvider(
+        CONFIG,
+        failing,
+        () => T0,
+      )('acme', 'r').catch((caught: unknown) => caught)
+      expect(error).not.toBeInstanceOf(AppNotInstalledError)
+      expect(error).toMatchObject({ name: 'AppAuthError', status })
+    }
   })
 
   it('uses a pinned installation without a lookup', async () => {
@@ -164,9 +239,7 @@ describe('createInstallationTokenProvider', () => {
       fakeFetch(() => ({ ok: false, status: 404 })),
       () => T0,
     )
-    await expect(lookup('o', 'r')).rejects.toThrow(
-      'GitHub App request GET /repos/o/r/installation failed with 404.',
-    )
+    await expect(lookup('o', 'r')).rejects.toBeInstanceOf(AppNotInstalledError)
     const mint = createInstallationTokenProvider(
       { ...CONFIG, installationId: '8' },
       fakeFetch(() => ({ ok: false, status: 401 })),

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { appRunner, createGhAuth, splitRepo } from './auth.mts'
+import { AppNotInstalledError } from './app-auth.mts'
 import { runGh, type ExecFileText } from './exec.mts'
 
 const NO_CONFIG = '/nonexistent/code-reviewer'
@@ -35,6 +36,24 @@ describe('createGhAuth', () => {
     await expect(auth.identity()).resolves.toBe('my-app[bot]')
     expect(tokensFor).toHaveBeenCalledWith(expect.objectContaining({ appId: '1' }))
     expect(auth.runner('o', 'r')).toBeTypeOf('function')
+  })
+
+  it('checks the installation through the token provider under App auth only', async () => {
+    const notInstalled = new AppNotInstalledError('acme', undefined, undefined)
+    const tokens = vi.fn(async (owner: string) => {
+      if (owner === 'acme') throw notInstalled
+      return 'tok'
+    })
+    const auth = createGhAuth(
+      { CODE_REVIEWER_APP_ID: '1', CODE_REVIEWER_APP_PRIVATE_KEY: KEY },
+      () => tokens,
+      () => async () => 'my-app[bot]',
+    )
+    await expect(auth.checkInstallation('o', 'r')).resolves.toBeUndefined()
+    expect(tokens).toHaveBeenCalledWith('o', 'r')
+    await expect(auth.checkInstallation('acme')).rejects.toBe(notInstalled)
+    const plain = createGhAuth({ XDG_CONFIG_HOME: NO_CONFIG })
+    await expect(plain.checkInstallation('acme')).resolves.toBeUndefined()
   })
 
   it('defaults to process.env and the real token provider', () => {

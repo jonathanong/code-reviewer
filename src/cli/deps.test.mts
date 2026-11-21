@@ -36,7 +36,12 @@ function fakeAuth(
     return '[]'
   })
   const runner = vi.fn(() => fakeRun)
-  const getAuth = vi.fn((): GhAuth => ({ mode, identity, runner }))
+  const getAuth = vi.fn((): GhAuth => ({
+    mode,
+    identity,
+    runner,
+    checkInstallation: async () => undefined,
+  }))
   return { fakeRun, runner, getAuth }
 }
 
@@ -64,6 +69,13 @@ describe('createDefaultDeps', () => {
     expect(deps.authMode()).toBe('gh')
     expect(deps.authMode()).toBe('gh')
     expect(getAuth).toHaveBeenCalledOnce()
+  })
+
+  it('forwards the installation check to the resolved auth', async () => {
+    const checkInstallation = vi.fn(async () => undefined)
+    const deps = createDefaultDeps(() => ({ ...fakeAuth('gh').getAuth(), checkInstallation }))
+    await deps.checkInstallation('acme', 'widgets')
+    expect(checkInstallation).toHaveBeenCalledWith('acme', 'widgets')
   })
 
   it('builds the gh ios from a runner for the target repository', async () => {
@@ -115,6 +127,7 @@ describe('createDefaultDeps', () => {
       const getAuth = vi.fn((): GhAuth => ({
         mode: 'gh',
         identity: async () => undefined,
+        checkInstallation: async () => undefined,
         runner: () => async (args) => {
           if (args[0] === 'api') throw new Error('HTTP 404')
           return 'lgtm\n'
@@ -138,6 +151,7 @@ describe('createDefaultDeps', () => {
     const getAuth = vi.fn((): GhAuth => ({
       mode: 'gh',
       identity: async () => undefined,
+      checkInstallation: async () => undefined,
       runner: () => run,
     }))
     const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs' })
@@ -162,7 +176,12 @@ describe('createDefaultDeps', () => {
       throw new Error(failures[repo])
     })
     const deps = createDefaultDeps(
-      () => ({ mode: 'gh', identity: async () => undefined, runner: () => run }),
+      () => ({
+        mode: 'gh',
+        identity: async () => undefined,
+        checkInstallation: async () => undefined,
+        runner: () => run,
+      }),
       {
         CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs',
       },

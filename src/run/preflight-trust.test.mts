@@ -26,6 +26,7 @@ function depsFor(machine: object, installed: string[]) {
       installs: installed.map((name) => ({ name, installPath: `/p/${name}` })),
     })),
     authIdentity: vi.fn(async () => ({})),
+    checkInstallation: vi.fn(async () => undefined),
   } as unknown as ReviewDeps
 }
 

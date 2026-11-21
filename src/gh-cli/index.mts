@@ -5,6 +5,8 @@ export { GITHUB_BODY_MAX_CHARACTERS, validateGitHubBodyLength } from './body-len
 export type { GitHubBodyLengthValidation } from './body-length.mts'
 export {
   AppAuthError,
+  AppNotInstalledError,
+  isAppConfigFailure,
   createAppIdentityProvider,
   createAppJwt,
   createInstallationTokenProvider,

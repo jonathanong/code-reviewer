@@ -21,6 +21,11 @@ export type GhAuth = {
   identity(): Promise<string | undefined>
   /** A `gh` runner for repositories of `owner` (and `repo`, when known). */
   runner(owner: string, repo?: string): RunTextCommand
+  /**
+   * Resolves when calls for `owner` (and `repo`) can authenticate; under App auth it rejects with
+   * `AppNotInstalledError` when the App is not installed there. A no-op under a `gh` login.
+   */
+  checkInstallation(owner: string, repo?: string): Promise<void>
 }
 
 /** Runs `gh` with an App installation token in `GH_TOKEN` (which `gh` prefers over its login). */
@@ -45,13 +50,21 @@ export function createGhAuth(
 ): GhAuth {
   const config = loadAppConfig(env)
   if (config === undefined)
-    return { mode: 'gh', identity: async () => undefined, runner: () => runGh }
+    return {
+      mode: 'gh',
+      identity: async () => undefined,
+      runner: () => runGh,
+      checkInstallation: async () => undefined,
+    }
   const tokens = tokensFor(config)
   return {
     mode: 'app',
     source: config.source,
     identity: identityFor(config),
     runner: (owner, repo) => appRunner(tokens, owner, repo),
+    checkInstallation: async (owner, repo) => {
+      await tokens(owner, repo)
+    },
   }
 }
 

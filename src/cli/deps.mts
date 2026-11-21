@@ -41,6 +41,8 @@ export type ReviewDeps = {
   authMode(): GhAuth['mode']
   /** The App's own review login, or why it could not be looked up; empty under a `gh` login. */
   authIdentity(): Promise<{ source?: string; login?: string; loginError?: string }>
+  /** Rejects with `AppNotInstalledError` when the App is configured but not installed for the scope. */
+  checkInstallation(owner: string, repo?: string): Promise<void>
   /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
   /**
@@ -110,6 +112,7 @@ export function createDefaultDeps(
   }
   return {
     authMode: () => resolved().mode,
+    checkInstallation: (owner, repo) => resolved().checkInstallation(owner, repo),
     authIdentity: async () => {
       const { source } = resolved()
       try {

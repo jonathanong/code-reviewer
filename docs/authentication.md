@@ -26,6 +26,20 @@ The environment overrides the file, for CI: when `CODE_REVIEWER_APP_ID` is set, 
 the file is ignored. `code-reviewer auth` prints the `source` (`env` or the path of the App config file),
 never the key.
 
+## One identity per machine
+
+A machine uses either the App or the `gh` login, never a mix. With the App configured, a command
+for an owner or repository it cannot act for fails before any claim, checkout or model step, as a
+configuration error, and does not fall back to the `gh` login: the App is not installed for the
+owner, its installation does not cover the repository (the lookup is per repository), the key
+cannot sign, or GitHub refuses the token. Install the App there, or review that owner from a
+machine with no App configured. A GitHub 5xx or a network error is not a configuration error; it
+fails the command the same way, still without a fallback. `code-reviewer auth --owner LOGIN` (or
+`--repo owner/name`) and `code-reviewer doctor --owner LOGIN` report the same check: `auth` adds
+`installationError` and exits 1, and `doctor` fails the `github-app-installation` check. `run`
+reports it as a precondition failure. `issues` reads repositories from the tracker and checks the
+App only when it first calls each one.
+
 ## Trusting a repository's own config
 
 A repository's own `.code-reviewer` file may not grant commands, web domains or rule plugins

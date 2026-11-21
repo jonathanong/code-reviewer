@@ -69,7 +69,7 @@ describe('createDoctorIo', () => {
   it('resolves the directories from the environment', () => {
     const exec = async () => ''
     const io = createDoctorIo(
-      { exec, configs: () => NO_CONFIGS },
+      { exec, configs: () => NO_CONFIGS, checkInstallation: async () => undefined },
       {
         HOME: '/home/u',
         XDG_CONFIG_HOME: '/cfg',
@@ -87,12 +87,18 @@ describe('createDoctorIo', () => {
     expect(io.loadApp()).toBeUndefined()
     expect(io.now().getTime()).toBeGreaterThan(0)
     expect(
-      createDoctorIo({ exec, configs: () => NO_CONFIGS }, { HOME: '/home/u' }).claudeHome,
+      createDoctorIo(
+        { exec, configs: () => NO_CONFIGS, checkInstallation: async () => undefined },
+        { HOME: '/home/u' },
+      ).claudeHome,
     ).toBe('/home/u/.claude')
   })
 
   it('finds no clone under a root with none', async () => {
-    const io = createDoctorIo({ exec: async () => '', configs: () => NO_CONFIGS }, {})
+    const io = createDoctorIo(
+      { exec: async () => '', configs: () => NO_CONFIGS, checkInstallation: async () => undefined },
+      {},
+    )
     expect(await io.findClone(TREE, 'acme/widgets')).toBeUndefined()
   })
 })

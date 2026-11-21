@@ -27,7 +27,12 @@ function run(args: string[], env: Record<string, string>, gh = fakeGh({})) {
   const err: string[] = []
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => (out.push(String(chunk)), true))
   vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => (err.push(String(chunk)), true))
-  const auth = { mode: 'gh' as const, identity: async () => undefined, runner: () => gh.run }
+  const auth = {
+    mode: 'gh' as const,
+    identity: async () => undefined,
+    checkInstallation: async () => undefined,
+    runner: () => gh.run,
+  }
   return runReviewCommand(
     args,
     createDefaultDeps(() => auth, env),
