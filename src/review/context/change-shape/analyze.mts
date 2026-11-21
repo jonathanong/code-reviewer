@@ -71,6 +71,7 @@ export function summarize(m: Measured, caps: Caps): ChangeShape {
   const analysed = m.hunks.filter((hunk) => !isGeneratedKind(hunk.path))
   const repeated = groupHunks(analysed).filter((group) => group.hunks >= MIN_REPEAT)
   const top = repeated.slice(0, TOP)
+  const repeatedSignatures = new Set(repeated.map((group) => group.signature))
   const listed = new Set(top.map((group) => group.signature))
   const concerns = new Map<string, number>()
   for (const hunk of analysed) {
@@ -95,6 +96,12 @@ export function summarize(m: Measured, caps: Caps): ChangeShape {
     byKind: tally(m.files, kindOf),
     hunks: analysed.length,
     top,
+    repeatedFiles: new Set(
+      analysed
+        .filter((hunk) => repeatedSignatures.has(hunkSignature(hunk)))
+        .map((hunk) => hunk.path),
+    ).size,
+    truncated: m.patchTruncated || m.hunksTruncated,
     repeatedLines: repeated.reduce((total, group) => total + group.lines, 0),
     top1Share: coverage(repeated, 1, analysed.length),
     top3Share: coverage(repeated, TOP, analysed.length),

@@ -19,9 +19,11 @@ export type SplitSummary = {
   files: number
   /** Added and deleted lines outside generated files. */
   lines: number
+  /** At least this many lines and files are mechanical. */
   mechanical: { lines: number; files: number; parts: MechanicalPart[] }
   /** Config changes that may explain the mechanical part, as `path: key, key`. */
   explainedBy: string[]
+  /** At most this many lines are not. */
   remainder: { lines: number }
 }
 
@@ -32,15 +34,18 @@ const edit = (hunk: Hunk): string =>
 
 /**
  * The summary when the change is large and has both a substantial mechanical part and a substantial
- * remainder; null otherwise, so a purely mechanical change, one with nothing mechanical, and one
- * that is merely big all get no proposal. Overlapping measures (repeated edits, whitespace-only
- * lines) are not added: the larger one stands for the mechanical part.
+ * remainder; null otherwise, so a purely mechanical change, one with nothing mechanical, one that
+ * is merely big, and one whose analysis hit a cap all get no proposal. Every number errs toward no
+ * proposal. Repeated edits and whitespace-only lines may cover the same lines or different ones, so
+ * the larger stands as "at least" the mechanical lines and files, while the remainder subtracts
+ * their sum (counting an overlap twice only shrinks it): "at most" the lines that are not.
  */
 export function splitSummary(shape: ChangeShape): SplitSummary | null {
   const total = shape.reviewableLines
+  if (shape.truncated) return null
   const mechanicalLines = Math.min(total, Math.max(shape.repeatedLines, shape.whitespace.lines))
-  const mechanicalFiles = Math.max(0, shape.whitespace.files, ...shape.top.map((g) => g.files))
-  const remainder = total - mechanicalLines
+  const mechanicalFiles = Math.max(shape.repeatedFiles, shape.whitespace.files)
+  const remainder = total - Math.min(total, shape.repeatedLines + shape.whitespace.lines)
   const worthIt =
     total >= SPLIT_MIN_LINES &&
     mechanicalLines >= SPLIT_MIN_MECHANICAL_LINES &&

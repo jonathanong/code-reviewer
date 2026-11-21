@@ -133,7 +133,10 @@ lines, a mechanical part of at least `SPLIT_MIN_MECHANICAL_LINES` lines, `SPLIT_
 of the change and `SPLIT_MIN_MECHANICAL_FILES` files, and a remainder of at least
 `SPLIT_MIN_REMAINDER_LINES` lines and `SPLIT_MIN_REMAINDER_SHARE` of the change (all in
 `src/review/context/change-shape/analyze.mts`). A change that is almost all mechanical, or has no
-mechanical part, or is only big, gets none: a purely mechanical pull request is fine as it is.
+mechanical part, or is only big, gets none: a purely mechanical pull request is fine as it is. Every
+number errs toward no proposal: the mechanical lines and files are the larger of the repeated-edit and
+whitespace-only measures (so "at least"), the remainder subtracts their sum ("at most"), and a change
+whose patch or hunk analysis hit a cap gets none.
 
 With a summary, the verifier prompt gets one more block, the summary as measurement of this diff
 (not instructions), and its output schema an optional top-level `splitProposal` string. The

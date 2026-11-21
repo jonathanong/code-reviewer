@@ -749,7 +749,7 @@
       "claude",
       [
         "-p",
-        "sha256:a306e59ee1f2931a5ba943bf8ff15821f5f9ca7357a45d511a2216d08658d6ec",
+        "sha256:f764351edb841cae73dd4bdacc197571615ddf4593a0c3707ab42422cce438ce",
         "--model",
         "opus",
         "--output-format",
@@ -786,7 +786,7 @@
       "claude",
       [
         "-p",
-        "sha256:a306e59ee1f2931a5ba943bf8ff15821f5f9ca7357a45d511a2216d08658d6ec",
+        "sha256:f764351edb841cae73dd4bdacc197571615ddf4593a0c3707ab42422cce438ce",
         "--model",
         "opus",
         "--output-format",

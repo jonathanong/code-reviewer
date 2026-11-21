@@ -54,6 +54,10 @@ export type ChangeShape = {
   top: SignatureGroup[]
   /** Removed plus added lines of every signature group with at least `MIN_REPEAT` hunks. */
   repeatedLines: number
+  /** Distinct files with a hunk in a signature group of at least `MIN_REPEAT` hunks. */
+  repeatedFiles: number
+  /** The patch or the hunk analysis was cut at a cap, so the counts above miss some lines. */
+  truncated: boolean
   top1Share: number
   top3Share: number
   renames: number
