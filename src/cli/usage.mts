@@ -7,6 +7,7 @@ code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|hi
 code-reviewer abort --repo owner/name --pr N [--requeue]
 code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--effort low|medium|high] [--force]
 code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR]
+code-reviewer context --repo owner/name --pr N --tree DIR [--out DIR] [--skill plugin:name]...
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run] [--allow-long] [--body-target N] [--inline-target N]

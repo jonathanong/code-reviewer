@@ -6,6 +6,7 @@ import { DEFAULT_RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
 import {
   SKILL_SELECTION_SCHEMA,
   buildSelectionPrompt,
+  listRuleSkillFiles,
   listRuleSkills,
   selectSkills,
 } from './select-skills.mts'
@@ -31,6 +32,27 @@ describe('listRuleSkills', () => {
         description: 'MUST NOT rules for TypeScript and Node.js. Use when writing TS.',
       },
     ])
+  })
+
+  it('also gives the absolute SKILL.md path of each skill', () => {
+    expect(listRuleSkillFiles(INSTALLS, ['no-mistakes-rules']).map((skill) => skill.file)).toEqual([
+      path('no-mistakes-rules/skills/git-rules/SKILL.md'),
+      path('no-mistakes-rules/skills/typescript-rules/SKILL.md'),
+    ])
+  })
+
+  it('skips a SKILL.md that cannot be read and says so when asked, else throws', () => {
+    const installs = [
+      {
+        name: 'broken',
+        installPath: fileURLToPath(new URL('../context/fixtures/unreadable', import.meta.url)),
+      },
+    ]
+    const unreadable: string[] = []
+    expect(listRuleSkillFiles(installs, ['broken'], unreadable)).toEqual([])
+    expect(unreadable).toHaveLength(1)
+    expect(unreadable[0]).toContain('broken:broken could not be read')
+    expect(() => listRuleSkillFiles(installs, ['broken'])).toThrow()
   })
 
   it('lists the skills of the configured plugins only', () => {

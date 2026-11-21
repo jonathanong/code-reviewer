@@ -1,9 +1,8 @@
-import { parseArgs } from 'node:util'
-
 import { reviewStatus, numberDiff, revokeFinalApproval, type PullTarget } from '../review/index.mts'
 import { runGit, takeRetryCount } from '../gh-cli/index.mts'
 import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
+import { contextCommand } from './command-context.mts'
 import { doctorCommand } from './command-doctor.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
@@ -15,12 +14,13 @@ import { modelsCommand } from '../models/command.mts'
 import { digestCommand, outcomesCommand } from '../outcomes/command.mts'
 import { issuesCommand } from '../issues/command.mts'
 import { createIssuesIo } from '../issues/io.mts'
+import { parse } from './parse.mts'
 import { REVIEW_USAGE } from './usage.mts'
 
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, or bench-selection'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -31,47 +31,6 @@ function target(values: { repo?: string[] | undefined; pr?: string | undefined }
 
 function print(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
-}
-
-function parse(args: string[]) {
-  return parseArgs({
-    args,
-    strict: true,
-    options: {
-      repo: { type: 'string', multiple: true },
-      pr: { type: 'string' },
-      'head-sha': { type: 'string' },
-      input: { type: 'string' },
-      'dry-run': { type: 'boolean' },
-      'allow-long': { type: 'boolean' },
-      'body-target': { type: 'string' },
-      'inline-target': { type: 'string' },
-      owner: { type: 'string' },
-      force: { type: 'boolean' },
-      requeue: { type: 'boolean' },
-      reason: { type: 'string' },
-      out: { type: 'string' },
-      jobs: { type: 'string' },
-      model: { type: 'string', multiple: true },
-      'max-cost': { type: 'string' },
-      quiet: { type: 'boolean' },
-      effort: { type: 'string' },
-      tree: { type: 'string' },
-      clones: { type: 'string' },
-      thread: { type: 'string', multiple: true },
-      require: { type: 'string', multiple: true },
-      since: { type: 'string' },
-      state: { type: 'string' },
-      format: { type: 'string' },
-      run: { type: 'string' },
-      post: { type: 'string' },
-      day: { type: 'string' },
-      offline: { type: 'boolean' },
-      harness: { type: 'string' },
-      free: { type: 'boolean' },
-      probes: { type: 'string' },
-    },
-  }).values
 }
 
 async function run(
@@ -137,6 +96,7 @@ async function run(
     return 0
   }
   if (subcommand === 'run') return runCommand(values, deps)
+  if (subcommand === 'context') return contextCommand(values, deps)
   if (subcommand === 'review') {
     const result = await reviewCommand(values, target(values), deps)
     print(result.summary)
