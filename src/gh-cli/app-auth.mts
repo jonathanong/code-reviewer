@@ -7,7 +7,7 @@ export type AppConfig = {
   /** Fixed installation; otherwise it is looked up per repository owner. */
   installationId?: string
   apiUrl: string
-  /** Where the config came from: `env`, or the path of `app.json`. Never the key. */
+  /** Where the config came from: `env`, or the path of the App config file. Never the key. */
   source: string
 }
 

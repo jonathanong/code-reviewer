@@ -2,7 +2,12 @@ import { readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 
-import { CONFIG_EXTENSIONS, parseConfigText } from '../review/rules/config-files.mts'
+import {
+  CONFIG_EXTENSIONS,
+  parseConfigText,
+  topLevelNoun,
+  type ConfigParseError,
+} from '../review/rules/config-files.mts'
 import { configHome } from '../review/rules/config.mts'
 import { AppAuthError, type AppAuthEnv, type AppConfig } from './app-auth.mts'
 
@@ -75,12 +80,13 @@ function fromFile(
 ): AppConfig {
   let parsed: unknown
   try {
-    parsed = parseConfigText(text)
+    parsed = parseConfigText(text, file)
   } catch (error) {
-    return fail(file, `is not valid JSON (${(error as Error).message})`)
+    const { format, message } = error as ConfigParseError
+    return fail(file, `is not valid ${format} (${message})`)
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    return fail(file, 'must be a JSON object')
+    return fail(file, `must be ${topLevelNoun(file)}`)
   }
   const object = parsed as Record<string, unknown>
   const unknown = Object.keys(object).filter((key) => !KEYS.has(key))
@@ -114,9 +120,10 @@ function apiUrl(env: AppAuthEnv): string {
  * The GitHub App to authenticate as, or undefined to use the local `gh` login. When
  * `CODE_REVIEWER_APP_ID` is set the `CODE_REVIEWER_APP_*` variables win (for CI): the PEM text in
  * `CODE_REVIEWER_APP_PRIVATE_KEY` or a file named by `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and an
- * optional `CODE_REVIEWER_APP_INSTALLATION_ID`. Otherwise `app.json` (or `app.jsonc`) in the config home
- * (`~/.config/code-reviewer`, beside the machine config directory) (`appId`, optional `privateKeyPath` defaulting to `app.pem` beside it, optional
- * `installationId`). A config that exists but is wrong throws, naming the file.
+ * optional `CODE_REVIEWER_APP_INSTALLATION_ID`. Otherwise `app.json`, `app.jsonc`, `app.yaml` or
+ * `app.yml` in the config home (`~/.config/code-reviewer`, beside the machine config directory):
+ * `appId`, optional `privateKeyPath` defaulting to `app.pem` beside it, optional `installationId`.
+ * A config that exists but is wrong throws, naming the file.
  */
 export function loadAppConfig(
   env: AppAuthEnv = process.env,

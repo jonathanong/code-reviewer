@@ -19,13 +19,13 @@ code-reviewer explain (--run DIR | --repo owner/name --pr N)
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
-  auth reports whether gh calls use the GitHub App (app.json in the config home ~/.config/code-reviewer, or
+  auth reports whether gh calls use the GitHub App (app.yaml, .yml, .json or .jsonc in the config home ~/.config/code-reviewer, or
   CODE_REVIEWER_APP_ID with CODE_REVIEWER_APP_PRIVATE_KEY or _PATH, which wins) or the local gh
-  login. Under App auth it also prints source (env or the app.json path) and
+  login. Under App auth it also prints source (env or the App config file path) and
   login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
-  post, revoke and status use the label names from the machine config (<owner>.json, <owner>/<name>.json; .jsonc also) and the
-  repository's own .code-reviewer.json or .code-reviewer.jsonc on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
+  post, revoke and status use the label names from the machine config (<owner>.yaml, <owner>/<name>.yaml; .yml, .json and .jsonc also) and the
+  repository's own .code-reviewer.yaml (or .yml, .json, .jsonc) on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
   settings prints the resolved labels and optional check run for a repository or owner, the
   layer each came from, the names of the evidence sources (never commands or env), and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
   not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,

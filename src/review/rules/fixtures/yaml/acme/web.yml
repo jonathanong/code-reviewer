@@ -1,0 +1,3 @@
+consumes:
+  - repo: acme/api
+    via: http://api.example//v1

@@ -2,7 +2,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { conflictProblem, groupConfigFiles, parseConfigText } from './config-files.mts'
+import {
+  conflictProblem,
+  groupConfigFiles,
+  invalidProblem,
+  notObjectProblem,
+  parseConfigText,
+} from './config-files.mts'
 import { consumesList } from './consumes-parse.mts'
 import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
 import { parseReferences, type ReferenceSource } from './references-parse.mts'
@@ -16,15 +22,15 @@ import {
   type LabelNames,
 } from './settings-parse.mts'
 
-/** The reviewer's config home, `code-reviewer` under the XDG config home; `app.json` lives here. */
+/** The reviewer's config home, `code-reviewer` under the XDG config home; the App config lives here. */
 export function configHome(env: Record<string, string | undefined>): string {
   return join(env.XDG_CONFIG_HOME || join(env.HOME || homedir(), '.config'), 'code-reviewer')
 }
 
 /**
  * The machine config directory: `CODE_REVIEWER_CONFIG_DIR`, else `repos` in the config home. It
- * holds one `<owner>/<name>.json` (or `.jsonc`) per repository, and `<owner>.json` beside that
- * directory for the settings every repository of the owner shares.
+ * holds one `<owner>/<name>.json` (or `.jsonc`, `.yaml`, `.yml`) per repository, and `<owner>.json`
+ * beside that directory for the settings every repository of the owner shares.
  */
 export function machineConfigDir(env: Record<string, string | undefined>): string {
   return env.CODE_REVIEWER_CONFIG_DIR || join(configHome(env), 'repos')
@@ -97,13 +103,11 @@ export function parseRepoConfig(
 ): RepoConfig {
   let raw: unknown
   try {
-    raw = parseConfigText(text)
-  } catch {
-    return { consumes: [], problems: [`${file}: not valid JSON; ignored`] }
+    raw = parseConfigText(text, file)
+  } catch (error) {
+    return { consumes: [], problems: [invalidProblem(file, error)] }
   }
-  if (!isRecord(raw)) {
-    return { consumes: [], problems: [`${file}: must be a JSON object; ignored`] }
-  }
+  if (!isRecord(raw)) return { consumes: [], problems: [notObjectProblem(file)] }
   const problems = unknownKeys(raw, KEYS, file)
   const labels = parseLabels(raw.labels, `${file} labels`, problems)
   const checkRun = parseCheckRun(raw.checkRun, `${file} checkRun`, problems)

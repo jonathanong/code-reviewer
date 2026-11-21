@@ -1,5 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "ignorePatterns": ["vendor/"],
   "jsPlugins": ["eslint-plugin-no-mistakes"],
   "rules": {
     "no-mistakes/ts-no-const-aliases": "error",
@@ -10,6 +11,34 @@
     "max-lines": ["error", 200]
   },
   "overrides": [
+    {
+      "files": ["src/**/*.mts", "bin/**/*.mts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**", "!node:**", "!./**", "!../**"],
+                "message": "A plugin install has no node_modules: import node: builtins and files in this repository only. Third-party code is vendored under vendor/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.test.mts",
+        "**/__tests__/**/*.mts",
+        "src/**/*-fake-io.mts",
+        "src/run/harness.mts",
+        "src/run/fake-deps.mts"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
     {
       "files": ["**/*.test.mts", "**/__tests__/**/*.mts"],
       "rules": {

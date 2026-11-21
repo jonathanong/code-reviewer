@@ -23,7 +23,7 @@ Resolve these first and ask when one is missing:
   sources, and dependencies. Set `CODE_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
   from each clone's `origin/HEAD`, so run `git fetch` in those clones at start.
 - **Event source**: the hook-harness CLI (`npx -y hook-harness`), its MCP server, or none.
-- **GitHub App** (optional): `app.json` and its key in the config home; `docs/authentication.md`'s
+- **GitHub App** (optional): `app.yaml` (or `.yml`, `.json`, `.jsonc`) and its key in the config home; `docs/authentication.md`'s
   "Creating the GitHub App" section has the steps and permissions. Without it, the local `gh`
   login is used. Check with `code-reviewer auth`. Never search for or print keys.
 
@@ -74,7 +74,7 @@ and the newest review's hidden marker holds the reviewed SHA, verdict, and effor
 
 Label names are configurable per organization and repository. Read the request label with
 `code-reviewer settings --owner <owner>` (`labels.requested`), and with `settings --repo` for each
-repository whose config (machine or `.code-reviewer.json`/`.jsonc`) overrides it; wait on every distinct request label. The examples below show
+repository whose config (machine or `.code-reviewer.yaml`/`.yml`/`.json`/`.jsonc`) overrides it; wait on every distinct request label. The examples below show
 the default, `final-review:requested`.
 
 Keep exactly one wait running, and pass its cursor back each time:

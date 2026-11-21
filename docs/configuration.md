@@ -5,10 +5,10 @@ each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, 
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
-   `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer/repos`. `<owner>/<name>.json` holds one
-   repository's settings and `<owner>.json` (beside the `<owner>/` directory) the settings its
+   `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer/repos`. `<owner>/<name>.yaml` holds one
+   repository's settings and `<owner>.yaml` (beside the `<owner>/` directory) the settings its
    repositories share; the repository file beats the owner file.
-2. `.code-reviewer.json` at the root of the reviewed repository, in the format of a repository
+2. `.code-reviewer.yaml` at the root of the reviewed repository, in the format of a repository
    file. It is read from the repository's default branch, never from the pull request, so a pull
    request cannot change its own settings. `prepare` reads it from the clone's `origin/HEAD`, or
    through the GitHub API without a clone; the other commands read it through the API once per
@@ -16,18 +16,29 @@ merge by label name.
    problem and the lower layers apply.
 3. Built-in defaults.
 
-Every config file is JSON with comments and trailing commas allowed (JSONC), and each name may
-end in `.json` or `.jsonc`: `<owner>.jsonc`, `<owner>/<name>.jsonc`, `.code-reviewer.jsonc`. A
-config kept in two files (`acme.json` and `acme.jsonc`) is a problem that names both; neither is
-used. Through the GitHub API the root is listed once and only the file found is fetched, so a
-repository without one costs a single request and a duplicate is still seen. A file that does not parse, or whose top level is not an object, is a problem naming that
-file. Problems fail `run` before it claims anything, and `settings` prints them.
+Every config file is YAML or JSON, chosen by the name's ending: `.yaml` and `.yml` are YAML;
+`.json` and `.jsonc` are JSON with comments and trailing commas allowed (JSONC). The same names
+apply to every config file: `<owner>.yaml`, `<owner>/<name>.yml`, `.code-reviewer.jsonc`, and the
+App's `app.yaml` (see [authentication](authentication.md)). The examples below are YAML; each
+setting reads the same in JSON.
 
-```jsonc
-// <owner>.jsonc
-{
-  "labels": { "requested": "review-me" }, // trailing commas are fine too
-}
+A config kept in two files, in any two of the endings (`acme.json` and `acme.yaml`, or `acme.yml`
+and `acme.yaml`), is a problem that names both; neither is used. Through the GitHub API the root
+is listed once and only the file found is fetched, so a repository without one costs a single
+request and a duplicate is still seen. A file that does not parse, or whose top level is not an
+object (a mapping, in YAML), is a problem naming that file, with the line for YAML. An empty file
+does not parse as JSON and is not a mapping in YAML, so it is a problem too; `{}` is the explicit
+empty config. Problems fail `run` before it claims anything, and `settings` prints them.
+
+YAML is read as plain data only: the YAML 1.2 core schema, so unquoted `yes`, `no` and dates
+are strings, and a value of the wrong type is rejected as in JSON (quote a label or repository
+name that could read as a number). A file may hold one document. Duplicate keys, tags (`!!str`,
+`!custom`), aliases and anchors (`&a`, `*a`) are errors, and `<<` is an ordinary key, not a merge.
+
+```yaml
+# <owner>.yaml
+labels:
+  requested: review-me
 ```
 
 `code-reviewer settings --repo owner/name` prints the resolved values and the layer each came
@@ -36,10 +47,11 @@ own file is read when the repository is named.
 
 ## `consumes`
 
-```json
-{
-  "consumes": [{ "repo": "acme/api", "via": "HTTP API", "paths": ["src/routes/**"] }]
-}
+```yaml
+consumes:
+  - repo: acme/api
+    via: HTTP API
+    paths: [src/routes/**]
 ```
 
 - `consumes`: repositories this one depends on without a package import. `repo` is `owner/name`.
@@ -62,23 +74,18 @@ A malformed file, an unknown key, or a configured repository with no clone is li
 ## `evidence`
 
 Evidence sources let a review check findings against real data, such as production logs, instead
-of guessing. They are machine-only: `evidence` in a repository's own `.code-reviewer.json` is
+of guessing. They are machine-only: `evidence` in a repository's own `.code-reviewer` file is
 ignored with a problem, because that file is controlled by whoever can merge to the default
 branch and a source grants command access and credentials. A repository file's list replaces its
 owner file's list whole; `[]` switches evidence off for that repository.
 
-```json
-{
-  "evidence": [
-    {
-      "name": "aws",
-      "description": "Production logs and metrics.",
-      "guide": { "repo": "acme/infra", "path": "docs/production-data.md" },
-      "commands": ["aws logs filter-log-events", "aws logs start-query"],
-      "env": { "AWS_PROFILE": "readonly" }
-    }
-  ]
-}
+```yaml
+evidence:
+  - name: aws
+    description: Production logs and metrics.
+    guide: { repo: acme/infra, path: docs/production-data.md }
+    commands: [aws logs filter-log-events, aws logs start-query]
+    env: { AWS_PROFILE: readonly }
 ```
 
 - `name`: a simple identifier, unique in the list.
@@ -107,7 +114,7 @@ Evidence line is added to the finding). Evidence is not part of `bench`.
 
 References let a review check the code against external documentation, such as AWS API
 parameter names, limits, IAM actions, CLI flags and config keys. They are machine-only, like
-`evidence`: `references` in a repository's own `.code-reviewer.json` is ignored with a problem,
+`evidence`: `references` in a repository's own `.code-reviewer` file is ignored with a problem,
 because it grants network access while the run holds private code. A repository file's list
 replaces its owner file's list whole; `[]` switches references off for that repository.
 
@@ -152,8 +159,8 @@ with the reason, and the verdict is Comment, because nothing double-checked the 
 `report.md` has a "Second check on the approval" section (whether it ran, what it added, the
 verdict change) and its cost.
 
-```json
-{ "approvalCheck": false }
+```yaml
+approvalCheck: false
 ```
 
 It is on by default and, like `evidence`, machine-only: a repository's own file cannot switch it
@@ -161,8 +168,8 @@ off. `code-reviewer settings` prints the resolved value and its layer.
 
 ## `rulePlugins`
 
-```json
-{ "rulePlugins": ["no-mistakes-rules", "jong-skills"] }
+```yaml
+rulePlugins: [no-mistakes-rules, jong-skills]
 ```
 
 The Claude Code plugins whose skills a review may use as shared rules, by plugin name (no
@@ -184,7 +191,8 @@ ignores this key and always uses the default list, so scores stay comparable acr
 ## `labels` and `checkRun`
 
 Label names and an optional GitHub check run are set in the same files; an owner file cannot set
-`consumes`.
+`consumes`. This example is in JSON, the
+format of `<owner>.json`; the same keys work in YAML.
 
 ```json
 {

@@ -17,5 +17,12 @@
     "erasableSyntaxOnly": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.mts", "bin/**/*.mts", "vitest.config.mts", "vitest.reset.mts"]
+  "include": [
+    "src/**/*.mts",
+    "bin/**/*.mts",
+    "scripts/**/*.mts",
+    "vendor/*.d.mts",
+    "vitest.config.mts",
+    "vitest.reset.mts"
+  ]
 }
