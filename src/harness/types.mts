@@ -58,12 +58,28 @@ export type HarnessResult = {
   reportedUsage: Usage | null
 }
 
+/** One harness and the model it runs; a step tries its candidates in order. */
+export type Candidate = { harness: string; model: string }
+
+/**
+ * Why a run failed, as far as the harness can tell. `rate_limited` and `overloaded` are worth
+ * waiting out; `auth` is worth a different harness; anything not recognized is `other` and is
+ * never retried.
+ */
+export type FailureClass =
+  | { kind: 'rate_limited'; retryAfterSeconds?: number }
+  | { kind: 'overloaded' }
+  | { kind: 'auth' }
+  | { kind: 'other' }
+
 export type Harness = {
   name: string
   /** Rejects with whatever `exec` rejects with, and when the output holds no JSON. */
   run(request: HarnessRun, exec: Exec): Promise<HarnessResult>
   /** The message and usage to record for a step that rejected, keeping what a failed run still reported. */
   describeFailure(error: unknown): { message: string; usage: Usage | null }
+  /** Classifies what `run` rejected with; `other` when the shape is not one the harness knows. */
+  classifyFailure(error: unknown): FailureClass
 }
 
 /** Reads and searches files only. */

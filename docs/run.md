@@ -1,7 +1,7 @@
 # Unattended runs: `run`
 
 ```bash
-code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--clones DIR]
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--force] [--jobs N] [--clones DIR]
 ```
 
 `run` takes one pull request from a label request to a posted or held review in one process, for

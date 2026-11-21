@@ -1,4 +1,4 @@
-import { harness } from '../../harness/claude.mts'
+import { runFixedModel } from '../../harness/runner.mts'
 import { READ_ONLY, type HarnessRun } from '../../harness/types.mts'
 import { ReviewError, type Finding } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
@@ -114,7 +114,7 @@ export async function checkFindings(
 ): Promise<{ checks: Map<number, Check>; usage: Usage | null }> {
   if (indexes.length === 0) return { checks: new Map(), usage: null }
   const rules = hasRulesIndex(dir)
-  const { structured, usage } = await harness.run(
+  const { structured, usage } = await runFixedModel(
     {
       ...checkRequest(
         buildCheckPrompt(findings, indexes, rules),

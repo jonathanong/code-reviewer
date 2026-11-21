@@ -110,10 +110,14 @@ describe('runCommand posting', () => {
     expect((await run(fake)).line.tree).toBe('worktree')
   })
 
-  it('passes jobs and effort to the review', async () => {
+  it('passes jobs, effort and the --model overrides to the review', async () => {
     const fake = setup()
-    await run(fake, { ...PULL, jobs: '2', effort: 'low' })
-    expect(vi.mocked(reviewCommand).mock.calls[0]?.[0]).toMatchObject({ jobs: '2', effort: 'low' })
+    await run(fake, { ...PULL, jobs: '2', effort: 'low', model: ['verifier=claude:opus'] })
+    expect(vi.mocked(reviewCommand).mock.calls[0]?.[0]).toMatchObject({
+      jobs: '2',
+      effort: 'low',
+      model: ['verifier=claude:opus'],
+    })
   })
 
   it('reports a skip plan as posted with the Skipped verdict', async () => {
@@ -485,6 +489,7 @@ describe('runCommand preconditions', () => {
     [{ repo: ['nope'], pr: '4' }, undefined],
     [{ ...PULL, post: 'later' }, '--post must be auto or hold.'],
     [{ ...PULL, effort: 'extreme' }, '--effort must be one of low, medium, high.'],
+    [{ ...PULL, model: ['verifier'] }, '--model verifier: expected step=harness:model.'],
   ] as Array<[RunValues, string | undefined]>)('refuses the flags %j', async (values, reason) => {
     const line = await refused({}, values)
     if (reason !== undefined) expect(line.reason).toBe(reason)

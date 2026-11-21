@@ -1,4 +1,4 @@
-import { harness } from '../../harness/claude.mts'
+import { runFixedModel } from '../../harness/runner.mts'
 import { NO_TOOLS, type HarnessRun } from '../../harness/types.mts'
 import type { Finding } from '../finding.mts'
 import type { ExpectedFinding } from './cases.mts'
@@ -105,7 +105,7 @@ export async function judgeFindings(
   settings?: object,
 ): Promise<Assignment> {
   if (expected.length === 0 || findings.length === 0) return expected.map(() => null)
-  const { structured } = await harness.run(
+  const { structured } = await runFixedModel(
     judgeRequest(buildJudgePrompt(expected, findings), model, settings),
     exec,
   )

@@ -49,6 +49,7 @@ function parse(args: string[]) {
       reason: { type: 'string' },
       out: { type: 'string' },
       jobs: { type: 'string' },
+      model: { type: 'string', multiple: true },
       effort: { type: 'string' },
       tree: { type: 'string' },
       clones: { type: 'string' },

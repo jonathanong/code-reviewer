@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { diffExcerpt, splitDiff } from '../diff-files.mts'
 import { ReviewError, type ReviewInput } from '../finding.mts'
+import { DEFAULT_STEP_MODELS } from '../models.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
@@ -13,8 +13,8 @@ import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { runPillars } from './pillars.mts'
 import { webReferences } from './references-prompt.mts'
-import { selectSkills } from './select-skills.mts'
-import { runReviewVerifier } from './verify.mts'
+import { chooseSkills } from './review-select.mts'
+import { runReviewVerifier } from './verify-run.mts'
 
 import {
   loadRulePlugins,
@@ -49,23 +49,9 @@ async function review(
   const mode = plan.mode
   if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed)
   const { settings, skills } = await loadRulePlugins(steps)
+  const models = steps.models ?? DEFAULT_STEP_MODELS
   const followUp = plan.sinceSha !== null
-  const source = followUp ? 'since' : 'diff'
-  const skillChoice = await selectSkills({
-    title,
-    index: read(join(out, source, 'INDEX.md')),
-    excerpt: diffExcerpt(splitDiff(read(join(out, `${source}.patch`)))),
-    skills,
-    rulePlugins: steps.rulePlugins,
-    settings,
-    exec: steps.exec,
-    cwd: tree,
-  })
-  writeJson(join(out, 'skills.json'), skillChoice)
-  // A review without its rule skills looks like any other review, so it fails instead.
-  if (skillChoice.error !== undefined) {
-    throw new ReviewError(`Skill selection failed, so no review was run: ${skillChoice.error}`)
-  }
+  const skillChoice = await chooseSkills(steps, { out, tree, title, followUp, skills, settings })
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
   const prompts = pillarTexts(steps)
@@ -78,6 +64,7 @@ async function review(
     ...prompts,
     skills: skillChoice.selected,
     settings,
+    models,
     ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
@@ -99,7 +86,7 @@ async function review(
       threads: threadIdsOf(out),
       ...(web === undefined ? {} : { web }),
     },
-    { model: plan.verifierModel, mode, tree, settings, exec: steps.exec },
+    { model: plan.verifierModel, mode, tree, settings, models, exec: steps.exec },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
   const second = await applyApprovalCheck({
@@ -108,6 +95,7 @@ async function review(
     model: plan.verifierModel,
     tree,
     settings,
+    models,
     exec: steps.exec,
     input: approvalCheckInput(steps.references, run, output, results, findings, pillarSkips),
   })
@@ -122,6 +110,7 @@ async function review(
     mode,
     tree,
     settings,
+    models,
     exec: steps.exec,
   })
   const dependencies = reviewDependencies(run, output.dependencies)
@@ -146,7 +135,10 @@ async function review(
     skipped,
     skillSelection: skillChoice,
     pillars: results,
-    verifier: { model: plan.verifierModel, output: { ...output, findings: verified, questions } },
+    verifier: {
+      model: output.ran.model,
+      output: { ...output, findings: verified, questions },
+    },
     evidence,
     approvalCheck: second.check,
     stack: run.stack,

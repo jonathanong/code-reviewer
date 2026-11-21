@@ -8,6 +8,7 @@ import {
   type LabelNames,
   type PullTarget,
 } from '../review/index.mts'
+import { parseModelOverrides } from '../review/models.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/settings.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
@@ -29,6 +30,7 @@ type FlagValues = {
   post?: string | undefined
   effort?: string | undefined
   force?: boolean | undefined
+  model?: string[] | undefined
 }
 
 /** Validates the flags before anything is read or written. */
@@ -47,6 +49,11 @@ export function parseFlags(values: FlagValues): RunFlags {
   if (post !== 'auto' && post !== 'hold') throw new Precondition('--post must be auto or hold.')
   if (values.effort !== undefined && !EFFORTS.some((effort) => effort === values.effort)) {
     throw new Precondition(`--effort must be one of ${EFFORTS.join(', ')}.`)
+  }
+  try {
+    parseModelOverrides(values.model ?? [])
+  } catch (error) {
+    throw new Precondition((error as Error).message, { cause: error })
   }
   return { pull, post, force: values.force === true }
 }

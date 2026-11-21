@@ -11,6 +11,7 @@ import type { StackFile } from '../stack-file.mts'
 import type { ApprovalCheck } from './approval-check.mts'
 import type { EvidenceReport } from './evidence-types.mts'
 import { reportPush, type ReportPush } from './push-report.mts'
+import { ranRows, type RanRow } from './report-models.mts'
 import { markDropped } from './report-pillars.mts'
 import { reportStack, type ReportStack } from './stack-report.mts'
 import type { PillarResult, SkillChoice } from './types.mts'
@@ -64,6 +65,8 @@ export type ReportData = {
   dependencies?: Dependency[] // absent when the pull request depends on nothing
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
+  /** The harness and model that ran each step; absent in a report written before steps recorded them. */
+  ran?: RanRow[]
 }
 
 export type ReportInput = {
@@ -127,6 +130,7 @@ function byStep(input: ReportInput) {
 export function buildReport(input: ReportInput): ReportData {
   const output = input.verifier?.output
   const stack = reportStack(input.stack, output?.findings ?? [])
+  const rows = ranRows({ ...input, verifier: output })
   return {
     version: 1,
     repo: input.repo,
@@ -161,6 +165,7 @@ export function buildReport(input: ReportInput): ReportData {
         ? null
         : { model: input.verifier.model, usage: input.verifier.output.usage },
     usageByModel: byStep(input),
+    ...(rows.length === 0 ? {} : { ran: rows }),
   }
 }
 

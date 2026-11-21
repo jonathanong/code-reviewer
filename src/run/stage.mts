@@ -21,6 +21,7 @@ export type Stage = {
   tree: Tree
   clones: string | undefined
   jobs: string | undefined
+  model: string[] | undefined
   effort: string | undefined
   signal: AbortSignal
   /** What every line of this run carries. */
@@ -165,6 +166,7 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
       force: flags.force,
       ...(stage.clones === undefined ? {} : { clones: stage.clones }),
       ...(stage.jobs === undefined ? {} : { jobs: stage.jobs }),
+      ...(stage.model === undefined ? {} : { model: stage.model }),
       ...(stage.effort === undefined ? {} : { effort: stage.effort }),
     },
     pull,

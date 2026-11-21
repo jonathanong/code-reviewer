@@ -14,7 +14,7 @@ import { approvalCheckInput } from './approval-check-prompt.mts'
 import { runEvidenceModel } from './evidence-run.mts'
 import { runPillars } from './pillars.mts'
 import { selectSkills } from './select-skills.mts'
-import { runReviewVerifier } from './verify.mts'
+import { runReviewVerifier } from './verify-run.mts'
 
 const references = fileURLToPath(new URL('./fixtures/references', import.meta.url))
 const STAGED = fileURLToPath(new URL('../benchmark/fixtures/staged', import.meta.url))

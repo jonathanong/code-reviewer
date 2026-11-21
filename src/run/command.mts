@@ -16,6 +16,7 @@ export type RunValues = {
   effort?: string | undefined
   force?: boolean | undefined
   jobs?: string | undefined
+  model?: string[] | undefined
   clones?: string | undefined
 }
 
@@ -95,6 +96,7 @@ async function execute(
       tree,
       clones,
       jobs: values.jobs,
+      model: values.model,
       effort: values.effort,
       signal,
       base,

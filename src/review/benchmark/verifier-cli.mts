@@ -1,3 +1,4 @@
+import { describeStepFailure } from '../../harness/runner.mts'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
@@ -30,7 +31,7 @@ type Options = {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+  return describeStepFailure(error).message
 }
 
 function writeRaw(item: EvalCase, raw: VerifierRaw, options: Options, deps: BenchDeps): void {

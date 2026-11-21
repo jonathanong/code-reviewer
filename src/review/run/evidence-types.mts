@@ -1,3 +1,4 @@
+import type { StepRan } from '../../harness/runner.mts'
 import type { Usage } from '../benchmark/usage.mts'
 import type { GuideReader } from '../rules/evidence-guide.mts'
 import type { EvidenceSource } from '../rules/evidence-parse.mts'
@@ -49,6 +50,7 @@ export type EvidenceReport = EvidenceOutput & {
   error?: string
   usage: Usage | null
   failedAttempts: FailedAttempt[]
+  ran?: StepRan
 }
 
 /** The configured sources and the way to read their guides. */

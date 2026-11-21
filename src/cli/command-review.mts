@@ -3,6 +3,8 @@ import { resolve } from 'node:path'
 import { postFinalReview } from '../review/post.mts'
 import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
+import { parseModelOverrides } from '../review/models.mts'
+import { resolveModels } from '../review/models-settings.mts'
 import { recordReview } from '../tracker/record.mts'
 import {
   resolveApprovalCheck,
@@ -30,7 +32,7 @@ function jobs(value: string | undefined): number {
 
 /** `code-reviewer review`: a whole headless review that stops before posting. */
 export async function reviewCommand(
-  values: LoopValues & { jobs?: string | undefined },
+  values: LoopValues & { jobs?: string | undefined; model?: string[] | undefined },
   target: PullTarget,
   deps: ReviewDeps,
 ): Promise<ReviewResult> {
@@ -38,6 +40,7 @@ export async function reviewCommand(
     throw new Error('review needs --out and --tree.')
   }
   // The diff indexes embed these paths, so a relative path would break once a run changes directory.
+  const overrides = parseModelOverrides(values.model ?? [])
   const out = resolve(values.out)
   const tree = resolve(values.tree)
   const resolved = {
@@ -69,6 +72,8 @@ export async function reviewCommand(
       approvalCheck: resolveApprovalCheck(deps.configs(), target.repo).enabled,
       // Machine config only: an enabled plugin loads its hooks too, so a repository cannot pick them.
       rulePlugins: resolveRulePlugins(deps.configs(), target.repo).names,
+      // Machine config, then --model: a repository cannot choose which model reads its code.
+      models: { plan: resolveModels(deps.configs(), target.repo, overrides).plan },
       exec: deps.exec,
       references: deps.references(),
     },

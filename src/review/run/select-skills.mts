@@ -1,10 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { harness } from '../../harness/claude.mts'
+import { describeStepFailure } from '../../harness/runner.mts'
 import { NO_TOOLS } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import { addUsage } from '../benchmark/usage.mts'
+import { DEFAULT_STEP_MODELS, runModelStep, type StepModels } from '../models.mts'
 import type { PluginInstall } from '../plugins.mts'
 import { parseFrontmatter } from '../rules/collect.mts'
 import { SELECT_TIMEOUT_MS, type SkillChoice } from './types.mts'
@@ -75,6 +76,8 @@ export type SelectionInput = {
   /** The configured rule plugins; an empty list means none are wanted, so nothing is selected. */
   rulePlugins?: readonly string[]
   settings?: object
+  /** The harness and model; the default tiers when absent, as in benchmarks. */
+  models?: StepModels
   exec: Exec
   cwd: string
 }
@@ -93,18 +96,25 @@ export async function selectSkills(input: SelectionInput): Promise<SkillChoice> 
   const first = await selectOnce(input, available)
   if (first.error === undefined) return first
   const second = await selectOnce(input, available)
-  return { ...second, usage: addUsage(first.usage, second.usage) }
+  // The second attempt's model is the one recorded; the first attempt's wait still happened.
+  const waited = first.ran?.waitedMs ?? 0
+  const ran =
+    second.ran === undefined
+      ? {}
+      : { ran: { ...second.ran, waitedMs: second.ran.waitedMs + waited } }
+  return { ...second, usage: addUsage(first.usage, second.usage), ...ran }
 }
 
-/** One cheap Haiku call, with no tools. */
+/** One call on the `select` step's small model, with no tools. */
 async function selectOnce(input: SelectionInput, available: number): Promise<SkillChoice> {
   const prompt = buildSelectionPrompt(input.title, input.index, input.skills, input.excerpt)
   try {
-    const { structured, usage } = await harness.run(
+    const { structured, usage, ran } = await runModelStep(
+      input.models ?? DEFAULT_STEP_MODELS,
+      { keys: ['select'], fallback: 'small' },
       {
         prompt,
         label: 'Skill selection',
-        model: 'haiku',
         maxTurns: 3,
         schema: SKILL_SELECTION_SCHEMA,
         can: NO_TOOLS,
@@ -116,15 +126,16 @@ async function selectOnce(input: SelectionInput, available: number): Promise<Ski
       input.exec,
     )
     const chosen = (structured as { skills?: unknown } | undefined)?.skills
-    if (!Array.isArray(chosen))
-      return { selected: [], available, error: 'No skills returned.', usage }
+    if (!Array.isArray(chosen)) {
+      return { selected: [], available, error: 'No skills returned.', usage, ran }
+    }
     const offered = new Set(input.skills.map((skill) => skill.name))
     const selected = [
       ...new Set(chosen.filter((name): name is string => offered.has(name as string))),
     ]
-    return { selected, available, usage }
+    return { selected, available, usage, ran }
   } catch (error) {
-    const { message, usage } = harness.describeFailure(error)
-    return { selected: [], available, error: message, usage }
+    const { message, usage, ran } = describeStepFailure(error)
+    return { selected: [], available, error: message, usage, ...(ran === undefined ? {} : { ran }) }
   }
 }

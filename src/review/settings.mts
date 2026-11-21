@@ -88,13 +88,13 @@ export function settingLayers(
   }
 }
 
-type MachineLayer = 'machine repo' | 'machine owner' | null
+export type MachineLayer = 'machine repo' | 'machine owner' | null
 
 /**
  * One machine-only key: the highest machine layer that sets it. The reviewed repository's own file
  * is never consulted.
  */
-function machineSetting<K extends keyof RepoConfig>(
+export function machineSetting<K extends keyof RepoConfig>(
   configs: RepoConfigs,
   scope: string,
   key: K,
