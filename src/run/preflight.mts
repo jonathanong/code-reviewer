@@ -13,6 +13,7 @@ import { parseMaxCost } from '../review/limits-settings.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/grant-settings.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
+import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
 import { labelsFor } from '../cli/review-settings.mts'
 
@@ -74,9 +75,18 @@ function configProblems(deps: ReviewDeps, repo: string): string[] {
 /**
  * Fails fast, before any claim: the machine config and the repository's own file have no
  * problems, every configured rule plugin is enabled at user scope (where a headless run loads it),
- * and auth resolves (under the App, its own login too).
+ * and auth resolves (under the App: it is installed for the repository and its own login resolves).
  */
 export async function checkPreconditions(deps: ReviewDeps, repo: string): Promise<void> {
+  // First, before any read: with the App configured, it must work for this repository. The gh
+  // login is never a fallback, and a transient GitHub failure stays a plain failure.
+  const { owner, name } = splitRepo(repo)
+  try {
+    await deps.checkInstallation(owner, name)
+  } catch (error) {
+    if (isAppConfigFailure(error)) throw new Precondition(error.message, { cause: error })
+    throw error
+  }
   const failure = async (): Promise<string | undefined> => {
     const target = await deps.targetConfig(repo)
     const problems = [...configProblems(deps, repo), ...target.problems]

@@ -21,11 +21,41 @@ export type FetchJson = (
 
 export class AppAuthError extends Error {
   readonly status: number | undefined
-  constructor(message: string, status?: number) {
-    super(message)
+  constructor(message: string, status?: number, options?: ErrorOptions) {
+    super(message, options)
     this.name = 'AppAuthError'
     this.status = status
   }
+}
+
+/**
+ * The App is configured but not installed for `owner` (or does not cover `repo`). A machine uses
+ * the App or the `gh` login, never a mix, so this is an error and not a fallback.
+ */
+export class AppNotInstalledError extends AppAuthError {
+  readonly owner: string
+  readonly repo: string | undefined
+  constructor(owner: string, repo: string | undefined, cause: unknown) {
+    const where = repo === undefined ? owner : `${owner}/${repo}`
+    super(
+      `The GitHub App is configured but not installed for ${where}. Install it for ${
+        repo === undefined ? 'that owner' : 'that repository'
+      }, or review ${where} from a machine with no App configured; the gh login is never used as a fallback.`,
+      404,
+    )
+    this.name = 'AppNotInstalledError'
+    this.owner = owner
+    this.repo = repo
+    this.cause = cause
+  }
+}
+
+/**
+ * Whether an App failure is a configuration problem (bad key, token refused, not installed): any
+ * `AppAuthError` except a GitHub 5xx. A 5xx or a network error is transient, not configuration.
+ */
+export function isAppConfigFailure(error: unknown): error is AppAuthError {
+  return error instanceof AppAuthError && (error.status === undefined || error.status < 500)
 }
 
 function base64url(value: string | Buffer): string {
@@ -58,7 +88,16 @@ async function callApp(
   method: string,
   path: string,
 ): Promise<Record<string, unknown>> {
-  const jwt = createAppJwt(config.appId, config.privateKey, Math.floor(now() / 1000))
+  let jwt: string
+  try {
+    jwt = createAppJwt(config.appId, config.privateKey, Math.floor(now() / 1000))
+  } catch (error) {
+    throw new AppAuthError(
+      `GitHub App private key (${config.source}) could not sign a request: ${(error as Error).message}`,
+      undefined,
+      { cause: error },
+    )
+  }
   const response = await fetchJson(`${config.apiUrl}${path}`, {
     method,
     headers: {
@@ -111,20 +150,31 @@ export function createInstallationTokenProvider(
   const call = (method: string, path: string) => callApp(config, fetchJson, now, method, path)
   const installationFor = async (owner: string, repo?: string): Promise<string> => {
     if (config.installationId !== undefined) return config.installationId
-    const known = installations.get(owner)
+    const key = repo === undefined ? owner : `${owner}/${repo}`
+    const known = installations.get(key)
     if (known !== undefined) return known
+    const lookup = async (path: string) => {
+      try {
+        return await call('GET', path)
+      } catch (error) {
+        if (error instanceof AppAuthError && error.status === 404) {
+          throw new AppNotInstalledError(owner, repo, error)
+        }
+        throw error
+      }
+    }
     const found =
       repo === undefined
         ? await call('GET', `/orgs/${owner}/installation`).catch((error: unknown) => {
             // A personal account has no organization endpoint.
             if (error instanceof AppAuthError && error.status === 404) {
-              return call('GET', `/users/${owner}/installation`)
+              return lookup(`/users/${owner}/installation`)
             }
             throw error
           })
-        : await call('GET', `/repos/${owner}/${repo}/installation`)
+        : await lookup(`/repos/${owner}/${repo}/installation`)
     const id = String(found.id)
-    installations.set(owner, id)
+    installations.set(key, id)
     return id
   }
   return async (owner, repo) => {

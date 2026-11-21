@@ -17,6 +17,7 @@ const marked = (verdict: string, effort: string): ListedReview => ({
 
 function statusDeps(reviews: ListedReview[], approval: boolean, completed: boolean) {
   return {
+    authMode: () => 'gh',
     configs: () => NO_CONFIGS,
     targetConfig: async () => ({ config: undefined, problems: [] }),
     createLabelIo: () => ({

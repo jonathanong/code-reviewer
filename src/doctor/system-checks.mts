@@ -1,6 +1,7 @@
 import { missingWhy, PROBE_TIMEOUT_MS, probeBinary } from './probe.mts'
+import { AppNotInstalledError } from '../gh-cli/index.mts'
 import { reasonOf } from './pool.mts'
-import type { Check, Context, DoctorIo } from './types.mts'
+import type { Check, Context, DoctorFlags, DoctorIo } from './types.mts'
 
 /** The smallest Node version a range like `>=24` or `>=24.1` allows; undefined when not that shape. */
 function minimum(range: string): [number, number] | undefined {
@@ -81,7 +82,30 @@ async function loginCheck(io: DoctorIo, appConfigured: boolean): Promise<Check> 
   }
 }
 
-export async function authChecks({ io }: Context): Promise<Check[]> {
+/** With the App configured and an owner or repository in scope: is the App installed there? */
+async function installCheck(io: DoctorIo, flags: DoctorFlags): Promise<Check | undefined> {
+  const [owner = '', name] = flags.repo?.split('/') ?? [flags.owner]
+  if (owner === '') return undefined
+  const check = 'github-app-installation'
+  const scope = name === undefined ? owner : `${owner}/${name}`
+  try {
+    await io.checkInstallation(owner, name)
+    return { name: check, status: 'ok', detail: `the App is installed for ${scope}` }
+  } catch (error) {
+    if (!(error instanceof AppNotInstalledError)) {
+      return { name: check, status: 'fail', detail: reasonOf(error) }
+    }
+    return {
+      name: check,
+      status: 'fail',
+      detail: `App configured but not installed for ${scope}`,
+      fix: `install the App for ${scope}, or review it from a machine with no App configured; the gh login is not used as a fallback`,
+    }
+  }
+}
+
+export async function authChecks({ io, flags }: Context): Promise<Check[]> {
   const { check, configured } = appCheck(io)
-  return [check, await loginCheck(io, configured)]
+  const installed = configured ? await installCheck(io, flags) : undefined
+  return [check, ...(installed === undefined ? [] : [installed]), await loginCheck(io, configured)]
 }

@@ -4,6 +4,7 @@ import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { contextCommand } from './command-context.mts'
 import { doctorCommand } from './command-doctor.mts'
+import { requireApp } from './command-auth.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
 import { labelsFor } from './review-settings.mts'
@@ -21,6 +22,19 @@ export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
   'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, or bench-selection'
+
+/** Subcommands that call GitHub for a repository or owner; `run` checks the App in its own preflight. */
+const NEEDS_IDENTITY = new Set(['post', 'status', 'claim', 'skip', 'prepare', 'review', 'context'])
+const NEEDS_APP = new Set([
+  ...NEEDS_IDENTITY,
+  'diff',
+  'revoke',
+  'abort',
+  'queue',
+  'resolve',
+  'settings',
+  'outcomes',
+])
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -48,6 +62,9 @@ async function run(
   const digest = subcommand === 'outcomes' && args[0] === 'digest'
   const values = parse(digest ? args.slice(1) : args)
   if (subcommand === undefined) throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
+  if (!digest && NEEDS_APP.has(subcommand)) {
+    await requireApp(values, deps, NEEDS_IDENTITY.has(subcommand))
+  }
   if (subcommand === 'plugins') {
     const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
     print(result)
@@ -105,7 +122,7 @@ async function run(
   const loop = await runLoopCommand(subcommand, values, () => target(values), deps)
   if (loop !== undefined) {
     print(loop)
-    return 0
+    return typeof loop === 'object' && loop !== null && 'installationError' in loop ? 1 : 0
   }
   const pull = target(values)
   const io = deps.createIo(pull)

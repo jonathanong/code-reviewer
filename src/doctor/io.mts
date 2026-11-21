@@ -64,7 +64,7 @@ export function enginesNode(root: () => string = pluginRoot): string {
 
 /** The real files, clock and process behind `doctor`; `exec` and the machine config come from `deps`. */
 export function createDoctorIo(
-  deps: Pick<ReviewDeps, 'exec' | 'configs'>,
+  deps: Pick<ReviewDeps, 'exec' | 'configs' | 'checkInstallation'>,
   env: Record<string, string | undefined> = process.env,
 ): DoctorIo {
   return {
@@ -76,6 +76,7 @@ export function createDoctorIo(
     fs: realFs,
     loadApp: () => loadAppConfig(env),
     configs: deps.configs,
+    checkInstallation: deps.checkInstallation,
     configDir: machineConfigDir(env),
     stateDir: stateHome(env),
     tmpDir: tmpdir(),

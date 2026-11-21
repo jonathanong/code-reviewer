@@ -24,6 +24,7 @@ import { modelTable } from '../review/models.mts'
 import { analysisSummary } from '../review/analysis-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { resolveLimits } from '../review/limits-settings.mts'
+import { authCommand } from './command-auth.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { describePillars, resolvePillars } from '../review/pillars-settings.mts'
@@ -170,7 +171,7 @@ export async function runLoopCommand(
 ): Promise<unknown> {
   switch (subcommand) {
     case 'auth':
-      return { mode: deps.authMode(), ...(await deps.authIdentity()) }
+      return authCommand(values, deps)
     case 'settings':
       return settings(values, deps)
     case 'queue':

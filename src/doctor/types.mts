@@ -41,6 +41,8 @@ export type DoctorIo = {
   loadApp(): AppConfig | undefined
   /** The machine config; throws when the directory cannot be read. */
   configs(): RepoConfigs
+  /** Rejects with `AppNotInstalledError` when the App is configured but not installed for the scope. */
+  checkInstallation(owner: string, repo?: string): Promise<void>
   configDir: string
   stateDir: string
   tmpDir: string

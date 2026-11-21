@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { AppAuthError } from '../gh-cli/app-auth.mts'
+import { AppAuthError, AppNotInstalledError } from '../gh-cli/app-auth.mts'
 import type { AppConfig } from '../gh-cli/index.mts'
 import { fakeIo, notFound } from './doctor-fake-io.mts'
 import { PROBE_TIMEOUT_MS } from './probe.mts'
@@ -90,6 +90,50 @@ describe('github app and gh login', () => {
     ])
     expect(JSON.stringify(checks)).not.toContain('KEY-MATERIAL')
     expect(exec).not.toHaveBeenCalled()
+  })
+
+  it('fails with the remedy when the App is not installed for the owner or repository', async () => {
+    const checkInstallation = vi.fn(async () => {
+      throw new AppNotInstalledError('acme', undefined, undefined)
+    })
+    const { io } = fakeIo({ io: { loadApp: () => app, checkInstallation } })
+    const checks = await authChecks({ io, flags: { owner: 'acme', offline: false } })
+    expect(checkInstallation).toHaveBeenCalledWith('acme', undefined)
+    expect(checks.find((c) => c.name === 'github-app-installation')).toEqual({
+      name: 'github-app-installation',
+      status: 'fail',
+      detail: 'App configured but not installed for acme',
+      fix: expect.stringContaining('install the App for acme'),
+    })
+    await authChecks({ io, flags: { repo: 'acme/w', offline: false } })
+    expect(checkInstallation).toHaveBeenLastCalledWith('acme', 'w')
+  })
+
+  it('passes the installation check, and reports other lookup failures as failed', async () => {
+    const ok = fakeIo({ io: { loadApp: () => app } }).io
+    const passed = await authChecks({ io: ok, flags: { owner: 'acme', offline: false } })
+    expect(passed.find((c) => c.name === 'github-app-installation')?.status).toBe('ok')
+    const broken = fakeIo({
+      io: {
+        loadApp: () => app,
+        checkInstallation: async () => {
+          throw new AppAuthError('GitHub App request GET /app failed with 401.', 401)
+        },
+      },
+    }).io
+    const failed = await authChecks({ io: broken, flags: { owner: 'acme', offline: false } })
+    expect(failed.find((c) => c.name === 'github-app-installation')).toMatchObject({
+      status: 'fail',
+    })
+  })
+
+  it('does not check the installation without an App or without an owner in scope', async () => {
+    const checkInstallation = vi.fn(async () => undefined)
+    const withApp = fakeIo({ io: { loadApp: () => app, checkInstallation } }).io
+    await authChecks({ io: withApp, flags })
+    const noApp = fakeIo({ io: { checkInstallation }, exec: { 'gh auth status': '' } }).io
+    await authChecks({ io: noApp, flags: { owner: 'acme', offline: false } })
+    expect(checkInstallation).not.toHaveBeenCalled()
   })
 
   it('fails an App config that does not parse, and still checks the gh login', async () => {

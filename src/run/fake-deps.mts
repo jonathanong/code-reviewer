@@ -96,6 +96,7 @@ export function fakeDeps(options: FakeOptions) {
   }))
   const deps: Mocked<ReviewDeps> = {
     authMode: vi.fn(() => options.authMode ?? 'app'),
+    checkInstallation: vi.fn().mockResolvedValue(undefined),
     authIdentity: vi.fn(async () =>
       options.loginError === undefined ? { login: APP } : { loginError: options.loginError },
     ),

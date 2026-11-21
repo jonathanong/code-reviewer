@@ -81,6 +81,7 @@ export function fakeDeps(mode: 'app' | 'gh' = 'app') {
   const configs = vi.fn(() => CONFIGS)
   const deps = {
     authMode: vi.fn(() => mode),
+    checkInstallation: vi.fn(async () => undefined),
     authIdentity: vi.fn(async () => (mode === 'app' ? { login: 'my-app[bot]' } : {})),
     configs,
     targetConfig,
