@@ -81,6 +81,21 @@ judged by Sonnet, $25.14):
   show whether it would refute a wrong one.
 - It costs about $0.24 a fixture case and $0.43 a mined case, more than a pillar run.
 
+Shared context alone (`bench-context`, no model, 10 tagged synthetic cases and 3 history cases;
+2026-11-21): is what a case depends on in the context a review builds?
+
+| Check                                           | Result                                        |
+| ----------------------------------------------- | --------------------------------------------- |
+| Expected skills quoted in full / in part / none | 9 / 1 / 1                                     |
+| Expected rule text in the excerpt               | 10 present, 1 cut, 0 missing, 0 not installed |
+| Most quoted from one skill                      | 4,857 of 6,000 characters                     |
+| History and linked-regression checks            | 5 of 5 found                                  |
+
+- The rule that was cut is in a prose skill (`bounded-iteration`) that is never quoted; its case
+  also names `queue-rules`, which holds the sibling rule in full.
+- It does not measure whether a pillar uses the excerpt, only that the text is there to use.
+  Rule text is checked against the plugin versions installed when it ran.
+
 ### How to read the numbers
 
 - Every rate is out of 3 attempts per arm. A difference of one catch is noise.
@@ -115,7 +130,7 @@ pnpm exec code-reviewer bench \
 `bench --select --excerpts alongside|replace` compares loading every selected skill with skipping
 those already quoted in the shared context; see [the benchmarks reference](../../docs/benchmarks.md).
 
-Other commands: `bench-selection` and `bench-verifier`; `--score-only` re-scores saved results
+Other commands: `bench-selection`, `bench-verifier` and `bench-context` (no model); `--score-only` re-scores saved results
 without model calls. A run costs dollars and minutes per case, so run only the pillars
 whose prompts changed, and read [AGENTS.md](AGENTS.md) first. Raw results land in
 `<out>/raw/`, with `summary.json` and `summary.md` beside them, and are not committed.

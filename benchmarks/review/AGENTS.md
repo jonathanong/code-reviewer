@@ -4,6 +4,9 @@
 - Run one case with `pnpm exec code-reviewer bench --cases <file> --pillar <p> --case <id> --out <dir>`.
   Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
 - Run the skill-selection eval with `pnpm exec code-reviewer bench-selection --cases <file>... --out <dir>`; it costs one Haiku call per attempt, and a case tagged `expectedSkills` is in it.
+- Check the shared context with `pnpm exec code-reviewer bench-context --cases <file>... --history <file>... --out <dir>`;
+  it makes no model call and costs nothing. Give a tagged case `expectedRules` (a verbatim substring of the
+  installed skill's rule line) and re-run it after a skill update or a change under `src/review/context/`.
 - Pilot a new case with one attempt. Before quoting a number, run 3 attempts with `--select` (what
   `review` does: Haiku picks the skills) and 3 with `--no-rules` in the same session, then score
   with `--score-only --baseline <control dir>`. Run without either flag (every skill offered, none
