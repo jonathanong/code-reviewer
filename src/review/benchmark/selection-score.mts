@@ -1,6 +1,7 @@
 import type { SkillChoice } from '../run/types.mts'
 import { skillLabel, skillLoaded, type ExpectedSkill } from './skills-score.mts'
-import { renderModelTable, summarizeUsage } from './usage-summary.mts'
+import { renderModelReports, type ModelReport } from './model-usage.mts'
+import { summarizeUsage } from './usage-summary.mts'
 import type { Usage } from './usage.mts'
 
 export type AttemptScore = {
@@ -111,6 +112,7 @@ export function renderSelection(
   scores: readonly SelectionCaseScore[],
   summary: SelectionSummary,
   usages: readonly Usage[],
+  models: ModelReport,
 ): string {
   const usage = summarizeUsage(usages)
   const mean = summary.meanSelected === null ? 'n/a' : summary.meanSelected.toFixed(1)
@@ -155,7 +157,7 @@ export function renderSelection(
     '## Per expected skill',
     ['| Skill | Hits | Rate |', '| --- | --- | --- |', ...skillRows].join('\n'),
     '## Tokens by model',
-    renderModelTable([{ name: 'selection', models: usage.models }], 'Step'),
+    renderModelReports([models]),
     ...(problems.length > 0 ? ['## Errors', problems.join('\n')] : []),
   ].join('\n\n')
 }

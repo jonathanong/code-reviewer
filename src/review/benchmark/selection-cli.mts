@@ -20,6 +20,7 @@ import {
   summarizeSelection,
   type SelectionCaseScore,
 } from './selection-score.mts'
+import { summarizeByModel } from './model-usage.mts'
 import { summarizeUsage } from './usage-summary.mts'
 import type { Usage } from './usage.mts'
 
@@ -82,19 +83,24 @@ function readChoice(path: string, deps: BenchDeps): SkillChoice | undefined {
 function scoreAll(cases: Selectable[], options: Options, deps: BenchDeps): string {
   const scores: SelectionCaseScore[] = []
   const usages: Usage[] = []
+  const runs: Array<Usage | null> = []
   for (const item of cases) {
     const choices = Array.from({ length: options.attempts }, (_, index) =>
       readChoice(rawPath(options.out, item.id, index + 1), deps),
     )
-    for (const choice of choices) if (choice?.usage) usages.push(choice.usage)
+    for (const choice of choices) {
+      runs.push(choice?.usage ?? null)
+      if (choice?.usage) usages.push(choice.usage)
+    }
     scores.push(scoreSelectionCase(item.id, item.expectedSkills, choices))
   }
   const summary = summarizeSelection(scores)
   const usage = summarizeUsage(usages)
-  const json = { summary, scores, models: usage.models, costUsd: usage.totalCostUsd }
+  const models = summarizeByModel('selection', null, runs)
+  const json = { summary, scores, models: [models], costUsd: usage.totalCostUsd }
   deps.writeFile(join(options.out, 'summary.json'), `${JSON.stringify(json, null, 2)}\n`)
   const path = join(options.out, 'summary.md')
-  deps.writeFile(path, `${renderSelection(scores, summary, usages)}\n`)
+  deps.writeFile(path, `${renderSelection(scores, summary, usages, models)}\n`)
   const { cases: total, attempts, hits, hitRate, meanSelected, errors, notRun } = summary
   return JSON.stringify({
     summary: path,

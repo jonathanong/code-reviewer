@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SkillChoice } from '../run/types.mts'
+import { summarizeByModel } from './model-usage.mts'
 import { renderSelection, scoreSelectionCase, summarizeSelection } from './selection-score.mts'
 import type { Usage } from './usage.mts'
 
@@ -93,7 +94,12 @@ describe('summarizeSelection and renderSelection', () => {
   })
 
   it('renders totals, a row per case and skill, tokens by model, and problems', () => {
-    const markdown = renderSelection(scores, summarizeSelection(scores), [usage, usage])
+    const markdown = renderSelection(
+      scores,
+      summarizeSelection(scores),
+      [usage, usage],
+      summarizeByModel('selection', null, [usage, usage, null]),
+    )
     expect(markdown).toContain('- Hit rate: 2 of 3 (67%)')
     expect(markdown).toContain('- Mean skills selected per attempt: 2.0')
     expect(markdown).toContain('- Cost: $1.00')
@@ -102,13 +108,20 @@ describe('summarizeSelection and renderSelection', () => {
     expect(markdown).toContain('| c3 | a:z | 0 of 0 |  | n/a | 1 |')
     expect(markdown).toContain('| a:y | 1 of 2 | 50% |')
     expect(markdown).toContain('| a:z | 0 of 0 | n/a |')
-    expect(markdown).toContain('| selection | haiku | 2 | 200 | 20 | $1.00 |')
+    expect(markdown).toContain(
+      '| selection | - | haiku | 2 of 2 of 3 | 200 / 100 | n/a | n/a | 20 / 10 | $1.00 / $0.50 |',
+    )
     expect(markdown).toContain('- c2 attempt 2: e')
     expect(markdown).toContain('- c3 attempt 1: not run')
   })
 
   it('shows n/a and omits errors when there is nothing to report', () => {
-    const markdown = renderSelection([], summarizeSelection([]), [])
+    const markdown = renderSelection(
+      [],
+      summarizeSelection([]),
+      [],
+      summarizeByModel('selection', null, []),
+    )
     expect(markdown).toContain('- Mean skills selected per attempt: n/a')
     expect(markdown).toContain('- Cost: n/a')
     expect(markdown).not.toContain('## Errors')

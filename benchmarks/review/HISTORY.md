@@ -2,6 +2,13 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-20: bench output gained per-model token figures (no run)
+
+`bench`, `bench-selection` and `bench-verifier` now report, per model and arm, input, cache-read,
+cache-creation and output tokens and cost, as totals and per-run means, with how many runs each
+figure covers. No score changed and no case, grader or prompt changed; every row stays comparable.
+No run was made. See `docs/benchmarks.md`.
+
 ## 2026-11-20: the rule plugin list became configurable (no run)
 
 The machine-only `rulePlugins` key replaces the hardcoded list of rule plugins. The default list is

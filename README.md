@@ -117,6 +117,8 @@ code-reviewer help
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and
   whose reviews count.
+- [Benchmarks](docs/benchmarks.md): the eval cases, how each `bench` command runs, and the metrics
+  and per-model token figures it reports.
 
 ## Layout
 

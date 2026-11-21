@@ -7,7 +7,6 @@ import { pool } from '../run/pool.mts'
 import { benchPlugins } from './plugin-settings.mts'
 import { judgeFindings, type Assignment } from './judge.mts'
 import type { Usage } from './usage.mts'
-import { summarizeModels } from './usage-summary.mts'
 import { checkFindings, type Check } from './verifier-check.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { VerifierOutput } from './verifier-run.mts'
@@ -77,19 +76,11 @@ export function gradeInputs(item: EvalCase, output: VerifierOutput, models: stri
 /** Adds a result's verifier and checker usage to the lists; results saved earlier have none. */
 export function collectUsage(
   raw: Extract<VerifierRaw, { output: unknown }>,
-  verifier: Usage[],
+  verifier: Array<Usage | null>,
   checker: Usage[],
 ): void {
-  if (raw.usage !== undefined) verifier.push(raw.usage)
+  verifier.push(raw.usage ?? null)
   if (raw.graded?.checkUsage) checker.push(raw.graded.checkUsage)
-}
-
-/** The model totals the summary prints: the verifier runs, then the checker runs. */
-export function usageGroups(verifier: readonly Usage[], checker: readonly Usage[]) {
-  return [
-    { name: 'verifier', models: summarizeModels(verifier) },
-    { name: 'checker', models: summarizeModels(checker) },
-  ]
 }
 
 export type GradeOptions = {
