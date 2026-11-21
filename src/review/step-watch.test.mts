@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ExecError } from './benchmark/exec.mts'
 import { resolveModelPlan, runModelStep, type StepModels } from './models.mts'
-import { CeilingReached, createStepWatch } from './step-watch.mts'
+import { CostCeilingReached, createStepWatch, throwIfStopped } from './step-watch.mts'
 
 const claude = (model: string) => ({ harness: 'claude', model })
 const REQUEST = {
@@ -111,7 +111,7 @@ describe('progress lines', () => {
     const { lines, models } = watched({ quiet: true, ceilingUsd: 1 })
     await runModelStep(models, STEP, REQUEST, async () => answer(1))
     await expect(runModelStep(models, STEP, REQUEST, async () => answer(1))).rejects.toThrow(
-      CeilingReached,
+      CostCeilingReached,
     )
     expect(lines).toEqual([])
   })
@@ -146,7 +146,7 @@ describe('cost ceiling', () => {
       await runModelStep(models, STEP, REQUEST, async () => answer(100))
     }
     expect(watch.spentUsd).toBe(300)
-    expect(watch.skippedFor).toBeUndefined()
+    expect(watch.stopped).toBeUndefined()
   })
 
   it('starts a step while the cost so far is under the ceiling', async () => {
@@ -154,7 +154,7 @@ describe('cost ceiling', () => {
     await runModelStep(models, STEP, REQUEST, async () => answer(0.99))
     await runModelStep(models, STEP, REQUEST, async () => answer(0.5))
     expect(watch.spentUsd).toBeCloseTo(1.49)
-    expect(watch.skippedFor).toBeUndefined()
+    expect(watch.stopped).toBeUndefined()
   })
 
   it('does not start a step once the cost so far is at the ceiling, and says why', async () => {
@@ -166,13 +166,28 @@ describe('cost ceiling', () => {
       return answer(1)
     }
     await expect(runModelStep(models, STEP, REQUEST, exec)).rejects.toThrow(
-      'cost ceiling reached ($1.00 of $1.00)',
+      'cost ceiling reached ($1.00 of $1.00): select did not start',
     )
     expect(started).toBe(0)
-    expect(watch.skippedFor).toBe('cost ceiling reached ($1.00 of $1.00)')
+    expect(watch.stopped).toBeInstanceOf(CostCeilingReached)
+    expect(watch.stopped).toMatchObject({ step: 'select', spentUsd: 1 })
     expect(lines.at(-1)).toBe(
-      'code-reviewer: select claude:a skipped: cost ceiling reached ($1.00 of $1.00)\n',
+      'code-reviewer: select claude:a not started, review stopped: cost ceiling reached ($1.00 of $1.00): select did not start, so no review was produced\n',
     )
+  })
+
+  it('reports the stop once, and throwIfStopped raises it for a step that hid the failure', async () => {
+    const { lines, models, watch } = watched({ ceilingUsd: 1 })
+    expect(() => throwIfStopped(watch)).not.toThrow()
+    expect(() => throwIfStopped(undefined)).not.toThrow()
+    await runModelStep(models, STEP, REQUEST, async () => answer(1))
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await expect(runModelStep(models, STEP, REQUEST, async () => answer(1))).rejects.toThrow(
+        CostCeilingReached,
+      )
+    }
+    expect(lines.filter((line) => line.includes('not started'))).toHaveLength(1)
+    expect(() => throwIfStopped(watch)).toThrow(CostCeilingReached)
   })
 
   it('counts a step that reports no cost as zero', async () => {
@@ -191,7 +206,7 @@ describe('cost ceiling', () => {
     ).rejects.toThrow()
     expect(watch.spentUsd).toBe(2)
     await expect(runModelStep(models, STEP, REQUEST, async () => answer(1))).rejects.toThrow(
-      CeilingReached,
+      CostCeilingReached,
     )
   })
 })

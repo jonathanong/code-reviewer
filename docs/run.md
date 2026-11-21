@@ -22,7 +22,7 @@ a session that dispatches it without watching. It:
 
 Progress goes to stderr: the lines `review` writes for each step (see
 [Progress and the cost ceiling](review.md#progress-and-the-cost-ceiling)), which `--quiet` turns
-off. Stdout is exactly one JSON line. `--max-cost USD` sets the review's cost ceiling over
+off. Stdout is exactly one JSON line. `--max-cost USD` sets the review's cost ceiling (a circuit breaker for runaway runs) over
 [`limits.maxCostUsd`](configuration.md#limits); a bad value fails the precondition check.
 
 ## Exit codes
@@ -82,6 +82,17 @@ later `run` of the same head a no-op rather than a loop. With `--post auto`, a h
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
 (`code-reviewer post ... --input RUNDIR/review.json`), which clears the request label along with
 the in-progress one. `run --force` reviews the head again.
+
+## When the cost ceiling stops a review
+
+A review that reaches [the cost ceiling](configuration.md#limits) has nothing to post, so `run`
+holds the pull request instead of failing it: exit 10, `outcome` `held`, `held: ["cost-ceiling"]`,
+`reason` and `attention` carrying the `cost ceiling reached ($X of $Y)` message, `costUsd` the
+spend so far, and no `postCommand` or `explainPath`. The claim is released and the request label
+put back, so the pull request stays in `queue`. The tracker row is `failed` with the same reason
+and the cost, and a later `run` of that head is a no-op (11) that says so, so nothing retries it at
+the same cost. A human raises the ceiling or looks at the pull request, then reviews again with
+`--force`. It is not a harness failure and adds nothing to `harness-failures.jsonl`.
 
 ## When the post is not certain
 

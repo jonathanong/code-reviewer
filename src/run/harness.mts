@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { vi } from 'vitest'
 
@@ -18,6 +19,8 @@ export type Review = {
   claimed?: boolean
   ok?: boolean
   error?: string
+  /** `review` stopped at the cost ceiling after spending this much; with `ok: false`. */
+  ceilingCostUsd?: number
   /** What `review` reports of its second check on an approval. */
   approvalCheck?: 'upheld' | 'changed' | 'failed'
 }
@@ -35,7 +38,17 @@ function fakeReview(deps: ReviewDeps, review: Review = {}) {
     await used.exec('claude', [], {})
     if (review.ok === false) {
       await labelIo.remove('final-review:in-progress')
-      return { ok: false, summary: { claimed: true, error: review.error } }
+      const ceiling =
+        review.ceilingCostUsd === undefined
+          ? {}
+          : { costCeilingReached: true, costUsd: review.ceilingCostUsd }
+      const summary = { claimed: true, error: review.error, ...ceiling }
+      if (review.ceilingCostUsd !== undefined) {
+        // The real review has written `context.json` by the time a step is stopped.
+        writeFileSync(join(out, 'context.json'), JSON.stringify({ headSha: HEAD }))
+        recordReview(deps.tracker(), { ...pull, out, startedAt: 'now', ok: false, summary })
+      }
+      return { ok: false, summary }
     }
     stageRun(out, review.overrides)
     const summary = {

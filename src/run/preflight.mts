@@ -10,6 +10,7 @@ import {
 } from '../review/index.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { parseMaxCost } from '../review/limits-settings.mts'
+import { CEILING_REACHED } from '../review/step-watch.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/grant-settings.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
@@ -120,6 +121,19 @@ function unposted(deps: ReviewDeps, pull: PullTarget, headSha: string): string |
   return dir !== null && dir !== undefined && existsSync(join(dir, 'review.json')) ? dir : undefined
 }
 
+/** The tracked reason a review of this head stopped at the cost ceiling; only `--force` retries it. */
+function stoppedAtCeiling(deps: ReviewDeps, pull: PullTarget, headSha: string): string | undefined {
+  const row = foldRows(readRows(deps.tracker()).rows).find(
+    (candidate) =>
+      candidate.repo.toLowerCase() === pull.repo.toLowerCase() &&
+      candidate.pr === pull.pr &&
+      candidate.head === headSha &&
+      candidate.state === 'failed' &&
+      candidate.reason?.startsWith(CEILING_REACHED) === true,
+  )
+  return row?.reason ?? undefined
+}
+
 export type Preflight =
   | { noop: string; headSha: string }
   | { noop?: undefined; headSha: string; names: LabelNames; labels: string[] }
@@ -148,6 +162,13 @@ export async function preflight(
   const waiting = unposted(deps, pull, headSha)
   if (waiting !== undefined) {
     return { headSha, noop: `an unposted review of this head waits in ${waiting}` }
+  }
+  const stopped = stoppedAtCeiling(deps, pull, headSha)
+  if (stopped !== undefined) {
+    return {
+      headSha,
+      noop: `an earlier review of this head stopped: ${stopped}; --force reviews it again`,
+    }
   }
   return { headSha, names, labels }
 }

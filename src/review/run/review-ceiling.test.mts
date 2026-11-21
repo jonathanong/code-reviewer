@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,8 +43,10 @@ async function run(options: { ceilingUsd?: number; check?: boolean; evidence?: b
   const out = mkdtempSync(join(tmpdir(), 'review-ceiling-'))
   dirs.push(out)
   const lines: string[] = []
+  const prompts: string[] = []
   const exec: Exec = async (_command, args) => {
     const prompt = args[1] as string
+    prompts.push(prompt)
     if (args[args.indexOf('--tools') + 1] === '')
       return result({ skills: ['jong-skills:documentation'] }, 0.01)
     if (prompt.includes('APPROVAL CHECK prompt text'))
@@ -93,7 +95,8 @@ async function run(options: { ceilingUsd?: number; check?: boolean; evidence?: b
   } as unknown as ReviewSteps
   const outcome = await runReview(steps, { repo: 'acme/widgets', pr: 4, out, tree: '/t', jobs: 1 })
   const json = (name: string) => JSON.parse(readFileSync(join(out, name), 'utf8'))
-  return { outcome, lines, json }
+  const exists = (name: string) => existsSync(join(out, name))
+  return { outcome, lines, json, exists, prompts }
 }
 
 describe('runReview cost ceiling', () => {
@@ -105,44 +108,53 @@ describe('runReview cost ceiling', () => {
   it('approves when the ceiling is never reached', async () => {
     const { outcome, lines } = await run({ ceilingUsd: 100 })
     expect(outcome.summary).toMatchObject({ verdict: 'Approve' })
-    expect(lines.some((line) => line.includes('skipped'))).toBe(false)
+    expect(lines.some((line) => line.includes('not started'))).toBe(false)
   })
 
-  it('skips the steps after the one that reaches it and never approves', async () => {
-    // select 0.01 + three pillars 0.1 each + verifier 1 = 1.31 before the check, which is skipped.
-    const { outcome, json } = await run({ ceilingUsd: 1.2 })
-    expect(outcome.ok).toBe(true)
-    expect(outcome.summary).toMatchObject({ verdict: 'Comment', approvalCheck: 'failed' })
-    expect(json('review.json').skipped).toEqual([
-      {
-        pillar: 'approval-check',
-        reason: expect.stringContaining('cost ceiling reached ($1.31 of $1.20)'),
-      },
-    ])
-  })
-
-  it('never approves a review whose evidence step was skipped, even with the check switched off', async () => {
-    const { outcome, json, lines } = await run({ ceilingUsd: 1.2, check: false, evidence: true })
-    expect(outcome.summary).toMatchObject({ verdict: 'Comment' })
-    expect(json('review.json').skipped).toEqual([
-      {
-        pillar: 'approval-check',
-        reason: expect.stringContaining('cost ceiling reached ($1.31 of $1.20)'),
-      },
-    ])
-    expect(json('evidence.json').error).toContain('cost ceiling reached')
-    expect(
-      lines.filter((line) => line.includes('evidence') && line.includes('skipped')),
-    ).toHaveLength(2)
-  })
-
-  it('fails a review whose pillars reach it before the verifier, with pillars left unrun', async () => {
-    const { outcome, json, lines } = await run({ ceilingUsd: 0.12 })
+  it('stops whole when the ceiling keeps the second check from starting', async () => {
+    // select 0.01 + three pillars 0.1 each + verifier 1 = 1.31 before the check.
+    const { outcome, exists, lines } = await run({ ceilingUsd: 1.2 })
     expect(outcome.ok).toBe(false)
-    expect(outcome.summary.error).toContain('cost ceiling reached ($0.21 of $0.12)')
-    expect(json('pillars/security.json').error).toContain('cost ceiling reached')
-    expect(
-      lines.filter((line) => line.includes('pillar.security') && line.includes('skipped')),
-    ).toHaveLength(2)
+    expect(outcome.summary).toMatchObject({
+      claimed: true,
+      costCeilingReached: true,
+      costUsd: expect.closeTo(1.31, 5),
+      error: expect.stringContaining('cost ceiling reached ($1.31 of $1.20): approvalCheck'),
+    })
+    expect(exists('review.json')).toBe(false)
+    expect(exists('report.json')).toBe(false)
+    expect(exists('preview.md')).toBe(false)
+    expect(exists('failed-steps.json')).toBe(false)
+    expect(lines.filter((line) => line.includes('not started'))).toHaveLength(1)
+  })
+
+  it('stops whole when the ceiling keeps the evidence step from starting, even with the check off', async () => {
+    const { outcome, exists } = await run({ ceilingUsd: 1.2, check: false, evidence: true })
+    expect(outcome.ok).toBe(false)
+    expect(outcome.summary).toMatchObject({
+      costCeilingReached: true,
+      error: expect.stringContaining('evidence did not start'),
+    })
+    expect(exists('review.json')).toBe(false)
+  })
+
+  it('stops after the pillars that were running, before the verifier, and records no harness failure', async () => {
+    const { outcome, exists, prompts } = await run({ ceilingUsd: 0.12 })
+    expect(outcome.ok).toBe(false)
+    expect(outcome.summary).toMatchObject({
+      costCeilingReached: true,
+      costUsd: expect.closeTo(0.21, 5),
+      error: expect.stringContaining('cost ceiling reached ($0.21 of $0.12): pillar.'),
+    })
+    expect(prompts.some((prompt) => prompt.includes('VERIFIER prompt text'))).toBe(false)
+    expect(exists('verifier.json')).toBe(false)
+    expect(exists('failed-steps.json')).toBe(false)
+  })
+
+  it('still finishes the review when the last step to run is the one that crosses it', async () => {
+    // 0.01 + 0.3 + 1 + 0.5 = 1.81: the check pushes the total over 1.8 and nothing is left to start.
+    const { outcome } = await run({ ceilingUsd: 1.8 })
+    expect(outcome.ok).toBe(true)
+    expect(outcome.summary).toMatchObject({ verdict: 'Approve' })
   })
 })

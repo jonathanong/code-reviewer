@@ -7,6 +7,7 @@ import type { ReviewDeps } from '../cli/deps.mts'
 import { resolveRun } from '../review/index.mts'
 import type { RunSettings } from '../review/rules/run-parse.mts'
 import { changeFacts, runFacts, type RunFacts } from './facts.mts'
+import { holdAtCeiling } from './ceiling-hold.mts'
 import { reviewFields } from './stage-fields.mts'
 import { release, postText, worthALook, writeExplain } from './finish.mts'
 import { holdRules, type Held } from './hold.mts'
@@ -163,6 +164,7 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
   if (summary.claimed === false) {
     return runLine('noop', RUN_EXIT.noop, { ...base, reason: summary.reason as string })
   }
+  if (!ok && summary.costCeilingReached === true) return holdAtCeiling(pull, deps, base, summary)
   if (!ok) {
     const reason = summary.error as string
     const leftover = summary.abortError === undefined ? [] : [summary.abortError as string]

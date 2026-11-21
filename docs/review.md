@@ -195,16 +195,20 @@ code-reviewer: pillar.design claude:sonnet started
 code-reviewer: pillar.design claude:sonnet waiting 5.0s on a rate limit
 code-reviewer: pillar.design claude:sonnet done in 41.2s, $0.31
 code-reviewer: verifier claude:opus failed in 9.8s: claude exited with 1
-code-reviewer: pillar.security claude:sonnet skipped: cost ceiling reached ($1.02 of $1.00)
+code-reviewer: pillar.security claude:sonnet not started, review stopped: cost ceiling reached ($1.02 of $1.00): pillar.security did not start, so no review was produced
 ```
 
 The harness and model are those that ran the step; the cost is left out when the harness reported
 none. Stdout still carries only the JSON summary, and the lines never reach a prompt or a command
 line. `--quiet` turns them off.
 
-`--max-cost USD`, or [`limits.maxCostUsd`](configuration.md#limits), stops steps from starting once
-the cost reported so far reaches the ceiling. Steps that report no cost count as zero. A review
-that skipped a step this way is never an approval.
+`--max-cost USD`, or [`limits.maxCostUsd`](configuration.md#limits), is a circuit breaker for
+runaway runs: set it well above a normal review's cost. Once the cost reported so far reaches it,
+no further step starts and the review fails whole, never as a partial review. Steps that report no
+cost count as zero, and steps already running finish, so the total can pass the ceiling by what they
+cost. `review` prints the line above on stderr, then the JSON summary on stdout with
+`error` (`cost ceiling reached ($X of $Y)` and the step), `costCeilingReached: true` and `costUsd`
+(what the steps spent), and exits 1 like any failed review. No review is written for posting.
 
 ## Headless runs
 
