@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { DEFAULT_RULE_PLUGINS } from '../plugins.mts'
-import { renderRulePlugins } from './rule-plugins-prompt.mts'
+import { renderRulePlugins, rulePluginLines } from './rule-plugins-prompt.mts'
 
 const pillar = (name: string) =>
   readFileSync(
@@ -96,5 +96,25 @@ describe('renderRulePlugins with no rule plugins', () => {
     expect(renderRulePlugins(pillar('rules'), [], false)).toContain(
       '- **Shared rule skills**: no shared rule plugins are configured',
     )
+  })
+})
+
+describe('rulePluginLines', () => {
+  it('adds nothing for the default list or an unknown one', () => {
+    expect(rulePluginLines(undefined)).toEqual([])
+    expect(rulePluginLines(['no-mistakes-rules', 'jong-skills'])).toEqual([])
+  })
+
+  it('names a configured list and says when there is none', () => {
+    expect(rulePluginLines(['one', 'two'])).toEqual([
+      'The shared rule plugins of this run are `one` and `two`, not the ones the contract names.',
+    ])
+    expect(rulePluginLines([])).toEqual([
+      'No shared rule plugins are configured for this run: where the contract names plugins, rules come only from this repository.',
+    ])
+  })
+
+  it('writes one configured plugin in the singular in the contract', () => {
+    expect(renderRulePlugins(pillar('_contract'), ['one'], true)).toContain('`one` plugin)')
   })
 })

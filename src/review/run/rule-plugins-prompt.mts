@@ -22,16 +22,32 @@ const NOT_LOADED = ' A pillar file may name a skill from a plugin this run does 
  * this run does not load), and an empty list replaces the bullet with repository rules only.
  */
 export function renderRulePlugins(text: string, names: readonly string[], note = false): string {
-  if (
-    names.length === DEFAULT_RULE_PLUGINS.length &&
-    names.every((n, i) => n === DEFAULT_RULE_PLUGINS[i])
-  ) {
-    return text
-  }
+  if (isDefault(names)) return text
   return text.replace(BULLET, (bullet, label: string) => {
     if (names.length === 0) {
       return `- ${label}: no shared rule plugins are configured, so rules come only from this repository's \`AGENTS.md\` and skills. Skip any skill a pillar file names.`
     }
-    return `${bullet.replaceAll(DEFAULT_NAMES, quoted(names))}${note ? NOT_LOADED : ''}`
+    const list = quoted(names)
+    const named = bullet
+      .replaceAll(DEFAULT_NAMES, list)
+      .replaceAll(`${list} plugins`, names.length === 1 ? `${list} plugin` : `${list} plugins`)
+    return `${named}${note ? NOT_LOADED : ''}`
   })
+}
+
+const isDefault = (names: readonly string[]) =>
+  names.length === DEFAULT_RULE_PLUGINS.length &&
+  names.every((name, index) => name === DEFAULT_RULE_PLUGINS[index])
+
+/**
+ * One line for a run that reads the pillar contract from its file, where the bullet still names
+ * the default plugins. Empty for the default list (and when unknown), so those prompts do not change.
+ */
+export function rulePluginLines(names: readonly string[] | undefined): string[] {
+  if (names === undefined || isDefault(names)) return []
+  return names.length === 0
+    ? [
+        'No shared rule plugins are configured for this run: where the contract names plugins, rules come only from this repository.',
+      ]
+    : [`The shared rule plugins of this run are ${quoted(names)}, not the ones the contract names.`]
 }

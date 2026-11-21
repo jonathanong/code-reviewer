@@ -108,7 +108,7 @@ describe('runReview rule plugins', () => {
     const { outcome, seen } = await run(['jong-skills'], WITH_SKILLS)
     expect(outcome.ok).toBe(true)
     const [pillar] = pillarCalls(seen) as string[][]
-    expect(pillar?.[1]).toContain('- Shared rule skills: from the `jong-skills` plugins.')
+    expect(pillar?.[1]).toContain('- Shared rule skills: from the `jong-skills` plugin.')
     expect(pillar?.[1]).toContain(
       'A pillar file may name a skill from a plugin this run does not load',
     )

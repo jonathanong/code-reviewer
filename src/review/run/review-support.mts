@@ -70,8 +70,13 @@ export function read(path: string): string {
 }
 
 /** The run directory as the pillars and the verifier see it: what `prepare` wrote there. */
-export function runDir(out: string, sinceSha: string | null): RunDir {
+export function runDir(
+  out: string,
+  sinceSha: string | null,
+  rulePlugins?: readonly string[],
+): RunDir {
   return {
+    rulePlugins,
     out,
     sinceSha,
     hasRules: existsSync(join(out, 'rules', 'INDEX.md')),

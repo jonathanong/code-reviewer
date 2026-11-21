@@ -66,7 +66,7 @@ async function review(
   if (skillChoice.error !== undefined) {
     throw new ReviewError(`Skill selection failed, so no review was run: ${skillChoice.error}`)
   }
-  const run = runDir(out, plan.sinceSha)
+  const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
   const prompts = pillarTexts(steps)
   const results = await runPillars({
