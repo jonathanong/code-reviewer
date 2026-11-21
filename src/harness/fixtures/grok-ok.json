@@ -1,0 +1,32 @@
+{
+  "text": "{\"answer\":4}",
+  "stopReason": "end_turn",
+  "sessionId": "01a1fc8a-c514-7241-9f2e-7fb84a27d347",
+  "requestId": "cb6bd5a4-72ae-443f-b618-42fa9baa8760",
+  "cwd": "/work",
+  "thought": "I need to answer 2+2 in the required JSON format.",
+  "usage": {
+    "input_tokens": 24750,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 101,
+    "reasoning_tokens": 96,
+    "total_tokens": 24851
+  },
+  "num_turns": 1,
+  "total_cost_usd": 0.050106,
+  "total_cost_usd_ticks": 501060000,
+  "modelUsage": {
+    "grok-4.6-build": {
+      "inputTokens": 24750,
+      "outputTokens": 101,
+      "cacheReadInputTokens": 0,
+      "cacheCreationInputTokens": 0,
+      "modelCalls": 1,
+      "costUSD": 0.050106
+    }
+  },
+  "structuredOutput": {
+    "answer": 4
+  }
+}
