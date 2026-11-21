@@ -23,7 +23,9 @@ permission config in `OPENCODE_CONFIG_CONTENT` that allows only the read tools, 
 and MCP tools are gone, and it refuses shell prefixes and web hosts before starting anything. It
 has no schema flag, so the prompt asks for one JSON object and the reply is checked for the
 schema's required keys. It ignores `explorer`, `skills`, `settings`, `addDirs`, `transcript` and
-`maxTurns`, so the turn limit is not enforced. It is not selectable by config yet.
+`maxTurns`, so the turn limit is not enforced. At its free usage limit OpenCode prints nothing and hangs, so
+the step ends at its timeout; the adapter reads the limit from the error log and reports the
+failure as a rate limit too long to wait out. It is not selectable by config yet.
 
 [`run`](run.md) is the unattended path. `review` runs one pull request end to end with headless `claude -p` calls and stops before
 posting, so you can read the result first. `--tree` is a checkout at the pull request head and

@@ -24,8 +24,9 @@ Measures the models a harness offers so a review step's model is chosen, not gue
    - `extra`: mean number of other findings in valid runs.
    - `seconds`, `tokens` (input plus output), `costUsd`: mean time and tokens, total cost.
    - `rateLimited`: runs the adapter classified as rate limited. They count here and in no other
-     measure, so a throttled model is not scored as a bad one. OpenCode failures are not
-     classified yet, so a rate limit shows up as an ordinary failure.
+     measure, so a throttled model is not scored as a bad one. The only limit recognised on
+     OpenCode is its free usage limit, where it prints nothing and hangs: each such run lasts
+     until the probe's timeout.
    - `failures`: one line for each distinct failed run.
 
 ## Output

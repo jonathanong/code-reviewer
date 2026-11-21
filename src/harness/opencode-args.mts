@@ -42,6 +42,10 @@ export function opencodeArgs(request: HarnessRun): string[] {
     '--format',
     'json',
     '--pure',
+    // The only place OpenCode reports its free usage limit is the log; stdout stays empty.
+    '--print-logs',
+    '--log-level',
+    'ERROR',
     ...(request.effort === undefined ? [] : ['--variant', request.effort]),
   ]
 }
