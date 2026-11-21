@@ -24,6 +24,7 @@ describe('SECTIONS', () => {
   it('lists the rule excerpts builder', () => {
     expect(SECTIONS.map((section) => section.name)).toEqual([
       'rule-excerpts',
+      'change-shape',
       'changed-line-history',
       'linked-regressions',
     ])
