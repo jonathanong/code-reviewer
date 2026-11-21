@@ -207,6 +207,26 @@ it('runs every step with the exact claude call', async () => {
       { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
     ),
   )
+  const previous = {
+    sha: 'a'.repeat(40),
+    date: '2026-01-02',
+    mode: 'full',
+    verdict: 'Request Changes',
+    posted: true,
+    reviewUrl: 'https://example.test/pull/1#pullrequestreview-1',
+    findings: [
+      { severity: 'blocking', title: 'Token logged', pillar: 'security', path: 'a.ts', line: 3 },
+    ],
+  }
+  await run('review.verifier.previous', () =>
+    runReviewVerifier({ ...vin, previous }, { model: 'opus', mode: 'full', tree: '/tree', exec }),
+  )
+  await run('review.verifier.previous.settings.light', () =>
+    runReviewVerifier(
+      { ...vin, previous },
+      { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
+    ),
+  )
   await run('review.verifier.web', () =>
     runReviewVerifier(
       { ...vin, web },
@@ -355,6 +375,6 @@ it('runs every step with the exact claude call', async () => {
   await run('bench.judge.settings', () =>
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
-  expect(Object.keys(captured)).toHaveLength(48)
+  expect(Object.keys(captured)).toHaveLength(50)
   expect(captured).toStrictEqual(EXPECTED)
 })

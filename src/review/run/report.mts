@@ -67,6 +67,8 @@ export type ReportData = {
   carried?: CarriedFile // absent when git found no commit already elsewhere and the base is fine
   dependencies?: Dependency[] // absent when the pull request depends on nothing
   contextNote?: string // why the pillars got no context file; absent when they got one
+  /** Why a follow-up's verifier got no earlier review of this machine; absent when it got one or had none to look for. */
+  earlierReviewNote?: string
   /** The commits the change says it fixes or reverts, and the verifier's one-line recommendation. */
   regression?: ReportRegression // absent without linked commits
   /** The verifier's proposal to split a large change with a mechanical part; absent without one. */
@@ -99,6 +101,7 @@ export type ReportInput = {
   carried?: CarriedFile | undefined
   dependencies?: readonly Dependency[] | undefined
   contextNote?: string | undefined
+  earlierReviewNote?: string | undefined
   regression?: readonly LinkedCommit[] | undefined
 }
 
@@ -141,6 +144,9 @@ export function buildReport(input: ReportInput): ReportData {
       ? {}
       : { dependencies: [...input.dependencies] }),
     ...(input.contextNote === undefined ? {} : { contextNote: input.contextNote }),
+    ...(input.earlierReviewNote === undefined
+      ? {}
+      : { earlierReviewNote: input.earlierReviewNote }),
     ...reportRegression(input.regression, output?.regressionPrevent),
     ...(output?.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
     verifier:

@@ -55,6 +55,8 @@ export type ReviewSteps = {
   pillars?: PillarSettings
   /** The harness and model of each step; the default tiers when absent. */
   models?: StepModels
+  /** The machine-local state directory holding the tracker; a follow-up reads its earlier review from it. */
+  stateDir?: string
   exec: Exec
   /** Directory holding `verifier.md` and `pillars/`. */
   references: string

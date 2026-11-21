@@ -1,8 +1,9 @@
 import { join } from 'node:path'
 
-import { asNumber, asRecord, asString } from '../../tracker/json.mts'
+import { asRecord } from '../../tracker/json.mts'
 import { foldRows, parseRows, TRACKER_FILE } from '../../tracker/store.mts'
 import type { TrackerRow } from '../../tracker/types.mts'
+import { previousReview, reportFindings, tryRead } from './previous-review.mts'
 import type { ContextDeps, ContextInput, ContextSection, SectionBuilder } from './types.mts'
 
 /** Older reviews beyond this many are counted, not listed. */
@@ -10,14 +11,6 @@ export const MAX_LISTED = 6
 
 const SHA_RE = /^[0-9a-f]{7,64}$/u
 const SORT_LAST = '￿'
-
-async function tryRead(deps: ContextDeps, path: string): Promise<string | undefined> {
-  try {
-    return await deps.readFile(path)
-  } catch {
-    return undefined
-  }
-}
 
 async function trackerRows(deps: ContextDeps): Promise<TrackerRow[]> {
   if (deps.stateDir === undefined) throw new Error('no state directory was provided')
@@ -32,13 +25,9 @@ async function trackerRows(deps: ContextDeps): Promise<TrackerRow[]> {
 }
 
 function findingLines(report: Record<string, unknown>): string[] {
-  const findings = Array.isArray(report.findings) ? report.findings : []
-  return findings.map((value) => {
-    const finding = asRecord(value)
-    const line = asNumber(finding.line)
-    const path = asString(finding.path)
+  return reportFindings(report).map(({ severity, title, path, line }) => {
     const place = path === null ? 'no file' : line === null ? path : `${path}:${line}`
-    return `  - [${asString(finding.severity) ?? '?'}] ${asString(finding.title) ?? 'untitled'} (${place})`
+    return `  - [${severity ?? '?'}] ${title ?? 'untitled'} (${place})`
   })
 }
 
@@ -108,6 +97,10 @@ export const pastReviews: SectionBuilder = {
       described.flat().join('\n'),
       `### Latest review\n\n${(await reRange(shown.at(-1) as TrackerRow, input, deps)).join('\n')}`,
     ]
-    return { title: 'Past reviews', body: body.join('\n\n') }
+    return {
+      title: 'Past reviews',
+      body: body.join('\n\n'),
+      ...(await previousReview(listed, input, deps)),
+    }
   },
 }

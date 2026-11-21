@@ -94,6 +94,7 @@ export async function reviewCommand(
         plan: resolveModels(deps.configs(), target.repo, overrides).plan,
         watch: stepWatchFor(values, target.repo, deps),
       },
+      stateDir: tracker.dir,
       exec: deps.exec,
       references: deps.references(),
     },

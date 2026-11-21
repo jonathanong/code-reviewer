@@ -106,7 +106,10 @@ verified findings, and whether the review was posted. The saved data records pos
 not per finding, and findings the verifier dropped are not listed. Skipped and failed rows are left
 out. For the newest review the section names its saved evidence file and the range from that head
 to the current one, with `git diff --stat` when both commits are in the checkout; it says so
-plainly when the run directory or the commits are gone. No earlier review gives no section.
+plainly when the run directory or the commits are gone. No earlier review gives no section. The section's one consumer is the verifier of a follow-up, which
+takes its structured form (not this text) for the newest earlier review at an ancestor of the head
+([Follow-ups build on this machine's last review](review.md#follow-ups-build-on-this-machines-last-review));
+pillars do not read it.
 
 ## Other reviewers
 

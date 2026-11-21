@@ -83,6 +83,13 @@ describe('pastReviews', () => {
     expect(calls).toContainEqual(['git', '-C', '/tree', 'diff', '--stat', `${MID}..${HEAD}`])
   })
 
+  it('carries the newest earlier review at an ancestor, structured, beside the text', async () => {
+    const { deps, calls } = fake()
+    const section = await pastReviews.build(input, deps)
+    expect(section?.previous).toMatchObject({ sha: MID, mode: 'light', posted: false })
+    expect(calls).toContainEqual(['git', '-C', '/tree', 'merge-base', '--is-ancestor', MID, HEAD])
+  })
+
   it('names the saved evidence file when it exists', async () => {
     const { deps } = fake({ 'reviews.jsonl': row({ runDir: '/fixture-state/run-1' }) })
     const body = (await pastReviews.build(input, deps))?.body ?? ''
