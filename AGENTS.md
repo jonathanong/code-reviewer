@@ -1,6 +1,7 @@
 ## Goal
 
 - Optimize for how a review feels to the person who receives it. Do not block or request changes unless it is necessary, and avoid noise.
+- Keep posted text concise. Detail that only an agent fixing the issue needs goes in a collapsed `<details>` section under a one-line `<summary>`.
 
 ## Rule skills
 
