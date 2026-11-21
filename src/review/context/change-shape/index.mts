@@ -4,8 +4,8 @@ import type { ContextDeps, ContextInput, SectionBuilder } from '../types.mts'
 import { summarize } from './analyze.mts'
 import { isToolConfig } from './classify.mts'
 import { configChange } from './config-change.mts'
-import { parseCommits, parseFileChanges } from './git-output.mts'
-import { capText, countHunks, parseHunks } from './patch.mts'
+import { parseCommits, parseFileChanges, parseNumstat } from './git-output.mts'
+import { capText, parseHunks } from './patch.mts'
 import { renderChangeShape } from './render.mts'
 import type { Caps } from './types.mts'
 
@@ -45,9 +45,9 @@ export const changeShape: SectionBuilder = {
       files.map((file) => ({ path: file.path, lines: file.added + file.deleted })),
     )
     if (lines <= SMALL_PR_LINES) return null
-    const [patchRaw, wRaw, logRaw, mergeBase] = await Promise.all([
+    const [patchRaw, wNumstat, logRaw, mergeBase] = await Promise.all([
       git(['diff', ...PATCH_FLAGS, range]),
-      git(['diff', '-w', ...PATCH_FLAGS, range]),
+      git(['diff', '-w', '--numstat', '-z', '-M', range]),
       git([
         'log',
         '--reverse',
@@ -59,7 +59,6 @@ export const changeShape: SectionBuilder = {
       mergeBaseOf(git, input),
     ])
     const patch = capText(patchRaw, CAPS.patchBytes)
-    const whitespacePatch = capText(wRaw, CAPS.patchBytes)
     const parsed = parseHunks(patch.text, CAPS.hunks)
     const commits = parseCommits(logRaw)
     const configs = await Promise.all(
@@ -72,9 +71,8 @@ export const changeShape: SectionBuilder = {
       {
         files,
         hunks: parsed.hunks,
-        allHunks: countHunks(patch.text),
-        whitespaceHunks: countHunks(whitespacePatch.text),
-        patchTruncated: patch.truncated || whitespacePatch.truncated,
+        wLines: parseNumstat(wNumstat),
+        patchTruncated: patch.truncated,
         hunksTruncated: parsed.truncated,
         commits,
         commitsCapped: commits.length >= CAPS.commits,

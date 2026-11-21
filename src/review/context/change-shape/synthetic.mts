@@ -57,8 +57,8 @@ export const file = (path: string, added: number, deleted: number, status = 'M')
 export type Repo = {
   files: FileChange[]
   patch: string
-  /** The `-w` patch; defaults to the full patch. */
-  wPatch?: string
+  /** The files of `git diff -w --numstat`; defaults to `files`. */
+  wFiles?: FileChange[]
   log?: string
   /** `rev:path` to file text. */
   show?: Record<string, string>
@@ -80,9 +80,11 @@ export function fakeGit(repo: Repo): { exec: Exec; calls: string[][] } {
       return text
     }
     if (args[0] === 'log') return repo.log ?? ''
-    if (args.includes('--numstat') && args[0] === 'diff') return numstatZ(repo.files)
+    if (args.includes('--numstat') && args[0] === 'diff') {
+      return numstatZ(args.includes('-w') ? (repo.wFiles ?? repo.files) : repo.files)
+    }
     if (args.includes('--name-status')) return nameStatusZ(repo.files)
-    return args.includes('-w') ? (repo.wPatch ?? repo.patch) : repo.patch
+    return repo.patch
   }
   return { exec, calls }
 }

@@ -45,10 +45,9 @@ function repetition(shape: ChangeShape): string[] {
 
 function whitespace(shape: ChangeShape): string[] {
   const parts = [`${shape.renames} files are pure renames (R100).`]
+  const { lines, of, files } = shape.whitespace
   parts.push(
-    shape.whitespace === null
-      ? 'Whitespace-only hunks were not counted (patch cap).'
-      : `${shape.whitespace.vanish} of ${shape.whitespace.hunks} hunks vanish under \`git diff -w\`.`,
+    `${lines} of ${of} changed lines are whitespace-only (they vanish under \`git diff -w\`); ${files} files change only in whitespace.`,
   )
   return parts
 }

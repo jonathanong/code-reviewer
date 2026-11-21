@@ -5,22 +5,30 @@ const count = (text: string | undefined): number => {
   return Number.isInteger(n) ? n : 0
 }
 
-/** Parses `--numstat -z` and `--name-status -z` into one list; binary files count 0 lines. */
-export function parseFileChanges(numstatZ: string, nameStatusZ: string): FileChange[] {
-  const lines = new Map<string, { added: number; deleted: number }>()
-  const numQueue = numstatZ.split('\0')
-  for (let token = numQueue.shift(); token !== undefined; token = numQueue.shift()) {
+type Lines = { added: number; deleted: number }
+
+/** Parses `--numstat -z` into lines per final path; binary files count 0 lines. */
+export function parseNumstat(numstatZ: string): Map<string, Lines> {
+  const lines = new Map<string, Lines>()
+  const queue = numstatZ.split('\0')
+  for (let token = queue.shift(); token !== undefined; token = queue.shift()) {
     const [added, deleted, path] = token.split('\t')
     if (deleted === undefined) continue
     let finalPath = path
     if (path === '') {
       // A rename is `added\tdeleted\t`, then the old and new path as separate tokens.
-      numQueue.shift()
-      finalPath = numQueue.shift()
+      queue.shift()
+      finalPath = queue.shift()
     }
     if (finalPath !== undefined)
       lines.set(finalPath, { added: count(added), deleted: count(deleted) })
   }
+  return lines
+}
+
+/** Joins `--numstat -z` and `--name-status -z` into one list. */
+export function parseFileChanges(numstatZ: string, nameStatusZ: string): FileChange[] {
+  const lines = parseNumstat(numstatZ)
   const files: FileChange[] = []
   const queue = nameStatusZ.split('\0')
   for (let status = queue.shift(); status !== undefined; status = queue.shift()) {

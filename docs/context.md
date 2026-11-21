@@ -61,8 +61,8 @@ split. It states facts and does not judge. Everything comes from local `git` in 
   collapsed. The top three signatures that cover at least three hunks are reported with their
   hunk and file counts, one verbatim example each, and the share of all hunks that the top one and
   the top three cover. Hunks in generated files and lockfiles are left out.
-- **Renames and whitespace**: files that are pure renames (`R100`), and hunks that vanish under
-  `git diff -w`.
+- **Renames and whitespace**: files that are pure renames (`R100`), and changed lines that are whitespace-only (`git diff --numstat`
+  against `git diff -w --numstat`, outside generated files) and files that change only in whitespace.
 - **Config**: lint, format and compiler config files in the diff, with the changed keys when a file
   is small plain JSON.
 - **Commits**: per commit, files and lines.
@@ -70,5 +70,4 @@ split. It states facts and does not judge. Everything comes from local `git` in 
 
 A diff with no more reviewable lines than the small-pull-request threshold of the mode choice
 (`SMALL_PR_LINES`) has no section. Work is bounded by `CAPS` in `src/review/context/change-shape/index.mts`
-(patch text, hunks analysed, commits read); when one is hit the section says so, and a cut patch
-leaves the whitespace count out. The patch is read whole by `git` before it is cut.
+(patch text, hunks analysed, commits read); when one is hit the section says so. The patch is read whole by `git` before it is cut.

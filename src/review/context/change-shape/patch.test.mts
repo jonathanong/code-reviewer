@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { capText, countHunks, parseHunks } from './patch.mts'
+import { capText, parseHunks } from './patch.mts'
 import { patchOf } from './synthetic.mts'
 
 describe('parseHunks', () => {
@@ -44,12 +44,7 @@ describe('parseHunks', () => {
   })
 })
 
-describe('countHunks and capText', () => {
-  it('counts hunk headers', () => {
-    expect(countHunks('@@ a\n-x\n@@ b\n+y\n')).toBe(2)
-    expect(countHunks('')).toBe(0)
-  })
-
+describe('capText', () => {
   it('cuts at a line end and reports it; short text passes untouched', () => {
     expect(capText('abc\ndef\nghi', 9)).toEqual({ text: 'abc\ndef', truncated: true })
     expect(capText('abcdefgh', 4)).toEqual({ text: 'abcd', truncated: true })

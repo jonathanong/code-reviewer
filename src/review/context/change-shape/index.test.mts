@@ -65,7 +65,8 @@ describe('change-shape: a lint auto-fix', () => {
     expect(body).toContain('- config: 1 files, +1 -1')
     expect(body).toContain('2 commits.')
     expect(body).toContain('- aaa1111 chore: enable prefer-const: 1 files, +1 -1')
-    expect(body).toContain('0 of 31 hunks vanish under `git diff -w`')
+    expect(body).toContain('0 of 122 changed lines are whitespace-only')
+    expect(body).toContain('0 files change only in whitespace.')
     expect(body).toContain('- (root) (1 hunks)')
     expect(body).not.toContain('- src (')
     expect(body).not.toContain('Caps hit')
@@ -97,7 +98,7 @@ describe('change-shape: a mixed diff', () => {
     const { exec } = fakeGit({
       files,
       patch: patchOf(hunks),
-      wPatch: patchOf(hunks.slice(0, 15)),
+      wFiles: [...files.filter((f) => !/^src\/a[0-3]\.ts$/u.test(f.path)), file('src/a3.ts', 1, 0)],
       mergeBase: 'mb',
       show: {
         'head:.oxlintrc.json': oxlintAfter,
@@ -107,7 +108,8 @@ describe('change-shape: a mixed diff', () => {
     })
     const body = (await changeShape.build(input, { exec, readFile }))?.body ?? ''
     expect(body).toContain('1 files are pure renames (R100).')
-    expect(body).toContain('4 of 19 hunks vanish under `git diff -w`.')
+    expect(body).toContain('15 of 116 changed lines are whitespace-only')
+    expect(body).toContain('3 files change only in whitespace.')
     expect(body).toContain('- lib (6 hunks)')
     expect(body).not.toContain('- src (')
     expect(body).toContain('lockfile: 1 files, +900 -900')
@@ -131,7 +133,7 @@ describe('change-shape: a mixed diff', () => {
     })
     const body = (await changeShape.build(input, { exec, readFile }))?.body ?? ''
     expect(body).toContain('No change repeats in 3 or more of the 5 analysed hunks.')
-    expect(body).toContain('Whitespace-only hunks were not counted (patch cap).')
+    expect(body).toContain('0 of 300 changed lines are whitespace-only')
     expect(body).toContain(`At least ${CAPS.commits} commits.`)
     expect(body).toContain('... 188 more')
     expect(body).toContain(
@@ -213,6 +215,27 @@ describe('change-shape: a mixed diff', () => {
     const body = (await changeShape.build(input, { exec, readFile }))?.body ?? ''
     expect(body).toContain('the top signature covers 50% and the top 2 cover 100%')
     expect(body).toContain('None.')
+  })
+
+  it('never reports negative whitespace lines when -w lists more lines than the plain diff', async () => {
+    const { exec } = fakeGit({
+      files: [file('src/a.ts', 60, 60)],
+      wFiles: [file('src/a.ts', 500, 500)],
+      patch: '',
+    })
+    const body = (await changeShape.build(input, { exec, readFile }))?.body ?? ''
+    expect(body).toContain('0 of 120 changed lines are whitespace-only')
+  })
+
+  it('counts whitespace-only lines, not hunks, and ignores generated files', async () => {
+    const { exec } = fakeGit({
+      files: [file('src/a.ts', 60, 60), file('pnpm-lock.yaml', 500, 500)],
+      wFiles: [file('src/a.ts', 30, 30)],
+      patch: '',
+    })
+    const body = (await changeShape.build(input, { exec, readFile }))?.body ?? ''
+    expect(body).toContain('60 of 120 changed lines are whitespace-only')
+    expect(body).toContain('0 files change only in whitespace.')
   })
 
   it('lists files by directory with a cap on rows', async () => {

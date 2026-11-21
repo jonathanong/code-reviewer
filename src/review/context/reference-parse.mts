@@ -12,6 +12,7 @@ const REVERT_SHA = /This reverts commit ([0-9a-f]{7,40})\b/giu
 const REVERT_SUBJECT = /^Revert "(.+)"$/mu
 const FIXES_SHA = /\b(?:fix(?:es|ed)?|closes?|resolves?)\s*:?\s+(?:commit\s+)?([0-9a-f]{7,40})\b/giu
 const SHA_TOKEN = /\b[0-9a-f]{7,40}\b/giu
+const OWN_PR = /\s*\(#\d+\)\s*$/u
 const NUMBER = /#(\d+)\b/gu
 
 /** A short hex word like `defaced` is a word; an id has a digit, or is a full 40 characters. */
@@ -25,6 +26,7 @@ const add = <T,>(list: T[], value: T): void => {
 export function parseReferences(messages: readonly string[]): References {
   const found: References = { shas: [], numbers: [], subjects: [] }
   for (const message of messages) {
+    const subjectLine = message.split('\n')[0]
     const reverted = [...message.matchAll(REVERT_SHA)].map((m) => m[1] as string)
     for (const sha of reverted) add(found.shas, sha.toLowerCase())
     const subject = REVERT_SUBJECT.exec(message)?.[1]
@@ -36,7 +38,9 @@ export function parseReferences(messages: readonly string[]): References {
       for (const token of line.match(SHA_TOKEN) ?? []) {
         if (isSha(token)) add(found.shas, token.toLowerCase())
       }
-      for (const match of line.matchAll(NUMBER)) add(found.numbers, Number(match[1]))
+      // A trailing `(#N)` on the subject is the commit's own pull request, not a reference.
+      const own = line === subjectLine ? line.replace(OWN_PR, '') : line
+      for (const match of own.matchAll(NUMBER)) add(found.numbers, Number(match[1]))
     }
   }
   return found

@@ -27,14 +27,32 @@ function tally(files: readonly FileChange[], nameOf: (path: string) => string): 
 export type Measured = {
   files: FileChange[]
   hunks: Hunk[]
-  /** Hunks in the whole patch, and in the `-w` patch. */
-  allHunks: number
-  whitespaceHunks: number
+  /** Lines per path of `git diff -w --numstat`; a file missing there changed only in whitespace. */
+  wLines: Map<string, { added: number; deleted: number }>
   patchTruncated: boolean
   hunksTruncated: boolean
   commits: CommitShape[]
   commitsCapped: boolean
   configs: ChangeShape['configs']
+}
+
+/** Changed lines that are whitespace-only, from numstat with and without `-w`; never negative. */
+export function whitespaceShare(
+  files: readonly FileChange[],
+  wLines: Map<string, { added: number; deleted: number }>,
+): ChangeShape['whitespace'] {
+  let of = 0
+  let kept = 0
+  let vanished = 0
+  for (const file of files.filter((f) => !isGeneratedKind(f.path))) {
+    const lines = file.added + file.deleted
+    const w = wLines.get(file.path)
+    const remaining = w === undefined ? 0 : w.added + w.deleted
+    of += lines
+    kept += Math.min(lines, remaining)
+    if (lines > 0 && remaining === 0) vanished += 1
+  }
+  return { lines: of - kept, of, files: vanished }
 }
 
 /** Pure: turns measured git output into the facts of the section. */
@@ -69,9 +87,7 @@ export function summarize(m: Measured, caps: Caps): ChangeShape {
     top1Share: coverage(repeated, 1, analysed.length),
     top3Share: coverage(repeated, TOP, analysed.length),
     renames: m.files.filter((file) => file.status === 'R100').length,
-    whitespace: m.patchTruncated
-      ? null
-      : { hunks: m.allHunks, vanish: m.allHunks - m.whitespaceHunks },
+    whitespace: whitespaceShare(m.files, m.wLines),
     configs: m.configs,
     commits: {
       total: m.commits.length,

@@ -53,8 +53,8 @@ export type ChangeShape = {
   top1Share: number
   top3Share: number
   renames: number
-  /** Hunks of the whole diff and how many vanish under `-w`; null when a patch cap was hit. */
-  whitespace: { hunks: number; vanish: number } | null
+  /** Changed lines outside generated files, how many vanish under `-w`, and files that vanish entirely. */
+  whitespace: { lines: number; of: number; files: number }
   configs: ConfigChange[]
   commits: { total: number; capped: boolean; listed: CommitShape[] }
   /** Top-level areas of hunks outside the listed signatures, with their hunk counts. */

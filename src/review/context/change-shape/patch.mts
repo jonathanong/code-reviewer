@@ -7,11 +7,6 @@ export function capText(text: string, max: number): { text: string; truncated: b
   return { text: text.slice(0, cut === -1 ? max : cut), truncated: true }
 }
 
-/** The number of hunks in a patch. */
-export function countHunks(patch: string): number {
-  return patch.split('\n').filter((line) => line.startsWith('@@')).length
-}
-
 /** The path of a `+++` or `---` line without its `a/` or `b/`; `/dev/null` gives an empty path. */
 function pathOf(line: string): string {
   const raw = line.slice(4).replace(/\t.*$/u, '')
