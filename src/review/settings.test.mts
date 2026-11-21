@@ -254,6 +254,18 @@ describe('resolveRulePlugins', () => {
 })
 
 describe('settingsProblems', () => {
+  it('matches the owner files in every accepted format, and no other owner', () => {
+    const configs: RepoConfigs = {
+      ...CONFIGS,
+      problems: [
+        'acme.jsonc: bad',
+        'acme.json and acme.jsonc: more than one file for the same config; none is used',
+        'acmeish.jsonc: bad',
+      ],
+    }
+    expect(settingsProblems(configs, 'acme')).toEqual(configs.problems.slice(0, 2))
+  })
+
   it('lists the problems of the owner file and the owner directory only', () => {
     expect(settingsProblems(CONFIGS, 'ACME')).toEqual([
       'Acme.json labels: unknown key "x" ignored',

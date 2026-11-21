@@ -449,6 +449,13 @@ describe('runCommand preconditions', () => {
     expect((await run(fake)).line.reason).toContain('settings invalid: Acme/Widgets.json')
   })
 
+  it('refuses a config kept in two formats, naming both files', async () => {
+    const fake = setup()
+    const both = 'acme.json and acme.jsonc: more than one file for the same config; none is used'
+    vi.mocked(fake.deps.configs).mockReturnValue({ ...NO_CONFIGS, problems: [both] })
+    expect((await run(fake)).line.reason).toContain(`settings invalid: ${both}`)
+  })
+
   it('refuses a problem in the reviewed repository own file', async () => {
     const fake = setup()
     vi.mocked(fake.deps.targetConfig).mockResolvedValue({ config: undefined, problems: ['bad'] })

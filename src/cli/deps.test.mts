@@ -131,6 +131,7 @@ describe('createDefaultDeps', () => {
 
   it('reads a repository file once per repository and labels the approval from it', async () => {
     const run = vi.fn(async (args: string[]) => {
+      if (args.at(-1)?.endsWith('/contents')) return '.code-reviewer.json\n'
       if (args[0] === 'api') return '{"labels":{"approval":"own lgtm"}}'
       return 'own lgtm\n'
     })
@@ -146,8 +147,9 @@ describe('createDefaultDeps', () => {
     expect(first.config?.labels).toEqual({ approval: 'own lgtm' })
     expect(await deps.targetConfig('acme/widgets')).toBe(first)
     const reads = run.mock.calls.filter(([args]) => args[0] === 'api')
-    expect(reads).toHaveLength(1)
-    expect(reads[0]?.[0]).toContain('repos/acme/widgets/contents/.code-reviewer.json')
+    expect(reads).toHaveLength(2)
+    expect(reads[0]?.[0].at(-1)).toBe('repos/acme/widgets/contents')
+    expect(reads[1]?.[0].at(-1)).toBe('repos/acme/widgets/contents/.code-reviewer.json')
   })
 
   it('treats an absent repository file as no config and a failed read as a problem', async () => {
@@ -168,7 +170,7 @@ describe('createDefaultDeps', () => {
     await expect(deps.targetConfig('a/none')).resolves.toEqual({ config: undefined, problems: [] })
     await expect(deps.targetConfig('a/bad')).resolves.toEqual({
       config: undefined,
-      problems: ['a/bad/.code-reviewer.json: could not be read (HTTP 500); ignored'],
+      problems: ['a/bad/.code-reviewer{.json,.jsonc}: could not be read (HTTP 500); ignored'],
     })
   })
 
@@ -179,7 +181,7 @@ describe('createDefaultDeps', () => {
     const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere' })
     await expect(deps.targetConfig('a/b')).resolves.toEqual({
       config: undefined,
-      problems: ['a/b/.code-reviewer.json: could not be read (no credentials); ignored'],
+      problems: ['a/b/.code-reviewer{.json,.jsonc}: could not be read (no credentials); ignored'],
     })
   })
 

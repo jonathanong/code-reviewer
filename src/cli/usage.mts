@@ -24,8 +24,8 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   login. Under App auth it also prints source (env or the app.json path) and
   login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
-  post, revoke and status use the label names from the machine config (<owner>.json, <owner>/<name>.json) and the
-  repository's own .code-reviewer.json on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
+  post, revoke and status use the label names from the machine config (<owner>.json, <owner>/<name>.json; .jsonc also) and the
+  repository's own .code-reviewer.json or .code-reviewer.jsonc on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
   settings prints the resolved labels and optional check run for a repository or owner, the
   layer each came from, the names of the evidence sources (never commands or env), and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
   not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,

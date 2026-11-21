@@ -57,7 +57,7 @@ function configProblems(deps: ReviewDeps, repo: string): string[] {
   const owner = lower.split('/')[0] as string
   return deps.configs().problems.filter((problem) => {
     const text = problem.toLowerCase()
-    return text.startsWith(`${owner}.json`) || text.startsWith(`${lower}.json`)
+    return text.startsWith(`${owner}.`) || text.startsWith(`${lower}.`)
   })
 }
 

@@ -1,0 +1,4 @@
+{
+  /* the API this repository calls */
+  "consumes": [{ "repo": "acme/api", "via": "http://api.example//v1" }],
+}

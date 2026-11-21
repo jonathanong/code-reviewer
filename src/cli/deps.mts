@@ -43,8 +43,9 @@ export type ReviewDeps = {
   /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
   /**
-   * The `.code-reviewer.json` on `repo`'s default branch, read through the GitHub API at most once
-   * per repository; a missing file is no config and a failed read is a problem, not an error.
+   * The `.code-reviewer.json` or `.code-reviewer.jsonc` on `repo`'s default branch, read through
+   * the GitHub API at most once per repository; a missing file is no config and a failed read is a
+   * problem, not an error.
    */
   targetConfig(repo: string): Promise<TargetConfig>
   createIo(target: PullTarget): ReviewIo

@@ -74,7 +74,7 @@ and the newest review's hidden marker holds the reviewed SHA, verdict, and effor
 
 Label names are configurable per organization and repository. Read the request label with
 `code-reviewer settings --owner <owner>` (`labels.requested`), and with `settings --repo` for each
-repository whose config (machine or `.code-reviewer.json`) overrides it; wait on every distinct request label. The examples below show
+repository whose config (machine or `.code-reviewer.json`/`.jsonc`) overrides it; wait on every distinct request label. The examples below show
 the default, `final-review:requested`.
 
 Keep exactly one wait running, and pass its cursor back each time:

@@ -235,14 +235,18 @@ describe('createGhPrepareIo', () => {
   })
 
   it('reads the repository file from the default branch of the tree, else through the API', async () => {
-    const run = vi.fn(async (args: readonly string[]) =>
-      args.some((arg) => arg.endsWith('contents/.code-reviewer.json'))
-        ? '{"consumes":[{"repo":"o/api"}]}'
-        : '',
-    )
+    const run = vi.fn(async (args: readonly string[]) => {
+      if (args.some((arg) => arg.endsWith('contents/.code-reviewer.json'))) {
+        return '{"consumes":[{"repo":"o/api"}]}'
+      }
+      return args.some((arg) => arg.endsWith('/contents')) ? '.code-reviewer.json\n' : ''
+    })
     const git = vi.fn(async (args: readonly string[]) => {
       if (args.includes('--abbrev-ref')) return 'origin/main\n'
-      if (args[0] === '-C' && args[2] === 'show') return '{"consumes":[{"repo":"o/lib"}]}'
+      if (args[2] === 'show' && args[3]?.endsWith(':.code-reviewer.json')) {
+        return '{"consumes":[{"repo":"o/lib"}]}'
+      }
+      if (args[2] === 'show') throw new Error('missing')
       return ''
     })
     const io = createGhPrepareIo(target, run, git, async () => undefined, undefined, '/nowhere')

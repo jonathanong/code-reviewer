@@ -191,6 +191,6 @@ export function settingsProblems(configs: RepoConfigs, owner: string): string[] 
   const prefix = owner.toLowerCase()
   return configs.problems.filter((problem) => {
     const lower = problem.toLowerCase()
-    return lower.startsWith(`${prefix}.json`) || lower.startsWith(`${prefix}/`)
+    return lower.startsWith(`${prefix}.`) || lower.startsWith(`${prefix}/`)
   })
 }

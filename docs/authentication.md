@@ -2,7 +2,8 @@
 
 Calls use a GitHub App when one is configured, otherwise the local `gh` login. Configure the App
 with `app.json` in the config home, `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer` (the parent of
-the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it):
+the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it). The file may also be named `app.jsonc`, and may
+hold comments and trailing commas; keeping both `app.json` and `app.jsonc` fails the command:
 
 ```json
 { "appId": "123", "privateKeyPath": "app.pem", "installationId": "456" }
@@ -36,7 +37,7 @@ someone else and write check runs.
    | ------------- | -------------- | --------------------------------------------------------- |
    | Pull requests | Read and write | Reading pull requests, posting reviews, resolving threads |
    | Issues        | Read and write | Adding and removing the review labels                     |
-   | Contents      | Read-only      | Reading `.code-reviewer.json`                             |
+   | Contents      | Read-only      | Reading `.code-reviewer.json` or `.jsonc`                 |
    | Checks        | Read and write | The check run, when `checkRun` is configured              |
    | Metadata      | Read-only      | Required by GitHub                                        |
 
