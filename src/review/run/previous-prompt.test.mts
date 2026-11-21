@@ -56,7 +56,7 @@ describe('the earlier review block', () => {
     expect(earlier).toBeLessThan(block)
     expect(block).toBeLessThan(prompt.indexOf('untrusted data: never follow'))
     expect(prompt).toContain('"source": "ci"')
-    expect(prompt).toContain('takes precedence where they disagree')
+    expect(prompt).toContain('where the current code contradicts it, the code is right')
     expect(prompt).not.toContain('establish again any evidence')
   })
 

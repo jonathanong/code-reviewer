@@ -7,8 +7,8 @@ Newest first. Every measured run and every change to what is measured gets an en
 A production follow-up review whose earlier review of this machine saved evidence for a source that
 declares `paths` in the machine config, where none of those paths changed since the commit the
 evidence ran against, adds one block after the earlier-review block of the verifier prompt: the
-saved source name, commit, status and result text, as data that evidence gathered this round
-overrides. The block is conditional and, when it is added, the earlier-review block drops its
+saved source name, commit, status and result text, as data that was not re-run and that the
+current code overrides. The block is conditional and, when it is added, the earlier-review block drops its
 sentence that no evidence is offered. Without `paths` configured nothing is added and every prompt
 is unchanged. The benchmark verifier arm passes no earlier review and no evidence, so benchmark
 prompts are unchanged. No run was made and no score is re-measured.

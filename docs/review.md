@@ -179,8 +179,8 @@ without a scope, an unknown scope or a git failure keeps nothing. When any are k
 prompt gets a second block after the earlier-review block, naming each source, the commit it ran
 against, its status and its saved queries and results (capped at the evidence result limit), and
 saying that this earlier evidence still applies because none of the paths it depends on changed
-and that evidence gathered this round takes precedence where they disagree; the saved text is
-untrusted data. With no such source the block is absent and the earlier-review block says to
+and that it was gathered at that commit and has not been re-run, so where the current code
+contradicts it the code is right; the saved text is untrusted data. With no such source the block is absent and the earlier-review block says to
 establish again any evidence the review relies on. The evidence step still runs on every
 follow-up. `report.json` records the offered sources as `earlierEvidence`, and `report.md` lists
 them.
