@@ -12,6 +12,10 @@ when `review.json` has a `questions` list, cost, start and finish times, the run
 `reviewed` (produced, not posted), `posted` (with the review link and id, the event actually posted, and `downgraded`, the reason it was a COMMENT instead of the verdict's own event), `skipped` or `failed`
 (with the reason). A later row for the same repository, pull request and head replaces an earlier
 one, except that `posted` adds to the `reviewed` row it follows. `tracker` prints that folded state;
+`post` also saves `posted.json` in the run directory: for each finding of `review.json`, by its
+`F<n>` id, whether it became an inline comment or went in the review body, so a later review can
+tell which findings reached the pull request. It changes nothing that is posted, a save failure is
+reported as `trackerProblem`, and a run directory without it simply has no per-finding status.
 CSV cells that begin with a spreadsheet formula character are prefixed with an apostrophe.
 
 The tracker is `reviews.jsonl` in the state directory: `CODE_REVIEWER_STATE_DIR`, else

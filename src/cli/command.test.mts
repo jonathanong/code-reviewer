@@ -99,6 +99,7 @@ function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
     guideReader: vi.fn(() => vi.fn(async () => '')),
     runner: vi.fn(() => vi.fn(async () => '')),
     readFile: vi.fn(() => input),
+    writeFile: vi.fn(),
     findClone: vi.fn(() => vi.fn(async () => undefined)),
     tracker: vi.fn(() => tracker),
     listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),

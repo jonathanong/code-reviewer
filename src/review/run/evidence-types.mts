@@ -2,6 +2,7 @@ import type { StepRan } from '../../harness/runner.mts'
 import type { Usage } from '../benchmark/usage.mts'
 import type { GuideReader } from '../rules/evidence-guide.mts'
 import type { EvidenceSource } from '../rules/evidence-parse.mts'
+import type { EvidenceStamp } from './evidence-scope.mts'
 import type { FailedAttempt } from './types.mts'
 
 export const EVIDENCE_STATUSES = ['checked', 'blocked', 'not-applicable'] as const
@@ -15,7 +16,11 @@ export type EvidenceCommand = { command: string; result: string }
 /** One query the run made, with the control query that shows an empty result means absence. */
 export type EvidenceQuery = EvidenceCommand & { control?: EvidenceCommand }
 
-export type EvidenceSourceReport = {
+/**
+ * One source's result. `headSha` and `scope` are added after the run, never asked of the model:
+ * they say what the result was checked against (see `evidenceHolds`).
+ */
+export type EvidenceSourceReport = EvidenceStamp & {
   name: string
   status: EvidenceStatus
   /** Why the source was blocked or not applicable. */

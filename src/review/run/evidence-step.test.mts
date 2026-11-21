@@ -62,6 +62,7 @@ function setup(
     title: 'Add retries',
     pullRequestSummary: 'It adds retries.',
     findings: FINDINGS,
+    headSha: 'a'.repeat(40),
     mode: 'full',
     tree: '/tree',
     exec: exec as never,
@@ -96,11 +97,46 @@ describe('applyEvidence', () => {
     expect(findings.map((finding) => finding.severity)).toEqual(['high', 'low'])
   })
 
+  it('stamps every saved source with the head and an unknown scope, whatever its status', async () => {
+    const { input, saved } = setup([source('dd'), source('aws'), source('gone')], {
+      dd: new Error('no guide'),
+    })
+    await applyEvidence(input)
+    expect(saved().sources.map((entry) => entry.status)).toEqual(['blocked', 'checked', 'blocked'])
+    for (const entry of saved().sources) {
+      expect(entry).toMatchObject({ headSha: 'a'.repeat(40), scope: { kind: 'unknown' } })
+    }
+  })
+
+  it('stamps the sources of a run that never started and of a failed run', async () => {
+    const none = setup([source('aws')], { aws: new Error('no clone') })
+    await applyEvidence(none.input)
+    expect(none.saved().sources[0]).toMatchObject({
+      headSha: 'a'.repeat(40),
+      scope: { kind: 'unknown' },
+    })
+    const failed = setup(
+      [source('aws'), source('dd')],
+      { dd: new Error('x') },
+      vi.fn(async () => 'not json'),
+    )
+    await applyEvidence(failed.input)
+    expect(failed.saved().error).toBeDefined()
+    expect(failed.saved().sources).toEqual([
+      expect.objectContaining({ name: 'dd', headSha: 'a'.repeat(40), scope: { kind: 'unknown' } }),
+    ])
+  })
+
   it('blocks a source whose guide cannot be read, runs the others, and withholds its commands', async () => {
     const { input, exec } = setup([source('dd'), source('aws')], { dd: new Error('ENOENT\nmore') })
     const { evidence } = await applyEvidence(input)
     expect(evidence?.sources).toEqual([
-      { name: 'dd', status: 'blocked', reason: 'The guide could not be read: ENOENT', queries: [] },
+      expect.objectContaining({
+        name: 'dd',
+        status: 'blocked',
+        reason: 'The guide could not be read: ENOENT',
+        queries: [],
+      }),
       expect.objectContaining({ name: 'aws', status: 'checked' }),
     ])
     const args = exec.mock.calls[0]?.[1] as string[]
@@ -130,7 +166,7 @@ describe('applyEvidence', () => {
       source('sentry', { SHARED: 'same', OTHER: 'x' }),
     ])
     const { evidence } = await applyEvidence(input)
-    expect(evidence?.sources[1]).toEqual({
+    expect(evidence?.sources[1]).toMatchObject({
       name: 'dd',
       status: 'blocked',
       reason:
@@ -145,7 +181,7 @@ describe('applyEvidence', () => {
   it('lists a source the run did not report as blocked', async () => {
     const { input } = setup([source('aws'), source('dd')])
     const { evidence } = await applyEvidence(input)
-    expect(evidence?.sources[1]).toEqual({
+    expect(evidence?.sources[1]).toMatchObject({
       name: 'dd',
       status: 'blocked',
       reason: 'The evidence run did not report this source.',

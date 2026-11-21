@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -57,6 +57,7 @@ export type ReviewDeps = {
   /** A `gh` runner for an owner's repositories (queue search, thread resolution). */
   runner(owner: string, repo?: string): RunTextCommand
   readFile(path: string): string
+  writeFile(path: string, text: string): void
   /** The local clone of `repo` under `clones`, else `CODE_REVIEWER_CLONE_ROOT`; undefined when there is none. */
   findClone(clones: string | undefined): (repo: string) => Promise<string | undefined>
   /** The machine-local tracker: its state directory, files and clock. */
@@ -147,6 +148,7 @@ export function createDefaultDeps(
       createGuideReader({ clones: clones ?? env.CODE_REVIEWER_CLONE_ROOT, git: runGit }),
     runner: (owner, repo) => resolved().runner(owner, repo),
     readFile: (path) => readFileSync(path, 'utf8'),
+    writeFile: (path, text) => writeFileSync(path, text),
     findClone: (clones) => async (repo) => {
       const root = clones ?? env.CODE_REVIEWER_CLONE_ROOT
       if (root === undefined) return undefined

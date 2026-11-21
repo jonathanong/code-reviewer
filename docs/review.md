@@ -169,8 +169,8 @@ With one, the verifier prompt gets one more block (not instructions: earlier cla
 commit). The re-review is additional: it reports only what is new since that commit or what the
 diff since it made wrong, does not repeat a finding that is still open in an unresolved thread of
 ours (the re-review step of the verifier already covers it), and reports a fixed one through
-`fixedThreadIds`, as before. No output field or schema changes. The saved `evidence.json` records
-no files, so it is not offered: the block says to establish again any evidence the review relies on.
+`fixedThreadIds`, as before. No output field or schema changes. Saved evidence is not offered: its scope is unknown
+(see [evidence](configuration.md#evidence)), so the block says to establish again any evidence the review relies on.
 
 ## Progress and the cost ceiling
 
