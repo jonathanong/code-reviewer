@@ -11,6 +11,7 @@ const BINARY = 'opencode'
  */
 export const harness: Harness = {
   name: 'opencode',
+  assertCan: assertOpencodeCan,
   async run(request: HarnessRun, exec): Promise<HarnessResult> {
     assertOpencodeCan(request)
     const stdout = await exec(BINARY, opencodeArgs(request), {

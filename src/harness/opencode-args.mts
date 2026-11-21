@@ -1,4 +1,4 @@
-import { ReviewError } from '../review/finding.mts'
+import { HarnessRefusal } from './refusal.mts'
 import type { HarnessRun } from './types.mts'
 
 const READ_PERMISSIONS = { read: 'allow', grep: 'allow', glob: 'allow', list: 'allow' }
@@ -9,10 +9,10 @@ const READ_PERMISSIONS = { read: 'allow', grep: 'allow', glob: 'allow', list: 'a
  */
 export function assertOpencodeCan(request: HarnessRun): void {
   if (request.can.shell.length > 0) {
-    throw new ReviewError(`opencode cannot confine: shell prefixes (${request.label})`)
+    throw new HarnessRefusal(`opencode cannot confine: shell prefixes (${request.label})`)
   }
   if (request.can.web.length > 0) {
-    throw new ReviewError(`opencode cannot confine: web hosts (${request.label})`)
+    throw new HarnessRefusal(`opencode cannot confine: web hosts (${request.label})`)
   }
 }
 

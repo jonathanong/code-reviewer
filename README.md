@@ -43,8 +43,7 @@ GitHub review. It runs on your machine, for the repositories you pick.
 
 Agreed and not built yet. Nothing below works today.
 
-- **Other harnesses and free tiers.** An adapter for Codex, and selecting the Grok and OpenCode
-  adapters by config, which the harness registry takes with one line each. Free models never run the verifier.
+- **Other harnesses.** An adapter for Codex, which the harness registry takes with one line.
 - **Shared context.** One cheap run builds what every pillar needs once: the relevant rule text
   quoted verbatim with a link to the full skill, the history of the changed lines, linked
   regressions, and past reviews.

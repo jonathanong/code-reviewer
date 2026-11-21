@@ -96,7 +96,26 @@ describe('parseModelOverrides', () => {
 
   it('rejects an unknown step and an unknown harness', () => {
     expect(() => parseModelOverrides(['nope=claude:a'])).toThrow('unknown step "nope"')
-    expect(() => parseModelOverrides(['select=grok:a'])).toThrow('unknown harness "grok"')
+    expect(() => parseModelOverrides(['select=nope:a'])).toThrow('unknown harness "nope"')
+  })
+
+  it('reads the other registered harnesses', () => {
+    expect(parseModelOverrides(['select=grok:g', 'pillar.design=opencode:a/b'])).toEqual({
+      select: [{ harness: 'grok', model: 'g' }],
+      'pillar.design': [{ harness: 'opencode', model: 'a/b' }],
+    })
+  })
+
+  it('rejects a free model for the verifier and a refused shell step', () => {
+    expect(() => parseModelOverrides(['verifier=opencode:opencode/big-pickle'])).toThrow(
+      '--model verifier: step "verifier" cannot use the free model',
+    )
+    expect(() => parseModelOverrides(['pillar.history=grok:g'])).toThrow(
+      '--model pillar.history: step "pillar.history" has no candidate',
+    )
+    expect(parseModelOverrides(['pillar.history=grok:g', 'pillar.history=claude:haiku'])).toEqual({
+      'pillar.history': [{ harness: 'grok', model: 'g' }, claude('haiku')],
+    })
   })
 })
 

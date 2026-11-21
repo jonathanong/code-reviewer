@@ -10,6 +10,7 @@ const BINARY = 'grok'
  */
 export const harness: Harness = {
   name: 'grok',
+  assertCan: assertGrokCan,
   async run(request: HarnessRun, exec): Promise<HarnessResult> {
     assertGrokCan(request)
     const stdout = await exec(BINARY, grokArgs(request), {

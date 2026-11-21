@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../review/benchmark/exec.mts'
-import { runStep, type StepRuntime } from './runner.mts'
+import { runStep, StepFailure, type StepRuntime } from './runner.mts'
 import type { FailureClass, Harness } from './types.mts'
+import { HarnessRefusal } from './refusal.mts'
 import { READ_ONLY } from './types.mts'
 
 const RESULT = { structured: 1, skills: [], usage: {} as never, reportedUsage: null }
@@ -33,9 +34,19 @@ const fakes: Record<string, Harness> = {
 }
 
 vi.mock('./registry.mts', () => ({
-  HARNESS_NAMES: ['slow', 'steady'],
+  HARNESS_NAMES: ['slow', 'steady', 'picky'],
   harnessNamed: (name: string) => fakes[name],
 }))
+
+fakes.picky = {
+  ...(fakes.steady as Harness),
+  name: 'picky',
+  async run(request) {
+    calls.push(`picky:${request.model}`)
+    throw new HarnessRefusal('picky cannot confine: shell prefixes (Step)')
+  },
+  describeFailure: (error) => ({ message: (error as Error).message, usage: null }),
+}
 
 const exec: Exec = async () => ''
 const REQUEST = { prompt: 'P', label: 'Step', maxTurns: 2, schema: {}, can: READ_ONLY }
@@ -72,5 +83,32 @@ describe('runStep across harnesses', () => {
     expect(sleeps).toEqual([7_000])
     expect(second.ran).toEqual({ harness: 'steady', model: 'y', waitedMs: 0 })
     expect(calls).toEqual(['slow:x', 'slow:x', 'slow:x', 'steady:y'])
+  })
+})
+
+describe('runStep when an adapter refuses the step', () => {
+  it('moves to the next candidate at once, without waiting', async () => {
+    calls.length = 0
+    const { clock, sleeps } = runtime(60)
+    const run = await runStep(
+      REQUEST,
+      [
+        { harness: 'picky', model: 'x' },
+        { harness: 'steady', model: 'y' },
+      ],
+      exec,
+      clock,
+    )
+    expect(calls).toEqual(['picky:x', 'steady:y'])
+    expect(sleeps).toEqual([])
+    expect(run.ran).toEqual({ harness: 'steady', model: 'y', waitedMs: 0 })
+  })
+
+  it('fails the step when the refusing candidate is the last', async () => {
+    calls.length = 0
+    const { clock } = runtime(60)
+    await expect(
+      runStep(REQUEST, [{ harness: 'picky', model: 'x' }], exec, clock),
+    ).rejects.toBeInstanceOf(StepFailure)
   })
 })
