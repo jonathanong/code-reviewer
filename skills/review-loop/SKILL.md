@@ -124,6 +124,8 @@ one win. It exits:
   `attention` and `explainPath` and wait: they read the explainer and, when they agree, post with
   the printed `postCommand`. Do not post a held review yourself, do not rerun it to change the
   answer, and do not use `--force` unless the human asks.
+  A hold with `held: ["cost-ceiling"]` means the review hit the cost ceiling and produced nothing: tell
+  the human `reason` and `costUsd`; do not retry or `--force` it until they raise the ceiling.
 - 11 `noop`: nothing to do; `reason` says why. Take no action.
 - 12 `error`: a precondition failed (a missing plugin, a settings problem, no auth, a bad flag).
   Stop dispatching and tell the human `reason`.

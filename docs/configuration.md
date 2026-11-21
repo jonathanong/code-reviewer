@@ -396,18 +396,21 @@ ceiling). `bench` ignores this key. The posted-text length targets (1,200 and 80
 the caps in the context sections and the other fixed numbers stay fixed; `post` takes
 `--body-target` and `--inline-target` for one run.
 
-The ceiling: before it starts each step, a review compares the cost its steps have reported so far
-with `maxCostUsd`; at or above it, the step does not start. The cost is the sum of what the
-harnesses reported for finished and failed steps, so a step that reports no cost counts as zero,
-and a step already running is never stopped. Steps that run at once (the pillars at `--jobs` above
+The ceiling is a circuit breaker against a runaway run, not a budget to tune a review to. Set it
+well above what a normal review costs, so only a run that has gone wrong reaches it. Before it
+starts each step, a review compares the cost its steps have reported so far with `maxCostUsd`. At
+or above it the step does not start and the review stops whole: it fails with
+`cost ceiling reached ($X of $Y)` and the name of the step that did not start, writes no
+`review.json` or report, and derives no verdict, so there is nothing to post. It never produces a
+partial review. The run directory keeps what the finished steps wrote.
 
-1. are checked as each starts, so the total can pass the ceiling by what those steps cost.
-
-A pillar, the second check on an approval or the evidence step that did not start is listed as
-skipped with the reason `cost ceiling reached ($X of $Y)`. A review that lost a step this way is
-never an approval: it lists the `approval-check` entry, which makes the verdict a comment. The
-verifier cannot be skipped, so a review that reaches the ceiling before it fails with that reason
-and leaves the pillars' results in its run directory.
+The cost is the sum of what the harnesses reported for finished and failed steps, so a step that
+reports no cost counts as zero, and a step already running is never stopped. Steps that run at
+once (the pillars at `--jobs` above 1) are checked as each starts, so the total can pass the
+ceiling by what those steps cost; a review whose last step crosses the ceiling, with nothing left
+to start, finishes normally. A review stopped by the ceiling is not a harness failure and adds
+nothing to `harness-failures.jsonl`; its tracker row is `failed` with that reason and keeps the cost
+spent. `run` holds it for a human (see [Unattended runs](run.md#when-the-cost-ceiling-stops-a-review)).
 
 `--max-cost USD` on `review` and `run` sets the ceiling for that run and beats the config. A
 value that is not a number above 0 is a usage error.

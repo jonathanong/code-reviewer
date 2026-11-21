@@ -2,12 +2,13 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { DEFAULT_STEP_MODELS } from '../models.mts'
+import { throwIfStopped } from '../step-watch.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
 import { applyApprovalCheck } from './approval-check.mts'
-import { withCeilingSkip } from './ceiling-skip.mts'
 import { approvalCheckInput } from './approval-check-prompt.mts'
+import { failureSummary } from './failure-summary.mts'
 import { skipReview } from './review-skip.mts'
 import { buildAnalysis } from './analysis-prompt.mts'
 import { applyEvidence } from './evidence-step.mts'
@@ -27,7 +28,6 @@ import {
   pillarTexts,
   reviewDependencies,
   failedSkips,
-  message,
   read,
   runDir,
   titleOf,
@@ -78,6 +78,8 @@ async function review(
     ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
+  // A pillar the ceiling kept from starting looks like a failed one, so stop before judging them.
+  throwIfStopped(models.watch)
   requireAnswer(results, out)
   const pillarSkips = [...plan.skipped, ...failedSkips(results)]
   const findings = flattenFindings(results)
@@ -107,6 +109,7 @@ async function review(
     exec: steps.exec,
     input: approvalCheckInput(steps.references, run, output, results, findings, pillarSkips),
   })
+  throwIfStopped(models.watch)
   const { questions } = second
   const { evidence, findings: verified } = await applyEvidence({
     setup: () => steps.evidence(),
@@ -122,8 +125,8 @@ async function review(
     models,
     exec: steps.exec,
   })
-  // Evidence runs after the check, so a ceiling it hit is only known here.
-  const skipped = withCeilingSkip(second.skipped, models)
+  throwIfStopped(models.watch)
+  const { skipped } = second
   const dependencies = reviewDependencies(run, output.dependencies)
   const input = buildReviewInput({
     effort: plan.effort,
@@ -187,14 +190,6 @@ export async function runReview(steps: ReviewSteps, options: ReviewOptions): Pro
     mkdirSync(options.out, { recursive: true })
     return await review(steps, options, closed)
   } catch (error) {
-    const summary: Record<string, unknown> = { claimed: true, error: message(error) }
-    if (!closed.value) {
-      try {
-        await steps.abort()
-      } catch (abortError) {
-        summary.abortError = message(abortError)
-      }
-    }
-    return { ok: false, summary }
+    return { ok: false, summary: await failureSummary(error, closed.value ? undefined : steps) }
   }
 }

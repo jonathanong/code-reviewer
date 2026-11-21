@@ -1,7 +1,8 @@
 import type { StepRan } from '../harness/runner.mts'
 import type { Candidate } from '../harness/types.mts'
+import { ReviewError } from './finding.mts'
 
-/** The start of the message of a step that never started because the review had spent its ceiling. */
+/** The start of the message of a review stopped because its steps had spent the ceiling. */
 export const CEILING_REACHED = 'cost ceiling reached'
 
 /** What a review watches across its steps: progress on stderr, and the cost ceiling. */
@@ -9,12 +10,12 @@ export type StepWatch = {
   /** Writes one progress line; absent when progress is off. */
   write?: (line: string) => void
   now: () => number
-  /** Total cost in US dollars after which no step starts; absent means no ceiling. */
+  /** Total cost in US dollars at which no further step starts and the review stops; absent means no ceiling. */
   ceilingUsd?: number
   /** Cost the harnesses have reported so far; a step that reports none adds nothing. */
   spentUsd: number
-  /** The reason of the first step the ceiling kept from starting. */
-  skippedFor?: string
+  /** The first step the ceiling kept from starting; the review is stopped once this is set. */
+  stopped?: CostCeilingReached
 }
 
 export function createStepWatch(options: {
@@ -37,16 +38,42 @@ const label = (step: string, on: Pick<Candidate, 'harness' | 'model'>) =>
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`
 const dollars = (usd: number) => `$${usd.toFixed(2)}`
 
-/** A step the review did not start: its message is the reason recorded for it. */
-export class CeilingReached extends Error {}
+/**
+ * The review stopped because the ceiling kept `step` from starting. It is not a harness's fault
+ * and not worth an immediate retry: the same review would spend the same again.
+ */
+export class CostCeilingReached extends ReviewError {
+  step: string
+  spentUsd: number
 
-/** Throws `CeilingReached` when the cost so far is at or above the ceiling. */
+  constructor(step: string, spentUsd: number, ceilingUsd: number) {
+    super(
+      `${CEILING_REACHED} (${dollars(spentUsd)} of ${dollars(ceilingUsd)}): ${step} did not start, so no review was produced`,
+    )
+    this.name = 'CostCeilingReached'
+    this.step = step
+    this.spentUsd = spentUsd
+  }
+}
+
+/** Throws `CostCeilingReached` when the cost so far is at or above the ceiling. */
 function checkCeiling(watch: StepWatch, step: string, first: Candidate): void {
   if (watch.ceilingUsd === undefined || watch.spentUsd < watch.ceilingUsd) return
-  const reason = `${CEILING_REACHED} (${dollars(watch.spentUsd)} of ${dollars(watch.ceilingUsd)})`
-  watch.skippedFor ??= reason
-  watch.write?.(`code-reviewer: ${label(step, first)} skipped: ${reason}\n`)
-  throw new CeilingReached(reason)
+  if (watch.stopped !== undefined) throw watch.stopped
+  const stopped = new CostCeilingReached(step, watch.spentUsd, watch.ceilingUsd)
+  watch.stopped = stopped
+  watch.write?.(
+    `code-reviewer: ${label(step, first)} not started, review stopped: ${stopped.message}\n`,
+  )
+  throw stopped
+}
+
+/**
+ * A step that swallows its own failure (a pillar, the check, evidence) cannot hide the ceiling:
+ * the review calls this after each of them and stops whole.
+ */
+export function throwIfStopped(watch: StepWatch | undefined): void {
+  if (watch?.stopped !== undefined) throw watch.stopped
 }
 
 /** Reports a step's start and end, and adds what it cost to the review's total. */
