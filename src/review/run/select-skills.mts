@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
 import { addUsage, describeFailure } from '../benchmark/usage.mts'
-import { RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
+import type { PluginInstall } from '../plugins.mts'
 import { parseFrontmatter } from '../rules/collect.mts'
 import { isolationArgs } from './claude-flags.mts'
 import { readStream } from './stream-output.mts'
@@ -21,10 +21,13 @@ export const SKILL_SELECTION_SCHEMA = {
   properties: { skills: { type: 'array', items: { type: 'string' } } },
 } as const
 
-/** The skills of the installed rule plugins, from their `skills/<dir>/SKILL.md` frontmatter. */
-export function listRuleSkills(installs: readonly PluginInstall[]): RuleSkill[] {
+/** The skills of the installed `rulePlugins`, from their `skills/<dir>/SKILL.md` frontmatter. */
+export function listRuleSkills(
+  installs: readonly PluginInstall[],
+  rulePlugins: readonly string[],
+): RuleSkill[] {
   const found: RuleSkill[] = []
-  for (const plugin of RULE_PLUGINS) {
+  for (const plugin of rulePlugins) {
     const install = installs.find((candidate) => candidate.name === plugin)
     const root = install === undefined ? '' : join(install.installPath, 'skills')
     if (!existsSync(root)) continue
@@ -69,6 +72,8 @@ export type SelectionInput = {
   /** The start of each changed file's patch, so content decides and not only file names. */
   excerpt?: string
   skills: readonly RuleSkill[]
+  /** The configured rule plugins; an empty list means none are wanted, so nothing is selected. */
+  rulePlugins?: readonly string[]
   settings?: object
   exec: Exec
   cwd: string
@@ -76,10 +81,12 @@ export type SelectionInput = {
 
 /**
  * Picks the rule skills for the change. A failed call is tried once more; `review` stops on a
- * choice that still carries an error.
+ * choice that still carries an error. With no rule plugins configured there is nothing to pick,
+ * and no model call; a configured plugin that yields no skills is still an error.
  */
 export async function selectSkills(input: SelectionInput): Promise<SkillChoice> {
   const available = input.skills.length
+  if (input.rulePlugins?.length === 0) return { selected: [], available, usage: null }
   if (available === 0) {
     return { selected: [], available, error: 'No rule skills are installed.', usage: null }
   }

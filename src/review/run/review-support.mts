@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import type { Finding, ReviewInput } from '../finding.mts'
+import { ReviewError, type Finding, type Pillar, type ReviewInput } from '../finding.mts'
 import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
@@ -12,10 +12,17 @@ import { mergeDependencies, readDependencies, type Dependency } from '../depende
 import { readIssues } from '../issues.mts'
 import { readPushFile } from '../push-file.mts'
 import { readStackFile } from '../stack-file.mts'
-import type { PluginInfo } from '../plugins.mts'
+import {
+  pluginSettings,
+  unloadableMessage,
+  unloadableRulePlugins,
+  type PluginInfo,
+} from '../plugins.mts'
 import type { ReferenceSource } from '../rules/references-parse.mts'
 import type { EvidenceSetup } from './evidence-types.mts'
 import type { RunDir } from './pillar-prompt.mts'
+import { renderRulePlugins } from './rule-plugins-prompt.mts'
+import { listRuleSkills, type RuleSkill } from './select-skills.mts'
 import type { PillarResult } from './types.mts'
 
 /** Everything `review` needs from outside: the label and GitHub steps, the plugins, and the model. */
@@ -29,6 +36,8 @@ export type ReviewSteps = {
   /** Renders what `post` would send for `input`, without posting. */
   preview(input: ReviewInput, headSha: string): Promise<PostOutcome>
   plugins(): Promise<PluginInfo>
+  /** The plugins whose skills hold the shared rules; empty means repository rules only. */
+  rulePlugins: readonly string[]
   /** The machine-configured evidence sources for the repository and the reader for their guides. */
   evidence(): Promise<EvidenceSetup>
   /** The machine-configured web references for the repository; none when absent. */
@@ -71,6 +80,35 @@ export function runDir(out: string, sinceSha: string | null): RunDir {
     carried: readCarriedFile(out),
     dependencies: readDependencies(out),
     issues: readIssues(out),
+  }
+}
+
+/**
+ * The `--settings` for every headless run and the skills offered for selection. A configured rule
+ * plugin that is not enabled at user scope fails the review: a run cannot load it, and it would
+ * otherwise contribute nothing without a word.
+ */
+export async function loadRulePlugins(
+  steps: ReviewSteps,
+): Promise<{ settings: object; skills: RuleSkill[] }> {
+  const plugins = await steps.plugins()
+  const missing = unloadableRulePlugins(plugins.installs, steps.rulePlugins)
+  if (missing.length > 0) throw new ReviewError(unloadableMessage(missing))
+  return {
+    settings: pluginSettings(plugins.enabled, steps.rulePlugins),
+    skills: listRuleSkills(plugins.installs, steps.rulePlugins),
+  }
+}
+
+/** The pillar contract and pillar files as the headless runs read them, for the configured rule plugins. */
+export function pillarTexts(steps: ReviewSteps): {
+  contract: string
+  readPillar: (pillar: Pillar) => string
+} {
+  const dir = join(steps.references, 'pillars')
+  return {
+    contract: renderRulePlugins(read(join(dir, '_contract.md')), steps.rulePlugins, true),
+    readPillar: (pillar) => renderRulePlugins(read(join(dir, `${pillar}.md`)), steps.rulePlugins),
   }
 }
 

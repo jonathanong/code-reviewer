@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  RULE_PLUGINS,
+  DEFAULT_RULE_PLUGINS,
   checkPlugins,
   parsePluginInstalls,
   parsePluginList,
   pluginLabels,
   pluginSettings,
+  unloadableMessage,
+  unloadableRulePlugins,
 } from './plugins.mts'
 
 const LIST = JSON.stringify([
@@ -58,8 +60,8 @@ describe('pluginSettings', () => {
   ]
 
   it('keeps only the rule plugins on', () => {
-    expect(RULE_PLUGINS).toEqual(['no-mistakes-rules', 'jong-skills'])
-    expect(pluginSettings(plugins)).toEqual({
+    expect(DEFAULT_RULE_PLUGINS).toEqual(['no-mistakes-rules', 'jong-skills'])
+    expect(pluginSettings(plugins, DEFAULT_RULE_PLUGINS)).toEqual({
       enabledPlugins: {
         'no-mistakes-rules@no-mistakes': true,
         'jong-skills@harness-plugins': true,
@@ -70,13 +72,28 @@ describe('pluginSettings', () => {
   })
 
   it('switches every plugin off for a control run', () => {
-    const { enabledPlugins } = pluginSettings(plugins, false)
+    const { enabledPlugins } = pluginSettings(plugins, DEFAULT_RULE_PLUGINS, false)
     expect(Object.keys(enabledPlugins)).toHaveLength(4)
     expect(Object.values(enabledPlugins).every((on) => !on)).toBe(true)
   })
 
   it('is empty when no plugin is enabled', () => {
-    expect(pluginSettings([])).toEqual({ enabledPlugins: {} })
+    expect(pluginSettings([], DEFAULT_RULE_PLUGINS)).toEqual({ enabledPlugins: {} })
+  })
+
+  it('turns on exactly the configured plugins, and none for an empty list', () => {
+    expect(pluginSettings(plugins, ['superpowers']).enabledPlugins).toEqual({
+      'no-mistakes-rules@no-mistakes': false,
+      'jong-skills@harness-plugins': false,
+      'skills-extra@m': false,
+      'superpowers@official': true,
+    })
+    expect(Object.values(pluginSettings(plugins, []).enabledPlugins)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ])
   })
 })
 
@@ -97,5 +114,21 @@ describe('parsePluginInstalls', () => {
 
   it('rejects output that is not a list', () => {
     expect(() => parsePluginInstalls('{}')).toThrow('did not print an array')
+  })
+})
+
+describe('unloadableRulePlugins', () => {
+  const installs = [{ name: 'a', installPath: '/a' }]
+
+  it('names the configured plugins without a user-scope install, in list order', () => {
+    expect(unloadableRulePlugins(installs, ['z', 'a', 'y'])).toEqual(['z', 'y'])
+    expect(unloadableRulePlugins(installs, ['a'])).toEqual([])
+    expect(unloadableRulePlugins([], [])).toEqual([])
+  })
+
+  it('words the failure with every name', () => {
+    expect(unloadableMessage(['z', 'y'])).toBe(
+      'rule plugins missing or not enabled at user scope: z, y',
+    )
   })
 })

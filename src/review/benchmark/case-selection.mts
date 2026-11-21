@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import { parsePluginInstalls } from '../plugins.mts'
+import { DEFAULT_RULE_PLUGINS, parsePluginInstalls } from '../plugins.mts'
 import { listRuleSkills, selectSkills } from '../run/select-skills.mts'
 import type { SkillChoice } from '../run/types.mts'
 import type { EvalCase } from './cases.mts'
@@ -33,6 +33,7 @@ export async function caseSelector(
 ): Promise<(item: EvalCase, snapshot: Snapshot) => Promise<string[]>> {
   const skills = step.skills(
     parsePluginInstalls(await deps.exec('claude', ['plugin', 'list', '--json'])),
+    DEFAULT_RULE_PLUGINS,
   )
   return async (item, snapshot) => {
     const path = join(out, 'selection', `${item.id}.json`)

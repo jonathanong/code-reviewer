@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_RULE_PLUGINS } from '../plugins.mts'
 import { caseSelector, type SelectStep } from './case-selection.mts'
 import type { EvalCase } from './cases.mts'
 
@@ -37,7 +38,10 @@ describe('caseSelector', () => {
     const { store, select, skills, make } = setup({ enabledPlugins: {} })
     const pick = await make()
     expect(await pick(ITEM, SNAPSHOT)).toEqual(['skills:one'])
-    expect(skills).toHaveBeenCalledWith([{ name: 'skills', installPath: '/p/skills' }])
+    expect(skills).toHaveBeenCalledWith(
+      [{ name: 'skills', installPath: '/p/skills' }],
+      DEFAULT_RULE_PLUGINS,
+    )
     expect(select.mock.calls[0]?.[0]).toMatchObject({
       title: 'Add widget',
       cwd: '/snap/c1',

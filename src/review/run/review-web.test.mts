@@ -62,6 +62,7 @@ async function run(webReferences?: ReviewSteps['webReferences']) {
       installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
+    rulePlugins: ['jong-skills'],
     exec,
     references: fixture('references'),
     ...(webReferences === undefined ? {} : { webReferences }),

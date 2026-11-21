@@ -2,6 +2,13 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-20: the rule plugin list became configurable (no run)
+
+The machine-only `rulePlugins` key replaces the hardcoded list of rule plugins. The default list is
+unchanged and the default prompts are byte-identical to before (a test pins the contract and rules
+text). Benchmarks stay pinned to the default list and never read machine config, so no score is
+affected. No run was made.
+
 ## 2026-11-19: the congruence pillar now checks referenced issues (no run)
 
 `pillars/congruence.md` says to hold the change to what each referenced or closing issue asks, and

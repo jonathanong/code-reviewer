@@ -1,6 +1,7 @@
 import type { RepoConfig, RepoConfigs } from './rules/config.mts'
 import type { EvidenceSource } from './rules/evidence-parse.mts'
 import type { ReferenceSource } from './rules/references-parse.mts'
+import { DEFAULT_RULE_PLUGINS } from './plugins.mts'
 import { DEFAULT_RUN, type RunSettings } from './rules/run-parse.mts'
 import type { TargetConfig } from './rules/target-config.mts'
 import type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
@@ -87,66 +88,76 @@ export function settingLayers(
   }
 }
 
+type MachineLayer = 'machine repo' | 'machine owner' | null
+
+/**
+ * One machine-only key: the highest machine layer that sets it. The reviewed repository's own file
+ * is never consulted.
+ */
+function machineSetting<K extends keyof RepoConfig>(
+  configs: RepoConfigs,
+  scope: string,
+  key: K,
+): { value: RepoConfig[K] | undefined; from: MachineLayer } {
+  const [layer, config] = candidates(configs, scope, undefined).find(
+    ([, candidate]) => candidate?.[key] !== undefined,
+  ) ?? [null, undefined]
+  return {
+    value: config?.[key],
+    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
+  }
+}
+
 export type EvidenceSettings = {
   sources: EvidenceSource[]
   /** The machine layer whose list applies; null when none sets one. */
-  from: 'machine repo' | 'machine owner' | null
+  from: MachineLayer
 }
 
-/**
- * The evidence sources for `owner/name` (or `owner`): the highest machine layer that sets the key.
- * The reviewed repository's own file is never consulted, so a pull request's repository cannot
- * grant the reviewer commands.
- */
+/** The evidence sources for `owner/name` (or `owner`); a pull request's repository cannot grant the reviewer commands. */
 export function resolveEvidence(configs: RepoConfigs, scope: string): EvidenceSettings {
-  const [layer, config] = candidates(configs, scope, undefined).find(
-    ([, candidate]) => candidate?.evidence !== undefined,
-  ) ?? [null, undefined]
-  return {
-    sources: config?.evidence ?? [],
-    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
-  }
+  const { value, from } = machineSetting(configs, scope, 'evidence')
+  return { sources: value ?? [], from }
 }
 
 export type ReferenceSettings = {
   sources: ReferenceSource[]
   /** The machine layer whose list applies; null when none sets one. */
-  from: 'machine repo' | 'machine owner' | null
+  from: MachineLayer
 }
 
-/**
- * The web references for `owner/name` (or `owner`): the highest machine layer that sets the key.
- * The reviewed repository's own file is never consulted, so a pull request's repository cannot
- * grant the reviewer network access.
- */
+/** The web references for `owner/name` (or `owner`); a pull request's repository cannot grant the reviewer network access. */
 export function resolveReferences(configs: RepoConfigs, scope: string): ReferenceSettings {
-  const [layer, config] = candidates(configs, scope, undefined).find(
-    ([, candidate]) => candidate?.references !== undefined,
-  ) ?? [null, undefined]
-  return {
-    sources: config?.references ?? [],
-    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
-  }
+  const { value, from } = machineSetting(configs, scope, 'references')
+  return { sources: value ?? [], from }
 }
 
 export type ApprovalCheckSettings = {
   enabled: boolean
   /** The machine layer whose value applies; null when none sets one, which leaves the check on. */
-  from: 'machine repo' | 'machine owner' | null
+  from: MachineLayer
+}
+
+/** Whether a full review that would approve gets a second check first: on unless a machine layer sets `approvalCheck` to false. */
+export function resolveApprovalCheck(configs: RepoConfigs, scope: string): ApprovalCheckSettings {
+  const { value, from } = machineSetting(configs, scope, 'approvalCheck')
+  return { enabled: value ?? true, from }
+}
+
+export type RulePluginSettings = {
+  /** Plugin names, the part before `@`; empty means repository rules only. */
+  names: readonly string[]
+  /** The machine layer whose list applies; null when none sets one, which leaves the defaults. */
+  from: MachineLayer
 }
 
 /**
- * Whether a full review that would approve gets a second check first: on unless a machine layer
- * sets `approvalCheck` to false. The reviewed repository's own file is never consulted.
+ * The plugins whose skills hold the shared rules: the highest machine layer that sets
+ * `rulePlugins` replaces the defaults whole, and an empty list is a value, not an absence.
  */
-export function resolveApprovalCheck(configs: RepoConfigs, scope: string): ApprovalCheckSettings {
-  const [layer, config] = candidates(configs, scope, undefined).find(
-    ([, candidate]) => candidate?.approvalCheck !== undefined,
-  ) ?? [null, undefined]
-  return {
-    enabled: config?.approvalCheck ?? true,
-    from: layer === 'machine repo' || layer === 'machine owner' ? layer : null,
-  }
+export function resolveRulePlugins(configs: RepoConfigs, scope: string): RulePluginSettings {
+  const { value, from } = machineSetting(configs, scope, 'rulePlugins')
+  return { names: value ?? DEFAULT_RULE_PLUGINS, from }
 }
 
 /**

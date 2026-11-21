@@ -54,6 +54,8 @@ change to how you queue, review or post; `report.md` says which kind of push it 
 
 1. Check the rule plugins before any review:
    `code-reviewer plugins --require no-mistakes-rules --require jong-skills`.
+   Require the names `code-reviewer settings --repo OWNER/NAME` prints under `rulePlugins` (by default
+   these two); `run` checks them itself.
    It prints the enabled plugins with versions and exits 1 naming any that are missing. Then
    confirm your own skill list shows skills from each required plugin: a session started before a
    plugin was installed or updated does not see it. On either failure, stop, review nothing, and
