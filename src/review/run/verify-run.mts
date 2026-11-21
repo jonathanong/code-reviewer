@@ -1,8 +1,9 @@
 import { EFFORT } from '../../harness/types.mts'
-import type { StepRan } from '../../harness/runner.mts'
+import { describeStepFailure, type StepRan } from '../../harness/runner.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import { DEFAULT_STEP_MODELS, runModelStep, tierOfPlanned, type StepModels } from '../models.mts'
 import type { Model } from '../plan.mts'
+import { saveFailedSteps } from './failed-steps.mts'
 import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
 import { referenceDomains } from './references-prompt.mts'
@@ -65,7 +66,11 @@ export async function runReviewVerifier(
       ...(options.settings === undefined ? {} : { settings: options.settings }),
     },
     options.exec,
-  )
+  ).catch((error: unknown) => {
+    // The review fails with the verifier, and no report is written to carry this step's `ran`.
+    saveFailedSteps(input.run.out, [{ step: 'verifier', ran: describeStepFailure(error).ran }])
+    throw error
+  })
   return {
     ...parseReviewVerifier(
       run,

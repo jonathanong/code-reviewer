@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { ExecError } from '../benchmark/exec.mts'
 
 import { readTranscript } from '../../harness/claude-stream.mts'
 import { ReviewError, type Finding } from '../finding.mts'
@@ -157,6 +162,28 @@ describe('parseReviewVerifier', () => {
 })
 
 describe('runReviewVerifier', () => {
+  const dirs: string[] = []
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('saves a verifier that timed out for the tracker and still throws', async () => {
+    const out = mkdtempSync(join(tmpdir(), 'verifier-'))
+    dirs.push(out)
+    const exec = vi.fn(async () => {
+      throw new ExecError('claude exited with null', null, '', { killed: true })
+    })
+    await expect(
+      runReviewVerifier(
+        { ...INPUT, run: { ...INPUT.run, out } },
+        { model: 'opus', mode: 'full', tree: '/t', exec },
+      ),
+    ).rejects.toThrow('claude exited with null')
+    expect(JSON.parse(readFileSync(join(out, 'failed-steps.json'), 'utf8'))).toEqual([
+      expect.objectContaining({ step: 'verifier', harness: 'claude', failure: 'timeout' }),
+    ])
+  })
+
   it('runs read-only with the Skill tool, no explorer, and the extended schema', async () => {
     const exec = vi.fn(async () =>
       stream({ summary: 's', pullRequestSummary: 'p', findings: [verified] }),

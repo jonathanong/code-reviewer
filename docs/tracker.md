@@ -29,7 +29,10 @@ When a step fails because of its harness (see [Filing issues](issues.md#what-is-
 tracker also appends one line per step to `harness-failures.jsonl` beside it:
 `{at, harness, step, kind, run}`, `run` being `repo#pr@head`, which keeps a review that is
 recorded twice from counting twice. It holds no error text. The kind comes from `report.json`'s
-`ran` list.
+`ran` list; a review that fails before its report (the verifier, skill selection, or every pillar
+failing) leaves the failed steps in `failed-steps.json` in the run directory, which is read the
+same way. The harness version is not recorded: only a stream-json run prints it, and a step that
+timed out or printed nothing has none.
 
 `explain` prints a Markdown explainer for someone who has not read the code: what the pull request
 does, the verdict and why it is that verdict in plain words (a blocking finding: Request Changes; a

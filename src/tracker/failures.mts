@@ -4,6 +4,9 @@ import { HARNESS_FAILURE_KINDS, type HarnessFailureKind } from '../harness/failu
 import { asRecord, asString } from './json.mts'
 import type { TrackerIo } from './types.mts'
 
+/** Beside a review's `report.json`; see `saveFailedSteps`. */
+export const FAILED_STEPS_FILE = 'failed-steps.json'
+
 /** Beside the tracker's `reviews.jsonl` in the state directory. */
 export const FAILURES_FILE = 'harness-failures.jsonl'
 
@@ -45,6 +48,19 @@ export function readFailures(io: TrackerIo): HarnessFailureRow[] {
       return []
     }
   })
+}
+
+/** The steps a review that stopped before its report saved as failed; none when it saved none. */
+export function readFailedSteps(
+  read: (path: string) => string | undefined,
+  out: string,
+): unknown[] {
+  try {
+    const parsed: unknown = JSON.parse(read(join(out, FAILED_STEPS_FILE)) ?? '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
 }
 
 /**
