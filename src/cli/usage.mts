@@ -20,6 +20,7 @@ code-reviewer outcomes (--repo owner/name... | --owner LOGIN) [--pr N] [--since 
 code-reviewer outcomes digest [--day YYYY-MM-DD] [--out DIR]
 code-reviewer issues [--dry-run] [--since DAYS]
 code-reviewer doctor [--repo owner/name | --owner LOGIN] [--offline]
+code-reviewer models --harness opencode [--free] [--model ID]... [--probes N] [--jobs N] [--out DIR]
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
@@ -60,6 +61,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   --model STEP=HARNESS:MODEL (review and run, repeatable) sets one step's harness and model for that run, over the models config; a step named twice gets fallbacks in flag order. STEP is select, pillars, pillar.NAME, verifier, verifier.light, evidence or approvalCheck.
   doctor checks, without changing or posting anything, Node, git, gh, the App config, the machine config, the rule plugins (and how current they are), the harness binaries and the state directories, and prints one JSON line {ok, warn, fail, checks}; it exits 1 on a fail (docs/doctor.md).
   --max-cost USD (review and run) stops starting steps once the cost the harnesses reported has reached USD, over limits.maxCostUsd in the machine config; the review lists what it skipped and is never an approval. --quiet turns off the progress lines review and run print to stderr, one when each step starts and ends.
+  models lists the models the harness offers (opencode models; --free keeps ids ending in -free and a few known free ones, a naming heuristic; --model replaces the list), runs synthetic probes on each (--probes times each, --jobs at a time), and prints one JSON report on stdout and a table on stderr, ranked by found, valid, then seconds; --out DIR also writes models.json and models.md. It sends only its own tiny synthetic files, never a diff (docs/models.md).
   resolve resolves review threads of fixed findings.
   review and post also append a row to the machine-local tracker, reviews.jsonl in the state home
   ($XDG_STATE_HOME/code-reviewer, default ~/.local/state/code-reviewer, or CODE_REVIEWER_STATE_DIR).

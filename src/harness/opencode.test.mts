@@ -29,6 +29,9 @@ const args = (...rest: string[]) => [
   '--format',
   'json',
   '--pure',
+  '--print-logs',
+  '--log-level',
+  'ERROR',
   ...rest,
 ]
 const READ_CONFIG = JSON.stringify({
@@ -216,8 +219,19 @@ describe('opencode describeFailure', () => {
 })
 
 describe('opencode classifyFailure', () => {
-  it('never classifies a failure as one to wait out', () => {
+  it('classifies an unrecognised failure as not one to wait out', () => {
     const error = new ExecError('opencode exited with 1', 1, fixture('opencode-error.jsonl'), null)
     expect(harness.classifyFailure(error)).toStrictEqual({ kind: 'other' })
+    expect(harness.classifyFailure('Free usage limit reached')).toStrictEqual({ kind: 'other' })
+  })
+
+  it('reads the free usage limit from the log tail of a run killed at its timeout', () => {
+    const log =
+      'level=ERROR message="stream error" error.error="AI_APICallError: Free usage limit reached. Free models work in OpenCode"'
+    const error = new ExecError(`opencode exited with null\n${log}`, null, '', null)
+    expect(harness.classifyFailure(error)).toStrictEqual({
+      kind: 'rate_limited',
+      retryAfterSeconds: 3600,
+    })
   })
 })

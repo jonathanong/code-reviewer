@@ -1,0 +1,15 @@
+{
+  "name": "unawaited-promise",
+  "prompt": "Review the files in the current directory for defects. Read them, then report each real defect.",
+  "files": [
+    {
+      "path": "src/save.js",
+      "content": "import { writeRecord } from './db.js'\n\nexport async function saveUser(user) {\n  const record = { id: user.id, name: user.name }\n  writeRecord(record)\n  return { saved: true }\n}\n"
+    },
+    {
+      "path": "src/db.js",
+      "content": "export async function writeRecord(record) {\n  await fetch('https://db.example.test/records', {\n    method: 'POST',\n    body: JSON.stringify(record),\n  })\n}\n"
+    }
+  ],
+  "planted": { "path": "src/save.js", "line": 5 }
+}

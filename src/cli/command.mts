@@ -11,6 +11,7 @@ import { labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type ReviewDeps } from './deps.mts'
 import { explainCommand, trackerCommand } from './command-tracker.mts'
 import { runCommand, usageFailure } from '../run/command.mts'
+import { modelsCommand } from '../models/command.mts'
 import { digestCommand, outcomesCommand } from '../outcomes/command.mts'
 import { issuesCommand } from '../issues/command.mts'
 import { createIssuesIo } from '../issues/io.mts'
@@ -19,7 +20,7 @@ import { REVIEW_USAGE } from './usage.mts'
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, bench, bench-verifier, or bench-selection'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -66,6 +67,9 @@ function parse(args: string[]) {
       post: { type: 'string' },
       day: { type: 'string' },
       offline: { type: 'boolean' },
+      harness: { type: 'string' },
+      free: { type: 'boolean' },
+      probes: { type: 'string' },
     },
   }).values
 }
@@ -127,6 +131,7 @@ async function run(
     return 0
   }
   if (subcommand === 'doctor') return doctorCommand(values, deps)
+  if (subcommand === 'models') return modelsCommand(values, deps.exec)
   if (subcommand === 'report') {
     print(reportCommand(values))
     return 0
