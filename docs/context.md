@@ -45,3 +45,29 @@ What the pull request says it fixes or reverts, read from its own commit message
 there; the API is not called. For each commit found locally the section gives its short sha,
 date, subject, its files (capped), and whether it touched files this pull request also changes.
 References not found locally are listed as such. Nothing referenced gives no section.
+
+## Change shape
+
+Facts about the size and repetition of the diff, so a reviewer can judge whether a large pull
+request is mechanical (for example a lint rule enabled and auto-fixed) and whether it should be
+split. It states facts and does not judge. Everything comes from local `git` in the checkout
+(`diff baseSha...headSha`, `diff -w`, `log`, `show`), never a model.
+
+- **Size**: files and lines, by top-level directory and by kind (source, test, docs, config,
+  lockfile, generated). Kinds reuse the path classification of the light/full mode
+  (`src/review/triggers.mts`).
+- **Repetition**: each hunk is reduced to a signature, its removed and added lines with strings,
+  numbers and identifiers replaced by placeholders (keywords and operators kept) and whitespace
+  collapsed. The top three signatures that cover at least three hunks are reported with their
+  hunk and file counts, one verbatim example each, and the share of all hunks that the top one and
+  the top three cover. Hunks in generated files and lockfiles are left out.
+- **Renames and whitespace**: files that are pure renames (`R100`), and changed lines that are whitespace-only (`git diff --numstat`
+  against `git diff -w --numstat`, outside generated files) and files that change only in whitespace.
+- **Config**: lint, format and compiler config files in the diff, with the changed keys when a file
+  is small plain JSON.
+- **Commits**: per commit, files and lines.
+- **Areas**: the top-level directories of hunks outside the listed signatures.
+
+A diff with no more reviewable lines than the small-pull-request threshold of the mode choice
+(`SMALL_PR_LINES`) has no section. Work is bounded by `CAPS` in `src/review/context/change-shape/index.mts`
+(patch text, hunks analysed, commits read); when one is hit the section says so. The patch is read whole by `git` before it is cut.

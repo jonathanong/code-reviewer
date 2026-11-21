@@ -32,6 +32,15 @@ describe('parseReferences', () => {
     expect(found.numbers).toEqual([7, 11])
   })
 
+  it("ignores the commit's own trailing (#N) on the subject but not a body or mid-subject number", () => {
+    const found = parseReferences([
+      'feat: context sections for linked regressions (#85)',
+      'fix: regress #40 handling (#86)\n\nRegression from #41 (#42)',
+      'Regression of #40 again',
+    ])
+    expect(found.numbers).toEqual([40, 41, 42])
+  })
+
   it('finds nothing in an ordinary message', () => {
     expect(parseReferences(['Add feature (#3)\n', ''])).toEqual({
       shas: [],
