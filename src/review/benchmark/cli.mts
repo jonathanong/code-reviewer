@@ -1,18 +1,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { describeStepFailure } from '../../harness/runner.mts'
 import { PILLARS, type Pillar } from '../pillar-name.mts'
-import { caseSelector, defaultSelectStep, type SelectStep } from './case-selection.mts'
-import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
-import { pool } from '../run/pool.mts'
-import { judgeAll, type RawResult } from './judge-all.mts'
-import { benchPlugins } from './plugin-settings.mts'
-import { runPillar } from './runner.mts'
+import { defaultSelectStep, type SelectStep } from './case-selection.mts'
+import { parseEvalCases, type EvalCase } from './cases.mts'
+import { parseExcerpts } from './excerpts.mts'
+import { judgeAll } from './judge-all.mts'
+import { runAll } from './run-all.mts'
 import { scoreAll, type Options } from './score-all.mts'
-import { NO_RULES, stageCaseRules } from './rules.mts'
-import { defaultExec, prepareSnapshot, type Exec, type Snapshot } from './snapshot.mts'
+import { stageCaseRules } from './rules.mts'
+import { defaultExec, prepareSnapshot, type Exec } from './snapshot.mts'
 
 export type BenchDeps = {
   exec: Exec
@@ -61,80 +59,6 @@ function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] 
   return PILLARS.filter((pillar) => used.has(pillar))
 }
 
-async function runAll(
-  cases: EvalCase[],
-  pillars: Pillar[],
-  options: Options,
-  deps: PillarBenchDeps,
-): Promise<void> {
-  const rawPath = (pillar: Pillar, id: string) => join(options.out, 'raw', pillar, `${id}.json`)
-  if (options.scoreOnly) return
-  const { labels: plugins, settings } = await benchPlugins(
-    deps.exec,
-    deps.cwd(),
-    !options.noRules,
-    (line) => deps.log(line),
-  )
-  const snapshots = new Map<string, Snapshot>()
-  const digests = new Map<string, string>()
-  // `--select` adds review's skill-selection step, so a pillar is told which skills to load.
-  const select =
-    options.select && !options.noRules
-      ? await caseSelector(options.out, settings, deps, deps.selection)
-      : undefined
-  const selected = new Map<string, string[]>()
-  for (const item of new Set(pillars.flatMap((pillar) => casesForPillar(cases, pillar)))) {
-    deps.log(`snapshot ${item.id}`)
-    const snapshot = await deps.prepare(
-      item,
-      join(options.out, 'cache'),
-      join(options.out, 'work'),
-      deps.exec,
-    )
-    snapshots.set(item.id, snapshot)
-    // The digest keys a saved raw result to the rules it saw; control runs record `none`.
-    digests.set(item.id, options.noRules ? NO_RULES : await deps.stageRules(item, snapshot))
-    if (select !== undefined) selected.set(item.id, await select(item, snapshot))
-  }
-  const contractPath = join(options.prompts, '_contract.md')
-  const contract = deps.exists(contractPath) ? deps.readFile(contractPath).trim() : ''
-  const tasks = pillars.flatMap((pillar) => {
-    const pillarPrompt = [contract, deps.readFile(join(options.prompts, `${pillar}.md`))]
-      .filter((part) => part.length > 0)
-      .join('\n\n')
-    return casesForPillar(cases, pillar).map((item) => ({ pillar, pillarPrompt, item }))
-  })
-  await pool(tasks, options.jobs, async ({ pillar, pillarPrompt, item }) => {
-    deps.log(`run ${pillar} ${item.id}`)
-    const dir = (snapshots.get(item.id) as Snapshot).dir
-    const chosen = selected.get(item.id)
-    const seen = {
-      rules: digests.get(item.id) as string,
-      plugins,
-      ...(chosen === undefined ? {} : { selected: chosen }),
-    }
-    let result: RawResult
-    try {
-      const { model, maxTurns } = options
-      const run = {
-        pillar,
-        pillarPrompt,
-        model,
-        maxTurns,
-        skills: !options.noRules,
-        ...(chosen === undefined ? {} : { selected: chosen }),
-        ...(settings === undefined ? {} : { settings }),
-      }
-      const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
-      result = { findings, skills, skillTool: !options.noRules, usage, ...seen }
-    } catch (error) {
-      const { message, usage } = describeStepFailure(error)
-      result = { error: message, ...(usage === null ? {} : { usage }), ...seen }
-    }
-    deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
-  })
-}
-
 /** `code-reviewer bench`: run pillar prompts over labeled cases and score them. */
 export async function runReviewBenchCli(
   args: string[],
@@ -156,6 +80,7 @@ export async function runReviewBenchCli(
       judge: { type: 'string' },
       'no-rules': { type: 'boolean' },
       select: { type: 'boolean' },
+      excerpts: { type: 'string' },
       baseline: { type: 'string' },
     },
   })
@@ -169,6 +94,16 @@ export async function runReviewBenchCli(
     dirname(values.cases),
   ).filter((item) => ids.size === 0 || ids.has(item.id))
   const pillars = pickPillars(values.pillar ?? [], cases)
+  const excerpts =
+    values.excerpts === undefined
+      ? {}
+      : {
+          excerpts: parseExcerpts(
+            values.excerpts,
+            values.select === true,
+            values['no-rules'] === true,
+          ),
+        }
   const options: Options = {
     out: values.out,
     prompts: values.prompts ?? '',
@@ -179,6 +114,7 @@ export async function runReviewBenchCli(
     judge: values.judge,
     noRules: values['no-rules'] === true,
     select: values.select === true,
+    ...excerpts,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }
   await runAll(cases, pillars, options, deps)

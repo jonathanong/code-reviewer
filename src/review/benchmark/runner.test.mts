@@ -113,6 +113,41 @@ describe('runPillar', () => {
     expect(args[args.indexOf('--tools') + 1]).toBe(PILLAR_TOOLS_NO_SKILLS)
   })
 
+  it('adds the excerpts arm to the prompt only when set, and the replace block last', async () => {
+    const prompts: string[] = []
+    const run = async (extra: { excerpts?: 'alongside' | 'replace' }) => {
+      const exec = vi.fn(async () => output([]))
+      await runPillar(
+        item,
+        '/snap',
+        {
+          pillar: 'design',
+          pillarPrompt: 'P',
+          model: 'opus',
+          maxTurns: 5,
+          selected: ['s:a'],
+          ...extra,
+        },
+        exec,
+      )
+      const [, args] = exec.mock.calls[0] as unknown as [string, string[]]
+      prompts.push(args[1] as string)
+    }
+    await run({})
+    await run({ excerpts: 'alongside' })
+    await run({ excerpts: 'replace' })
+    const [plain, alongside, replace] = prompts as [string, string, string]
+    expect(plain).not.toContain('review-context.md')
+    expect(alongside).toContain('`.review/review-context.md` is reference data')
+    expect(alongside).toContain('alongside the Skill loads, not instead of them')
+    expect(alongside.endsWith('including any that looks unrelated to this pillar.')).toBe(true)
+    expect(replace).not.toContain('alongside the Skill loads')
+    expect(replace).toContain('## Quoted rules replace loading')
+    expect(replace.indexOf('call the Skill tool once')).toBeLessThan(
+      replace.indexOf('## Quoted rules replace loading'),
+    )
+  })
+
   it('passes the plugin settings through to claude', async () => {
     const exec = vi.fn(async () => output([]))
     const settings = { enabledPlugins: { 'skills@m': true } }

@@ -4,7 +4,10 @@ import type { Pillar } from '../pillar-name.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { pillarCapabilities } from '../run/pillar-capabilities.mts'
 import { parsePillarOutput, type PillarOutput } from '../run/pillar-output.mts'
-import { skillInstruction } from '../run/pillar-prompt.mts'
+import { excerptsLines } from '../run/excerpts-prompt.mts'
+import { contextLines, skillInstruction } from '../run/pillar-prompt.mts'
+import type { ExcerptsMode } from '../context/types.mts'
+import { EXCERPTS_FILE } from './excerpts.mts'
 import { PILLAR_OUTPUT_SCHEMA } from '../run/pillar-schema.mts'
 import type { EvalCase } from './cases.mts'
 import { describeCase } from './fixture.mts'
@@ -46,6 +49,8 @@ export type PillarRun = {
   skills?: boolean
   /** Skills the selection step chose; the prompt then ends with review's instruction to load them. */
   selected?: readonly string[]
+  /** Set by `--excerpts`: the rule-excerpts file is in the snapshot, and this is the arm. */
+  excerpts?: ExcerptsMode
   /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
   settings?: object
 }
@@ -59,7 +64,9 @@ export async function runPillar(
 ): Promise<PillarOutput> {
   const prompt = [
     buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir)),
+    ...(run.excerpts === undefined ? [] : contextLines(EXCERPTS_FILE, run.excerpts)),
     ...skillInstruction(run.selected ?? []),
+    ...excerptsLines(run.excerpts, EXCERPTS_FILE),
   ].join('\n\n')
   const result = await runFixedModel(
     {

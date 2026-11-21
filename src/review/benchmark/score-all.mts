@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 
+import type { ExcerptsMode } from '../context/types.mts'
 import type { Pillar } from '../pillar-name.mts'
 import { casesForPillar, type EvalCase } from './cases.mts'
 import type { BenchDeps } from './cli.mts'
@@ -9,9 +10,12 @@ import { renderSummaryTable, summarizePillar, type CaseScore } from './score.mts
 import { skillNotes, type SkillCase } from './skills-score.mts'
 import type { Usage } from './usage.mts'
 import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
+import { armOf, renderArms, summarizeLoads, type ArmSummary } from './excerpts-arm.mts'
 import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
+  /** Set by `--excerpts`; scoring reads the arm from each saved result. */
+  excerpts?: ExcerptsMode | undefined
   out: string
   prompts: string
   model: string
@@ -25,6 +29,9 @@ export type Options = {
   /** `--out` of an earlier `--no-rules` run of the same cases, for the paired control. */
   baseline?: string | undefined
 }
+
+const armLabel = (report: ReadonlyArray<{ arm: ArmSummary }>) =>
+  [...new Set(report.map((entry) => entry.arm.excerpts).filter((arm) => arm !== null))].join(', ')
 
 const armName = (noRules: boolean) => (noRules ? 'control' : 'with skills')
 
@@ -43,15 +50,19 @@ export function scoreAll(
     const tools: boolean[] = []
     const usages: Usage[] = []
     const runUsages: Array<Usage | null> = []
+    const arms: Array<ExcerptsMode | null> = []
+    const loads: Array<number | null> = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
       runUsages.push(result.usage)
+      arms.push(result.excerpts)
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
         continue
       }
       scores.push(result.score)
+      loads.push(result.skillLoads)
       tools.push(result.skillTool)
       if (result.skillCase !== null) skillCases.push(result.skillCase)
     }
@@ -69,9 +80,13 @@ export function scoreAll(
       )
       models.push(summarizeByModel(pillar, armName(true), controlUsages))
     }
-    return { summary, scores, skillCases, errors, models }
+    const arm: ArmSummary = { excerpts: armOf(arms), skillLoads: summarizeLoads(loads) }
+    return { summary, scores, skillCases, errors, models, arm }
   })
-  deps.writeFile(join(out, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`)
+  // Only an `--excerpts` run records its arm, so a plain run's summary.json and table are unchanged.
+  const armed = report.some((entry) => entry.arm.excerpts !== null)
+  const saved = report.map(({ arm, ...entry }) => (armed ? { ...entry, ...arm } : entry))
+  deps.writeFile(join(out, 'summary.json'), `${JSON.stringify(saved, null, 2)}\n`)
   const errorLines = report.flatMap((entry) =>
     entry.errors.map((line) => `- ${entry.summary.pillar} ${line}`),
   )
@@ -87,10 +102,11 @@ export function scoreAll(
   )
   const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
   const markdown = [
-    `Matching: ${matching}.`,
+    `Matching: ${matching}.${armed ? ` Excerpts: ${armLabel(report)}.` : ''}`,
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',
     renderCostTable(report.map((entry) => entry.summary)),
+    ...renderArms(report.map((entry) => ({ pillar: entry.summary.pillar, arm: entry.arm }))),
     'Tokens by model (each figure is total / per run; Runs is using the model of covered of expected):',
     renderModelReports(report.flatMap((entry) => entry.models)),
     ...(notes.length > 0 ? ['Skills:', notes.join('\n')] : []),
