@@ -90,7 +90,7 @@ export function runDir(
 
 /**
  * The `--settings` for every headless run and the skills offered for selection. A configured rule
- * plugin that is not enabled at user scope fails the review: a run cannot load it, and it would
+ * plugin that is not enabled at user scope, or that holds no skills, fails the review: it would
  * otherwise contribute nothing without a word.
  */
 export async function loadRulePlugins(
@@ -99,10 +99,12 @@ export async function loadRulePlugins(
   const plugins = await steps.plugins()
   const missing = unloadableRulePlugins(plugins.installs, steps.rulePlugins)
   if (missing.length > 0) throw new ReviewError(unloadableMessage(missing))
-  return {
-    settings: pluginSettings(plugins.enabled, steps.rulePlugins),
-    skills: listRuleSkills(plugins.installs, steps.rulePlugins),
-  }
+  const skills = listRuleSkills(plugins.installs, steps.rulePlugins)
+  const empty = steps.rulePlugins.filter(
+    (name) => !skills.some((skill) => skill.name.startsWith(`${name}:`)),
+  )
+  if (empty.length > 0) throw new ReviewError(`rule plugins with no skills: ${empty.join(', ')}`)
+  return { settings: pluginSettings(plugins.enabled, steps.rulePlugins), skills }
 }
 
 /** The pillar contract and pillar files as the headless runs read them, for the configured rule plugins. */

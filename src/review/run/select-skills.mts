@@ -82,7 +82,7 @@ export type SelectionInput = {
 /**
  * Picks the rule skills for the change. A failed call is tried once more; `review` stops on a
  * choice that still carries an error. With no rule plugins configured there is nothing to pick,
- * and no model call; a configured plugin that yields no skills is still an error.
+ * and no model call; offered no skills for a non-empty list, it reports an error.
  */
 export async function selectSkills(input: SelectionInput): Promise<SkillChoice> {
   const available = input.skills.length

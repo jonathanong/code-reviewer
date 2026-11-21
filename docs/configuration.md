@@ -164,7 +164,7 @@ into a headless run, and every skill description from it sits in each run's cont
 decides what a pull request's review is allowed to load.
 
 Every listed plugin must be enabled at user scope: `run` refuses, and `review` fails, naming a
-plugin that is not. `code-reviewer settings` prints the names and the layer they came from. `bench`
+plugin that is not. `review` also fails naming a listed plugin that holds no skills. `code-reviewer settings` prints the names and the layer they came from. `bench`
 ignores this key and always uses the default list, so scores stay comparable across machines.
 
 ## `labels` and `checkRun`

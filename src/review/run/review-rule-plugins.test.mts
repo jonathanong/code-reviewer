@@ -147,21 +147,14 @@ describe('runReview rule plugins', () => {
     expect(abort).toHaveBeenCalledTimes(1)
   })
 
-  describe('a non-empty list that yields no skills', () => {
-    it('still fails the review', async () => {
-      const plugins = {
-        enabled: [],
-        installs: [{ name: 'other', installPath: fixture('plugins/missing') }],
-      }
-      const { outcome, out, seen } = await run(['other'], plugins)
-      expect(outcome.ok).toBe(false)
-      expect(outcome.summary.error).toBe(
-        'Skill selection failed, so no review was run: No rule skills are installed.',
-      )
-      expect(JSON.parse(readFileSync(join(out, 'skills.json'), 'utf8')).error).toBe(
-        'No rule skills are installed.',
-      )
-      expect(seen).toEqual([])
-    })
+  it('fails before any model call naming each configured plugin that holds no skills', async () => {
+    const plugins = {
+      enabled: [],
+      installs: [SKILLS, { name: 'other', installPath: fixture('plugins/missing') }],
+    }
+    const { outcome, seen } = await run(['jong-skills', 'other'], plugins)
+    expect(outcome.ok).toBe(false)
+    expect(outcome.summary.error).toBe('rule plugins with no skills: other')
+    expect(seen).toEqual([])
   })
 })
