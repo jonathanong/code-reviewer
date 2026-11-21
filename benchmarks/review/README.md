@@ -1,5 +1,10 @@
 # Code review benchmarks
 
+This suite measures the reviewer's pillar runs, skill selection and verifier on labeled pull
+requests. A score answers one question: does the reviewer find the defect a case expects, and
+does it find more with the installed rule skills than without them? Clean changes are in the
+suite to measure noise.
+
 ## Current results
 
 One run: 2026-11-16, at the commit that added this table, reviewer Sonnet 5.5, selection Haiku,
@@ -9,23 +14,9 @@ not re-measured under the new name). Reviewer and selection cost
 $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
-Not re-measured since the 2026-11-19 snapshot change: the mined-case rows below were taken before
-the reviewer could read history, so they are not comparable with a run made now. The contract and
-verifier prompts also gained a Stacks section after the last run (no bench case is stacked, so the
-Stack block of a run prompt never appears); no score was re-measured for it. The verifier prompt
-and output schema later gained open questions and a derived verdict; see the 2026-11-19 entry in
-[HISTORY.md](HISTORY.md). No verifier row is re-measured for it. The contract's definition of `blocking` was also tightened
-and the verifier re-decides severity; no pillar or verifier row is re-measured for that, and
-severity agreement is not comparable with earlier rows. The contract's posted-text rules (short,
-no review narration) are likewise not re-measured, and make every pillar and verifier row not
-comparable with earlier ones. The verifier prompt later gained one paragraph about the approval
-check, a `review`-only step the benchmark does not run; no verifier row is re-measured for it. The contract later gained a premise-challenge rule and an
-optional `prevent` line on findings; no pillar or verifier row is re-measured for that either.
-The contract and verifier prompts also gained a Carried changes section and step (no bench run has
-a `carried.json`, so that block never appears); that is not re-measured either. They also gained
-a Dependencies section and step (no bench run has a `dependencies.json`); not re-measured.
-The congruence pillar text also changed to hold the change to the issues it links;
-not re-measured.
+**Every row below is stale.** The pillar contract, the verifier prompt and the mined-case
+snapshots have all changed since this run, so no row is comparable with a run made now. The
+"(no run)" entries in [HISTORY.md](HISTORY.md) list each change and the rows it affects.
 
 Mined cases (8 real pull requests from `cases.json`):
 
@@ -89,6 +80,22 @@ judged by Sonnet, $25.14):
 - It confirmed all 5 other high or blocking findings it was asked to check, so this run does not
   show whether it would refute a wrong one.
 - It costs about $0.24 a fixture case and $0.43 a mined case, more than a pillar run.
+
+### How to read the numbers
+
+- Every rate is out of 3 attempts per arm. A difference of one catch is noise.
+- The result is the gap between "with skills" and "without". A row where both arms score the
+  same is a ceiling case: it shows the skills do no harm, not that they help.
+- The `vouchington-2936` note is from a later run than the table; it says so.
+
+### What the suite does not measure
+
+- A whole review. Each pillar is scored alone; evidence, references, the approval check, stacks,
+  carried changes and dependencies never run here.
+- How a review reads to its author: length, tone, and whether a comment was worth posting.
+- Whether a finding that no case expects is real. Negatives count only high or blocking findings.
+- Any harness or model other than the ones named above the table.
+- Tokens per model. Cost is reported as dollars per run.
 
 Rules for changing or running this suite are in [AGENTS.md](AGENTS.md).
 
