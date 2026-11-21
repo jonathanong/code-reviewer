@@ -16,7 +16,8 @@ export type SeverityMarker = {
 export const SEVERITY_MARKERS: readonly SeverityMarker[] = [
   {
     reviewer: 'CodeRabbit',
-    pattern: /_(?:🔴|🟠|🟡|🔵|🧹)\s*(Critical|Major|Minor|Trivial|Nitpick)_/u,
+    pattern:
+      /(?:_(?:🔴|🟠|🟡|🔵|🧹)\s*|^\*\*<picture>.*<\/picture>\s*)(Critical|Major|Minor|Trivial|Nitpick)(?:_|\*\*)/mu,
     tiers: { critical: 'blocking', major: 'high', minor: 'medium', trivial: 'low', nitpick: 'low' },
   },
   {

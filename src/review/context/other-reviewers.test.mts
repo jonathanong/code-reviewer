@@ -128,6 +128,12 @@ describe('statedSeverity', () => {
   it.each([
     ['_⚠️ Potential issue_ | _🔴 Critical_', 'CodeRabbit', 'Critical', 'blocking'],
     ['_🟡 Minor_', 'CodeRabbit', 'Minor', 'medium'],
+    [
+      '<!-- coderabbit-ai-generated:v1 -->\n\n**<picture><img src="https://storage.googleapis.com/coderabbit_public_assets/review-comment-icons-v1/amber-16.svg" width="16" height="16" align="absmiddle" alt=""></picture> Minor** · **Stability & Availability** · **Quick win**',
+      'CodeRabbit',
+      'Minor',
+      'medium',
+    ],
     ['_🧹 Nitpick_', 'CodeRabbit', 'Nitpick', 'low'],
     ['![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)', 'Codex', 'P2', 'medium'],
     [
