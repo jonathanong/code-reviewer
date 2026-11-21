@@ -148,6 +148,27 @@ and shown as one line near the top of the review body (not collapsed) and under 
 `report.md`. A longer one makes `concise` warn. With no summary the prompt, schema and command
 line are unchanged.
 
+## Follow-ups build on this machine's last review
+
+On a follow-up (a light review of the diff since the last reviewed commit, `plan.sinceSha` set),
+`review` also reads the most recent review of this pull request in the [tracker](tracker.md)
+whose reviewed commit is a strict ancestor of the head, from the same context run as the other
+sections (the past-reviews section, which is never written to `review-context.md`). It keeps
+a structured form of it: the commit, date, mode, verdict, whether that review was posted (the
+saved data says nothing per finding), and its verified findings with severity, pillar, title and
+place, read from that run's `report.json`. A first review, a full review, a missing state
+directory, and a force-push that orphaned every earlier head get nothing, and the prompt is
+unchanged. If the newest such review's run directory or `report.json` is gone or unreadable,
+`report.md` says `Earlier review: not given to the verifier (...)` and the review goes on; no
+older review stands in.
+
+With one, the verifier prompt gets one more block (not instructions: earlier claims at an older
+commit). The re-review is additional: it reports only what is new since that commit or what the
+diff since it made wrong, does not repeat a finding that is still open in an unresolved thread of
+ours (the re-review step of the verifier already covers it), and reports a fixed one through
+`fixedThreadIds`, as before. No output field or schema changes. The saved `evidence.json` records
+no files, so it is not offered: the block says to establish again any evidence the review relies on.
+
 ## Progress and the cost ceiling
 
 `review` writes one line to stderr when each step starts and when it ends, and one when a step

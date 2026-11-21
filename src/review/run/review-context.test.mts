@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +12,8 @@ import {
   CONTEXT_FILE,
   PILLAR_SECTIONS,
   buildReviewContext,
+  reportFields,
+  verifierContextFields,
   type ReviewContextInput,
 } from './review-context.mts'
 
@@ -129,5 +131,93 @@ describe('buildReviewContext', () => {
     expect(built).toEqual({
       note: expect.stringContaining('no section had anything to say'),
     })
+  })
+})
+
+describe('buildReviewContext on a follow-up', () => {
+  const stateRun = fileURLToPath(new URL('../context/fixtures/state/run-1', import.meta.url))
+  const OLD = '1'.repeat(40)
+  const row = (runDir: string | null) =>
+    `${JSON.stringify({ repo: 'o/r', pr: 1, head: OLD, state: 'posted', mode: 'full', verdict: 'Comment', startedAt: '2026-01-01T00:00:00Z', runDir })}\n`
+
+  function state(tracker: string | null) {
+    const dir = mkdtempSync(join(tmpdir(), 'review-state-'))
+    dirs.push(dir)
+    if (tracker !== null) writeFileSync(join(dir, 'reviews.jsonl'), tracker)
+    return dir
+  }
+
+  function followUp(exec: Exec, stateDir: string | undefined, sinceSha: string | null = OLD) {
+    const base = input(exec)
+    return {
+      ...base,
+      steps: { ...base.steps, ...(stateDir === undefined ? {} : { stateDir }) },
+      prepared: { baseSha: 'b', headSha: 'h', plan: { sinceSha } },
+    }
+  }
+
+  it('hands the verifier the earlier review at an ancestor, and keeps it out of the pillars file', async () => {
+    const built = await buildReviewContext(followUp(async () => '', state(row(stateRun))))
+    expect(built.previous).toMatchObject({ sha: OLD, posted: true, verdict: 'Comment' })
+    expect(built.previous?.findings.map((finding) => finding.title)).toEqual([
+      'Token logged in clear',
+      'Stale comment',
+    ])
+    expect(built).not.toHaveProperty('previousNote')
+    expect(readFileSync(built.file as string, 'utf8')).not.toContain('Past reviews')
+    expect(verifierContextFields(built)).toEqual({ previous: built.previous })
+  })
+
+  it('reads nothing on a first review, however many earlier ones the tracker holds', async () => {
+    const calls: string[][] = []
+    const exec: Exec = async (_command, args) => {
+      calls.push(args)
+      return ''
+    }
+    const built = await buildReviewContext(followUp(exec, state(row(stateRun)), null))
+    expect(built).not.toHaveProperty('previous')
+    expect(calls.some((args) => args.includes('--is-ancestor'))).toBe(false)
+    expect(verifierContextFields(built)).toEqual({})
+  })
+
+  it('reads nothing without a state directory', async () => {
+    const built = await buildReviewContext(followUp(async () => '', undefined))
+    expect(built).not.toHaveProperty('previous')
+    expect(built).not.toHaveProperty('previousNote')
+  })
+
+  it('gives no earlier review and no note when its head is not an ancestor', async () => {
+    const exec: Exec = async (_command, args) => {
+      if (args.includes('--is-ancestor')) throw new Error('not an ancestor')
+      return ''
+    }
+    const built = await buildReviewContext(followUp(exec, state(row(stateRun))))
+    expect(built).not.toHaveProperty('previous')
+    expect(built).not.toHaveProperty('previousNote')
+  })
+
+  it('notes a missing run directory and goes on with the pillars file', async () => {
+    const built = await buildReviewContext(followUp(async () => '', state(row('/nowhere/run'))))
+    expect(built.previous).toBeUndefined()
+    expect(built.previousNote).toContain('is gone')
+    expect(built.file).toContain(CONTEXT_FILE)
+    expect(reportFields(built)).toMatchObject({ earlierReviewNote: built.previousNote })
+  })
+
+  it('notes a tracker that cannot be read, without putting the note in the pillars file', async () => {
+    const dir = state(null)
+    mkdirSync(join(dir, 'reviews.jsonl'))
+    const built = await buildReviewContext(followUp(async () => '', dir))
+    expect(built.previousNote).toContain('past-reviews failed')
+    expect(readFileSync(built.file as string, 'utf8')).not.toContain('past-reviews failed')
+  })
+
+  it('keeps the note when no section is for the pillars', async () => {
+    const dir = state(null)
+    mkdirSync(join(dir, 'reviews.jsonl'))
+    const base = followUp(async () => '', dir)
+    const built = await buildReviewContext({ ...base, skillChoice: { selected: [] } })
+    expect(built.note).toBe('no section had anything to say')
+    expect(built.previousNote).toContain('past-reviews failed')
   })
 })

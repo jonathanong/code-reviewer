@@ -121,6 +121,9 @@ export function renderReport(data: ReportData): string {
     ...(data.contextNote === undefined
       ? []
       : [`Context file: not built (${data.contextNote}); the pillars ran without it.`]),
+    ...(data.earlierReviewNote === undefined
+      ? []
+      : [`Earlier review: not given to the verifier (${data.earlierReviewNote}).`]),
     ...data.pillars.map(pillar),
     '### Skipped pillars',
     data.skipped.length === 0

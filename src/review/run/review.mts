@@ -14,7 +14,7 @@ import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
 import { runPillars } from './pillars.mts'
-import { buildReviewContext, verifierContextFields } from './review-context.mts'
+import { buildReviewContext, reportFields, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
 import { webReferences } from './references-prompt.mts'
@@ -155,8 +155,7 @@ async function review(
     push: run.push,
     carried: run.carried,
     dependencies,
-    contextNote: context.note,
-    regression: context.linked,
+    ...reportFields(context),
   })
   const report = writeReportFiles(out, data)
   return {

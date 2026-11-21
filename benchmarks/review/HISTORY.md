@@ -2,6 +2,18 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) production verifier of a follow-up sees this machine's earlier review
+
+A production follow-up review (light, diff since the last reviewed commit) whose pull request has an
+earlier review of this machine at an ancestor of the head, found in the tracker and that run's
+`report.json`, now adds one block to the verifier prompt: the earlier findings as claims, and the
+instruction to report only what is new since that commit or what the diff since it made wrong. No
+schema field changes. The benchmark verifier arm (`buildVerifierPrompt`) passes no earlier review and
+no case supplies a since-diff or a reviewed SHA, so no case is a follow-up and none would be affected
+if the benchmark did pass an earlier review; a new case of that kind is where precision could move,
+because the verifier could drop a finding it should have kept. No run was made and no score is
+re-measured.
+
 ## 2026-11-21: (no run) production verifier may propose splitting a large mixed change
 
 A production review of a large change whose git-measured shape has both a substantial mechanical
