@@ -19,7 +19,7 @@ function clones(repos: string[], plain: string[] = []): string {
   return root
 }
 
-const none = async () => undefined
+const none = async () => []
 const git = vi.fn(async (args: string[]) => (args.includes('--abbrev-ref') ? 'origin/trunk\n' : ''))
 
 describe('cloneCandidates', () => {
@@ -132,13 +132,15 @@ describe('productionSources', () => {
       tree: undefined,
       baseSha: 'a'.repeat(40),
       configDir: dir,
-      targetFile: async () => '{"consumes":[{"repo":"acme/lib"}],"x":1}',
+      targetFile: async () => [
+        { name: '.code-reviewer.jsonc', text: '{"consumes":[{"repo":"acme/lib"}],"x":1,}' },
+      ],
     }
     const fromTarget = await productionSources({ ...args, repoId: 'acme/self' })
     expect(fromTarget.configs?.byRepo.get('acme/self')?.consumes.map((c) => c.repo)).toEqual([
       'acme/lib',
     ])
-    expect(fromTarget.missing).toContain('acme/self/.code-reviewer.json: unknown key "x" ignored')
+    expect(fromTarget.missing).toContain('acme/self/.code-reviewer.jsonc: unknown key "x" ignored')
     const machine = await productionSources({ ...args, repoId: 'Acme/Web' })
     expect(machine.configs?.byRepo.get('acme/web')?.consumes.map((c) => c.repo)).toEqual([
       'acme/api',
@@ -159,7 +161,7 @@ describe('productionSources', () => {
     })
     expect(sources.configs?.byRepo.size).toBe(0)
     expect(sources.missing).toContain(
-      'acme/self/.code-reviewer.json: could not be read (HTTP 500); ignored',
+      'acme/self/.code-reviewer{.json,.jsonc}: could not be read (HTTP 500); ignored',
     )
   })
 })

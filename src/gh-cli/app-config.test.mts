@@ -99,6 +99,29 @@ describe('loadAppConfig from app.json', () => {
     expect(at('~/my.pem', { '/home/u/my.pem': PEM })?.privateKey).toBe(PEM)
   })
 
+  it('reads app.jsonc, and allows comments and trailing commas in either file', () => {
+    const text = '{\n  // the App\n  "appId": "9", /* id */\n}'
+    expect(load({ '/cfg/app.jsonc': text, '/cfg/app.pem': PEM })).toMatchObject({
+      appId: '9',
+      source: '/cfg/app.jsonc',
+    })
+    expect(load({ [FILE]: text, '/cfg/app.pem': PEM })).toMatchObject({ appId: '9', source: FILE })
+  })
+
+  it('fails naming both files when app.json and app.jsonc both exist', () => {
+    const files = {
+      [FILE]: '{"appId":"1"}',
+      '/cfg/app.jsonc': '{"appId":"2"}',
+      '/cfg/app.pem': PEM,
+    }
+    expect(() => load(files)).toThrow(
+      expect.objectContaining({
+        name: 'AppAuthError',
+        message: expect.stringMatching(/app\.json and \/cfg\/app\.jsonc/u),
+      }),
+    )
+  })
+
   it('falls back to the OS home directory when HOME is unset', () => {
     const files = { [FILE]: '{"appId":"a","privateKeyPath":"~/k.pem"}' }
     expect(() => loadAppConfig({}, memoryFs(files), DIR, 'linux')).toThrow(/k\.pem/u)
@@ -131,6 +154,7 @@ describe('loadAppConfig from app.json', () => {
     const unreadable: AppConfigFs = {
       readText: (path) => {
         if (path === FILE) return '{"appId":"1"}'
+        if (path.endsWith('.jsonc')) return undefined
         throw new Error('EACCES')
       },
       mode: () => 0o600,
@@ -156,7 +180,7 @@ describe('loadAppConfig defaults', () => {
     const seen: string[] = []
     const fs: AppConfigFs = { readText: (path) => (seen.push(path), undefined), mode: () => 0 }
     loadAppConfig({ XDG_CONFIG_HOME: '/xdg', CODE_REVIEWER_CONFIG_DIR: '/elsewhere' }, fs)
-    expect(seen).toEqual(['/xdg/code-reviewer/app.json'])
+    expect(seen).toEqual(['/xdg/code-reviewer/app.json', '/xdg/code-reviewer/app.jsonc'])
   })
 
   it('reads the real file system for a missing file and reports other errors', () => {

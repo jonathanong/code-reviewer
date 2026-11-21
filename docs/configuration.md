@@ -16,6 +16,20 @@ merge by label name.
    problem and the lower layers apply.
 3. Built-in defaults.
 
+Every config file is JSON with comments and trailing commas allowed (JSONC), and each name may
+end in `.json` or `.jsonc`: `<owner>.jsonc`, `<owner>/<name>.jsonc`, `.code-reviewer.jsonc`. A
+config kept in two files (`acme.json` and `acme.jsonc`) is a problem that names both; neither is
+used. Through the GitHub API the root is listed once and only the file found is fetched, so a
+repository without one costs a single request and a duplicate is still seen. A file that does not parse, or whose top level is not an object, is a problem naming that
+file. Problems fail `run` before it claims anything, and `settings` prints them.
+
+```jsonc
+// <owner>.jsonc
+{
+  "labels": { "requested": "review-me" }, // trailing commas are fine too
+}
+```
+
 `code-reviewer settings --repo owner/name` prints the resolved values and the layer each came
 from. An owner-wide `queue` or `settings --owner` reads machine configs only, since a repository's
 own file is read when the repository is named.

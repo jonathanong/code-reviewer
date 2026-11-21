@@ -2,6 +2,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 
+import { CONFIG_EXTENSIONS, parseConfigText } from '../review/rules/config-files.mts'
 import { configHome } from '../review/rules/config.mts'
 import { AppAuthError, type AppAuthEnv, type AppConfig } from './app-auth.mts'
 
@@ -15,8 +16,6 @@ export type AppConfigFs = {
 
 const DEFAULT_KEY_FILE = 'app.pem'
 const KEYS = new Set(['appId', 'privateKeyPath', 'installationId'])
-
-export const APP_CONFIG_FILE = 'app.json'
 
 export const realAppConfigFs: AppConfigFs = {
   readText(path) {
@@ -76,7 +75,7 @@ function fromFile(
 ): AppConfig {
   let parsed: unknown
   try {
-    parsed = JSON.parse(text)
+    parsed = parseConfigText(text)
   } catch (error) {
     return fail(file, `is not valid JSON (${(error as Error).message})`)
   }
@@ -115,7 +114,7 @@ function apiUrl(env: AppAuthEnv): string {
  * The GitHub App to authenticate as, or undefined to use the local `gh` login. When
  * `CODE_REVIEWER_APP_ID` is set the `CODE_REVIEWER_APP_*` variables win (for CI): the PEM text in
  * `CODE_REVIEWER_APP_PRIVATE_KEY` or a file named by `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and an
- * optional `CODE_REVIEWER_APP_INSTALLATION_ID`. Otherwise `app.json` in the config home
+ * optional `CODE_REVIEWER_APP_INSTALLATION_ID`. Otherwise `app.json` (or `app.jsonc`) in the config home
  * (`~/.config/code-reviewer`, beside the machine config directory) (`appId`, optional `privateKeyPath` defaulting to `app.pem` beside it, optional
  * `installationId`). A config that exists but is wrong throws, naming the file.
  */
@@ -127,9 +126,17 @@ export function loadAppConfig(
 ): AppConfig | undefined {
   const appId = env.CODE_REVIEWER_APP_ID?.trim()
   if (!appId) {
-    const file = join(dir, APP_CONFIG_FILE)
-    const text = fs.readText(file)
-    return text === undefined ? undefined : fromFile(file, text, dir, env, fs, platform)
+    const found = CONFIG_EXTENSIONS.map((ext) => join(dir, `app${ext}`)).flatMap((file) => {
+      const text = fs.readText(file)
+      return text === undefined ? [] : [{ file, text }]
+    })
+    const [first] = found
+    if (found.length > 1) {
+      fail(found.map((entry) => entry.file).join(' and '), 'more than one App config; none is used')
+    }
+    return first === undefined
+      ? undefined
+      : fromFile(first.file, first.text, dir, env, fs, platform)
   }
   const path = env.CODE_REVIEWER_APP_PRIVATE_KEY_PATH?.trim()
   const pem = env.CODE_REVIEWER_APP_PRIVATE_KEY

@@ -70,7 +70,7 @@ export async function productionSources(args: {
   repoId: string
   /** The machine config directory. */
   configDir: string
-  /** Reads the reviewed repository's `.code-reviewer.json` from its default branch. */
+  /** Reads the reviewed repository's `.code-reviewer.json` or `.jsonc` from its default branch. */
   targetFile: TargetFileReader
 }): Promise<Sources> {
   const { git, clones, tree, baseSha, repoId } = args

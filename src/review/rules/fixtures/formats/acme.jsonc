@@ -1,0 +1,4 @@
+// shared by every acme repository
+{
+  "labels": { "requested": "go" }, // trailing comma follows
+}

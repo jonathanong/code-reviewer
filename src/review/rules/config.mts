@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { conflictProblem, groupConfigFiles, parseConfigText } from './config-files.mts'
 import { consumesList } from './consumes-parse.mts'
 import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
 import { parseReferences, type ReferenceSource } from './references-parse.mts'
@@ -22,8 +23,8 @@ export function configHome(env: Record<string, string | undefined>): string {
 
 /**
  * The machine config directory: `CODE_REVIEWER_CONFIG_DIR`, else `repos` in the config home. It
- * holds one `<owner>/<name>.json` per repository, and `<owner>.json` beside that directory for
- * the settings every repository of the owner shares.
+ * holds one `<owner>/<name>.json` (or `.jsonc`) per repository, and `<owner>.json` beside that
+ * directory for the settings every repository of the owner shares.
  */
 export function machineConfigDir(env: Record<string, string | undefined>): string {
   return env.CODE_REVIEWER_CONFIG_DIR || join(configHome(env), 'repos')
@@ -96,7 +97,7 @@ export function parseRepoConfig(
 ): RepoConfig {
   let raw: unknown
   try {
-    raw = JSON.parse(text)
+    raw = parseConfigText(text)
   } catch {
     return { consumes: [], problems: [`${file}: not valid JSON; ignored`] }
   }
@@ -163,33 +164,33 @@ export type RepoConfigs = {
 
 export const NO_CONFIGS: RepoConfigs = { byRepo: new Map(), byOwner: new Map(), problems: [] }
 
-/** Reads every `<owner>.json` and `<owner>/<name>.json` under `dir`; a missing directory has none. */
+/** Reads every `<owner>` and `<owner>/<name>` config file under `dir`; a missing directory has none. */
 export function loadRepoConfigs(dir: string): RepoConfigs {
   const byRepo = new Map<string, RepoConfig>()
   const byOwner = new Map<string, RepoConfig>()
   const problems: string[] = []
   if (!existsSync(dir)) return { byRepo, byOwner, problems }
   const entries = readdirSync(dir, { withFileTypes: true })
-  const read = (file: string, scope: ConfigScope) => {
-    const config = parseRepoConfig(readFileSync(join(dir, file), 'utf8'), file, scope)
-    problems.push(...config.problems)
-    return config
-  }
   const names = (kind: 'isFile' | 'isDirectory') =>
     entries
       .filter((entry) => entry[kind]())
       .map((entry) => entry.name)
       .sort()
-  for (const name of names('isFile').filter((file) => file.endsWith('.json'))) {
-    byOwner.set(name.slice(0, -'.json'.length).toLowerCase(), read(name, 'owner'))
-  }
+  const files = names('isFile')
   for (const owner of names('isDirectory')) {
-    for (const name of readdirSync(join(dir, owner))
-      .filter((n) => n.endsWith('.json'))
-      .sort()) {
-      const file = `${owner}/${name}`
-      byRepo.set(file.slice(0, -'.json'.length).toLowerCase(), read(file, 'repo'))
+    const inside = readdirSync(join(dir, owner)).sort()
+    files.push(...inside.map((name) => `${owner}/${name}`))
+  }
+  for (const [key, group] of groupConfigFiles(files)) {
+    if (group.length > 1) {
+      problems.push(conflictProblem(group))
+      continue
     }
+    const file = group[0] as string
+    const scope = key.includes('/') ? 'repo' : 'owner'
+    const config = parseRepoConfig(readFileSync(join(dir, file), 'utf8'), file, scope)
+    problems.push(...config.problems)
+    ;(scope === 'repo' ? byRepo : byOwner).set(key, config)
   }
   return { byRepo, byOwner, problems }
 }

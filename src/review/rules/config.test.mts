@@ -260,6 +260,24 @@ describe('loadRepoConfigs', () => {
     expect(configs.problems).toEqual(['Acme/bad.json: not valid JSON; ignored'])
   })
 
+  it('reads .jsonc files with comments and trailing commas, under the file stem as key', () => {
+    const configs = loadRepoConfigs(join(import.meta.dirname, 'fixtures/formats'))
+    expect(configs.byOwner.get('acme')?.labels).toEqual({ requested: 'go' })
+    expect(configs.byRepo.get('acme/web')?.consumes).toEqual([
+      { repo: 'acme/api', paths: [], via: 'http://api.example//v1' },
+    ])
+  })
+
+  it('uses neither file of a config kept in two formats, and names both', () => {
+    const configs = loadRepoConfigs(join(import.meta.dirname, 'fixtures/formats'))
+    expect(configs.byOwner.has('other')).toBe(false)
+    expect(configs.byRepo.has('acme/dup')).toBe(false)
+    expect(configs.problems).toEqual([
+      'other.json and other.jsonc: more than one file for the same config; none is used',
+      'acme/dup.json and acme/dup.jsonc: more than one file for the same config; none is used',
+    ])
+  })
+
   it('holds nothing for a missing directory', () => {
     expect(loadRepoConfigs('/nowhere/configs')).toEqual({
       byRepo: new Map(),

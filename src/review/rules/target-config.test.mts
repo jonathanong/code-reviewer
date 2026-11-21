@@ -8,23 +8,44 @@ import {
   withTargetConsumes,
 } from './target-config.mts'
 
+const FILE = '.code-reviewer.json'
+const one = (name: string, text: string) => async () => [{ name, text }]
+const isListing = (args: string[]) => args.at(-1)?.endsWith('/contents') === true
+
 describe('apiFileReader', () => {
-  it('reads the raw file from the default branch', async () => {
-    const run = vi.fn(async (_args: string[]) => '{}')
-    await expect(apiFileReader(run, 'acme/web')()).resolves.toBe('{}')
-    expect(run).toHaveBeenCalledWith([
-      'api',
-      '-H',
-      'Accept: application/vnd.github.raw+json',
-      'repos/acme/web/contents/.code-reviewer.json',
+  it('lists the repository root once, then reads only the config file it holds', async () => {
+    const run = vi.fn(async (args: string[]) =>
+      isListing(args) ? 'README.md\n.code-reviewer.jsonc\n' : '{}',
+    )
+    await expect(apiFileReader(run, 'acme/web')()).resolves.toEqual([
+      { name: '.code-reviewer.jsonc', text: '{}' },
     ])
+    expect(run.mock.calls.map(([args]) => args.at(-1))).toEqual([
+      'repos/acme/web/contents',
+      'repos/acme/web/contents/.code-reviewer.jsonc',
+    ])
+    expect(run.mock.calls[1]?.[0]).toContain('Accept: application/vnd.github.raw+json')
+  })
+
+  it('costs one request when no config file is at the root', async () => {
+    const run = vi.fn(async (_args: string[]) => 'README.md\nsrc\n')
+    await expect(apiFileReader(run, 'acme/web')()).resolves.toEqual([])
+    expect(run).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns every config file present, so a duplicate can be reported', async () => {
+    const run = vi.fn(async (args: string[]) =>
+      isListing(args) ? '.code-reviewer.jsonc\n.code-reviewer.json\n' : '{}',
+    )
+    const files = await apiFileReader(run, 'acme/web')()
+    expect(files.map((file) => file.name)).toEqual(['.code-reviewer.json', '.code-reviewer.jsonc'])
   })
 
   it('treats a 404 as no file and rethrows any other failure', async () => {
     const absent = async (): Promise<string> => {
       throw new Error('gh: Not Found (HTTP 404)')
     }
-    await expect(apiFileReader(absent, 'acme/web')()).resolves.toBeUndefined()
+    await expect(apiFileReader(absent, 'acme/web')()).resolves.toEqual([])
     const broken = async (): Promise<string> => {
       throw new Error('HTTP 502')
     }
@@ -36,12 +57,16 @@ describe('apiFileReader', () => {
 
 describe('gitFileReader', () => {
   it('reads the remote default branch, never the working tree', async () => {
-    const git = vi.fn(async (args: string[]) =>
-      args.includes('--abbrev-ref') ? 'origin/main\n' : '{"labels":{}}',
-    )
-    const fallback = vi.fn(async () => 'api')
-    await expect(gitFileReader('/t', git, fallback)()).resolves.toBe('{"labels":{}}')
-    expect(git).toHaveBeenLastCalledWith(['-C', '/t', 'show', 'origin/main:.code-reviewer.json'])
+    const git = vi.fn(async (args: string[]) => {
+      if (args.includes('--abbrev-ref')) return 'origin/main\n'
+      if (args.at(-1) === 'origin/main:.code-reviewer.jsonc') return '{"labels":{}}'
+      throw new Error('not in the tree')
+    })
+    const fallback = vi.fn(async () => [])
+    await expect(gitFileReader('/t', git, fallback)()).resolves.toEqual([
+      { name: '.code-reviewer.jsonc', text: '{"labels":{}}' },
+    ])
+    expect(git).toHaveBeenCalledWith(['-C', '/t', 'show', 'origin/main:.code-reviewer.json'])
     expect(fallback).not.toHaveBeenCalled()
   })
 
@@ -49,17 +74,22 @@ describe('gitFileReader', () => {
     const git = vi.fn(async (_args: string[]): Promise<string> => {
       throw new Error('no origin')
     })
-    const fallback = vi.fn(async () => 'api')
-    await expect(gitFileReader('/t', git, fallback)()).resolves.toBe('api')
+    const fallback = vi.fn(async () => [{ name: FILE, text: 'api' }])
+    await expect(gitFileReader('/t', git, fallback)()).resolves.toEqual([
+      { name: FILE, text: 'api' },
+    ])
     expect(git.mock.calls.some(([args]) => args.includes('show'))).toBe(false)
   })
 })
 
 describe('readTargetConfig', () => {
-  it('parses the file as a repository config', async () => {
-    const result = await readTargetConfig(async () => '{"checkRun":{"name":"CR"},"x":1}', 'a/b')
+  it('parses the file as a repository config, naming the file it found', async () => {
+    const result = await readTargetConfig(
+      one('.code-reviewer.jsonc', '{"checkRun":{"name":"CR"},"x":1, // note\n}'),
+      'a/b',
+    )
     expect(result.config?.checkRun).toEqual({ name: 'CR' })
-    expect(result.problems).toEqual(['a/b/.code-reviewer.json: unknown key "x" ignored'])
+    expect(result.problems).toEqual(['a/b/.code-reviewer.jsonc: unknown key "x" ignored'])
   })
 
   it('never takes evidence sources from the repository file', async () => {
@@ -73,7 +103,7 @@ describe('readTargetConfig', () => {
         },
       ],
     })
-    const result = await readTargetConfig(async () => text, 'a/b')
+    const result = await readTargetConfig(one(FILE, text), 'a/b')
     expect(result.config?.evidence).toBeUndefined()
     expect(result.problems).toEqual([
       'a/b/.code-reviewer.json: evidence sources are machine-only; ignored',
@@ -81,10 +111,29 @@ describe('readTargetConfig', () => {
   })
 
   it('has no config and no problem when the file is absent', async () => {
-    await expect(readTargetConfig(async () => undefined, 'a/b')).resolves.toEqual({
+    await expect(readTargetConfig(async () => [], 'a/b')).resolves.toEqual({
       config: undefined,
       problems: [],
     })
+  })
+
+  it('uses neither file when the repository keeps both formats, and names both', async () => {
+    const result = await readTargetConfig(
+      async () => [
+        { name: '.code-reviewer.json', text: '{"checkRun":{"name":"A"}}' },
+        { name: '.code-reviewer.jsonc', text: '{"checkRun":{"name":"B"}}' },
+      ],
+      'a/b',
+    )
+    expect(result.config).toBeUndefined()
+    expect(result.problems).toEqual([
+      'a/b/.code-reviewer.json and a/b/.code-reviewer.jsonc: more than one file for the same config; none is used',
+    ])
+  })
+
+  it('reports a file that does not parse, naming it', async () => {
+    const result = await readTargetConfig(one('.code-reviewer.jsonc', '{'), 'a/b')
+    expect(result.problems).toEqual(['a/b/.code-reviewer.jsonc: not valid JSON; ignored'])
   })
 
   it('turns a failed read into a problem', async () => {
@@ -93,10 +142,12 @@ describe('readTargetConfig', () => {
     }, 'a/b')
     expect(result).toEqual({
       config: undefined,
-      problems: ['a/b/.code-reviewer.json: could not be read (HTTP 500); ignored'],
+      problems: ['a/b/.code-reviewer{.json,.jsonc}: could not be read (HTTP 500); ignored'],
     })
     const odd = await readTargetConfig(() => Promise.reject('x'), 'a/b')
-    expect(odd.problems).toEqual(['a/b/.code-reviewer.json: could not be read (x); ignored'])
+    expect(odd.problems).toEqual([
+      'a/b/.code-reviewer{.json,.jsonc}: could not be read (x); ignored',
+    ])
   })
 })
 
