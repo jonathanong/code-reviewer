@@ -19,6 +19,11 @@ describe('evidenceHolds', () => {
     expect(evidenceHolds(scoped('docs/'), ['docs/x/y.md'])).toBe('stale')
   })
 
+  it('is stale when a scoped file was moved or deleted, so the old path is listed', () => {
+    expect(evidenceHolds(scoped('src/a.ts'), ['src/a.ts', 'lib/a.ts'])).toBe('stale')
+    expect(evidenceHolds(scoped('docs/'), ['docs/gone.md'])).toBe('stale')
+  })
+
   it('does not treat a sibling that shares a name prefix as inside the scope', () => {
     expect(evidenceHolds(scoped('src/a.ts'), ['src/a.tsx'])).toBe('holds')
     expect(evidenceHolds(scoped('docs/'), ['docs-old/x.md'])).toBe('holds')
@@ -46,6 +51,7 @@ describe('pathsChangedBetween', () => {
       '/tree',
       'diff',
       '--name-only',
+      '--no-renames',
       '-z',
       'old..new',
     ])

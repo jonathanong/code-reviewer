@@ -102,6 +102,27 @@ export function recordReview(io: TrackerIo, run: ReviewRun): Recorded {
   })
 }
 
+/**
+ * Records the harness failures of a review that threw before its report: the steps it saved in
+ * `failed-steps.json`, under the same run key a finished review uses. Adds no `reviews.jsonl` row.
+ * With no head sha in `context.json` the run has no key and nothing is recorded.
+ */
+export function recordStoppedReview(
+  io: TrackerIo,
+  run: Pick<ReviewRun, 'repo' | 'pr' | 'out'>,
+): Recorded {
+  return guarded(() => {
+    const context = readJson((path) => io.read(path), join(run.out, 'context.json'))
+    const head = asString(context.headSha) ?? ''
+    if (head === '') return
+    recordFailures(
+      io,
+      `${run.repo}#${run.pr}@${head}`,
+      readFailedSteps((path) => io.read(path), run.out),
+    )
+  })
+}
+
 export type PostedRun = {
   repo: string
   pr: number

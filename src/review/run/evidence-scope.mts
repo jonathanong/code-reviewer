@@ -39,7 +39,16 @@ export async function pathsChangedBetween(
   to: string,
 ): Promise<string[] | undefined> {
   try {
-    const out = await exec('git', ['-C', tree, 'diff', '--name-only', '-z', `${from}..${to}`])
+    // --no-renames lists a moved file under both names, so a file moved out of a scope still counts.
+    const out = await exec('git', [
+      '-C',
+      tree,
+      'diff',
+      '--name-only',
+      '--no-renames',
+      '-z',
+      `${from}..${to}`,
+    ])
     return out.split('\0').filter((path) => path !== '')
   } catch {
     return undefined

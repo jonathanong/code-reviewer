@@ -340,6 +340,87 @@ describe('reviewCommand', () => {
     expect(runReview).not.toHaveBeenCalled()
   })
 
+  it('records the harness failures of a review that threw, and rejects with that error', async () => {
+    const files = new Map<string, string>([
+      [resolve('o', 'context.json'), JSON.stringify({ headSha: 'abc' })],
+      [
+        resolve('o', 'failed-steps.json'),
+        JSON.stringify([{ step: 'verify', harness: 'claude', failure: 'rate_limited' }]),
+      ],
+    ])
+    const appended: Array<[string, string]> = []
+    const local = {
+      ...deps,
+      tracker: vi.fn(() => ({
+        dir: '/state',
+        read: (path: string) => files.get(path),
+        append: (path: string, text: string) => void appended.push([path, text]),
+        now: () => new Date('2026-05-06T07:08:09.000Z'),
+      })),
+    } as unknown as ReviewDeps
+    const failure = new Error('verifier failed')
+    vi.mocked(runReview).mockRejectedValueOnce(failure)
+    await expect(reviewCommand({ out: 'o', tree: 't' }, TARGET, local)).rejects.toBe(failure)
+    expect(appended).toHaveLength(1)
+    expect(appended[0]?.[0]).toBe('/state/harness-failures.jsonl')
+    expect(JSON.parse(appended[0]?.[1] ?? '')).toMatchObject({
+      step: 'verify',
+      harness: 'claude',
+      kind: 'rate_limited',
+      run: 'acme/widgets#4@abc',
+    })
+  })
+
+  it('keeps the review error when recording the failures itself fails, and records nothing without a head', async () => {
+    const append = vi.fn(() => {
+      throw new Error('disk full')
+    })
+    const files = new Map([
+      [resolve('o', 'context.json'), JSON.stringify({ headSha: 'abc' })],
+      [
+        resolve('o', 'failed-steps.json'),
+        JSON.stringify([{ step: 'verify', harness: 'claude', failure: 'rate_limited' }]),
+      ],
+    ])
+    const local = {
+      ...deps,
+      tracker: vi.fn(() => ({
+        dir: '/state',
+        read: (path: string) => files.get(path),
+        append,
+        now: () => new Date(),
+      })),
+    } as unknown as ReviewDeps
+    const failure = new Error('selection failed')
+    vi.mocked(runReview).mockRejectedValueOnce(failure)
+    await expect(reviewCommand({ out: 'o', tree: 't' }, TARGET, local)).rejects.toBe(failure)
+    expect(append).toHaveBeenCalledOnce()
+    files.delete(resolve('o', 'context.json'))
+    append.mockClear()
+    vi.mocked(runReview).mockRejectedValueOnce(failure)
+    await expect(reviewCommand({ out: 'o', tree: 't' }, TARGET, local)).rejects.toBe(failure)
+    expect(append).not.toHaveBeenCalled()
+  })
+
+  it('stops on a bad limits value instead of dropping the ceiling', async () => {
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([
+        [
+          'acme/widgets',
+          parseRepoConfig(JSON.stringify({ limits: { maxCostUsd: -1 } }), 'acme/widgets.json'),
+        ],
+      ]),
+      problems: [
+        'acme/widgets.json limits.maxCostUsd: must be a number greater than 0; limits ignored',
+      ],
+    })
+    await expect(reviewCommand({ out: 'o', tree: 't' }, TARGET, deps)).rejects.toThrow(
+      'limits.maxCostUsd',
+    )
+    expect(runReview).not.toHaveBeenCalled()
+  })
+
   it('previews with a dry run', async () => {
     const { wired } = await steps()
     const input = { effort: 'high', summary: '', skipped: [], findings: [] } as never
