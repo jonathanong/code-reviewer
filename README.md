@@ -43,8 +43,8 @@ GitHub review. It runs on your machine, for the repositories you pick.
 
 Agreed and not built yet. Nothing below works today.
 
-- **Other harnesses and free tiers.** Adapters for Grok, OpenCode and Codex, which the harness
-  registry takes with one line each. Free models never run the verifier. A command measures the
+- **Other harnesses and free tiers.** An adapter for Codex, and selecting the Grok and OpenCode
+  adapters by config, which the harness registry takes with one line each. Free models never run the verifier. A command measures the
   free models on a fixed set of cases so the choice is not a guess.
 - **Extensible pillars.** Config adds a pillar as a trigger an agent decides, the modes it runs
   in, and a command to run. Its findings go through the verifier like any other.
