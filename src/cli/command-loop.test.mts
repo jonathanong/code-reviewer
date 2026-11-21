@@ -29,7 +29,7 @@ import {
 import { DEFAULT_PLAN_VALUES } from '../review/plan-settings.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import { runLoopCommand, skipCommand } from './command-loop.mts'
-import { BOB, BOB_LABELS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
+import { BOB, BOB_LABELS, LIMIT_DEFAULTS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
@@ -45,7 +45,7 @@ const UNSET = {
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
-  limits: { maxCostUsd: null, from: null },
+  limits: { ...LIMIT_DEFAULTS, maxCostUsd: null, from: null },
   pillars: {
     disabled: [],
     extra: [],
@@ -277,7 +277,7 @@ describe('runLoopCommand', () => {
         },
         approvalCheck: { enabled: false, from: 'machine owner' },
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
-        limits: { maxCostUsd: 1.5, from: 'machine owner' },
+        limits: { ...LIMIT_DEFAULTS, maxCostUsd: 1.5, from: 'machine owner' },
         pillars: UNSET.pillars,
         plan: UNSET.plan,
         models: {

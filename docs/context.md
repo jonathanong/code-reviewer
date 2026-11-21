@@ -30,7 +30,7 @@ The pillars get `rule-excerpts` (for the selected skills only), `changed-line-hi
 or past reviews: pillars are independent finders and must not be anchored by other reviewers'
 text. The names are `PILLAR_SECTIONS` in `src/review/run/review-context.mts`. The same build also runs `change-shape`, for the verifier only: it keeps a summary when a large change mixes a mechanical part with the rest ([Large changes that mix mechanical and other edits](review.md#large-changes-that-mix-mechanical-and-other-edits)) and writes no text of the section to the file.
 
-The whole build has one deadline, `CONTEXT_DEADLINE_MS` (60 seconds), which also aborts its
+The whole build has one deadline (60 seconds, [`limits.contextDeadlineSeconds`](configuration.md#limits)), which also aborts its
 `git` calls. A build that fails, times out or has no section gives no file and no prompt line; the
 review goes on and `report.md` says under "Pillars" that the context was not built and why. A
 review never fails because of context.

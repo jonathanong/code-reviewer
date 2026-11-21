@@ -358,15 +358,34 @@ machine layer that sets it is used whole. `code-reviewer settings` prints the re
 ```yaml
 limits:
   maxCostUsd: 5
+  runTimeoutSeconds: 1800
+  pillarJobs: 3
 ```
 
-A cost ceiling per review, in US dollars: a number above 0. Absent means no ceiling, and every
-step runs as without this key. Before it starts each step, a review compares the cost its steps
-have reported so far with the ceiling; at or above it, the step does not start. The cost is the
-sum of what the harnesses reported for finished and failed steps, so a step that reports no cost
-counts as zero, and a step already running is never stopped. Steps that run at once (the pillars
-at `--jobs` above 1) are checked as each starts, so the total can pass the ceiling by what those
-steps cost.
+| Key                      | Meaning                                                             | Default | Range / type     |
+| ------------------------ | ------------------------------------------------------------------- | ------- | ---------------- |
+| `maxCostUsd`             | Cost ceiling per review, in US dollars. Absent means no ceiling.    | none    | number above 0   |
+| `runTimeoutSeconds`      | Time one pillar, verifier, evidence or approval-check run may take. | 1800    | integer 60-14400 |
+| `selectTimeoutSeconds`   | Time the skill-selection call may take.                             | 120     | integer 10-1800  |
+| `contextDeadlineSeconds` | Time the whole context build may take; see [context](context.md).   | 60      | integer 5-600    |
+| `pillarJobs`             | Pillars that run at once; `--jobs` beats it.                        | 3       | integer 1-16     |
+
+Every key is machine-only, because a longer timeout or more parallel pillars can raise what a
+review costs and a repository must not set its own: the reviewed repository's own file, with or
+without `trustRepoConfig`, says `limits is machine-only; ignored`. The highest machine layer that
+sets `limits` is used whole, and a key it leaves out takes the default. A bad value, an
+out-of-range number or an unknown key is a problem naming the file and key, and the whole `limits`
+key is ignored. `code-reviewer settings` prints every resolved value (`maxCostUsd` is `null` for no
+ceiling). `bench` ignores this key. The posted-text length targets (1,200 and 800 characters),
+the caps in the context sections and the other fixed numbers stay fixed; `post` takes
+`--body-target` and `--inline-target` for one run.
+
+The ceiling: before it starts each step, a review compares the cost its steps have reported so far
+with `maxCostUsd`; at or above it, the step does not start. The cost is the sum of what the
+harnesses reported for finished and failed steps, so a step that reports no cost counts as zero,
+and a step already running is never stopped. Steps that run at once (the pillars at `--jobs` above
+
+1. are checked as each starts, so the total can pass the ceiling by what those steps cost.
 
 A pillar, the second check on an approval or the evidence step that did not start is listed as
 skipped with the reason `cost ceiling reached ($X of $Y)`. A review that lost a step this way is
@@ -375,11 +394,10 @@ verifier cannot be skipped, so a review that reaches the ceiling before it fails
 and leaves the pillars' results in its run directory.
 
 `--max-cost USD` on `review` and `run` sets the ceiling for that run and beats the config. A
-value that is not a number above 0 is a usage error. A bad config value is a problem naming the
-file and key, and the whole `limits` key is ignored. It is machine-only, like `models`: a
-repository's own file cannot set it, and says `limits is machine-only; ignored`. The highest
-machine layer that sets it is used. `code-reviewer settings` prints the resolved ceiling
-(`null` for none). `bench` ignores this key.
+value that is not a number above 0 is a usage error.
+
+A run that passes `runTimeoutSeconds` or `selectTimeoutSeconds` fails as a step does today: it is
+reported, the review goes on, and a review missing a step never approves.
 
 ## `issues`
 

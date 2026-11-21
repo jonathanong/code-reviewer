@@ -91,3 +91,12 @@ export function fakeDeps(mode: 'app' | 'gh' = 'app') {
   } as unknown as ReviewDeps
   return { deps, labelIo, prepareIo, run, runner, createLabelIo, configs }
 }
+
+/** `settings` prints these whole-number limits when no machine file sets them. */
+
+export const LIMIT_DEFAULTS = {
+  runTimeoutSeconds: 1800,
+  selectTimeoutSeconds: 120,
+  contextDeadlineSeconds: 60,
+  pillarJobs: 3,
+}

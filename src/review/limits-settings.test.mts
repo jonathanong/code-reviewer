@@ -12,13 +12,22 @@ const configs = (repo?: unknown, owner?: unknown): RepoConfigs => ({
   byOwner: owner === undefined ? new Map() : new Map([['acme', file(owner)]]),
 })
 
+const DEFAULTS = {
+  runTimeoutSeconds: 1800,
+  selectTimeoutSeconds: 120,
+  contextDeadlineSeconds: 60,
+  pillarJobs: 3,
+}
+
 describe('resolveLimits', () => {
   it('has no ceiling when no machine file sets one', () => {
     expect(resolveLimits(NO_CONFIGS, 'acme/widgets')).toEqual({
+      ...DEFAULTS,
       maxCostUsd: undefined,
       from: null,
     })
     expect(resolveLimits(configs({}), 'acme/widgets')).toEqual({
+      ...DEFAULTS,
       maxCostUsd: undefined,
       from: null,
     })
@@ -26,12 +35,40 @@ describe('resolveLimits', () => {
 
   it('takes the machine repo file over the machine owner file', () => {
     const both = configs({ maxCostUsd: 2 }, { maxCostUsd: 9 })
-    expect(resolveLimits(both, 'acme/widgets')).toEqual({ maxCostUsd: 2, from: 'machine repo' })
-    expect(resolveLimits(both, 'acme')).toEqual({ maxCostUsd: 9, from: 'machine owner' })
+    expect(resolveLimits(both, 'acme/widgets')).toEqual({
+      ...DEFAULTS,
+      maxCostUsd: 2,
+      from: 'machine repo',
+    })
+    expect(resolveLimits(both, 'acme')).toEqual({
+      ...DEFAULTS,
+      maxCostUsd: 9,
+      from: 'machine owner',
+    })
+  })
+
+  it('resolves each whole-number limit from the highest layer that sets limits', () => {
+    const both = configs(
+      { runTimeoutSeconds: 600, pillarJobs: 5 },
+      { selectTimeoutSeconds: 30, contextDeadlineSeconds: 90 },
+    )
+    expect(resolveLimits(both, 'acme/widgets')).toEqual({
+      ...DEFAULTS,
+      runTimeoutSeconds: 600,
+      pillarJobs: 5,
+      maxCostUsd: undefined,
+      from: 'machine repo',
+    })
+    expect(resolveLimits(both, 'acme')).toMatchObject({
+      selectTimeoutSeconds: 30,
+      contextDeadlineSeconds: 90,
+      runTimeoutSeconds: 1800,
+    })
   })
 
   it('falls back to the owner file', () => {
     expect(resolveLimits(configs(undefined, { maxCostUsd: 9 }), 'acme/widgets')).toEqual({
+      ...DEFAULTS,
       maxCostUsd: 9,
       from: 'machine owner',
     })

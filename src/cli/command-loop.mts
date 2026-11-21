@@ -84,7 +84,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       from: models.from,
     },
     // null means no ceiling: a review spends what its steps cost.
-    limits: { maxCostUsd: limits.maxCostUsd ?? null, from: limits.from },
+    limits: { ...limits, maxCostUsd: limits.maxCostUsd ?? null },
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

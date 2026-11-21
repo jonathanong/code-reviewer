@@ -149,12 +149,20 @@ export function modelTable(plan: ModelPlan): Record<string, Candidate[]> {
   )
 }
 
+/** Wall-clock limits from the machine's `limits` key; a step without one keeps its built-in value. */
+export type StepLimits = {
+  runTimeoutMs?: number
+  selectTimeoutMs?: number
+  contextDeadlineMs?: number
+}
+
 /** The plan, and the sleep and clock its waits use; tests replace the clock. */
 export type StepModels = {
   plan: ModelPlan
   clock?: Pick<StepRuntime, 'sleep' | 'now'>
   /** Progress lines and the cost ceiling of one review; steps run without them when absent. */
   watch?: StepWatch
+  limits?: StepLimits
 }
 
 export const DEFAULT_STEP_MODELS: StepModels = { plan: DEFAULT_MODEL_PLAN }
@@ -163,9 +171,12 @@ export const DEFAULT_STEP_MODELS: StepModels = { plan: DEFAULT_MODEL_PLAN }
 export function runModelStep(
   models: StepModels,
   step: { keys: readonly string[]; fallback: Tier },
-  request: StepRequest,
+  asked: StepRequest,
   exec: Exec,
 ): Promise<StepRun> {
+  const timeoutMs =
+    step.keys[0] === 'select' ? models.limits?.selectTimeoutMs : models.limits?.runTimeoutMs
+  const request = timeoutMs === undefined ? asked : { ...asked, timeoutMs }
   const runtime = { ...realRuntime(models.plan.retry.maxWaitSeconds), ...models.clock }
   const candidates = candidatesFor(models.plan, step.keys, step.fallback)
   const { watch } = models

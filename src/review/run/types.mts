@@ -1,3 +1,4 @@
+import { INT_LIMITS } from '../rules/limits-parse.mts'
 import type { StepRan } from '../../harness/runner.mts'
 import type { Usage } from '../benchmark/usage.mts'
 import type { Finding } from '../finding.mts'
@@ -30,6 +31,7 @@ export type SkillChoice = {
 }
 
 /** Wall-clock limits for model calls, in milliseconds. */
-export const SELECT_TIMEOUT_MS = 2 * 60 * 1000
-export const RUN_TIMEOUT_MS = 30 * 60 * 1000
+export const SELECT_TIMEOUT_MS = INT_LIMITS.selectTimeoutSeconds.default * 1000
+export const RUN_TIMEOUT_MS = INT_LIMITS.runTimeoutSeconds.default * 1000
+export const CONTEXT_DEADLINE_MS = INT_LIMITS.contextDeadlineSeconds.default * 1000
 export const REVIEW_MAX_TURNS = 40
