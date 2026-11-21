@@ -40,6 +40,7 @@ describe('runDoctor', () => {
       'plugin-freshness:jong-skills',
       'harness:claude',
       'harness:grok',
+      'harness:codex',
       'tracker-dir',
       'tmp-dir',
       'clone-root',

@@ -93,7 +93,7 @@ describe('parseModels', () => {
     [
       'an unknown harness',
       { tiers: { small: [{ harness: 'nope', model: 'a' }] } },
-      `${WHERE}.tiers.small[0]: "harness" must be one of claude, grok, opencode`,
+      `${WHERE}.tiers.small[0]: "harness" must be one of claude, grok, opencode, codex`,
     ],
     [
       'a missing harness',

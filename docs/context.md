@@ -36,7 +36,8 @@ review goes on and `report.md` says under "Pillars" that the context was not bui
 review never fails because of context.
 
 Every harness is given the run directory: Claude and Grok add it with `--add-dir`, OpenCode through
-an `external_directory` permission rule that allows reads there and denies other outside paths.
+an `external_directory` permission rule that allows reads there and denies other outside paths,
+and Codex through its read-only sandbox, which reads outside the tree without `--add-dir`.
 
 ## Rule excerpts
 

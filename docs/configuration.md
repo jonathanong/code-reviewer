@@ -343,12 +343,12 @@ ordered list of `{harness, model}` candidates; unset, they are Claude's `haiku`,
 pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; light reviews
 use only `verifier.light`. A step that is not set runs exactly as it would without this key, and
 a set key replaces only that key. The explorer subagent's model is not configurable. The harnesses
-are `claude`, `grok` and `opencode`; a name that is not registered is a problem. Selecting `grok` or
-`opencode` sends the pull request's diff and files to that provider. OpenCode at its free usage
+are `claude`, `grok`, `opencode` and `codex`; a name that is not registered is a problem. Selecting
+`grok`, `opencode` or `codex` sends the pull request's diff and files to that provider. OpenCode at its free usage
 limit hangs until the step timeout and is then treated as rate limited, so the step moves on.
 A free OpenCode model (an id ending `-free`, or a known free id) may not run `verifier`,
 `verifier.light` or `approvalCheck`, in any candidate. `pillar.history` and `evidence` need shell,
-which Grok and OpenCode refuse, so a list with no Claude candidate for them is a problem (a
+which Grok, OpenCode and Codex refuse, so a list with no Claude candidate for them is a problem (a
 `pillars` list reaches `pillar.history` unless that step is set). Refused web hosts are not known
 from the step name, so they are refused at run time and the step moves to its next candidate.
 
@@ -432,7 +432,7 @@ issues:
 ```
 
 Absent means `code-reviewer issues` files nothing, and so does a proposal whose plugin has no
-target. Failures of a harness (`claude`, `grok`, `opencode`) are filed only to a target named
+target. Failures of a harness (`claude`, `grok`, `opencode`, `codex`) are filed only to a target named
 `harness`; without one they are never filed. `maxPerDay` caps issues filed in any 24 hours across all targets. A target name may be
 listed once. Any wrong shape is a problem naming the file and key, the whole `issues` key is
 ignored, and `code-reviewer issues` exits 2. It is machine-only: a repository's own file cannot

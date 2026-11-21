@@ -43,7 +43,7 @@ the checkout at the pull request head. The skill selection, the approval check a
 run are unchanged. A run that holds a shell loads no user settings file, as the history pillar
 already does.
 
-A harness whose adapter refuses shell grants (Grok and OpenCode) gets neither the commands nor the
+A harness whose adapter refuses shell grants (Grok, OpenCode and Codex) gets neither the commands nor the
 section: the runner asks the adapter's own `assertCan` about the request with them, so one check
 decides, and the step runs without the tool instead of moving to the next candidate. Pillars added
 by [`pillars`](configuration.md#pillars) never get analysis commands: their instructions may come
