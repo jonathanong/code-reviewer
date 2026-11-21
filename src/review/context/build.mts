@@ -1,4 +1,6 @@
 import { pool } from '../run/pool.mts'
+import { changedLineHistory } from './changed-line-history.mts'
+import { linkedRegressions } from './linked-regressions.mts'
 import { ruleExcerpts } from './rule-excerpts.mts'
 import type {
   BuiltContext,
@@ -9,7 +11,11 @@ import type {
 } from './types.mts'
 
 /** One line per section; a later change adds its builder here. */
-export const SECTIONS: readonly SectionBuilder[] = [ruleExcerpts]
+export const SECTIONS: readonly SectionBuilder[] = [
+  ruleExcerpts,
+  changedLineHistory,
+  linkedRegressions,
+]
 
 const JOBS = 3
 
