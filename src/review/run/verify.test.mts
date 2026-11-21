@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { readTranscript } from '../../harness/claude-stream.mts'
 import { ReviewError, type Finding } from '../finding.mts'
 import {
   REVIEW_VERIFIER_SCHEMA,
@@ -97,9 +98,12 @@ describe('buildVerifierRunPrompt', () => {
 })
 
 describe('parseReviewVerifier', () => {
+  const parse = (stdout: string, inputCount: number, threads?: readonly string[]) =>
+    parseReviewVerifier(readTranscript(stdout, 'Verifier run'), inputCount, threads)
+
   it('keeps the prevention note of a verified finding, and the schema allows it', () => {
     const noted = { ...verified, prevent: 'a lint rule for x' }
-    const parsed = parseReviewVerifier(stream({ summary: 's', findings: [noted] }), 2)
+    const parsed = parse(stream({ summary: 's', findings: [noted] }), 2)
     expect(parsed.findings[0]?.prevent).toBe('a lint rule for x')
     expect(REVIEW_VERIFIER_SCHEMA.properties.findings.items.properties.prevent).toEqual({
       type: 'string',
@@ -107,7 +111,7 @@ describe('parseReviewVerifier', () => {
   })
 
   it('reads the summaries, the dropped reasons, and usage', () => {
-    const parsed = parseReviewVerifier(
+    const parsed = parse(
       stream({
         summary: 'Review.',
         pullRequestSummary: ' It adds A. ',
@@ -133,23 +137,21 @@ describe('parseReviewVerifier', () => {
 
   it('keeps only the fixed thread ids the context listed', () => {
     const output = { summary: 's', findings: [], fixedThreadIds: ['T2', 'FORGED', 7, 'T2'] }
-    expect(parseReviewVerifier(stream(output), 0, ['T1', 'T2']).fixedThreadIds).toEqual(['T2'])
-    expect(
-      parseReviewVerifier(stream({ ...output, fixedThreadIds: 'T1' }), 0, ['T1']).fixedThreadIds,
-    ).toEqual([])
+    expect(parse(stream(output), 0, ['T1', 'T2']).fixedThreadIds).toEqual(['T2'])
+    expect(parse(stream({ ...output, fixedThreadIds: 'T1' }), 0, ['T1']).fixedThreadIds).toEqual([])
   })
 
   it('tolerates a missing summary and dropped list but not missing findings', () => {
-    const parsed = parseReviewVerifier(stream({ summary: 's', findings: [], dropped: 'x' }), 0)
+    const parsed = parse(stream({ summary: 's', findings: [], dropped: 'x' }), 0)
     expect(parsed.pullRequestSummary).toBe('')
     expect(parsed.dropped.size).toBe(0)
-    expect(() => parseReviewVerifier(stream(null), 0)).toThrow(ReviewError)
-    expect(() => parseReviewVerifier('nope', 0)).toThrow('Verifier run did not print JSON.')
+    expect(() => parse(stream(null), 0)).toThrow(ReviewError)
+    expect(() => parse('nope', 0)).toThrow('Verifier run did not print JSON.')
   })
 
   it('rejects sources that are not input indexes', () => {
     expect(() =>
-      parseReviewVerifier(stream({ summary: '', findings: [{ ...verified, sources: [5] }] }), 2),
+      parse(stream({ summary: '', findings: [{ ...verified, sources: [5] }] }), 2),
     ).toThrow('sources must list input indexes')
   })
 })

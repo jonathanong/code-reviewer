@@ -1,6 +1,7 @@
+import { harness } from '../../harness/claude.mts'
+import { NO_TOOLS, type HarnessRun } from '../../harness/types.mts'
 import type { Finding } from '../finding.mts'
 import type { ExpectedFinding } from './cases.mts'
-import { isolationArgs } from '../run/claude-flags.mts'
 import type { Exec } from './snapshot.mts'
 
 /** For each expected finding (by index), the index of the finding that raises it, or null. */
@@ -61,36 +62,27 @@ export function buildJudgePrompt(
   ].join('\n\n')
 }
 
-export function judgeArgs(prompt: string, model: string, settings?: object): string[] {
-  return [
-    '-p',
+export function judgeRequest(prompt: string, model: string, settings?: object): HarnessRun {
+  return {
     prompt,
-    '--model',
+    label: 'Judge',
     model,
-    '--output-format',
-    'json',
-    '--json-schema',
-    JSON.stringify(JUDGE_SCHEMA),
-    '--tools',
-    '',
-    '--permission-mode',
-    'dontAsk',
-    '--max-turns',
-    '3',
-    ...isolationArgs(settings),
-  ]
+    maxTurns: 3,
+    schema: JUDGE_SCHEMA,
+    can: NO_TOOLS,
+    ...(settings === undefined ? {} : { settings }),
+  }
 }
 
 type Match = { expected: unknown; finding: unknown }
 
 /** Reads the judge's matches; out-of-range and reused findings are dropped. */
 export function parseJudgeOutput(
-  stdout: string,
+  structured: unknown,
   expectedCount: number,
   findingCount: number,
 ): Assignment {
-  const parsed = JSON.parse(stdout) as { structured_output?: { matches?: unknown } } | null
-  const matches = parsed?.structured_output?.matches
+  const matches = (structured as { matches?: unknown } | null | undefined)?.matches
   if (!Array.isArray(matches)) throw new Error('Judge returned no structured matches.')
   const assignment: Assignment = Array.from({ length: expectedCount }, () => null)
   const used = new Set<number>()
@@ -113,9 +105,9 @@ export async function judgeFindings(
   settings?: object,
 ): Promise<Assignment> {
   if (expected.length === 0 || findings.length === 0) return expected.map(() => null)
-  const stdout = await exec(
-    'claude',
-    judgeArgs(buildJudgePrompt(expected, findings), model, settings),
+  const { structured } = await harness.run(
+    judgeRequest(buildJudgePrompt(expected, findings), model, settings),
+    exec,
   )
-  return parseJudgeOutput(stdout, expected.length, findings.length)
+  return parseJudgeOutput(structured, expected.length, findings.length)
 }

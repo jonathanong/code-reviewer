@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { claudeArgs } from '../../harness/claude-args.mts'
+import { EFFORT } from '../../harness/types.mts'
+import { pillarCapabilities } from '../run/pillar-capabilities.mts'
+import { PILLAR_OUTPUT_SCHEMA } from '../run/pillar-schema.mts'
 import type { EvalCase } from './cases.mts'
-import {
-  CLAUDE_EFFORT,
-  PILLAR_TOOLS,
-  PILLAR_TOOLS_NO_SKILLS,
-  pillarArgs,
-  pillarToolFlags,
-} from '../run/claude-flags.mts'
 import { buildPillarPrompt, runPillar } from './runner.mts'
+
+const PILLAR_TOOLS = 'Read,Grep,Glob,Agent,Skill'
+const PILLAR_TOOLS_NO_SKILLS = 'Read,Grep,Glob,Agent'
 
 const item: EvalCase = {
   id: 'c1',
@@ -87,12 +87,15 @@ describe('runPillar', () => {
     ]
     expect(command).toBe('claude')
     expect(args).toEqual(
-      pillarArgs({
+      claudeArgs({
         prompt: buildPillarPrompt('Prompt', item),
+        label: 'Pillar run',
         model: 'opus',
         maxTurns: 5,
-        effort: CLAUDE_EFFORT.full,
-        ...pillarToolFlags('design'),
+        schema: PILLAR_OUTPUT_SCHEMA,
+        can: pillarCapabilities('design'),
+        effort: EFFORT.full,
+        transcript: true,
       }),
     )
     expect(options).toEqual({ cwd: '/snap' })

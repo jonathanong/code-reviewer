@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
+import { claudeArgs } from '../../harness/claude-args.mts'
+import { readResult } from '../../harness/claude-stream.mts'
 import type { Finding } from '../finding.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
 import { judgeInputs } from './judge-all.mts'
 import { collectVerifierInput } from './verifier-input.mts'
 import {
   buildVerifierPrompt,
-  parseVerifierOutput,
   runVerifier,
-  verifierArgs,
+  validateVerifierOutput,
+  verifierRequest,
 } from './verifier-run.mts'
 
 const expected = (overrides: Partial<ExpectedFinding>): ExpectedFinding => ({
@@ -125,16 +127,16 @@ describe('verifier run', () => {
   })
 
   it('passes read-only tools and the schema', () => {
-    const args = verifierArgs('P', 'opus', 9)
+    const args = claudeArgs(verifierRequest('P', 'opus', 9))
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'opus'])
     expect(args[args.indexOf('--max-turns') + 1]).toBe('9')
     expect(args).toContain('--strict-mcp-config')
     expect(args).not.toContain('--settings')
     const settings = { enabledPlugins: { 'skills@m': true } }
-    const limited = verifierArgs('P', 'opus', 9, true, settings)
+    const limited = claudeArgs(verifierRequest('P', 'opus', 9, true, settings))
     expect(JSON.parse(limited[limited.indexOf('--settings') + 1] as string)).toEqual(settings)
     expect(args).toContain('Read,Grep,Glob')
-    expect(verifierArgs('P', 'opus', 9, true)).toContain('Read,Grep,Glob,Skill')
+    expect(claudeArgs(verifierRequest('P', 'opus', 9, true))).toContain('Read,Grep,Glob,Skill')
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string).required).toEqual([
       'summary',
       'findings',
@@ -142,12 +144,11 @@ describe('verifier run', () => {
   })
 
   const out = (structured: unknown) => JSON.stringify({ structured_output: structured })
+  const parse = (stdout: string, inputCount: number) =>
+    validateVerifierOutput(readResult(stdout).structured, inputCount)
 
   it('parses findings and their sources', () => {
-    const parsed = parseVerifierOutput(
-      out({ summary: ' S ', findings: [{ ...finding(), sources: [0, 1] }] }),
-      2,
-    )
+    const parsed = parse(out({ summary: ' S ', findings: [{ ...finding(), sources: [0, 1] }] }), 2)
     expect(parsed).toEqual({
       summary: 'S',
       findings: [finding()],
@@ -158,25 +159,21 @@ describe('verifier run', () => {
 
   it('carries questions and fails on a malformed one rather than dropping it', () => {
     const ask = { question: 'Q?', askOf: 'author', why: 'W' }
-    expect(
-      parseVerifierOutput(out({ summary: 's', findings: [], questions: [ask] }), 0).questions,
-    ).toEqual([ask])
+    expect(parse(out({ summary: 's', findings: [], questions: [ask] }), 0).questions).toEqual([ask])
     expect(() =>
-      parseVerifierOutput(out({ summary: 's', findings: [], questions: [{ question: 'Q?' }] }), 0),
+      parse(out({ summary: 's', findings: [], questions: [{ question: 'Q?' }] }), 0),
     ).toThrow('questions[0].askOf')
   })
 
   it('rejects missing output and invalid sources', () => {
-    expect(() => parseVerifierOutput('null', 1)).toThrow('no structured findings')
-    expect(() => parseVerifierOutput(out({ findings: 'x' }), 1)).toThrow('no structured findings')
+    expect(() => parse('null', 1)).toThrow('no structured findings')
+    expect(() => parse(out({ findings: 'x' }), 1)).toThrow('no structured findings')
     for (const sources of [undefined, [1], [-1], [0.5], 'x']) {
-      expect(() =>
-        parseVerifierOutput(out({ summary: '', findings: [{ ...finding(), sources }] }), 1),
-      ).toThrow('findings[0].sources must list input indexes.')
+      expect(() => parse(out({ summary: '', findings: [{ ...finding(), sources }] }), 1)).toThrow(
+        'findings[0].sources must list input indexes.',
+      )
     }
-    expect(() => parseVerifierOutput(out({ summary: '', findings: [null] }), 1)).toThrow(
-      'findings[0].sources',
-    )
+    expect(() => parse(out({ summary: '', findings: [null] }), 1)).toThrow('findings[0].sources')
   })
 
   it('runs claude in the snapshot directory', async () => {

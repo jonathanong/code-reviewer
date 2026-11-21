@@ -281,7 +281,7 @@ pnpm exec code-reviewer bench \
 
 For each case, the runner prepares a snapshot (below). It writes the title, description, and a
 numbered diff (base and head line numbers on every line) into `.review/` inside that tree, then
-runs `claude -p` on Sonnet with the tools `review` gives that pillar (`pillarToolFlags`): `Read`,
+runs `claude -p` on Sonnet with the tools `review` gives that pillar (`pillarCapabilities`): `Read`,
 `Grep`, `Glob`, `Agent` and `Skill`, plus `git log` and `git show` through `Bash` for the
 `history` pillar. There is no other shell, network, or `gh`, so the reviewer cannot look up the
 revert. Each pillar prompt is prefixed with the shared `_contract.md`.

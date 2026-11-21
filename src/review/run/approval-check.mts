@@ -1,5 +1,7 @@
+import { harness } from '../../harness/claude.mts'
+import { EFFORT, type HarnessResult } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
-import { describeFailure, type Usage } from '../benchmark/usage.mts'
+import type { Usage } from '../benchmark/usage.mts'
 import { ReviewError, parseReviewInput } from '../finding.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Question } from '../question.mts'
@@ -10,8 +12,7 @@ import {
   buildApprovalCheckPrompt,
   type ApprovalCheckInput,
 } from './approval-check-prompt.mts'
-import { CLAUDE_EFFORT, SKILL_TOOLS, pillarArgs } from './claude-flags.mts'
-import { readStream } from './stream-output.mts'
+import { SKILL_READER } from './pillar-capabilities.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
 
 /** What the check did, saved as `approval-check.json` and shown in the report. */
@@ -32,9 +33,8 @@ export type ApprovalCheck = {
 
 type Run = { findings: Finding[]; questions: Question[]; note: string; usage: Usage }
 
-/** Reads the check's stream; malformed findings or questions fail the check, not the review. */
-export function parseApprovalCheck(stdout: string): Run {
-  const { structured, usage } = readStream(stdout, 'Approval check run')
+/** Reads the check's answer; malformed findings or questions fail the check, not the review. */
+export function parseApprovalCheck({ structured, usage }: HarnessResult): Run {
   const raw = structured as { summary?: unknown; findings?: unknown; questions?: unknown } | null
   if (raw === null || raw === undefined || !Array.isArray(raw.findings)) {
     throw new ReviewError('Approval check run returned no structured findings.')
@@ -84,20 +84,25 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
   }
   const before = deriveVerdict(base.findings, base.questions, base.skipped)
   if (!step.enabled || step.mode !== 'full' || before !== 'Approve') return base
-  const args = pillarArgs({
-    prompt: buildApprovalCheckPrompt(input),
-    model: step.model,
-    maxTurns: REVIEW_MAX_TURNS,
-    tools: SKILL_TOOLS,
-    effort: CLAUDE_EFFORT.full,
-    schema: APPROVAL_CHECK_SCHEMA,
-    explorer: false,
-    addDirs: [input.run.out, input.references],
-    ...(step.settings === undefined ? {} : { settings: step.settings }),
-  })
   try {
     const run = parseApprovalCheck(
-      await step.exec('claude', args, { cwd: step.tree, timeoutMs: RUN_TIMEOUT_MS }),
+      await harness.run(
+        {
+          prompt: buildApprovalCheckPrompt(input),
+          label: 'Approval check run',
+          model: step.model,
+          maxTurns: REVIEW_MAX_TURNS,
+          schema: APPROVAL_CHECK_SCHEMA,
+          can: SKILL_READER,
+          cwd: step.tree,
+          timeoutMs: RUN_TIMEOUT_MS,
+          effort: EFFORT.full,
+          addDirs: [input.run.out, input.references],
+          transcript: true,
+          ...(step.settings === undefined ? {} : { settings: step.settings }),
+        },
+        step.exec,
+      ),
     )
     const findings = [...base.findings, ...run.findings]
     const questions = [...base.questions, ...run.questions]
@@ -114,7 +119,7 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
     }
     return { check, findings, questions, skipped: base.skipped }
   } catch (error) {
-    const { message, usage } = describeFailure(error)
+    const { message, usage } = harness.describeFailure(error)
     const reason = `The second check on the approval did not complete (${firstLine(message).slice(0, 160)}), so this is a comment, not an approval.`
     const skipped: SkippedPillar[] = [...base.skipped, { pillar: APPROVAL_CHECK, reason }]
     const check: ApprovalCheck = {

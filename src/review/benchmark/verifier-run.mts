@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto'
 
+import { harness } from '../../harness/claude.mts'
+import { READ_ONLY, type HarnessRun } from '../../harness/types.mts'
 import { ReviewError, PILLARS, SEVERITIES, parseReviewInput, type Finding } from '../finding.mts'
 import { QUESTIONS_SCHEMA, type Question } from '../question.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
-import { parseUsage, resultEvent, type Usage } from './usage.mts'
+import type { Usage } from './usage.mts'
 import { caseRevision, describeCase } from './fixture.mts'
-import { READ_ONLY_TOOLS, SKILL_TOOLS, isolationArgs } from '../run/claude-flags.mts'
+import { SKILL_READER } from '../run/pillar-capabilities.mts'
 import { CONTEXT_DIR, hasRulesIndex, type Exec } from './snapshot.mts'
 import type { VerifierInput } from './verifier-input.mts'
 
@@ -85,39 +87,22 @@ export function buildVerifierPrompt(
 }
 
 /** `skills` adds the Skill tool, so cited rule skills can be loaded; off for control runs. */
-export function verifierArgs(
+export function verifierRequest(
   prompt: string,
   model: string,
   maxTurns: number,
   skills = false,
   settings?: object,
-): string[] {
-  const tools = skills ? SKILL_TOOLS : READ_ONLY_TOOLS
-  return [
-    '-p',
+): HarnessRun {
+  return {
     prompt,
-    '--model',
+    label: 'Verifier run',
     model,
-    '--output-format',
-    'json',
-    '--json-schema',
-    JSON.stringify(VERIFIER_OUTPUT_SCHEMA),
-    '--tools',
-    tools,
-    '--allowedTools',
-    tools,
-    '--permission-mode',
-    'dontAsk',
-    '--max-turns',
-    String(maxTurns),
-    ...isolationArgs(settings),
-  ]
-}
-
-/** Validates the verifier's structured output; sources must name real input indexes. */
-export function parseVerifierOutput(stdout: string, inputCount: number): VerifierOutput {
-  const parsed = JSON.parse(stdout) as { structured_output?: unknown } | null
-  return validateVerifierOutput(parsed?.structured_output, inputCount)
+    maxTurns,
+    schema: VERIFIER_OUTPUT_SCHEMA,
+    can: skills ? SKILL_READER : READ_ONLY,
+    ...(settings === undefined ? {} : { settings }),
+  }
 }
 
 /** Validates a verifier's structured output object; shared by the benchmark and `review`. */
@@ -180,15 +165,12 @@ export async function runVerifier(
 ): Promise<{ output: VerifierOutput; usage: Usage }> {
   const rules = hasRulesIndex(dir)
   const prompt = buildVerifierPrompt(run.verifierPrompt, item, findings, rules)
-  const stdout = await exec(
-    'claude',
-    verifierArgs(prompt, run.model, run.maxTurns, rules, run.settings),
+  const { structured, usage } = await harness.run(
     {
+      ...verifierRequest(prompt, run.model, run.maxTurns, rules, run.settings),
       cwd: dir,
     },
+    exec,
   )
-  return {
-    output: parseVerifierOutput(stdout, findings.length),
-    usage: parseUsage(resultEvent(stdout)),
-  }
+  return { output: validateVerifierOutput(structured, findings.length), usage }
 }

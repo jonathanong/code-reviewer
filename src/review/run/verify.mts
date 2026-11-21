@@ -1,5 +1,7 @@
 import { join } from 'node:path'
 
+import { harness } from '../../harness/claude.mts'
+import { EFFORT, type HarnessResult } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import {
   VERIFIER_OUTPUT_SCHEMA,
@@ -9,7 +11,7 @@ import {
 import type { Usage } from '../benchmark/usage.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
-import { CLAUDE_EFFORT, SKILL_TOOLS, pillarArgs, withWebFetch } from './claude-flags.mts'
+import { SKILL_READER } from './pillar-capabilities.mts'
 import { referenceDomains, referencesBlock, type WebReferences } from './references-prompt.mts'
 import { runFileLines, type RunDir } from './pillar-prompt.mts'
 import { carriedLines } from './carried-prompt.mts'
@@ -19,7 +21,6 @@ import { impliedDependencies, IMPLIED_KINDS, type Dependency } from '../dependen
 import { mergeLines } from './merge-prompt.mts'
 import { rulePluginLines } from './rule-plugins-prompt.mts'
 import { stackLines } from './stack-prompt.mts'
-import { readStream } from './stream-output.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
 
 /** The benchmark's verifier schema plus the pull request summary and a reason per dropped input. */
@@ -118,13 +119,13 @@ export type ReviewVerifierOutput = VerifierOutput & {
   usage: Usage
 }
 
-/** Reads the verifier's stream; extras the model got wrong are ignored, not fatal. */
+/** Reads the verifier's answer; extras the model got wrong are ignored, not fatal. */
 export function parseReviewVerifier(
-  stdout: string,
+  run: HarnessResult,
   inputCount: number,
   threads: readonly string[] = [],
 ): ReviewVerifierOutput {
-  const { structured, skills, usage } = readStream(stdout, 'Verifier run')
+  const { structured, skills, usage } = run
   const base = validateVerifierOutput(structured, inputCount)
   const extra = structured as {
     pullRequestSummary?: unknown
@@ -170,20 +171,22 @@ export async function runReviewVerifier(
     exec: Exec
   },
 ): Promise<ReviewVerifierOutput> {
-  const args = pillarArgs({
-    prompt: buildVerifierRunPrompt(input),
-    model: options.model,
-    maxTurns: REVIEW_MAX_TURNS,
-    ...withWebFetch(SKILL_TOOLS, referenceDomains(input.web)),
-    effort: CLAUDE_EFFORT[options.mode],
-    schema: REVIEW_VERIFIER_SCHEMA,
-    explorer: false,
-    addDirs: [input.run.out, input.references],
-    ...(options.settings === undefined ? {} : { settings: options.settings }),
-  })
-  const stdout = await options.exec('claude', args, {
-    cwd: options.tree,
-    timeoutMs: RUN_TIMEOUT_MS,
-  })
-  return parseReviewVerifier(stdout, input.findings.length, input.threads)
+  const run = await harness.run(
+    {
+      prompt: buildVerifierRunPrompt(input),
+      label: 'Verifier run',
+      model: options.model,
+      maxTurns: REVIEW_MAX_TURNS,
+      schema: REVIEW_VERIFIER_SCHEMA,
+      can: { ...SKILL_READER, web: referenceDomains(input.web) },
+      cwd: options.tree,
+      timeoutMs: RUN_TIMEOUT_MS,
+      effort: EFFORT[options.mode],
+      addDirs: [input.run.out, input.references],
+      transcript: true,
+      ...(options.settings === undefined ? {} : { settings: options.settings }),
+    },
+    options.exec,
+  )
+  return parseReviewVerifier(run, input.findings.length, input.threads)
 }

@@ -1,5 +1,5 @@
 import { ReviewError } from '../finding.mts'
-import { isObject } from '../benchmark/stream-json.mts'
+import { isObject } from '../../harness/json.mts'
 import {
   EVIDENCE_EFFECTS,
   EVIDENCE_STATUSES,

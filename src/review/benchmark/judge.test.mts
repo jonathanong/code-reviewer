@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { claudeArgs } from '../../harness/claude-args.mts'
+import { readResult } from '../../harness/claude-stream.mts'
 import type { Finding } from '../finding.mts'
 import type { ExpectedFinding } from './cases.mts'
-import { buildJudgePrompt, judgeArgs, judgeFindings, parseJudgeOutput } from './judge.mts'
+import { buildJudgePrompt, judgeFindings, judgeRequest, parseJudgeOutput } from './judge.mts'
 
 const expected: ExpectedFinding[] = [
   { pillar: 'correctness', severity: 'high', path: 'a.ts', lines: [3, 4], claim: 'lock key case' },
@@ -38,9 +40,9 @@ describe('buildJudgePrompt', () => {
   })
 })
 
-describe('judgeArgs', () => {
+describe('judgeRequest', () => {
   it('disables tools and requests structured output', () => {
-    const args = judgeArgs('P', 'sonnet')
+    const args = claudeArgs(judgeRequest('P', 'sonnet'))
     expect(args.slice(0, 4)).toEqual(['-p', 'P', '--model', 'sonnet'])
     expect(args[args.indexOf('--tools') + 1]).toBe('')
     expect(args).toContain('--json-schema')
@@ -48,6 +50,9 @@ describe('judgeArgs', () => {
 })
 
 describe('parseJudgeOutput', () => {
+  const parse = (stdout: string, expectedCount: number, findingCount: number) =>
+    parseJudgeOutput(readResult(stdout).structured, expectedCount, findingCount)
+
   it('builds an assignment and drops invalid or reused matches', () => {
     const matches = [
       { expected: 0, finding: 1 },
@@ -58,12 +63,12 @@ describe('parseJudgeOutput', () => {
       { expected: 'x', finding: 0 },
       { expected: 1, finding: null },
     ]
-    expect(parseJudgeOutput(out(matches), 3, 3)).toEqual([1, null, null])
+    expect(parse(out(matches), 3, 3)).toEqual([1, null, null])
   })
 
   it('rejects output without matches', () => {
-    expect(() => parseJudgeOutput('{}', 1, 1)).toThrow('no structured matches')
-    expect(() => parseJudgeOutput('null', 1, 1)).toThrow('no structured matches')
+    expect(() => parse('{}', 1, 1)).toThrow('no structured matches')
+    expect(() => parse('null', 1, 1)).toThrow('no structured matches')
   })
 })
 

@@ -1,6 +1,8 @@
-import { ReviewError, parseReviewInput, type Finding, type Pillar } from '../finding.mts'
-import { isObject, jsonEvents, jsonLines } from '../benchmark/stream-json.mts'
-import { parseUsage, type Usage } from '../benchmark/usage.mts'
+import { ReviewError } from '../review/finding.mts'
+import type { Usage } from '../review/benchmark/usage.mts'
+import type { HarnessResult } from './types.mts'
+import { parseUsage, resultEvent } from './claude-usage.mts'
+import { isObject, jsonEvents, jsonLines } from './json.mts'
 
 type Part = {
   type?: unknown
@@ -59,17 +61,16 @@ export function readStream(stdout: string, what: string): RunStream {
   }
 }
 
-export type PillarOutput = { findings: Finding[]; skills: string[]; usage: Usage }
+/** A `stream-json` run: the stream's answer and skills, and what its last result event reported. */
+export function readTranscript(stdout: string, what: string): HarnessResult {
+  const stream = readStream(stdout, what)
+  const event = resultEvent(stdout)
+  return { ...stream, reportedUsage: event === undefined ? null : parseUsage(event) }
+}
 
-/** Reads a pillar run: its findings tagged with the pillar, the skills it loaded, and usage. */
-export function parsePillarOutput(stdout: string, pillar: Pillar): PillarOutput {
-  const { structured, skills, usage } = readStream(stdout, 'Pillar run')
-  const found = (structured as { findings?: unknown } | undefined)?.findings
-  if (!Array.isArray(found)) {
-    throw new ReviewError('Pillar run returned no structured findings.')
-  }
-  const findings = found.map((finding: unknown) =>
-    isObject(finding) ? { ...finding, pillar } : finding,
-  )
-  return { findings: parseReviewInput({ findings }).findings, skills, usage }
+/** One `--output-format json` object: the answer is its `structured_output`. */
+export function readResult(stdout: string): HarnessResult {
+  const parsed = JSON.parse(stdout) as { structured_output?: unknown } | null
+  const usage = parseUsage(resultEvent(stdout))
+  return { structured: parsed?.structured_output, skills: [], usage, reportedUsage: usage }
 }

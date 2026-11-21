@@ -1,8 +1,11 @@
+import { harness } from '../../harness/claude.mts'
+import { EFFORT } from '../../harness/types.mts'
 import type { Pillar } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
-import { CLAUDE_EFFORT, pillarArgs, pillarToolFlags } from '../run/claude-flags.mts'
+import { pillarCapabilities } from '../run/pillar-capabilities.mts'
+import { parsePillarOutput, type PillarOutput } from '../run/pillar-output.mts'
 import { skillInstruction } from '../run/pillar-prompt.mts'
-import { parsePillarOutput, type PillarOutput } from '../run/stream-output.mts'
+import { PILLAR_OUTPUT_SCHEMA } from '../run/pillar-schema.mts'
 import type { EvalCase } from './cases.mts'
 import { describeCase } from './fixture.mts'
 import { CONTEXT_DIR, hasContextNotes, hasRulesIndex, type Exec } from './snapshot.mts'
@@ -58,13 +61,20 @@ export async function runPillar(
     buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir)),
     ...skillInstruction(run.selected ?? []),
   ].join('\n\n')
-  const args = pillarArgs({
-    prompt,
-    model: run.model,
-    maxTurns: run.maxTurns,
-    ...pillarToolFlags(run.pillar, run.skills !== false),
-    effort: CLAUDE_EFFORT.full,
-    ...(run.settings === undefined ? {} : { settings: run.settings }),
-  })
-  return parsePillarOutput(await exec('claude', args, { cwd: dir }), run.pillar)
+  const result = await harness.run(
+    {
+      prompt,
+      label: 'Pillar run',
+      model: run.model,
+      maxTurns: run.maxTurns,
+      schema: PILLAR_OUTPUT_SCHEMA,
+      can: pillarCapabilities(run.pillar, run.skills !== false),
+      cwd: dir,
+      effort: EFFORT.full,
+      transcript: true,
+      ...(run.settings === undefined ? {} : { settings: run.settings }),
+    },
+    exec,
+  )
+  return parsePillarOutput(result, run.pillar)
 }

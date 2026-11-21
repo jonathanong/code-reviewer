@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseUsage } from '../benchmark/usage.mts'
+import { parseUsage } from '../../harness/claude-usage.mts'
 import type { Finding } from '../finding.mts'
 import type { StackFile } from '../stack-file.mts'
 import { buildReport, type ReportInput } from './report.mts'

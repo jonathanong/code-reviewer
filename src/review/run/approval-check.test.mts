@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
+import { readTranscript } from '../../harness/claude-stream.mts'
 import { ExecError } from '../benchmark/exec.mts'
 import type { Finding } from '../finding.mts'
 import { APPROVAL_CHECK_SCHEMA, approvalCheckInput } from './approval-check-prompt.mts'
@@ -80,27 +81,25 @@ describe('approvalCheckInput', () => {
 })
 
 describe('parseApprovalCheck', () => {
+  const parse = (stdout: string) => parseApprovalCheck(readTranscript(stdout, 'Approval check run'))
+
   it('reads findings, questions and the note', () => {
     const ask = { question: 'Q?', askOf: 'author', why: 'W' }
-    const parsed = parseApprovalCheck(
-      result({ summary: ' Held. ', findings: [NIT], questions: [ask] }),
-    )
+    const parsed = parse(result({ summary: ' Held. ', findings: [NIT], questions: [ask] }))
     expect(parsed).toMatchObject({ findings: [NIT], questions: [ask], note: 'Held.' })
     expect(parsed.usage.costUsd).toBe(0.5)
   })
 
   it('rejects output with no findings array', () => {
-    expect(() => parseApprovalCheck(result({ summary: 'x' }))).toThrow('no structured findings')
-    expect(() => parseApprovalCheck(JSON.stringify({ type: 'result' }))).toThrow(
-      'no structured findings',
-    )
+    expect(() => parse(result({ summary: 'x' }))).toThrow('no structured findings')
+    expect(() => parse(JSON.stringify({ type: 'result' }))).toThrow('no structured findings')
   })
 
   it('requires a pillar on every finding', () => {
     expect(APPROVAL_CHECK_SCHEMA.properties.findings.items.required).toContain('pillar')
-    expect(() =>
-      parseApprovalCheck(result({ findings: [{ severity: 'low', title: 't', body: 'b' }] })),
-    ).toThrow('findings[0].pillar')
+    expect(() => parse(result({ findings: [{ severity: 'low', title: 't', body: 'b' }] }))).toThrow(
+      'findings[0].pillar',
+    )
   })
 })
 
