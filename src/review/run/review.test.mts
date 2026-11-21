@@ -146,6 +146,7 @@ function setup(
       ],
     })),
     evidence: vi.fn(async () => ({ sources: [], readGuide: async () => '' })),
+    rulePlugins: ['no-mistakes-rules', 'jong-skills'],
     approvalCheck: false,
     exec: claude(),
     references: fixture('references'),
@@ -467,22 +468,6 @@ describe('runReview', () => {
         'Failed: Evidence run did not print JSON.',
       )
     })
-  })
-
-  it('runs no pillar and aborts when no rule skill is installed', async () => {
-    const exec = vi.fn(claude())
-    const { out, steps, calls, options } = setup({
-      exec,
-      plugins: vi.fn(async () => ({ enabled: [], installs: [] })),
-    })
-    const outcome = await runReview(steps, options)
-    expect(outcome.ok).toBe(false)
-    expect(outcome.summary.error).toBe(
-      'Skill selection failed, so no review was run: No rule skills are installed.',
-    )
-    expect(readJson(out, 'skills.json').error).toBe('No rule skills are installed.')
-    expect(exec).not.toHaveBeenCalled()
-    expect(calls).toEqual(['abort'])
   })
 
   it('stops when the selection call fails twice', async () => {

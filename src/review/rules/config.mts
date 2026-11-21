@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { consumesList } from './consumes-parse.mts'
 import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
 import { parseReferences, type ReferenceSource } from './references-parse.mts'
+import { parseRulePlugins } from './rule-plugins-parse.mts'
 import { parseRun, type RunConfig } from './run-parse.mts'
 import {
   parseCheckRun,
@@ -48,6 +49,11 @@ export type RepoConfig = {
   references?: ReferenceSource[]
   /** Machine config only: `false` switches off the second check on an approval. */
   approvalCheck?: boolean
+  /**
+   * Machine config only: the plugins whose skills hold the shared rules, replacing the default
+   * list. An enabled plugin loads its hooks too, so a reviewed repository's file never sets it.
+   */
+  rulePlugins?: string[]
   /** Machine config only: it decides what the reviewer posts unattended. */
   run?: RunConfig
   problems: string[]
@@ -66,6 +72,7 @@ const KEYS = new Set([
   'evidence',
   'references',
   'approvalCheck',
+  'rulePlugins',
   'run',
 ])
 
@@ -122,6 +129,13 @@ export function parseRepoConfig(
     scope === 'target'
       ? undefined
       : parseSwitch(raw.approvalCheck, `${file} approvalCheck`, problems)
+  if (scope === 'target' && raw.rulePlugins !== undefined) {
+    problems.push(`${file}: rulePlugins is machine-only; ignored`)
+  }
+  const rulePlugins =
+    scope === 'target'
+      ? undefined
+      : parseRulePlugins(raw.rulePlugins, `${file} rulePlugins`, problems)
   if (scope === 'target' && raw.run !== undefined) {
     problems.push(`${file}: run settings are machine-only; ignored`)
   }
@@ -133,6 +147,7 @@ export function parseRepoConfig(
     ...(evidence === undefined ? {} : { evidence }),
     ...(references === undefined ? {} : { references }),
     ...(approvalCheck === undefined ? {} : { approvalCheck }),
+    ...(rulePlugins === undefined ? {} : { rulePlugins }),
     ...(run === undefined ? {} : { run }),
     problems,
   }

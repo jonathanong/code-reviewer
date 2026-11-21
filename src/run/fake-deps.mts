@@ -110,8 +110,14 @@ export function fakeDeps(options: FakeOptions) {
     runner: vi.fn(),
     readFile: vi.fn((path) => readFileSync(path, 'utf8')),
     tracker: vi.fn(() => tracker),
-    listPlugins: vi.fn(async () => plugins),
-    pluginInfo: vi.fn(),
+    listPlugins: vi.fn(),
+    pluginInfo: vi.fn(async () => ({
+      enabled: plugins,
+      installs: plugins.map((plugin) => ({
+        name: plugin.id.split('@')[0] as string,
+        installPath: `/plugins/${plugin.id}`,
+      })),
+    })),
     exec: vi.fn(async () => ''),
     references: vi.fn(),
     runBench: vi.fn(),

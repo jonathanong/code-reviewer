@@ -117,8 +117,9 @@ describe('reviewCommand', () => {
       commands: ['aws logs get-query-results'],
       env: {},
     }
-    // The web references and the approval check read the configs first, when the command is wired.
+    // The web references, the approval check and the rule plugins read the configs first, when wired.
     configs
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce({
@@ -154,6 +155,19 @@ describe('reviewCommand', () => {
       byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
     })
     expect((await steps()).wired.approvalCheck).toBe(false)
+  })
+
+  it('uses the default rule plugins unless a machine config lists others, even none', async () => {
+    expect((await steps()).wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
+    vi.clearAllMocks()
+    configs
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce({
+        ...NO_CONFIGS,
+        byRepo: new Map([['acme/widgets', { consumes: [], rulePlugins: [], problems: [] }]]),
+      })
+    expect((await steps()).wired.rulePlugins).toEqual([])
   })
 
   it('previews with a dry run', async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_RULE_PLUGINS } from './plugins.mts'
 import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './rules/config.mts'
 import {
   DEFAULT_LABELS,
@@ -7,6 +8,7 @@ import {
   resolveEvidence,
   resolveApprovalCheck,
   resolveReferences,
+  resolveRulePlugins,
   reviewSettings,
   settingLayers,
   settingsProblems,
@@ -218,6 +220,36 @@ describe('resolveApprovalCheck', () => {
       from: 'machine owner',
     })
     expect(resolveApprovalCheck(configs, 'acme').enabled).toBe(false)
+  })
+})
+
+describe('resolveRulePlugins', () => {
+  const configs: RepoConfigs = {
+    byOwner: new Map([['acme', { consumes: [], rulePlugins: ['owner-rules'], problems: [] }]]),
+    byRepo: new Map([
+      ['acme/none', { consumes: [], rulePlugins: [], problems: [] }],
+      ['acme/plain', { consumes: [], problems: [] }],
+    ]),
+    problems: [],
+  }
+
+  it('is the default list without a machine value', () => {
+    expect(resolveRulePlugins(NO_CONFIGS, 'acme/web')).toEqual({
+      names: DEFAULT_RULE_PLUGINS,
+      from: null,
+    })
+  })
+
+  it('replaces the default whole, and the repository list replaces the owner list', () => {
+    expect(resolveRulePlugins(configs, 'acme/plain')).toEqual({
+      names: ['owner-rules'],
+      from: 'machine owner',
+    })
+    expect(resolveRulePlugins(configs, 'acme').names).toEqual(['owner-rules'])
+  })
+
+  it('treats an empty list as a value, not as unset', () => {
+    expect(resolveRulePlugins(configs, 'acme/none')).toEqual({ names: [], from: 'machine repo' })
   })
 })
 

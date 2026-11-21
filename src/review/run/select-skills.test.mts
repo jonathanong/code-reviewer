@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ExecError } from '../benchmark/exec.mts'
-import type { PluginInstall } from '../plugins.mts'
+import { DEFAULT_RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
 import {
   SKILL_SELECTION_SCHEMA,
   buildSelectionPrompt,
@@ -22,7 +22,7 @@ const answer = (skills: unknown) =>
 
 describe('listRuleSkills', () => {
   it('reads name and description from the rule plugins only, naming each plugin:skill', () => {
-    expect(listRuleSkills(INSTALLS)).toEqual([
+    expect(listRuleSkills(INSTALLS, DEFAULT_RULE_PLUGINS)).toEqual([
       { name: 'jong-skills:bare', description: '' },
       { name: 'jong-skills:documentation', description: 'Decide what belongs in docs.' },
       { name: 'no-mistakes-rules:git-rules', description: 'Rules for git and pull requests.' },
@@ -33,14 +33,24 @@ describe('listRuleSkills', () => {
     ])
   })
 
+  it('lists the skills of the configured plugins only', () => {
+    expect(listRuleSkills(INSTALLS, ['no-mistakes-rules']).map((skill) => skill.name)).toEqual([
+      'no-mistakes-rules:git-rules',
+      'no-mistakes-rules:typescript-rules',
+    ])
+    expect(listRuleSkills(INSTALLS, [])).toEqual([])
+  })
+
   it('offers nothing for a plugin that is not installed or has no skills directory', () => {
-    expect(listRuleSkills([])).toEqual([])
-    expect(listRuleSkills([{ name: 'jong-skills', installPath: path('missing') }])).toEqual([])
+    expect(listRuleSkills([], DEFAULT_RULE_PLUGINS)).toEqual([])
+    expect(
+      listRuleSkills([{ name: 'jong-skills', installPath: path('missing') }], DEFAULT_RULE_PLUGINS),
+    ).toEqual([])
   })
 })
 
 describe('selectSkills', () => {
-  const skills = listRuleSkills(INSTALLS)
+  const skills = listRuleSkills(INSTALLS, DEFAULT_RULE_PLUGINS)
   const base = { title: 'Add widget', index: '- a.ts', skills, cwd: '/tree' }
 
   it('asks Haiku with no tools and keeps only offered names, once each', async () => {
@@ -124,6 +134,20 @@ describe('selectSkills', () => {
       error: 'No rule skills are installed.',
       usage: null,
     })
+    expect(exec).not.toHaveBeenCalled()
+  })
+
+  it('selects nothing and calls no model when no rule plugins are configured', async () => {
+    const exec = vi.fn(async () => answer(['jong-skills:documentation']))
+    const choice = await selectSkills({ ...base, skills: [], rulePlugins: [], exec })
+    expect(choice).toEqual({ selected: [], available: 0, usage: null })
+    expect(exec).not.toHaveBeenCalled()
+  })
+
+  it('still fails when configured plugins yield no skills', async () => {
+    const exec = vi.fn(async () => answer([]))
+    const choice = await selectSkills({ ...base, skills: [], rulePlugins: ['jong-skills'], exec })
+    expect(choice.error).toBe('No rule skills are installed.')
     expect(exec).not.toHaveBeenCalled()
   })
 

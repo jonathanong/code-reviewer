@@ -72,6 +72,7 @@ async function run(push?: object) {
       installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
+    rulePlugins: ['jong-skills'],
     exec,
     references: fixture('references'),
   } as unknown as ReviewSteps

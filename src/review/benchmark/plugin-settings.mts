@@ -1,4 +1,10 @@
-import { parsePluginList, pluginLabels, pluginSettings, type Plugin } from '../plugins.mts'
+import {
+  DEFAULT_RULE_PLUGINS,
+  parsePluginList,
+  pluginLabels,
+  pluginSettings,
+  type Plugin,
+} from '../plugins.mts'
 import type { Exec } from './exec.mts'
 
 export type BenchPlugins = {
@@ -29,7 +35,7 @@ export async function benchPlugins(
   }
   return {
     labels: rules ? pluginLabels(listed) : [],
-    settings: pluginSettings(listed, rules),
-    noPlugins: pluginSettings(listed, false),
+    settings: pluginSettings(listed, DEFAULT_RULE_PLUGINS, rules),
+    noPlugins: pluginSettings(listed, DEFAULT_RULE_PLUGINS, false),
   }
 }

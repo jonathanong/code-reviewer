@@ -71,6 +71,7 @@ async function run(options: {
       installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
+    rulePlugins: ['jong-skills'],
     approvalCheck: options.enabled ?? true,
     exec,
     references: fixture('references'),

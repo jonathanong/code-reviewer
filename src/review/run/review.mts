@@ -2,8 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { diffExcerpt, splitDiff } from '../diff-files.mts'
-import { ReviewError, type ReviewInput, type Pillar } from '../finding.mts'
-import { pluginSettings } from '../plugins.mts'
+import { ReviewError, type ReviewInput } from '../finding.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
@@ -14,11 +13,13 @@ import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { runPillars } from './pillars.mts'
 import { webReferences } from './references-prompt.mts'
-import { listRuleSkills, selectSkills } from './select-skills.mts'
+import { selectSkills } from './select-skills.mts'
 import { runReviewVerifier } from './verify.mts'
 
 import {
+  loadRulePlugins,
   noteFields,
+  pillarTexts,
   reviewDependencies,
   countFindings,
   failedSkips,
@@ -47,15 +48,15 @@ async function review(
   const base = { repo: options.repo, pr: options.pr, title, headSha, effort: plan.effort }
   const mode = plan.mode
   if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed)
-  const plugins = await steps.plugins()
-  const settings = pluginSettings(plugins.enabled)
+  const { settings, skills } = await loadRulePlugins(steps)
   const followUp = plan.sinceSha !== null
   const source = followUp ? 'since' : 'diff'
   const skillChoice = await selectSkills({
     title,
     index: read(join(out, source, 'INDEX.md')),
     excerpt: diffExcerpt(splitDiff(read(join(out, `${source}.patch`)))),
-    skills: listRuleSkills(plugins.installs),
+    skills,
+    rulePlugins: steps.rulePlugins,
     settings,
     exec: steps.exec,
     cwd: tree,
@@ -65,17 +66,16 @@ async function review(
   if (skillChoice.error !== undefined) {
     throw new ReviewError(`Skill selection failed, so no review was run: ${skillChoice.error}`)
   }
-  const run = runDir(out, plan.sinceSha)
+  const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
-  const pillarsDir = join(steps.references, 'pillars')
+  const prompts = pillarTexts(steps)
   const results = await runPillars({
     pillars: plan.pillars,
     tree,
     run,
     mode,
     jobs: options.jobs,
-    contract: read(join(pillarsDir, '_contract.md')),
-    readPillar: (pillar: Pillar) => read(join(pillarsDir, `${pillar}.md`)),
+    ...prompts,
     skills: skillChoice.selected,
     settings,
     ...(web === undefined ? {} : { web }),

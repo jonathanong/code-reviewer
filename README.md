@@ -11,7 +11,8 @@ GitHub review. It runs on your machine, for the repositories you pick.
 - **A reviewed repository needs no setup.** Every setting has a default; what the reviewer knows
   about a repository lives on the reviewer's machine.
 - **Rules come from trusted places only.** The repository's `AGENTS.md` and skills at the base
-  ref, and the installed `no-mistakes-rules` and `jong-skills` plugins. Everything in the pull
+  ref, and the rule plugins the machine config lists (by default `no-mistakes-rules` and
+  `jong-skills`; see [`rulePlugins`](docs/configuration.md#ruleplugins)). Everything in the pull
   request (diff, description, comments, linked issues) is untrusted data, and a pull request
   cannot change its own review settings.
 - **Few, real findings.** A clean pull request is common. A finding names what goes wrong or what

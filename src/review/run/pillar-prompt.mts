@@ -26,6 +26,8 @@ export type RunDir = {
   dependencies?: Dependency[] | undefined
   /** The issues the description refers to, from `issues.json`. */
   issues?: IssueText[] | undefined
+  /** The configured rule plugins; absent in a benchmark, which always uses the default list. */
+  rulePlugins?: readonly string[] | undefined
 }
 
 /** Absolute paths of the run directory files, one bullet each. */

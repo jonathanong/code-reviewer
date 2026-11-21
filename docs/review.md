@@ -45,8 +45,8 @@ the finding in the posted comment and in `report.md`, and absent means nothing i
 ## Headless runs
 
 Every headless run passes `--strict-mcp-config --setting-sources user` and
-`--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the rule
-plugins (`no-mistakes-rules`, `jong-skills`). That keeps fixed context near 17k tokens instead of
+`--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the configured rule
+plugins (`rulePlugins`; by default `no-mistakes-rules` and `jong-skills`, and none for `[]`). That keeps fixed context near 17k tokens instead of
 about 139k. Pillar runs also get a read-only Haiku `explorer` subagent. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 

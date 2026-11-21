@@ -200,6 +200,41 @@ describe('parseRepoConfig approvalCheck', () => {
   })
 })
 
+describe('parseRepoConfig rulePlugins', () => {
+  it('reads a list of plugin names, including an empty one', () => {
+    expect(parseRepoConfig('{"rulePlugins":["a","b.c_d-e"]}', FILE).rulePlugins).toEqual([
+      'a',
+      'b.c_d-e',
+    ])
+    expect(parseRepoConfig('{"rulePlugins":[]}', 'acme.json', 'owner')).toMatchObject({
+      rulePlugins: [],
+      problems: [],
+    })
+  })
+
+  it.each([
+    ['not an array', '"a"', 'must be an array of plugin names; ignored'],
+    ['a marketplace suffix', '["a@market"]', 'no "@marketplace"'],
+    ['an empty name', '[""]', 'each entry must be a plugin name'],
+    ['a non-string', '[1]', 'each entry must be a plugin name'],
+    ['a repeated name', '["a","b","a"]', '"a" is listed more than once; ignored'],
+  ])('ignores the list with a problem for %s', (_case, value, problem) => {
+    const parsed = parseRepoConfig(`{"rulePlugins":${value}}`, FILE)
+    expect(parsed.rulePlugins).toBeUndefined()
+    expect(parsed.problems).toHaveLength(1)
+    expect(parsed.problems[0]).toContain(`${FILE} rulePlugins: `)
+    expect(parsed.problems[0]).toContain(problem)
+  })
+
+  it('ignores it in the reviewed repository own file and says it is machine-only', () => {
+    const file = 'acme/web/.code-reviewer.json'
+    expect(parseRepoConfig('{"rulePlugins":["a"]}', file, 'target')).toEqual({
+      consumes: [],
+      problems: [`${file}: rulePlugins is machine-only; ignored`],
+    })
+  })
+})
+
 describe('loadRepoConfigs', () => {
   const dirs: string[] = []
   afterEach(() => {

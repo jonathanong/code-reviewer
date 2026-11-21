@@ -39,17 +39,24 @@ export function checkPlugins(
   }
 }
 
-/** The plugins whose skills hold the shared review rules; a headless run switches every other off. */
-export const RULE_PLUGINS = ['no-mistakes-rules', 'jong-skills'] as const
+/**
+ * The plugins whose skills hold the shared review rules when no machine config sets
+ * `rulePlugins`. Benchmarks always use this list.
+ */
+export const DEFAULT_RULE_PLUGINS: readonly string[] = ['no-mistakes-rules', 'jong-skills']
 
-/** The `--settings` value for a headless run: only the rule plugins stay on, or none for a control. */
+/**
+ * The `--settings` value for a headless run: only the `rulePlugins` stay on (none when `rules` is
+ * false, for a control), and every other plugin is switched off.
+ */
 export function pluginSettings(
   plugins: readonly Plugin[],
+  rulePlugins: readonly string[],
   rules = true,
 ): { enabledPlugins: Record<string, boolean> } {
   const enabled = plugins.map((plugin): [string, boolean] => [
     plugin.id,
-    rules && RULE_PLUGINS.some((name) => name === plugin.id.split('@')[0]),
+    rules && rulePlugins.includes(plugin.id.split('@')[0] as string),
   ])
   return { enabledPlugins: Object.fromEntries(enabled) }
 }
@@ -76,4 +83,20 @@ export function parsePluginInstalls(stdout: string): PluginInstall[] {
     found.push({ name: entry.id.split('@')[0] as string, installPath: entry.installPath })
   }
   return found
+}
+
+/** The message for `rulePlugins` entries a headless run cannot load. */
+export function unloadableMessage(names: readonly string[]): string {
+  return `rule plugins missing or not enabled at user scope: ${names.join(', ')}`
+}
+
+/**
+ * The `rulePlugins` entries with no user-scope install. `parsePluginInstalls` keeps only enabled
+ * user-scope plugins, the only ones a headless run loads, so this is stricter than `checkPlugins`.
+ */
+export function unloadableRulePlugins(
+  installs: readonly PluginInstall[],
+  rulePlugins: readonly string[],
+): string[] {
+  return rulePlugins.filter((name) => !installs.some((install) => install.name === name))
 }

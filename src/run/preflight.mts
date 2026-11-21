@@ -8,7 +8,8 @@ import {
   type LabelNames,
   type PullTarget,
 } from '../review/index.mts'
-import { checkPlugins, RULE_PLUGINS } from '../review/plugins.mts'
+import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
+import { resolveRulePlugins } from '../review/settings.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
 import { labelsFor } from '../cli/review-settings.mts'
@@ -61,15 +62,18 @@ function configProblems(deps: ReviewDeps, repo: string): string[] {
 }
 
 /**
- * Fails fast, before any claim: the rule plugins are enabled, the machine config and the
- * repository's own file have no problems, and auth resolves (under the App, its own login too).
+ * Fails fast, before any claim: the machine config and the repository's own file have no
+ * problems, every configured rule plugin is enabled at user scope (where a headless run loads it),
+ * and auth resolves (under the App, its own login too).
  */
 export async function checkPreconditions(deps: ReviewDeps, repo: string): Promise<void> {
   const failure = async (): Promise<string | undefined> => {
-    const { missing } = checkPlugins(await deps.listPlugins(), RULE_PLUGINS)
-    if (missing.length > 0) return `rule plugins missing: ${missing.join(', ')}`
     const problems = [...configProblems(deps, repo), ...(await deps.targetConfig(repo)).problems]
     if (problems.length > 0) return `settings invalid: ${problems.join('; ')}`
+    const { installs } = await deps.pluginInfo()
+    const { names } = resolveRulePlugins(deps.configs(), repo)
+    const missing = unloadableRulePlugins(installs, names)
+    if (missing.length > 0) return unloadableMessage(missing)
     const { loginError } = await deps.authIdentity()
     return loginError
   }

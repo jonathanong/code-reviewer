@@ -61,13 +61,10 @@ const CONFIGS: RepoConfigs = {
             },
           ],
           references: [
-            {
-              name: 'aws-docs',
-              description: 'AWS documentation.',
-              domains: ['docs.aws.amazon.com'],
-            },
+            { name: 'aws-docs', description: 'AWS docs.', domains: ['docs.aws.amazon.com'] },
           ],
           approvalCheck: false,
+          rulePlugins: ['team-rules'],
         },
         'owner',
       ),
@@ -112,6 +109,13 @@ function fakeDeps(mode: 'app' | 'gh' = 'app') {
 afterEach(() => {
   vi.clearAllMocks()
 })
+
+const UNSET = {
+  evidence: { sources: [], from: null },
+  references: { sources: [], from: null },
+  approvalCheck: { enabled: true, from: null },
+  rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
+}
 
 describe('runLoopCommand', () => {
   it('reports the auth mode and the identity that is trusted', async () => {
@@ -312,6 +316,7 @@ describe('runLoopCommand', () => {
           from: 'machine owner',
         },
         approvalCheck: { enabled: false, from: 'machine owner' },
+        rulePlugins: { names: ['team-rules'], from: 'machine owner' },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -328,9 +333,7 @@ describe('runLoopCommand', () => {
             },
             checkRun: null,
           },
-          evidence: { sources: [], from: null },
-          references: { sources: [], from: null },
-          approvalCheck: { enabled: true, from: null },
+          ...UNSET,
           problems: [],
         },
       )
@@ -352,9 +355,7 @@ describe('runLoopCommand', () => {
             },
             checkRun: 'repository file',
           },
-          evidence: { sources: [], from: null },
-          references: { sources: [], from: null },
-          approvalCheck: { enabled: true, from: null },
+          ...UNSET,
           problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
         },
       )

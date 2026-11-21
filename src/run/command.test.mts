@@ -395,10 +395,46 @@ describe('runCommand preconditions', () => {
     return result.line
   }
 
-  it('needs both rule plugins', async () => {
+  it('needs both default rule plugins', async () => {
     expect((await refused({ plugins: ['jong-skills'] })).reason).toBe(
-      'rule plugins missing: no-mistakes-rules',
+      'rule plugins missing or not enabled at user scope: no-mistakes-rules',
     )
+  })
+
+  it('needs the configured rule plugins instead of the defaults', async () => {
+    const ownerConfig = { rulePlugins: ['team-rules'] }
+    expect((await refused({ ownerConfig })).reason).toBe(
+      'rule plugins missing or not enabled at user scope: team-rules',
+    )
+  })
+
+  it('reviews when the configured rule plugins are enabled', async () => {
+    const fake = setup({ ownerConfig: { rulePlugins: ['team-rules'] }, plugins: ['team-rules'] })
+    await run(fake)
+    expect(vi.mocked(reviewCommand)).toHaveBeenCalled()
+  })
+
+  it('needs no plugin when the configured list is empty', async () => {
+    const fake = setup({ ownerConfig: { rulePlugins: [] }, plugins: [] })
+    await run(fake)
+    expect(vi.mocked(reviewCommand)).toHaveBeenCalled()
+  })
+
+  it('refuses a rule plugin that is enabled but not at user scope', async () => {
+    const fake = setup()
+    const both = (await fake.deps.pluginInfo()).enabled
+    vi.mocked(fake.deps.pluginInfo).mockResolvedValue({
+      enabled: both,
+      installs: [{ name: 'jong-skills', installPath: '/p' }],
+    })
+    expect((await run(fake)).line.reason).toBe(
+      'rule plugins missing or not enabled at user scope: no-mistakes-rules',
+    )
+  })
+
+  it('refuses a rulePlugins entry with a marketplace suffix, naming the file', async () => {
+    const line = await refused({ ownerConfig: { rulePlugins: ['a@market'] } })
+    expect(line.reason).toContain('settings invalid: acme.json rulePlugins: ')
   })
 
   it('refuses a machine config with a problem, naming it', async () => {
@@ -429,7 +465,7 @@ describe('runCommand preconditions', () => {
     'refuses when plugins cannot be listed (%s)',
     async (thrown) => {
       const fake = setup()
-      vi.mocked(fake.deps.listPlugins).mockRejectedValue(thrown)
+      vi.mocked(fake.deps.pluginInfo).mockRejectedValue(thrown)
       expect((await run(fake)).line.reason).toBe(
         String(thrown instanceof Error ? thrown.message : thrown),
       )

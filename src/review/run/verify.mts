@@ -17,6 +17,7 @@ import { dependenciesLines } from './dependencies-prompt.mts'
 import { issuesLines } from './issues-prompt.mts'
 import { impliedDependencies, IMPLIED_KINDS, type Dependency } from '../dependency.mts'
 import { mergeLines } from './merge-prompt.mts'
+import { rulePluginLines } from './rule-plugins-prompt.mts'
 import { stackLines } from './stack-prompt.mts'
 import { readStream } from './stream-output.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
@@ -86,6 +87,7 @@ export function buildVerifierRunPrompt(input: VerifierInput): string {
     'The working directory is a checkout of the pull request head. The run directory files:',
     runFileLines(input.run).join('\n'),
     `The congruence pillar is \`${join(input.references, 'pillars', 'congruence.md')}\` and the pillar contract is \`${join(input.references, 'pillars', '_contract.md')}\`. \`plan.json\` is \`${join(input.run.out, 'plan.json')}\`.`,
+    ...rulePluginLines(input.run.rulePlugins),
     NUMBERED_DIFF_LEGEND,
     ...stackLines(input.run.stack, input.run.out),
     ...mergeLines(input.run.push, input.run.out),

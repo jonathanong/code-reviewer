@@ -1,7 +1,12 @@
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { parsePluginInstalls, parsePluginList, pluginSettings } from '../plugins.mts'
+import {
+  DEFAULT_RULE_PLUGINS,
+  parsePluginInstalls,
+  parsePluginList,
+  pluginSettings,
+} from '../plugins.mts'
 import { pool } from '../run/pool.mts'
 import { listRuleSkills, selectSkills } from '../run/select-skills.mts'
 import type { SkillChoice } from '../run/types.mts'
@@ -52,8 +57,8 @@ async function runAll(
 ): Promise<void> {
   // One listing gives both the rule skills offered and the isolation settings, as in `review`.
   const listed = await deps.exec('claude', ['plugin', 'list', '--json'])
-  const settings = pluginSettings(parsePluginList(listed, process.cwd()))
-  const skills = deps.skills(parsePluginInstalls(listed))
+  const settings = pluginSettings(parsePluginList(listed, process.cwd()), DEFAULT_RULE_PLUGINS)
+  const skills = deps.skills(parsePluginInstalls(listed), DEFAULT_RULE_PLUGINS)
   const tasks: Array<{ item: EvalCase; attempt: number; dir: string; text: SelectionText }> = []
   for (const item of cases) {
     deps.log(`snapshot ${item.id}`)

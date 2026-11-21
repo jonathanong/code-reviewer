@@ -11,6 +11,7 @@ import {
   resolveEvidence,
   resolveReferences,
   resolveApprovalCheck,
+  resolveRulePlugins,
   resolveThreads,
   reviewSettings,
   settingLayers,
@@ -73,6 +74,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       from: references.from,
     },
     approvalCheck,
+    rulePlugins: resolveRulePlugins(configs, scope),
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

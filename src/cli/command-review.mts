@@ -8,6 +8,7 @@ import {
   resolveApprovalCheck,
   resolveEvidence,
   resolveReferences,
+  resolveRulePlugins,
   type PullTarget,
 } from '../review/index.mts'
 import {
@@ -66,6 +67,8 @@ export async function reviewCommand(
       webReferences: resolveReferences(deps.configs(), target.repo).sources,
       // Machine config only: a repository must not switch off the check on its own approvals.
       approvalCheck: resolveApprovalCheck(deps.configs(), target.repo).enabled,
+      // Machine config only: an enabled plugin loads its hooks too, so a repository cannot pick them.
+      rulePlugins: resolveRulePlugins(deps.configs(), target.repo).names,
       exec: deps.exec,
       references: deps.references(),
     },

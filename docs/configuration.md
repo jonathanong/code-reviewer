@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -144,6 +144,28 @@ verdict change) and its cost.
 
 It is on by default and, like `evidence`, machine-only: a repository's own file cannot switch it
 off. `code-reviewer settings` prints the resolved value and its layer.
+
+## `rulePlugins`
+
+```json
+{ "rulePlugins": ["no-mistakes-rules", "jong-skills"] }
+```
+
+The Claude Code plugins whose skills a review may use as shared rules, by plugin name (no
+`@marketplace`). Unset, the list is `no-mistakes-rules` and `jong-skills`. A list replaces the
+default whole and is never appended to it, and the repository file's list replaces the owner
+file's. `[]` is valid: rules then come only from the reviewed repository's `AGENTS.md` and
+skills, skill selection is skipped, and every headless run enables no plugin. Names are letters,
+digits, `.`, `_` and `-`, each listed once.
+
+It is machine-only, like `evidence`: a repository's own file cannot set it, and says
+`rulePlugins is machine-only; ignored`. An enabled plugin brings its hooks, agents and commands
+into a headless run, and every skill description from it sits in each run's context, so the list
+decides what a pull request's review is allowed to load.
+
+Every listed plugin must be enabled at user scope: `run` refuses, and `review` fails, naming a
+plugin that is not. `review` also fails naming a listed plugin that holds no skills. `code-reviewer settings` prints the names and the layer they came from. `bench`
+ignores this key and always uses the default list, so scores stay comparable across machines.
 
 ## `labels` and `checkRun`
 

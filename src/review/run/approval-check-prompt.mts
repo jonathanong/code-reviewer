@@ -7,6 +7,7 @@ import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { QUESTIONS_SCHEMA, type Question } from '../question.mts'
 import { mergeLines } from './merge-prompt.mts'
 import { runFileLines, type RunDir } from './pillar-prompt.mts'
+import { rulePluginLines } from './rule-plugins-prompt.mts'
 import { stackLines } from './stack-prompt.mts'
 import type { PillarResult } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
@@ -69,6 +70,7 @@ export function buildApprovalCheckPrompt(input: ApprovalCheckInput): string {
     'directory files:',
     runFileLines(run).join('\n'),
     `The verifier's rules are \`${join(references, 'verifier.md')}\` and the pillar contract is \`${join(references, 'pillars', '_contract.md')}\`.`,
+    ...rulePluginLines(run.rulePlugins),
     NUMBERED_DIFF_LEGEND,
     ...stackLines(run.stack, run.out),
     ...mergeLines(run.push, run.out),
