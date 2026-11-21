@@ -11,12 +11,6 @@ deserialization, GitHub Actions trust boundaries (`pull_request_target`, untrust
 `${{ }}` interpolation into `run`, token permissions, unpinned actions), and supply chain (new
 dependencies, install scripts, typosquats).
 
-## Built-in reviewer
-
-If the host provides a built-in security review command (for example Claude Code's
-`/security-review`) and it can target the pull request head, run it and fold in its confirmed
-findings. Otherwise review directly.
-
 ## Not in scope
 
 General bugs, rules, design, and consumer breakage, unless the issue is exploitable.

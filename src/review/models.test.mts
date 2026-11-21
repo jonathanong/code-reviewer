@@ -87,6 +87,13 @@ describe('parseModelOverrides', () => {
     },
   )
 
+  it('accepts a step for a configured pillar, but not a malformed one', () => {
+    expect(parseModelOverrides(['pillar.a11y=claude:opus'])).toEqual({
+      'pillar.a11y': [claude('opus')],
+    })
+    expect(() => parseModelOverrides(['pillar.Bad_Name=claude:a'])).toThrow('unknown step')
+  })
+
   it('rejects an unknown step and an unknown harness', () => {
     expect(() => parseModelOverrides(['nope=claude:a'])).toThrow('unknown step "nope"')
     expect(() => parseModelOverrides(['select=grok:a'])).toThrow('unknown harness "grok"')

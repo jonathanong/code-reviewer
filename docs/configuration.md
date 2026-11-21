@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `pillars`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -188,6 +188,54 @@ Every listed plugin must be enabled at user scope: `run` refuses, and `review` f
 plugin that is not. `review` also fails naming a listed plugin that holds no skills. `code-reviewer settings` prints the names and the layer they came from. `bench`
 ignores this key and always uses the default list, so scores stay comparable across machines.
 
+## `pillars`
+
+```yaml
+pillars:
+  disabled: [history]
+  extra:
+    - name: accessibility
+      when: the change touches UI components
+      modes: [full]
+      prompt: |
+        Look for controls without an accessible name, missing keyboard handling, and focus traps.
+    - name: native-review
+      modes: [light, full]
+      run: /code-review low
+```
+
+`disabled` names built-in pillars to skip in every mode: `rules`, `correctness`, `design`,
+`blast-radius`, `security` and `history`. `extra` adds pillars that run like the built-in ones. An
+extra has a `name` (`[a-z][a-z0-9-]*`, not a built-in name, each used once) and exactly one of:
+
+- `prompt`: the pillar's instructions, what to look for. `when` is an optional plain-language
+  trigger. It costs no model call: the pillar's own run reads it at the top of its prompt and, when
+  it does not apply to the change, returns no findings.
+- `run`: a command the harness runs as the whole prompt, such as `/code-review low`, followed by
+  the pillar output contract. It works only on a harness that understands the command, and the
+  result must still match the contract; a pillar that does not is reported failed. `when` cannot be
+  combined with `run`.
+
+`modes` is a non-empty subset of `light` and `full`, default `[full]`. An extra gets the same
+read-only tools as a built-in pillar except history: no shell, no web, and it cannot ask for more.
+
+Unlike the keys above, this one may also be set in the reviewed repository's own file. `disabled`
+and `extra` each come whole from the highest layer that sets them (machine repository file, then
+machine owner file, then the repository's file) and a list never appends to another layer's; a
+repository's file cannot extend a machine file's list. A bad shape, an unknown built-in name, a
+duplicate or built-in extra name, a missing or doubled `prompt`/`run`, or an unknown mode is a
+problem naming the file and key, and the whole `pillars` key in that file is ignored.
+
+Disabling every built-in pillar is an error unless an extra runs in each of `light` and `full`:
+`review` and `prepare` refuse to start, and `settings` lists the problem. A review whose change
+plans no pillar at all (for example `rules` disabled on a docs-only change) fails instead of
+approving. `code-reviewer settings` prints the extras, the layer of each list, and the pillars
+that may run per mode.
+
+An extra's model is `pillar.<name>`, else `pillars`, else the `medium` tier, so `models.steps` and
+`--model` accept `pillar.accessibility`. Its findings appear under its name and go through the
+verifier like any other pillar's. `bench` ignores this key.
+
 ## `models`
 
 ```yaml
@@ -208,7 +256,7 @@ models:
 Which harness and model each step runs on. `tiers` name `small`, `medium` and `large`, each an
 ordered list of `{harness, model}` candidates; unset, they are Claude's `haiku`, `sonnet` and
 `opus`. `steps` maps a step to a tier name or to its own ordered list. The steps are `select`,
-`pillars`, `pillar.<name>`, `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
+`pillars`, `pillar.<name>` (for a built-in or a configured pillar), `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
 pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; light reviews
 use only `verifier.light`. A step that is not set runs exactly as it would without this key, and
 a set key replaces only that key. The explorer subagent's model is not configurable. `claude` is

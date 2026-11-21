@@ -80,6 +80,20 @@ describe('prepareReview', () => {
     expect(summary.plan.pillars.map((p) => p.pillar)).toContain('history')
   })
 
+  it('plans with the pillars settings it is given and records them in plan.json', async () => {
+    const summary = await prepareReview(fakeIo(), {
+      out,
+      pillars: { disabled: ['design'], extra: [] },
+    })
+    const planned = summary.plan.pillars.map((p) => p.pillar)
+    expect(planned).not.toContain('design')
+    expect(planned).toContain('rules')
+    expect(JSON.parse(read('plan.json')).skipped).toContainEqual({
+      pillar: 'design',
+      reason: 'Disabled in config.',
+    })
+  })
+
   it('rejects a tree that is not at the head', async () => {
     const io = fakeIo()
     io.treeHead.mockResolvedValue(OLD)

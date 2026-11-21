@@ -2,7 +2,9 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
-import { ReviewError, type Finding, type Pillar, type ReviewInput } from '../finding.mts'
+import { ReviewError, type Finding, type ReviewInput } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
+import type { PillarSettings } from '../pillars-settings.mts'
 import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
@@ -45,6 +47,8 @@ export type ReviewSteps = {
   webReferences?: readonly ReferenceSource[]
   /** False when the settings switch off the second check on an approval. */
   approvalCheck: boolean
+  /** Built-in pillars to skip and extra pillars to run; the built-ins alone when absent. */
+  pillars?: PillarSettings
   /** The harness and model of each step; the default tiers when absent. */
   models?: StepModels
   exec: Exec

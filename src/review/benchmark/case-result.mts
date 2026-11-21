@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
 import type { BenchDeps } from './cli.mts'
 import { currentAssignment, type RawResult } from './judge-all.mts'

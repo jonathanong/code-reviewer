@@ -139,14 +139,29 @@ describe('parseReviewInput', () => {
     expect(failure({ skipped, verdict: 'Approve' })).toContain('does not match')
   })
 
+  it('accepts a well-formed name for a configured pillar in findings and skipped', () => {
+    const parsed = parseReviewInput({
+      findings: [finding({ pillar: 'accessibility' })],
+      skipped: [{ pillar: 'accessibility', reason: 'failed' }],
+    })
+    expect(parsed.findings[0]?.pillar).toBe('accessibility')
+    expect(parsed.skipped[0]?.pillar).toBe('accessibility')
+  })
+
   it('rejects malformed findings and skipped entries', () => {
     expect(failure({ findings: [1] })).toBe('findings[0] must be an object.')
     expect(failure({ skipped: [null] })).toBe('skipped[0] must be an object.')
-    expect(failure({ skipped: [{ pillar: 'nope', reason: 'x' }] })).toContain('skipped[0].pillar')
+    expect(failure({ skipped: [{ pillar: 'Not A Pillar', reason: 'x' }] })).toContain(
+      'skipped[0].pillar',
+    )
     expect(failure({ skipped: [{ pillar: 'rules', reason: ' ' }] })).toBe(
       'skipped[0].reason must be a non-empty string.',
     )
-    expect(failure({ findings: [finding({ pillar: 'x' })] })).toContain('findings[0].pillar')
+    expect(failure({ findings: [finding({ pillar: '1x' })] })).toContain('findings[0].pillar')
+    expect(failure({ findings: [finding({ pillar: 3 })] })).toContain('or a configured pillar')
+    expect(failure({ findings: [finding({ pillar: 'approval-check' })] })).toContain(
+      'findings[0].pillar',
+    )
     expect(failure({ findings: [finding({ severity: 'x' })] })).toContain('findings[0].severity')
     expect(failure({ findings: [finding({ title: '' })] })).toBe(
       'findings[0].title must be a non-empty string.',

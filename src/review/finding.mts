@@ -4,17 +4,7 @@ import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
 import { parseDependency, parseNotes } from './finding-extras.mts'
-
-export const PILLARS = [
-  'rules',
-  'correctness',
-  'design',
-  'blast-radius',
-  'security',
-  'history',
-  'congruence',
-] as const
-export type Pillar = (typeof PILLARS)[number]
+import { PILLARS, pillarOf, type Pillar } from './pillar-name.mts'
 
 export const SEVERITIES = ['blocking', 'high', 'medium', 'low'] as const
 export type Severity = (typeof SEVERITIES)[number]
@@ -115,11 +105,19 @@ function parsePrevent(record: Json, where: string): Pick<Finding, 'prevent'> {
   return prevent === '' ? {} : { prevent }
 }
 
+function parsePillarName(raw: unknown, where: string): Pillar {
+  const pillar = raw === APPROVAL_CHECK ? undefined : pillarOf(raw)
+  if (pillar === undefined) {
+    throw new ReviewError(`${where} must be one of ${PILLARS.join(', ')} or a configured pillar.`)
+  }
+  return pillar
+}
+
 function parseFinding(raw: unknown, index: number): Finding {
   const where = `findings[${index}]`
   if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
   return {
-    pillar: oneOf(PILLARS, raw.pillar, `${where}.pillar`),
+    pillar: parsePillarName(raw.pillar, `${where}.pillar`),
     severity: oneOf(SEVERITIES, raw.severity, `${where}.severity`),
     title: text(raw, 'title', where).trim(),
     body: text(raw, 'body', where).trim(),
@@ -132,7 +130,10 @@ function parseSkipped(raw: unknown, index: number): SkippedPillar {
   const where = `skipped[${index}]`
   if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
   return {
-    pillar: oneOf([...PILLARS, APPROVAL_CHECK], raw.pillar, `${where}.pillar`),
+    pillar:
+      raw.pillar === APPROVAL_CHECK
+        ? APPROVAL_CHECK
+        : parsePillarName(raw.pillar, `${where}.pillar`),
     reason: text(raw, 'reason', where),
   }
 }

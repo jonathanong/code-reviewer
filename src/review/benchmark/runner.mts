@@ -1,6 +1,6 @@
 import { runFixedModel } from '../../harness/runner.mts'
 import { EFFORT } from '../../harness/types.mts'
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { pillarCapabilities } from '../run/pillar-capabilities.mts'
 import { parsePillarOutput, type PillarOutput } from '../run/pillar-output.mts'

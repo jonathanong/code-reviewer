@@ -37,7 +37,7 @@ export type SettingLayers = {
 type Candidate = readonly [SettingLayer, RepoConfig | undefined]
 
 /** Highest layer first: machine repo file, machine owner file, then the repository's own file. */
-function candidates(
+export function candidates(
   configs: RepoConfigs,
   scope: string,
   target: RepoConfig | undefined,

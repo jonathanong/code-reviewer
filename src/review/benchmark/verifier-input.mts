@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 
-import { ReviewError, PILLARS, type Finding, type Pillar } from '../finding.mts'
+import { ReviewError, type Finding } from '../finding.mts'
+import { PILLARS, type Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
 import { currentAssignment, type RawResult } from './judge-all.mts'
 

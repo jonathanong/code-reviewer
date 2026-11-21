@@ -27,7 +27,8 @@ import { resolveModels } from '../review/models-settings.mts'
 import { resolveLimits } from '../review/limits-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
-import { checkRunFor, labelsFor } from './review-settings.mts'
+import { describePillars, resolvePillars } from '../review/pillars-settings.mts'
+import { checkRunFor, labelsFor, pillarsFor } from './review-settings.mts'
 
 export type LoopValues = {
   owner?: string | undefined
@@ -80,6 +81,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
     },
     approvalCheck,
     rulePlugins: resolveRulePlugins(configs, scope),
+    pillars: describePillars(resolvePillars(configs, scope, target?.config)),
     // What each step runs on; a pillar with no setting follows the plan (see docs/configuration.md).
     models: {
       steps: modelTable(models.plan),
@@ -158,6 +160,7 @@ export async function prepareCommand(
   const requested = effort(values.effort)
   return prepareReview(deps.createPrepareIo(target()), {
     out: values.out,
+    pillars: await pillarsFor(deps, target().repo),
     ...(requested === undefined ? {} : { requested }),
     ...(values.tree === undefined ? {} : { tree: values.tree }),
     ...(values.clones === undefined ? {} : { clones: values.clones }),

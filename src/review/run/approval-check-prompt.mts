@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { PILLARS, SEVERITIES } from '../finding.mts'
+import { SEVERITIES } from '../finding.mts'
+import { PILLARS } from '../pillar-name.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { QUESTIONS_SCHEMA, type Question } from '../question.mts'

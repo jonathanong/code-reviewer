@@ -5,6 +5,7 @@ import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
 import { ReviewError, type Effort } from './finding.mts'
 import { numberDiff } from './numbered-diff.mts'
+import type { PillarSettings } from './pillars-settings.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
@@ -35,6 +36,8 @@ export type PrepareOptions = {
   tree?: string
   /** A directory of local clones (dependency and consumer repositories). */
   clones?: string
+  /** Built-in pillars to skip and extra pillars to run. */
+  pillars?: PillarSettings
 }
 
 export type PrepareSummary = {
@@ -154,6 +157,7 @@ export async function prepareReview(
       ? {}
       : { push: { kind: push.kind, resolvedPaths: push.resolvedPaths } }),
     ...(history === undefined ? {} : { history }),
+    ...(options.pillars === undefined ? {} : { pillars: options.pillars }),
   })
   const problems = [
     ...(problem === undefined ? [] : [problem]),

@@ -51,6 +51,19 @@ review on the head, then the labels) and writes a short report. If anything fail
 command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
 pillar fails, the review fails closed instead of approving unchecked code.
 
+## Configured pillars
+
+[`pillars`](configuration.md#pillars) adds pillars and switches built-in ones off. The plan runs an
+extra in the modes it names, and also when a follow-up has an open finding of its own; a push that
+only merges the base or rewrites history re-runs only an extra with an open finding. An extra is a
+step like any pillar: it has the same read-only capabilities (no shell, no web), output contract,
+retry and failure handling, a `pillar.<name>` model step, and its own row in progress lines,
+`pillars/<name>.json` and the report. A `prompt` pillar is built from its text under the pillar
+contract; a `when` trigger sits at its top, and a pillar it does not fit returns no findings
+instead of costing a separate call. A `run` pillar sends its command as the whole prompt followed by
+the contract, so it needs a harness that understands the command. The verifier and the approval
+check accept the extra's name on findings.
+
 ## Findings: premise and prevention
 
 A reviewer may challenge whether a change should exist in this form (it solves the wrong problem,

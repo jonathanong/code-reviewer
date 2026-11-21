@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { ReviewError, type ReviewInput } from '../finding.mts'
+import type { ReviewInput } from '../finding.mts'
 import { DEFAULT_STEP_MODELS } from '../models.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
@@ -12,6 +12,7 @@ import { approvalCheckInput } from './approval-check-prompt.mts'
 import { skipReview } from './review-skip.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
+import { requireAnswer } from './require-answer.mts'
 import { runPillars } from './pillars.mts'
 import { webReferences } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
@@ -56,8 +57,11 @@ async function review(
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
   const prompts = pillarTexts(steps)
+  const extra = steps.pillars?.extra ?? []
+  const extraPillars = extra.map((entry) => entry.name)
   const results = await runPillars({
     pillars: plan.pillars,
+    extra,
     tree,
     run,
     mode,
@@ -69,12 +73,7 @@ async function review(
     ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
-  // A review with no pillar answer would approve unchecked code, so it fails instead.
-  if (results.every((result) => result.error !== undefined)) {
-    throw new ReviewError(
-      `Every pillar failed: ${results.map((result) => `${result.pillar} (${(result.error as string).split('\n')[0]})`).join('; ')}`,
-    )
-  }
+  requireAnswer(results)
   const pillarSkips = [...plan.skipped, ...failedSkips(results)]
   const findings = flattenFindings(results)
   const output = await runReviewVerifier(
@@ -87,13 +86,14 @@ async function review(
       threads: threadIdsOf(out),
       ...(web === undefined ? {} : { web }),
     },
-    { model: plan.verifierModel, mode, tree, settings, models, exec: steps.exec },
+    { model: plan.verifierModel, extraPillars, mode, tree, settings, models, exec: steps.exec },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
   const second = await applyApprovalCheck({
     enabled: steps.approvalCheck,
     mode,
     model: plan.verifierModel,
+    extraPillars,
     tree,
     settings,
     models,

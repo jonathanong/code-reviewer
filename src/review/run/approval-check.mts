@@ -14,6 +14,7 @@ import {
   buildApprovalCheckPrompt,
   type ApprovalCheckInput,
 } from './approval-check-prompt.mts'
+import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
 
@@ -57,6 +58,8 @@ export type ApprovalCheckStep = {
   /** The planned model; it names the tier the check runs on unless the models config sets the step. */
   model: Model
   tree: string
+  /** Names of the configured pillars, so their findings pass the output schema. */
+  extraPillars?: readonly string[]
   settings?: object
   models?: StepModels
   exec: Exec
@@ -99,7 +102,7 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
         prompt: buildApprovalCheckPrompt(input),
         label: 'Approval check run',
         maxTurns: REVIEW_MAX_TURNS,
-        schema: APPROVAL_CHECK_SCHEMA,
+        schema: withExtraPillars(APPROVAL_CHECK_SCHEMA, step.extraPillars ?? []),
         can: SKILL_READER,
         cwd: step.tree,
         timeoutMs: RUN_TIMEOUT_MS,

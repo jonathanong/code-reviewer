@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import { describeStepFailure } from '../../harness/runner.mts'
-import { PILLARS, type Pillar } from '../finding.mts'
+import { PILLARS, type Pillar } from '../pillar-name.mts'
 import { caseSelector, defaultSelectStep, type SelectStep } from './case-selection.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
 import { pool } from '../run/pool.mts'

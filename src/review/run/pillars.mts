@@ -5,7 +5,7 @@ import { describeStepFailure, type StepRan, type StepRequest } from '../../harne
 import { EFFORT } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import { addUsage, type Usage } from '../benchmark/usage.mts'
-import type { Pillar } from '../finding.mts'
+import type { Pillar } from '../pillar-name.mts'
 import {
   DEFAULT_STEP_MODELS,
   runModelStep,
@@ -15,6 +15,8 @@ import {
 } from '../models.mts'
 import type { Model } from '../plan.mts'
 import { WEB_PILLARS, pillarCapabilities } from './pillar-capabilities.mts'
+import type { ExtraPillarConfig } from '../rules/pillars-parse.mts'
+import { buildExtraPillarPrompt } from './extra-pillar-prompt.mts'
 import { buildPillarRunPrompt, type RunDir } from './pillar-prompt.mts'
 import { referenceDomains, referencesBlock, type WebReferences } from './references-prompt.mts'
 import { pool } from './pool.mts'
@@ -34,8 +36,10 @@ export type PillarsInput = {
   mode: 'light' | 'full'
   jobs: number
   contract: string
-  /** The text of a pillar's prompt file. */
+  /** The text of a built-in pillar's prompt file. */
   readPillar(pillar: Pillar): string
+  /** The configured pillars; one of them is built from its config, not read from a file. */
+  extra?: readonly ExtraPillarConfig[]
   skills: readonly string[]
   settings?: object
   /** The harness and model of each pillar; the default tiers when absent. */
@@ -50,12 +54,15 @@ async function runOne(
   { pillar, model }: { pillar: Pillar; model: Model },
 ): Promise<PillarResult> {
   const web = WEB_PILLARS.includes(pillar) ? input.web : undefined
-  const prompt = buildPillarRunPrompt({
-    contract: input.contract,
-    pillarText: [input.readPillar(pillar), ...referencesBlock(web)].join('\n\n'),
-    run: input.run,
-    skills: input.skills,
-  })
+  const common = { contract: input.contract, run: input.run, skills: input.skills }
+  const configured = input.extra?.find((entry) => entry.name === pillar)
+  const prompt =
+    configured === undefined
+      ? buildPillarRunPrompt({
+          ...common,
+          pillarText: [input.readPillar(pillar), ...referencesBlock(web)].join('\n\n'),
+        })
+      : buildExtraPillarPrompt(configured, common)
   const request: StepRequest = {
     prompt,
     label: 'Pillar run',

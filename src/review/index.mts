@@ -1,5 +1,7 @@
-export { EFFORTS, ReviewError, PILLARS, SEVERITIES, parseReviewInput } from './finding.mts'
-export type { Effort, ReviewInput, Finding, Pillar, Severity, SkippedPillar } from './finding.mts'
+export { EFFORTS, ReviewError, SEVERITIES, parseReviewInput } from './finding.mts'
+export { PILLARS } from './pillar-name.mts'
+export type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
+export type { Pillar } from './pillar-name.mts'
 export {
   deriveVerdict,
   renderBodyFinding,
