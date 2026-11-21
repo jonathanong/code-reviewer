@@ -115,6 +115,7 @@ async function review(
     title,
     pullRequestSummary: output.pullRequestSummary,
     findings: second.findings,
+    headSha,
     mode,
     tree,
     settings,

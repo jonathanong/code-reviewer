@@ -6,6 +6,7 @@ import {
   type PostOutcome,
   type PullTarget,
 } from '../review/index.mts'
+import { savePostedFindings } from '../tracker/posted-file.mts'
 import { recordPosted } from '../tracker/record.mts'
 import type { ReviewDeps } from './deps.mts'
 import { postOptions, type PostValues } from './post-options.mts'
@@ -23,6 +24,8 @@ export type PostResult = {
   printed: unknown
 }
 
+const withoutPlacements = ({ placements: _placements, ...rest }: PostOutcome) => rest
+
 /** `code-reviewer post`: renders and posts `--input` on `--head-sha`, then closes the labels and the tracker row. */
 export async function postCommand(
   values: PostCommandValues,
@@ -39,7 +42,7 @@ export async function postCommand(
     dryRun,
     ...postOptions(values, (path) => deps.readFile(path), values.input, headSha),
   })
-  if (dryRun) return { outcome, printed: outcome }
+  if (dryRun) return { outcome, printed: withoutPlacements(outcome) }
   const lifecycle = await completeReview(deps.createLabelIo(pull), await labelsFor(deps, pull.repo))
   const checkRun = await checkRunFor(deps, pull, postedStep(outcome.verdict, outcome.urls), headSha)
   const tracked = recordPosted(deps.tracker(), {
@@ -49,6 +52,20 @@ export async function postCommand(
     findings: input.findings,
     outcome,
   })
-  const printed = { ...outcome, reviews: outcome.reviews.length, lifecycle, checkRun, ...tracked }
+  const saved = savePostedFindings(
+    (path, text) => deps.writeFile(path, text),
+    values.input,
+    headSha,
+    input.findings,
+    outcome.placements,
+  )
+  const problems = [saved.trackerProblem, tracked.trackerProblem].filter((p) => p !== undefined)
+  const printed = {
+    ...withoutPlacements(outcome),
+    reviews: outcome.reviews.length,
+    lifecycle,
+    checkRun,
+    ...(problems.length === 0 ? {} : { trackerProblem: problems.join('; ') }),
+  }
   return { outcome, printed }
 }

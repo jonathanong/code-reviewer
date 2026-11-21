@@ -49,7 +49,8 @@ Agreed and not built yet. Nothing below works today.
   replace Skill loads, and the verifier reads only the linked commits, the split summary and a follow-up's earlier review, other steps none of it.
 - **Feedback loops.** Issues about the harness, not only rules and pillar prompts.
 - **Re-reviews reuse the last one's evidence.** A follow-up's verifier already sees the earlier
-  review of this machine, but its saved evidence records no files, so it is re-established each time.
+  review of this machine. Saved evidence records the head it ran against and its scope, which is
+  unknown for what a model ran, and `evidenceHolds` can judge it, but no step offers it yet, so it is re-established each time.
 
 ## Outcomes
 

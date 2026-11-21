@@ -205,12 +205,15 @@ describe('createDefaultDeps', () => {
     vi.unstubAllEnvs()
   })
 
-  it('reads real files', () => {
+  it('reads and writes real files', () => {
     const dir = mkdtempSync(join(tmpdir(), 'deps-'))
     try {
       const file = join(dir, 'in.json')
       writeFileSync(file, '{"a":1}')
-      expect(createDefaultDeps(fakeAuth().getAuth).readFile(file)).toBe('{"a":1}')
+      const deps = createDefaultDeps(fakeAuth().getAuth)
+      expect(deps.readFile(file)).toBe('{"a":1}')
+      deps.writeFile(file, '{"b":2}')
+      expect(deps.readFile(file)).toBe('{"b":2}')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

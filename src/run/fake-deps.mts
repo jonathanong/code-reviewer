@@ -109,6 +109,7 @@ export function fakeDeps(options: FakeOptions) {
     guideReader: vi.fn(),
     runner: vi.fn(),
     readFile: vi.fn((path) => readFileSync(path, 'utf8')),
+    writeFile: vi.fn(),
     findClone: vi.fn(),
     tracker: vi.fn(() => tracker),
     listPlugins: vi.fn(),

@@ -10,6 +10,7 @@ import { dismissRequests, staleRequests } from './dismiss.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
 import { MARKER_RE } from './markers.mts'
+import { findingPlacements, type Placement } from './placements.mts'
 import { postReviews } from './submit.mts'
 import { isTrustedAuthor } from './trust.mts'
 import { deriveVerdict, type Verdict } from './render.mts'
@@ -18,6 +19,8 @@ export type PostOutcome = {
   verdict: Verdict
   reviews: SanitizedReview[]
   urls: string[]
+  /** Where each finding of the input went, in input order; saved with the run, never printed. */
+  placements: Placement[]
   /** The ids of the reviews read back from the pull request, one per part; empty when none were. */
   reviewIds: number[]
   /** False when the review was submitted but the read-back could not confirm it (see `warnings`). */
@@ -75,6 +78,7 @@ export async function postFinalReview(
     )
   }
   const index = indexReviewFiles(await io.listFiles())
+  const placements = findingPlacements(input.findings, index)
   const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
   const choice = await chooseEvent(io, verdict, options.author)
   const reviews = withEvent(
@@ -94,6 +98,7 @@ export async function postFinalReview(
     return {
       verdict,
       reviews,
+      placements,
       tooLong,
       warnings: [...warnings, ...stale.warnings],
       textWarnings: warnings,
@@ -130,6 +135,7 @@ export async function postFinalReview(
   const common = {
     verdict,
     reviews,
+    placements,
     tooLong,
     warnings: [
       ...warnings,

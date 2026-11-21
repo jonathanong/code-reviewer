@@ -111,6 +111,14 @@ a known-present value or a wider window) returns something; when the control is 
 run reports the evidence as inconclusive (effect `none`: `report.md` keeps the note, and no
 Evidence line is added to the finding). Evidence is not part of `bench`.
 
+Each source in `evidence.json` also records the head it was checked against and a `scope`: what
+it covers, so a later review can tell whether new commits touched it. The commands are the model's
+choice, so the scope of every source is `unknown`, and unknown never counts as still valid. The
+pure `evidenceHolds` (`src/review/run/evidence-scope.mts`) answers `holds`, `stale` or `unknown`
+from a saved item and the paths changed since its head (`pathsChangedBetween` reads them with
+local `git diff`); it is the basis for reusing evidence, and no step calls it yet. An
+`evidence.json` saved before these fields existed has neither and is treated as unknown.
+
 ## `analysis`
 
 Read-only code-analysis commands the pillars and the verifier may run in the checkout. Machine-only,

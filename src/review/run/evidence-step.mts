@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { Exec } from '../benchmark/exec.mts'
 import type { StepModels } from '../models.mts'
 import type { Finding } from '../finding.mts'
+import { UNKNOWN_SCOPE } from './evidence-scope.mts'
 import { EVIDENCE_MODEL, findingId, runEvidenceModel, type UsableSource } from './evidence-run.mts'
 import type { EvidenceReport, EvidenceSetup, EvidenceSourceReport } from './evidence-types.mts'
 import { message, writeJson } from './review-support.mts'
@@ -15,6 +16,8 @@ export type EvidenceStepInput = {
   title: string
   pullRequestSummary: string
   findings: readonly Finding[]
+  /** The head the checkout is at; stamped on every saved source. */
+  headSha: string
   mode: 'light' | 'full'
   tree: string
   settings?: object
@@ -27,6 +30,10 @@ const firstLine = (error: unknown) => message(error).split('\n')[0] as string
 function blocked(name: string, reason: string): EvidenceSourceReport {
   return { name, status: 'blocked', reason, queries: [] }
 }
+
+// The model chose the commands, so what a result covers is not mechanically known.
+const stamped = (sources: EvidenceSourceReport[], headSha: string): EvidenceSourceReport[] =>
+  sources.map((source) => ({ ...source, headSha, scope: UNKNOWN_SCOPE }))
 
 function emptyReport(sources: EvidenceSourceReport[]): EvidenceReport {
   return {
@@ -80,7 +87,7 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
   const setup = await input.setup()
   if (setup.sources.length === 0) return undefined
   const { usable, unusable } = await readSources(setup)
-  if (usable.length === 0) return emptyReport([...unusable.values()])
+  if (usable.length === 0) return emptyReport(stamped([...unusable.values()], input.headSha))
   const run = await runEvidenceModel(
     {
       prompt: input.readPrompt(),
@@ -99,18 +106,21 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
   )
   if ('error' in run) {
     return {
-      ...emptyReport([...unusable.values()]),
+      ...emptyReport(stamped([...unusable.values()], input.headSha)),
       error: run.error,
       failedAttempts: run.failedAttempts,
       ...(run.ran === undefined ? {} : { model: run.ran.model, ran: run.ran }),
     }
   }
   const reported = new Map(run.output.sources.map((source) => [source.name, source]))
-  const sources = setup.sources.map(
-    ({ name }) =>
-      unusable.get(name) ??
-      reported.get(name) ??
-      blocked(name, 'The evidence run did not report this source.'),
+  const sources = stamped(
+    setup.sources.map(
+      ({ name }) =>
+        unusable.get(name) ??
+        reported.get(name) ??
+        blocked(name, 'The evidence run did not report this source.'),
+    ),
+    input.headSha,
   )
   return {
     ...run.output,
