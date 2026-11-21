@@ -80,10 +80,13 @@ only with evidence from the tree or the context, as a `medium` or `low` finding 
 may turn into a question; never as `blocking` or `high` on that ground alone. These are prompt
 rules in the pillar contract, with no code check.
 
-A finding may carry `prevent`, one optional line naming a lint rule, type, test or CI guard that
-would stop the class of mistake. It is kept in `review.json`, shown as a `**Prevent:**` line under
-the finding in the posted comment and in `report.md`, and absent means nothing is rendered. A
-`prevent` over 160 characters warns like any over-long posted text.
+A finding's `body` is for the human reading the review: what is wrong and why it matters. Two
+optional fields hold what only whoever fixes it needs. `fix` is exact steps, file lists, commands
+and reproduction. `prevent` is one line naming a lint rule, type, test or CI guard that would stop
+the class of mistake; over 160 characters it warns like any over-long posted text. Both are kept in
+`review.json` and posted together in one collapsed `For the fix` section under the finding (inline
+comment or body finding); `report.md` shows them as plain lines. With neither, no section is
+rendered. Another reviewer's credit stays visible, after the section.
 
 ## Other reviewers' open items
 

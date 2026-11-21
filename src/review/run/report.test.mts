@@ -345,6 +345,15 @@ describe('renderReport', () => {
     expect(markdown).not.toContain('Prevent')
   })
 
+  it('shows a finding fix as a quoted section', () => {
+    const data = buildReport(INPUT)
+    const fixed = renderReport({
+      ...data,
+      findings: data.findings.map((finding) => ({ ...finding, fix: 'a\nb' })),
+    })
+    expect(fixed).toContain('> Line two.\n\n**For the fix:**\n\n> a\n> b')
+  })
+
   it('shows questions, and still renders a report written before questions existed', () => {
     const data = buildReport(INPUT)
     const ask = { question: 'Is v1 gone?', askOf: 'product' as const, why: 'Rollout.' }

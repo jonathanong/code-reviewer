@@ -48,17 +48,23 @@ function isShort(body: string): boolean {
   return body.length <= SHORT_BODY_CHARS && body.split('\n').length <= SHORT_BODY_LINES
 }
 
-/** The prevention note and the credit to another reviewer, each after a blank line; empty when absent. */
-function preventLine(finding: Finding): string {
-  const prevent = finding.prevent === undefined ? '' : `\n\n**Prevent:** ${finding.prevent}`
-  return `${prevent}${raisedByLine(finding.raisedBy)}`
+/** The summary of the collapsed block that holds what only whoever fixes the finding needs. */
+export const FIX_SUMMARY = 'For the fix'
+
+/** The fixer-only detail and the prevention note in one collapsed block; empty when both are absent. */
+function fixSection(finding: Finding): string {
+  const parts = [
+    ...(finding.fix === undefined ? [] : [finding.fix.replace(/<\/details>/giu, '&lt;/details>')]),
+    ...(finding.prevent === undefined ? [] : [`**Prevent:** ${finding.prevent}`]),
+  ]
+  return parts.length === 0 ? '' : `\n\n${detail(FIX_SUMMARY, parts.join('\n\n'))}`
 }
 
 /** Renders a finding: tag and title up front, short bodies inline, long bodies collapsed. */
 export function renderFindingBody(finding: Finding): string {
   const head = `**${severityTag(finding.severity)}** ${finding.title}\n\n<sub>${finding.pillar}</sub>`
   const body = isShort(finding.body) ? finding.body : detail('Details', finding.body)
-  return `${head}\n\n${body}${preventLine(finding)}`
+  return `${head}\n\n${body}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`
 }
 
 /** Renders a finding that has no commentable diff line, for the review body. */
@@ -67,7 +73,7 @@ export function renderBodyFinding(finding: Finding): string {
   const summary = `${severityTag(finding.severity)} ${finding.title}${where ? ` (${where})` : ''}`
   return detail(
     summary.replace(/`/gu, ''),
-    `<sub>${finding.pillar}</sub>\n\n${finding.body}${preventLine(finding)}`,
+    `<sub>${finding.pillar}</sub>\n\n${finding.body}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`,
   )
 }
 

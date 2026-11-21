@@ -1,5 +1,7 @@
 import { DEPENDENCY_KINDS, DEPENDENCY_STATES, type Dependency } from './dependency.mts'
-import { isRecord, oneOf, ReviewError, text } from './finding.mts'
+import { isRecord, oneOf, ReviewError, text, type Finding } from './finding.mts'
+
+type Json = Record<string, unknown>
 
 const MAX_NOTES = 10
 const MAX_NOTE_CHARS = 600
@@ -52,4 +54,22 @@ export function parseAdvice(raw: Record<string, unknown>): {
     ...parseRegressionPrevent(raw.regressionPrevent),
     ...parseSplitProposal(raw.splitProposal),
   }
+}
+
+/** The optional one-line prevention note: whitespace collapsed, absent when blank. */
+export function parsePrevent(record: Json, where: string): Pick<Finding, 'prevent'> {
+  if (record.prevent === undefined) return {}
+  if (typeof record.prevent !== 'string') {
+    throw new ReviewError(`${where}.prevent must be a string.`)
+  }
+  const prevent = record.prevent.replace(/\s+/gu, ' ').trim()
+  return prevent === '' ? {} : { prevent }
+}
+
+/** The optional fixer-only detail: trimmed, absent when blank. */
+export function parseFix(record: Json, where: string): Pick<Finding, 'fix'> {
+  if (record.fix === undefined) return {}
+  if (typeof record.fix !== 'string') throw new ReviewError(`${where}.fix must be a string.`)
+  const fix = record.fix.trim()
+  return fix === '' ? {} : { fix }
 }
