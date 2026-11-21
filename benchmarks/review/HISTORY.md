@@ -9,10 +9,10 @@ the same session, `--pillar rules --select`. Cases: `rules-test-only-global-call
 `rules-test-only-per-item`, `rules-content-only-argv-entry-check`,
 `rules-workflow-only-path-filtered-required-check`, `rules-content-only-renamed-log-field`.
 
-| Arm | Recall | Findings per PR | Distinct skills loaded per run | Turns per run | Input tokens per run | Cost per run | Total |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `alongside` | 5 of 5 | 1.2 | 4.0 | 15.2 | 130,500 | $0.13 | $0.66 |
-| `replace` | 5 of 5 | 1.4 | 2.2 | 11.4 | 103,511 | $0.14 | $0.71 |
+| Arm         | Recall | Findings per PR | Distinct skills loaded per run | Turns per run | Input tokens per run | Cost per run | Total |
+| ----------- | ------ | --------------- | ------------------------------ | ------------- | -------------------- | ------------ | ----- |
+| `alongside` | 5 of 5 | 1.2             | 4.0                            | 15.2          | 130,500              | $0.13        | $0.66 |
+| `replace`   | 5 of 5 | 1.4             | 2.2                            | 11.4          | 103,511              | $0.14        | $0.71 |
 
 Under `replace` the pillar loaded fewer skills and took fewer turns, and every expected claim was
 still found. Cost did not fall: the saved cache reads were offset by more cache creation. In one
