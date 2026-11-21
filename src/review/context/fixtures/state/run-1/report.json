@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "findings": [
+    { "severity": "blocking", "title": "Token logged in clear", "path": "src/auth.ts", "line": 12 },
+    { "severity": "low", "title": "Stale comment" }
+  ]
+}

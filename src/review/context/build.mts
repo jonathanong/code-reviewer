@@ -2,6 +2,8 @@ import { pool } from '../run/pool.mts'
 import { changeShape } from './change-shape/index.mts'
 import { changedLineHistory } from './changed-line-history.mts'
 import { linkedRegressions } from './linked-regressions.mts'
+import { otherReviewers } from './other-reviewers.mts'
+import { pastReviews } from './past-reviews.mts'
 import { ruleExcerpts } from './rule-excerpts.mts'
 import type {
   BuiltContext,
@@ -17,6 +19,8 @@ export const SECTIONS: readonly SectionBuilder[] = [
   changeShape,
   changedLineHistory,
   linkedRegressions,
+  pastReviews,
+  otherReviewers,
 ]
 
 const JOBS = 3

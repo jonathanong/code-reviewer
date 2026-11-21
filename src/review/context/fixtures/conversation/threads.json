@@ -1,0 +1,174 @@
+{
+  "title": "Add widgets",
+  "body": "",
+  "author": { "login": "dev", "__typename": "User" },
+  "closingIssuesReferences": { "nodes": [] },
+  "headRefOid": "2222222222222222222222222222222222222222",
+  "baseRefOid": "0000000000000000000000000000000000000000",
+  "baseRefName": "main",
+  "additions": 1,
+  "deletions": 1,
+  "comments": { "nodes": [] },
+  "commits": { "nodes": [] },
+  "reviews": {
+    "pageInfo": { "hasPreviousPage": true },
+    "nodes": [
+      {
+        "id": "R1",
+        "url": "https://example.test/r/1",
+        "author": { "login": "alice" },
+        "state": "CHANGES_REQUESTED",
+        "body": "Please split this up.",
+        "submittedAt": null,
+        "commit": null
+      },
+      {
+        "id": "R2",
+        "url": "https://example.test/r/2",
+        "author": { "login": "bob" },
+        "state": "CHANGES_REQUESTED",
+        "body": "",
+        "submittedAt": null,
+        "commit": null
+      },
+      {
+        "id": "R3",
+        "url": "https://example.test/r/3",
+        "author": { "login": "bob" },
+        "state": "APPROVED",
+        "body": "",
+        "submittedAt": null,
+        "commit": null
+      },
+      {
+        "id": "R4",
+        "url": "https://example.test/r/4",
+        "author": { "login": "reviewer-app" },
+        "state": "CHANGES_REQUESTED",
+        "body": "mine",
+        "submittedAt": null,
+        "commit": null
+      },
+      {
+        "id": "R5",
+        "url": "https://example.test/r/5",
+        "author": null,
+        "state": "CHANGES_REQUESTED",
+        "body": "ghost",
+        "submittedAt": null,
+        "commit": null
+      },
+      {
+        "id": "R6",
+        "url": "https://example.test/r/6",
+        "author": { "login": "carol" },
+        "state": "COMMENTED",
+        "body": "fyi",
+        "submittedAt": null,
+        "commit": null
+      }
+    ]
+  },
+  "reviewThreads": {
+    "pageInfo": { "hasPreviousPage": true },
+    "nodes": [
+      {
+        "id": "T1",
+        "isResolved": false,
+        "isOutdated": false,
+        "path": "src/a.ts",
+        "line": 3,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://example.test/c/1",
+              "author": { "login": "coderabbitai" },
+              "body": "_⚠️ Potential issue_ | _🟠 Major_\n\n**Unchecked null.**",
+              "createdAt": "",
+              "pullRequestReview": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "T2",
+        "isResolved": false,
+        "isOutdated": true,
+        "path": "src/b.ts",
+        "line": null,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://example.test/c/2",
+              "author": { "login": "codex[bot]" },
+              "body": "![P0 Badge](https://img.shields.io/badge/P0-red?style=flat) Data loss",
+              "createdAt": "",
+              "pullRequestReview": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "T3",
+        "isResolved": false,
+        "isOutdated": false,
+        "path": "src/c.ts",
+        "line": 9,
+        "comments": {
+          "nodes": [
+            {
+              "author": null,
+              "body": "Why this name?\n\nPlease explain.",
+              "createdAt": "",
+              "pullRequestReview": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "T4",
+        "isResolved": true,
+        "isOutdated": false,
+        "path": "src/d.ts",
+        "line": 1,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://example.test/c/4",
+              "author": { "login": "dave" },
+              "body": "resolved",
+              "createdAt": "",
+              "pullRequestReview": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "T5",
+        "isResolved": false,
+        "isOutdated": false,
+        "path": "src/e.ts",
+        "line": 2,
+        "comments": {
+          "nodes": [
+            {
+              "url": "https://example.test/c/5",
+              "author": { "login": "reviewer-app[bot]" },
+              "body": "my own",
+              "createdAt": "",
+              "pullRequestReview": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "T6",
+        "isResolved": false,
+        "isOutdated": false,
+        "path": "src/f.ts",
+        "line": 4,
+        "comments": { "nodes": [] }
+      }
+    ]
+  }
+}

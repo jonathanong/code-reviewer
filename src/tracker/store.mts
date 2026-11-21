@@ -47,7 +47,11 @@ export type ReadRows = { rows: TrackerRow[]; problems: string[] }
 
 /** Every row in file order; a malformed line is reported and skipped, never fatal. */
 export function readRows(io: TrackerIo): ReadRows {
-  const text = io.read(join(io.dir, TRACKER_FILE)) ?? ''
+  return parseRows(io.read(join(io.dir, TRACKER_FILE)) ?? '')
+}
+
+/** The rows of a tracker file's text, as `readRows` reads them. */
+export function parseRows(text: string): ReadRows {
   const rows: TrackerRow[] = []
   const problems: string[] = []
   text.split('\n').forEach((line, index) => {
