@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Exec } from '../benchmark/exec.mts'
 import type { PluginInfo } from '../plugins.mts'
 import type { ReviewPlan } from '../plan.mts'
+import { resolveModelPlan } from '../models.mts'
 import { runReview, type ReviewSteps } from './review.mts'
 
 const dirs: string[] = []
@@ -38,7 +39,11 @@ const WITH_SKILLS: PluginInfo = {
 }
 
 /** Runs a review with a fake `claude`; returns the outcome, the run directory and every call's arguments. */
-async function run(rulePlugins: readonly string[], plugins: PluginInfo) {
+async function run(
+  rulePlugins: readonly string[],
+  plugins: PluginInfo,
+  models?: ReviewSteps['models'],
+) {
   const out = mkdtempSync(join(tmpdir(), 'review-rules-'))
   dirs.push(out)
   const seen: string[][] = []
@@ -68,6 +73,7 @@ async function run(rulePlugins: readonly string[], plugins: PluginInfo) {
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
     approvalCheck: false,
     rulePlugins,
+    ...(models === undefined ? {} : { models }),
     exec,
     references: fixture('references'),
   } as unknown as ReviewSteps
@@ -84,6 +90,21 @@ async function run(rulePlugins: readonly string[], plugins: PluginInfo) {
 const pillarCalls = (seen: string[][]) =>
   seen.filter((args) => (args[1] as string).includes('rules prompt text'))
 const settingsOf = (args: string[]) => args[args.indexOf('--settings') + 1]
+
+describe('runReview models', () => {
+  it('runs every step on the models config and lists them in the report', async () => {
+    const plan = resolveModelPlan({
+      steps: { select: 'large', pillars: 'small', verifier: 'small' },
+    })
+    const { outcome, out, seen } = await run(['jong-skills'], WITH_SKILLS, { plan })
+    expect(outcome.ok).toBe(true)
+    const modelOf = (args: string[]) => args[args.indexOf('--model') + 1]
+    expect(seen.map(modelOf)).toEqual(['opus', 'haiku', 'haiku'])
+    const report = readFileSync(join(out, 'report.md'), 'utf8')
+    expect(report).toContain('### Models')
+    expect(report).toContain('| selection | claude | opus |')
+  })
+})
 
 describe('runReview rule plugins', () => {
   it('gives a default run the pillar contract as it is on disk, and the default plugins on', async () => {

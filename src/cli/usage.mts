@@ -5,8 +5,8 @@ code-reviewer claim --repo owner/name --pr N [--force]
 code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
-code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
-code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--clones DIR]
+code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--clones DIR]
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run] [--allow-long] [--body-target N] [--inline-target N]
@@ -29,7 +29,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   post, revoke and status use the label names from the machine config (<owner>.yaml, <owner>/<name>.yaml; .yml, .json and .jsonc also) and the
   repository's own .code-reviewer.yaml (or .yml, .json, .jsonc) on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
   settings prints the resolved labels and optional check run for a repository or owner, the
-  layer each came from, the names of the evidence sources (never commands or env), and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
+  layer each came from, the harness and model of every step (models), the names of the evidence sources (never commands or env), and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
   not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,
   then swaps processing and requested for completed and leaves the approval label alone. With
   checkRun configured and GitHub App auth, claim opens a check run, post completes it (success,
@@ -55,6 +55,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   the hold rules are in docs/run.md). It prints one JSON line and exits 0 posted, 10 held, 11 nothing
   to do, 12 precondition or config failure, 13 review or post failure. A held review stays in the run
   directory with the request label back and the command that posts it in postCommand.
+  --model STEP=HARNESS:MODEL (review and run, repeatable) sets one step's harness and model for that run, over the models config; a step named twice gets fallbacks in flag order. STEP is select, pillars, pillar.NAME, verifier, verifier.light, evidence or approvalCheck.
   resolve resolves review threads of fixed findings.
   review and post also append a row to the machine-local tracker, reviews.jsonl in the state home
   ($XDG_STATE_HOME/code-reviewer, default ~/.local/state/code-reviewer, or CODE_REVIEWER_STATE_DIR).

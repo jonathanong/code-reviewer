@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `models`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -187,6 +187,49 @@ decides what a pull request's review is allowed to load.
 Every listed plugin must be enabled at user scope: `run` refuses, and `review` fails, naming a
 plugin that is not. `review` also fails naming a listed plugin that holds no skills. `code-reviewer settings` prints the names and the layer they came from. `bench`
 ignores this key and always uses the default list, so scores stay comparable across machines.
+
+## `models`
+
+```yaml
+models:
+  tiers:
+    small: [{ harness: claude, model: haiku }]
+    large:
+      - { harness: claude, model: opus }
+      - { harness: claude, model: sonnet }
+  steps:
+    select: small
+    pillar.design: large
+    verifier: [{ harness: claude, model: opus }]
+  retry:
+    maxWaitSeconds: 600
+```
+
+Which harness and model each step runs on. `tiers` name `small`, `medium` and `large`, each an
+ordered list of `{harness, model}` candidates; unset, they are Claude's `haiku`, `sonnet` and
+`opus`. `steps` maps a step to a tier name or to its own ordered list. The steps are `select`,
+`pillars`, `pillar.<name>`, `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
+pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; light reviews
+use only `verifier.light`. A step that is not set runs exactly as it would without this key, and
+a set key replaces only that key. The explorer subagent's model is not configurable. `claude` is
+the only harness; a name that is not registered is a problem.
+
+A step tries its candidates in order. A rate limit or an overloaded API waits (the delay the
+harness reports, else exponential backoff with a cap) and retries the same candidate until
+`retry.maxWaitSeconds` (default 600) of waiting is spent in that step, then moves to the next
+candidate. An authentication failure moves on at once. Any other failure is the step's failure,
+as without this key, and so is running out of candidates. `report.md` lists the harness and model
+each step ran on and how long it waited.
+
+`--model step=harness:model` on `review` and `run` sets one step for that run and beats the
+config. Repeat it for a step to give that step ordered fallbacks. A bad step, harness or value is
+a usage error.
+
+An unknown tier, step or harness, an empty list, or a value of the wrong type is a problem naming
+the file and key, and the whole `models` key is ignored. It is machine-only, like `evidence`: a
+repository's own file cannot set it, and says `models is machine-only; ignored`. The highest
+machine layer that sets it is used whole. `code-reviewer settings` prints the resolved table.
+`bench` ignores this key and always runs the defaults, so scores stay comparable across machines.
 
 ## `labels` and `checkRun`
 

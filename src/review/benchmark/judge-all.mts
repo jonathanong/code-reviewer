@@ -1,3 +1,4 @@
+import { describeStepFailure } from '../../harness/runner.mts'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
@@ -93,9 +94,7 @@ export async function judgeAll(
       }
       deps.writeFile(path, `${JSON.stringify({ ...raw, judged }, null, 2)}\n`)
     } catch (error) {
-      deps.log(
-        `judge ${pillar} ${item.id} failed: ${error instanceof Error ? error.message : String(error)}`,
-      )
+      deps.log(`judge ${pillar} ${item.id} failed: ${describeStepFailure(error).message}`)
     }
   })
 }

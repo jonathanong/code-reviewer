@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import { harness } from '../../harness/claude.mts'
+import { runFixedModel } from '../../harness/runner.mts'
 import { READ_ONLY, type HarnessRun } from '../../harness/types.mts'
 import { ReviewError, PILLARS, SEVERITIES, parseReviewInput, type Finding } from '../finding.mts'
 import { QUESTIONS_SCHEMA, type Question } from '../question.mts'
@@ -165,7 +165,7 @@ export async function runVerifier(
 ): Promise<{ output: VerifierOutput; usage: Usage }> {
   const rules = hasRulesIndex(dir)
   const prompt = buildVerifierPrompt(run.verifierPrompt, item, findings, rules)
-  const { structured, usage } = await harness.run(
+  const { structured, usage } = await runFixedModel(
     {
       ...verifierRequest(prompt, run.model, run.maxTurns, rules, run.settings),
       cwd: dir,

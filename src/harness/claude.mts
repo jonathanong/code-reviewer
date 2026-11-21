@@ -1,5 +1,6 @@
 import { claudeArgs } from './claude-args.mts'
 import { readResult, readTranscript } from './claude-stream.mts'
+import { classifyFailure } from './claude-classify.mts'
 import { describeFailure } from './claude-usage.mts'
 import type { Harness, HarnessResult, HarnessRun } from './types.mts'
 
@@ -22,4 +23,5 @@ export const harness: Harness = {
     return request.transcript === true ? readTranscript(stdout, request.label) : readResult(stdout)
   },
   describeFailure,
+  classifyFailure,
 }

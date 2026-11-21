@@ -22,6 +22,8 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
+import { modelTable } from '../review/models.mts'
+import { resolveModels } from '../review/models-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
@@ -63,6 +65,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   const evidence = resolveEvidence(configs, scope)
   const references = resolveReferences(configs, scope)
   const approvalCheck = resolveApprovalCheck(configs, scope)
+  const models = resolveModels(configs, scope)
   return {
     scope,
     ...reviewSettings(configs, scope, target?.config),
@@ -75,6 +78,13 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
     },
     approvalCheck,
     rulePlugins: resolveRulePlugins(configs, scope),
+    // What each step runs on; a pillar with no setting follows the plan (see docs/configuration.md).
+    models: {
+      steps: modelTable(models.plan),
+      tiers: models.plan.tiers,
+      retry: models.plan.retry,
+      from: models.from,
+    },
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

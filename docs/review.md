@@ -1,14 +1,15 @@
 # Running a review
 
 ```bash
-code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--force]
 code-reviewer report --out DIR
 ```
 
 Every model call is one headless step run through a harness adapter in `src/harness/`. A step
 asks for capabilities (read-only file tools, skills, an explorer subagent, shell limited to command
 prefixes, web fetch limited to hosts, or no tools), and the adapter turns them into the CLI's flags
-and reads its output. Claude Code is the adapter every run uses.
+and reads its output. Each step's harness and model come from [`models`](configuration.md#models)
+and `--model`; Claude Code is the only harness they can name.
 
 Grok (`src/harness/grok.mts`) is a second adapter, run as `grok -p`. It runs read-only steps: file
 reads and searches, or no tools, with Grok's subagents, web search and MCP gateway off and the
@@ -30,7 +31,7 @@ each retried once), runs the verifier, and writes:
 - `report.md` and `report.json`: the pull request, mode and effort, what it does, the verdict, the
   verified findings, and, per pillar, the model, skills loaded, cost, turns, and every raw finding
   with whether the verifier kept or dropped it and why, the total cost, and a "Tokens by model"
-  table for selection, pillars (failed attempts included), and verifier. `report.md` is rendered from
+  table for selection, pillars (failed attempts included), and verifier, and a "Models" table with the harness and model each step ran on and how long it waited on rate limits. `report.md` is rendered from
   `report.json`; `code-reviewer report --out DIR` renders it again, for a running document.
 - `skills.json`, `pillars/<pillar>.json`, `verifier.json`: the intermediate results.
 

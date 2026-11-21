@@ -1,11 +1,12 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { harness } from '../../harness/claude.mts'
-import { EFFORT, type HarnessRun } from '../../harness/types.mts'
+import { describeStepFailure, type StepRan, type StepRequest } from '../../harness/runner.mts'
+import { EFFORT } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import type { Usage } from '../benchmark/usage.mts'
 import type { Pillar } from '../finding.mts'
+import { DEFAULT_STEP_MODELS, runModelStep, tierOfPlanned, type StepModels } from '../models.mts'
 import type { Model } from '../plan.mts'
 import { WEB_PILLARS, pillarCapabilities } from './pillar-capabilities.mts'
 import { buildPillarRunPrompt, type RunDir } from './pillar-prompt.mts'
@@ -31,6 +32,8 @@ export type PillarsInput = {
   readPillar(pillar: Pillar): string
   skills: readonly string[]
   settings?: object
+  /** The harness and model of each pillar; the default tiers when absent. */
+  models?: StepModels
   /** Web references; only the correctness and security pillars get them. */
   web?: WebReferences
   exec: Exec
@@ -47,10 +50,9 @@ async function runOne(
     run: input.run,
     skills: input.skills,
   })
-  const request: HarnessRun = {
+  const request: StepRequest = {
     prompt,
     label: 'Pillar run',
-    model,
     maxTurns: REVIEW_MAX_TURNS,
     schema: PILLAR_OUTPUT_SCHEMA,
     can: pillarCapabilities(pillar, true, referenceDomains(web)),
@@ -62,22 +64,35 @@ async function runOne(
     ...(input.settings === undefined ? {} : { settings: input.settings }),
   }
   const failedAttempts: FailedAttempt[] = []
+  const step = { keys: [`pillar.${pillar}`, 'pillars'], fallback: tierOfPlanned(model) }
+  let ran: StepRan | undefined
   // One retry: a model call can fail for reasons that do not repeat.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let reported: Usage | null = null
     try {
-      const run = await harness.run(request, input.exec)
+      const run = await runModelStep(input.models ?? DEFAULT_STEP_MODELS, step, request, input.exec)
+      ran = run.ran
       reported = run.reportedUsage
       const { findings, skills, usage } = parsePillarOutput(run, pillar)
-      return { pillar, model, skills, findings, usage, failedAttempts }
+      return { pillar, model: run.ran.model, skills, findings, usage, failedAttempts, ran }
     } catch (error) {
-      const { message, usage } = harness.describeFailure(error)
+      const { message, usage, ran: failedRun } = describeStepFailure(error)
+      ran = failedRun ?? ran
       // A run that answered but failed validation still cost what its result event says.
       failedAttempts.push({ error: message, usage: usage ?? reported })
     }
   }
   const error = (failedAttempts.at(-1) as FailedAttempt).error
-  return { pillar, model, skills: [], findings: [], usage: null, error, failedAttempts }
+  return {
+    pillar,
+    model: ran?.model ?? model,
+    skills: [],
+    findings: [],
+    usage: null,
+    error,
+    failedAttempts,
+    ...(ran === undefined ? {} : { ran }),
+  }
 }
 
 /** Runs the planned pillars, at most `jobs` at once, and saves each to `pillars/<pillar>.json`. */

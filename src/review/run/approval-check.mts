@@ -1,7 +1,9 @@
-import { harness } from '../../harness/claude.mts'
+import { describeStepFailure, type StepRan } from '../../harness/runner.mts'
 import { EFFORT, type HarnessResult } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import type { Usage } from '../benchmark/usage.mts'
+import { DEFAULT_STEP_MODELS, runModelStep, tierOfPlanned, type StepModels } from '../models.mts'
+import type { Model } from '../plan.mts'
 import { ReviewError, parseReviewInput } from '../finding.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Question } from '../question.mts'
@@ -29,6 +31,7 @@ export type ApprovalCheck = {
   questions: Question[]
   usage: Usage | null
   error?: string
+  ran?: StepRan
 }
 
 type Run = { findings: Finding[]; questions: Question[]; note: string; usage: Usage }
@@ -51,9 +54,11 @@ export type ApprovalCheckStep = {
   /** False when the settings switch the check off. */
   enabled: boolean
   mode: 'light' | 'full'
-  model: string
+  /** The planned model; it names the tier the check runs on unless the models config sets the step. */
+  model: Model
   tree: string
   settings?: object
+  models?: StepModels
   exec: Exec
   input: ApprovalCheckInput
 }
@@ -85,30 +90,31 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
   const before = deriveVerdict(base.findings, base.questions, base.skipped)
   if (!step.enabled || step.mode !== 'full' || before !== 'Approve') return base
   try {
-    const run = parseApprovalCheck(
-      await harness.run(
-        {
-          prompt: buildApprovalCheckPrompt(input),
-          label: 'Approval check run',
-          model: step.model,
-          maxTurns: REVIEW_MAX_TURNS,
-          schema: APPROVAL_CHECK_SCHEMA,
-          can: SKILL_READER,
-          cwd: step.tree,
-          timeoutMs: RUN_TIMEOUT_MS,
-          effort: EFFORT.full,
-          addDirs: [input.run.out, input.references],
-          transcript: true,
-          ...(step.settings === undefined ? {} : { settings: step.settings }),
-        },
-        step.exec,
-      ),
+    const ran = await runModelStep(
+      step.models ?? DEFAULT_STEP_MODELS,
+      { keys: ['approvalCheck'], fallback: tierOfPlanned(step.model) },
+      {
+        prompt: buildApprovalCheckPrompt(input),
+        label: 'Approval check run',
+        maxTurns: REVIEW_MAX_TURNS,
+        schema: APPROVAL_CHECK_SCHEMA,
+        can: SKILL_READER,
+        cwd: step.tree,
+        timeoutMs: RUN_TIMEOUT_MS,
+        effort: EFFORT.full,
+        addDirs: [input.run.out, input.references],
+        transcript: true,
+        ...(step.settings === undefined ? {} : { settings: step.settings }),
+      },
+      step.exec,
     )
+    const run = parseApprovalCheck(ran)
     const findings = [...base.findings, ...run.findings]
     const questions = [...base.questions, ...run.questions]
     const after = deriveVerdict(findings, questions, base.skipped)
     const check: ApprovalCheck = {
-      model: step.model,
+      model: ran.ran.model,
+      ran: ran.ran,
       outcome: after === 'Approve' ? 'upheld' : 'changed',
       verdictBefore: before,
       verdictAfter: after,
@@ -119,11 +125,12 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
     }
     return { check, findings, questions, skipped: base.skipped }
   } catch (error) {
-    const { message, usage } = harness.describeFailure(error)
+    const { message, usage, ran } = describeStepFailure(error)
     const reason = `The second check on the approval did not complete (${firstLine(message).slice(0, 160)}), so this is a comment, not an approval.`
     const skipped: SkippedPillar[] = [...base.skipped, { pillar: APPROVAL_CHECK, reason }]
     const check: ApprovalCheck = {
-      model: step.model,
+      model: ran?.model ?? step.model,
+      ...(ran === undefined ? {} : { ran }),
       outcome: 'failed',
       verdictBefore: before,
       verdictAfter: deriveVerdict(base.findings, base.questions, skipped),

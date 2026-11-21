@@ -25,86 +25,12 @@ import {
   prepareReview,
   resolveThreads,
   skipPullRequest,
-  type LabelNames,
 } from '../review/index.mts'
-import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import { runLoopCommand, skipCommand } from './command-loop.mts'
-import type { ReviewDeps } from './deps.mts'
+import { BOB, BOB_LABELS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
-const BOB = { repo: 'bob/c', pr: 4 }
-
-const BOB_LABELS: LabelNames = { ...DEFAULT_LABELS, requested: 'review me' }
-
-function config(file: string, json: unknown, scope?: 'owner') {
-  return parseRepoConfig(JSON.stringify(json), file, scope)
-}
-
-/** bob.json relabels and adds a check run for bob; acme/b relabels its own processing label. */
-const CONFIGS: RepoConfigs = {
-  byOwner: new Map([
-    [
-      'bob',
-      config(
-        'bob.json',
-        {
-          labels: { requested: 'review me' },
-          checkRun: { name: 'Code review' },
-          evidence: [
-            {
-              name: 'aws',
-              description: 'Production logs.',
-              guide: { file: '/guides/aws.md' },
-              commands: ['aws logs filter-log-events'],
-              env: { AWS_PROFILE: 'secret-profile-name' },
-            },
-          ],
-          references: [
-            { name: 'aws-docs', description: 'AWS docs.', domains: ['docs.aws.amazon.com'] },
-          ],
-          approvalCheck: false,
-          rulePlugins: ['team-rules'],
-        },
-        'owner',
-      ),
-    ],
-  ]),
-  byRepo: new Map([['acme/b', config('acme/b.json', { labels: { processing: 'busy' } })]]),
-  problems: ['bob.json: bad'],
-}
-
-/** acme/c keeps its own file: it renames the requested label and sets a check run. */
-const targetConfig = vi.fn(async (repo: string) =>
-  repo === 'acme/c'
-    ? {
-        config: parseRepoConfig(
-          '{"labels":{"requested":"please review"},"checkRun":{"name":"Own"}}',
-          'acme/c/.code-reviewer.json',
-        ),
-        problems: ['acme/c/.code-reviewer.json: unknown key "x" ignored'],
-      }
-    : { config: undefined, problems: [] },
-)
-
-function fakeDeps(mode: 'app' | 'gh' = 'app') {
-  const labelIo = { labels: vi.fn(), add: vi.fn(), remove: vi.fn() }
-  const prepareIo = {} as ReturnType<ReviewDeps['createPrepareIo']>
-  const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
-  const runner = vi.fn(() => run)
-  const createLabelIo = vi.fn(() => labelIo)
-  const deps = {
-    authMode: vi.fn(() => mode),
-    authIdentity: vi.fn(async () => (mode === 'app' ? { login: 'my-app[bot]' } : {})),
-    configs: vi.fn(() => CONFIGS),
-    targetConfig,
-    createLabelIo,
-    createIo: vi.fn(() => ({ headSha: async () => 'h'.repeat(40) })),
-    createPrepareIo: vi.fn(() => prepareIo),
-    runner,
-  } as unknown as ReviewDeps
-  return { deps, labelIo, prepareIo, run, runner, createLabelIo }
-}
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -115,6 +41,24 @@ const UNSET = {
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
+  models: {
+    steps: {
+      select: [{ harness: 'claude', model: 'haiku' }],
+      pillars: [{ harness: 'claude', model: 'sonnet' }],
+      'pillar.history': [{ harness: 'claude', model: 'haiku' }],
+      verifier: [{ harness: 'claude', model: 'opus' }],
+      'verifier.light': [{ harness: 'claude', model: 'sonnet' }],
+      evidence: [{ harness: 'claude', model: 'sonnet' }],
+      approvalCheck: [{ harness: 'claude', model: 'opus' }],
+    },
+    tiers: {
+      small: [{ harness: 'claude', model: 'haiku' }],
+      medium: [{ harness: 'claude', model: 'sonnet' }],
+      large: [{ harness: 'claude', model: 'opus' }],
+    },
+    retry: { maxWaitSeconds: 600 },
+    from: null,
+  },
 }
 
 describe('runLoopCommand', () => {
@@ -317,6 +261,17 @@ describe('runLoopCommand', () => {
         },
         approvalCheck: { enabled: false, from: 'machine owner' },
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
+        models: {
+          steps: {
+            ...UNSET.models.steps,
+            select: [{ harness: 'claude', model: 'sonnet' }],
+            'pillar.history': [{ harness: 'claude', model: 'sonnet' }],
+            'pillar.design': [{ harness: 'claude', model: 'opus' }],
+          },
+          tiers: { ...UNSET.models.tiers, small: [{ harness: 'claude', model: 'sonnet' }] },
+          retry: { maxWaitSeconds: 30 },
+          from: 'machine owner',
+        },
         problems: ['bob.json: bad'],
       })
       await expect(runLoopCommand('settings', { repo: ['acme/b'] }, target, deps)).resolves.toEqual(
@@ -390,64 +345,6 @@ describe('runLoopCommand', () => {
       await expect(runLoopCommand('settings', { repo: ['nope'] }, target, deps)).rejects.toThrow(
         '--repo must be owner/name.',
       )
-    })
-  })
-
-  describe('check run', () => {
-    const posts = (run: { mock: { calls: unknown[][] } }) =>
-      run.mock.calls.map(([args]) =>
-        (args as string[]).filter((a) => /^(status|conclusion)=/u.test(a)),
-      )
-
-    it('starts on a claim and completes on abort and skip', async () => {
-      const { deps, run } = fakeDeps()
-      const claimed = await runLoopCommand('claim', { force: true }, () => BOB, deps)
-      expect(claimed).toEqual({
-        claimed: true,
-        checkRun: { status: 'in_progress', url: 'https://example.test/check', via: 'check-run' },
-      })
-      await runLoopCommand('abort', {}, () => BOB, deps)
-      await runLoopCommand('skip', { reason: 'docs only' }, () => BOB, deps)
-      expect(posts(run)).toEqual([
-        ['status=in_progress'],
-        ['status=completed', 'conclusion=cancelled'],
-        ['status=completed', 'conclusion=skipped'],
-      ])
-    })
-
-    it('binds the check run to the head the claim read, and reads the head once for abort and skip', async () => {
-      const claimHead = 's'.repeat(40)
-      const { deps, run } = fakeDeps()
-      vi.mocked(reviewStatus).mockResolvedValueOnce({
-        current: false,
-        headSha: claimHead,
-      } as never)
-      await runLoopCommand('claim', {}, () => BOB, deps)
-      await runLoopCommand('abort', {}, () => BOB, deps)
-      const heads = run.mock.calls.map(([args]) => args.find((a) => a.startsWith('head_sha=')))
-      expect(heads).toEqual([`head_sha=${claimHead}`, `head_sha=${'h'.repeat(40)}`])
-    })
-
-    it('does not start one for a declined claim', async () => {
-      const { deps, run } = fakeDeps()
-      vi.mocked(claimReview).mockResolvedValueOnce({
-        claimed: false,
-        reason: 'already in progress',
-        labels: [],
-      })
-      await runLoopCommand('claim', { force: true }, () => BOB, deps)
-      expect(run).not.toHaveBeenCalled()
-    })
-
-    it('writes a commit status instead of a check run under the gh login', async () => {
-      const { deps, run } = fakeDeps('gh')
-      const result = await runLoopCommand('abort', {}, () => BOB, deps)
-      expect(result).toMatchObject({
-        checkRun: { status: 'completed', via: 'commit-status' },
-      })
-      const args = run.mock.calls[0]?.[0] as string[]
-      expect(args).toContain(`repos/bob/c/statuses/${'h'.repeat(40)}`)
-      expect(args).toContain('state=error')
     })
   })
 

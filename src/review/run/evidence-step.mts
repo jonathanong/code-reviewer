@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
+import type { StepModels } from '../models.mts'
 import type { Finding } from '../finding.mts'
 import { EVIDENCE_MODEL, findingId, runEvidenceModel, type UsableSource } from './evidence-run.mts'
 import type { EvidenceReport, EvidenceSetup, EvidenceSourceReport } from './evidence-types.mts'
@@ -17,6 +18,7 @@ export type EvidenceStepInput = {
   mode: 'light' | 'full'
   tree: string
   settings?: object
+  models?: StepModels
   exec: Exec
 }
 
@@ -91,6 +93,7 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
       mode: input.mode,
       tree: input.tree,
       exec: input.exec,
+      ...(input.models === undefined ? {} : { models: input.models }),
       ...(input.settings === undefined ? {} : { settings: input.settings }),
     },
   )
@@ -99,6 +102,7 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
       ...emptyReport([...unusable.values()]),
       error: run.error,
       failedAttempts: run.failedAttempts,
+      ...(run.ran === undefined ? {} : { model: run.ran.model, ran: run.ran }),
     }
   }
   const reported = new Map(run.output.sources.map((source) => [source.name, source]))
@@ -110,7 +114,8 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
   )
   return {
     ...run.output,
-    model: EVIDENCE_MODEL,
+    model: run.ran.model,
+    ran: run.ran,
     sources,
     usage: run.usage,
     failedAttempts: run.failedAttempts,

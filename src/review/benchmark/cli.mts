@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { harness } from '../../harness/claude.mts'
+import { describeStepFailure } from '../../harness/runner.mts'
 import { PILLARS, type Pillar } from '../finding.mts'
 import { caseSelector, defaultSelectStep, type SelectStep } from './case-selection.mts'
 import { casesForPillar, parseEvalCases, type EvalCase } from './cases.mts'
@@ -128,7 +128,7 @@ async function runAll(
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
       result = { findings, skills, skillTool: !options.noRules, usage, ...seen }
     } catch (error) {
-      const { message, usage } = harness.describeFailure(error)
+      const { message, usage } = describeStepFailure(error)
       result = { error: message, ...(usage === null ? {} : { usage }), ...seen }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)

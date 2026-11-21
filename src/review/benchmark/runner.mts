@@ -1,4 +1,4 @@
-import { harness } from '../../harness/claude.mts'
+import { runFixedModel } from '../../harness/runner.mts'
 import { EFFORT } from '../../harness/types.mts'
 import type { Pillar } from '../finding.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
@@ -61,7 +61,7 @@ export async function runPillar(
     buildPillarPrompt(run.pillarPrompt, item, hasContextNotes(dir), hasRulesIndex(dir)),
     ...skillInstruction(run.selected ?? []),
   ].join('\n\n')
-  const result = await harness.run(
+  const result = await runFixedModel(
     {
       prompt,
       label: 'Pillar run',

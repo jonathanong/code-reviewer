@@ -235,6 +235,35 @@ describe('parseRepoConfig rulePlugins', () => {
   })
 })
 
+describe('parseRepoConfig models', () => {
+  const models = '{"models":{"steps":{"select":"large"},"retry":{"maxWaitSeconds":9}}}'
+
+  it('reads the key from machine files, JSON and YAML alike', () => {
+    expect(parseRepoConfig(models, FILE)).toMatchObject({
+      models: { steps: { select: 'large' }, retry: { maxWaitSeconds: 9 } },
+      problems: [],
+    })
+    const yaml = 'models:\n  steps:\n    select: large\n'
+    expect(parseRepoConfig(yaml, 'acme.yaml', 'owner').models).toEqual({
+      steps: { select: 'large' },
+    })
+  })
+
+  it('names the file and key of a bad value and ignores the key', () => {
+    const parsed = parseRepoConfig('{"models":{"steps":{"select":"tiny"}}}', FILE)
+    expect(parsed.models).toBeUndefined()
+    expect(parsed.problems[0]).toContain(`${FILE} models.steps.select: unknown tier "tiny"`)
+  })
+
+  it('ignores it in the reviewed repository own file and says it is machine-only', () => {
+    const file = 'acme/web/.code-reviewer.json'
+    expect(parseRepoConfig(models, file, 'target')).toEqual({
+      consumes: [],
+      problems: [`${file}: models is machine-only; ignored`],
+    })
+  })
+})
+
 describe('loadRepoConfigs', () => {
   const dirs: string[] = []
   afterEach(() => {

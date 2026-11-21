@@ -117,8 +117,9 @@ describe('reviewCommand', () => {
       commands: ['aws logs get-query-results'],
       env: {},
     }
-    // The web references, the approval check and the rule plugins read the configs first, when wired.
+    // The web references, the approval check, the rule plugins and the models read the configs first, when wired.
     configs
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)

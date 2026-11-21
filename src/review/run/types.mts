@@ -1,3 +1,4 @@
+import type { StepRan } from '../../harness/runner.mts'
 import type { Usage } from '../benchmark/usage.mts'
 import type { Finding, Pillar } from '../finding.mts'
 
@@ -13,6 +14,8 @@ export type PillarResult = {
   usage: Usage | null
   error?: string
   failedAttempts: FailedAttempt[]
+  /** The harness and model that ran the step and what it waited on rate limits; absent in an older run. */
+  ran?: StepRan
 }
 
 /** What the skill-selection call decided, saved as `skills.json`. */
@@ -22,6 +25,7 @@ export type SkillChoice = {
   available: number
   error?: string
   usage: Usage | null
+  ran?: StepRan
 }
 
 /** Wall-clock limits for model calls, in milliseconds. */

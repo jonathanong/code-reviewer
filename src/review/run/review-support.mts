@@ -18,6 +18,7 @@ import {
   unloadableRulePlugins,
   type PluginInfo,
 } from '../plugins.mts'
+import type { StepModels } from '../models.mts'
 import type { ReferenceSource } from '../rules/references-parse.mts'
 import type { EvidenceSetup } from './evidence-types.mts'
 import type { RunDir } from './pillar-prompt.mts'
@@ -44,6 +45,8 @@ export type ReviewSteps = {
   webReferences?: readonly ReferenceSource[]
   /** False when the settings switch off the second check on an approval. */
   approvalCheck: boolean
+  /** The harness and model of each step; the default tiers when absent. */
+  models?: StepModels
   exec: Exec
   /** Directory holding `verifier.md` and `pillars/`. */
   references: string

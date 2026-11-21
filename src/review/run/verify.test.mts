@@ -6,9 +6,9 @@ import {
   REVIEW_VERIFIER_SCHEMA,
   buildVerifierRunPrompt,
   parseReviewVerifier,
-  runReviewVerifier,
   type VerifierInput,
 } from './verify.mts'
+import { runReviewVerifier } from './verify-run.mts'
 
 const FINDINGS: Finding[] = [
   {
