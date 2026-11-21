@@ -202,6 +202,14 @@ describe('parseRepoConfig analysis', () => {
     expect(parsed.problems).toEqual([expect.stringContaining(`${FILE} analysis[0]:`)])
   })
 
+  it('ignores analysis in a trusted repository file too, since a shell grant is never trusted', () => {
+    const file = 'acme/web/.code-reviewer.json'
+    expect(parseRepoConfig(JSON.stringify({ analysis }), file, 'trusted')).toEqual({
+      consumes: [],
+      problems: [`${file}: analysis tools are machine-only; ignored`],
+    })
+  })
+
   it('ignores analysis in the reviewed repository own file and says it is machine-only', () => {
     const file = 'acme/web/.code-reviewer.json'
     expect(parseRepoConfig(JSON.stringify({ analysis }), file, 'target')).toEqual({
