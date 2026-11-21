@@ -1,3 +1,4 @@
+import { parseIssues } from '../../issues/config-parse.mts'
 import { parseEvidence } from './evidence-parse.mts'
 import { parseLimits } from './limits-parse.mts'
 import { machineOnly } from './machine-only.mts'
@@ -12,7 +13,14 @@ type Json = Record<string, unknown>
 
 type MachineKeys = Pick<
   RepoConfig,
-  'evidence' | 'references' | 'approvalCheck' | 'rulePlugins' | 'run' | 'models' | 'limits'
+  | 'evidence'
+  | 'references'
+  | 'approvalCheck'
+  | 'rulePlugins'
+  | 'run'
+  | 'models'
+  | 'limits'
+  | 'issues'
 >
 
 /**
@@ -53,6 +61,10 @@ export function parseMachineKeys(
     what: 'limits is',
     parse: parseLimits,
   })
+  const issues = machineOnly(scope, raw.issues, file, 'issues', problems, {
+    what: 'issues is',
+    parse: parseIssues,
+  })
   return {
     ...(evidence === undefined ? {} : { evidence }),
     ...(references === undefined ? {} : { references }),
@@ -61,5 +73,6 @@ export function parseMachineKeys(
     ...(run === undefined ? {} : { run }),
     ...(models === undefined ? {} : { models }),
     ...(limits === undefined ? {} : { limits }),
+    ...(issues === undefined ? {} : { issues }),
   }
 }

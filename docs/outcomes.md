@@ -57,4 +57,4 @@ outcome, pillar, severity and rule skill; the `rejected` and `disputed` findings
 link; and Proposals from fixed rules. A pillar or rule with at least 3 findings, at least half of them
 rejected or disputed, is listed as "review this". A rule with at least 3 fixed findings and none
 rejected is listed as "working". The thresholds are `PROPOSAL_MIN_FINDINGS`, `PROPOSAL_BAD_SHARE` and
-`WORKING_MIN_FIXED` in `src/outcomes/digest.mts`. The digest holds no code.
+`WORKING_MIN_FIXED` in `src/outcomes/propose.mts`. The digest holds no code.

@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `models`, `limits`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -258,6 +258,25 @@ file and key, and the whole `limits` key is ignored. It is machine-only, like `m
 repository's own file cannot set it, and says `limits is machine-only; ignored`. The highest
 machine layer that sets it is used. `code-reviewer settings` prints the resolved ceiling
 (`null` for none). `bench` ignores this key.
+
+## `issues`
+
+```yaml
+issues:
+  maxPerDay: 3 # optional, an integer of at least 1; default 3
+  targets:
+    - name: example-rules # a rule plugin name, or `code-reviewer` for the reviewer itself
+      repo: owner/name # where issues for it go
+      labels: [from-code-reviewer] # optional
+```
+
+Absent means `code-reviewer issues` files nothing, and so does a proposal whose plugin has no
+target. `maxPerDay` caps issues filed in any 24 hours across all targets. A target name may be
+listed once. Any wrong shape is a problem naming the file and key, the whole `issues` key is
+ignored, and `code-reviewer issues` exits 2. It is machine-only: a repository's own file cannot
+set it, and says `issues is machine-only; ignored`. Unlike the per-repository keys it is not scoped
+to a repository: the first file that sets it is used, owner files before repository files, each in
+name order. See [Filing issues](issues.md).
 
 ## `labels` and `checkRun`
 
