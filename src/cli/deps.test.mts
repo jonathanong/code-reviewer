@@ -9,6 +9,9 @@ vi.mock('../review/benchmark/cli.mts', () => ({
 vi.mock('../review/benchmark/exec.mts', () => ({
   defaultExec: vi.fn(async () => '[{"id":"rules@m","version":"1.0.0","enabled":true}]'),
 }))
+vi.mock('../review/benchmark/context-cli.mts', () => ({
+  runReviewContextBenchCli: vi.fn(async () => 3),
+}))
 vi.mock('../review/benchmark/selection-cli.mts', () => ({
   runReviewSelectionBenchCli: vi.fn(async () => 4),
 }))
@@ -18,6 +21,7 @@ vi.mock('../review/benchmark/verifier-cli.mts', () => ({
 
 import { runReviewBenchCli } from '../review/benchmark/cli.mts'
 import { defaultExec } from '../review/benchmark/exec.mts'
+import { runReviewContextBenchCli } from '../review/benchmark/context-cli.mts'
 import { runReviewSelectionBenchCli } from '../review/benchmark/selection-cli.mts'
 import { runReviewVerifierBenchCli } from '../review/benchmark/verifier-cli.mts'
 import { AppAuthError, type GhAuth } from '../gh-cli/index.mts'
@@ -290,5 +294,7 @@ describe('createDefaultDeps', () => {
     expect(runReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
     await expect(deps.runSelectionBench(['--z'])).resolves.toBe(4)
     expect(runReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
+    await expect(deps.runContextBench(['--w'])).resolves.toBe(3)
+    expect(runReviewContextBenchCli).toHaveBeenCalledWith(['--w'])
   })
 })

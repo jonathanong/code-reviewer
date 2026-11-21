@@ -183,6 +183,26 @@ describe('expectedSkills', () => {
   })
 })
 
+describe('expectedRules', () => {
+  const skills = ['r:testing-rules']
+  const rules = [{ skill: 'r:testing-rules', text: 'MUST NOT x' }]
+
+  it('is kept when it names a listed skill and absent otherwise', () => {
+    const [with_, without] = parseEvalCases([
+      positive({ expectedSkills: skills, expectedRules: rules }),
+      positive({ id: 'p2', expectedSkills: skills }),
+    ])
+    expect(with_?.expectedRules).toEqual(rules)
+    expect(without).not.toHaveProperty('expectedRules')
+  })
+
+  it('rejects a rule of a skill the case does not list', () => {
+    expect(message([positive({ expectedRules: rules })])).toBe(
+      'cases[0]: expectedRules skill r:testing-rules is not in expectedSkills',
+    )
+  })
+})
+
 describe('casesForPillar', () => {
   it('keeps positives for the pillar and every negative', () => {
     const cases = parseEvalCases([

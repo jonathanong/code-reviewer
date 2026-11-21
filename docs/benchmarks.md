@@ -334,6 +334,38 @@ extra skills is not penalized; the mean number selected is reported beside the h
 
 The score for this eval is in the benchmark README.
 
+## Shared context
+
+`bench-context` asks whether the thing a pillar needs is in the context a review builds. It makes
+no model call and exits 0 whatever the result.
+
+```bash
+pnpm exec code-reviewer bench-context \
+  --cases benchmarks/review/synthetic.json \
+  --history benchmarks/review/context-history.json \
+  --out "$TMPDIR/review-context"
+```
+
+- **Rule excerpts.** For each case with `expectedSkills`, it builds the rule-excerpts section for
+  exactly those skills (every member of an any-of group; no selection step) from the installed
+  rule plugins, and reports each skill as quoted in full, in part or not at all. A case's optional
+  `expectedRules` (`[{ "skill", "text" }]`, `skill` listed in `expectedSkills`) names the rule an
+  expected finding depends on, as a verbatim substring of one rule line. Each is reported as
+  `present` (quoted in the excerpt), `cut` (in the installed skill but not quoted: over the cap or
+  a prose skill), `missing` (not in the installed skill: the text or the skill has drifted) or
+  `absent` (the skill is not installed). The report also gives characters quoted per skill against
+  the cap and the size of the section.
+- **History and linked regressions.** `--history` files hold cases of `base` and `head` commits
+  (each a message and `files`, path to full text) that are built into a temporary git repository.
+  A `{0}` in a message is the full sha of base commit 0. `expect.history` lists base commits that
+  the changed-line-history section must list under a path, and `expect.linked` base commits the
+  linked-regressions section must find. Only local git is used; the eval never calls GitHub.
+- **Output.** `summary.json` and `summary.md` in `--out`, and the same table on stdout.
+  `--case <id>` limits the run.
+
+It does not measure whether a pillar reads or applies the excerpt; `bench --excerpts` does. The
+score is in the benchmark README.
+
 ## Metrics
 
 | Metric             | Meaning                                                                              |

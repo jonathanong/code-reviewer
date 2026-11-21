@@ -1,0 +1,46 @@
+[
+  {
+    "id": "history-introducing-commit",
+    "title": "The change rewrites a line that an earlier commit introduced",
+    "base": [
+      { "message": "Add queue module", "files": { "queue.txt": "open\nretry twice\nclose\n" } },
+      { "message": "Add worker module (#7)", "files": { "worker.txt": "start\nstop\n" } },
+      {
+        "message": "Raise the retry limit (#8)",
+        "files": { "queue.txt": "open\nretry five times\nclose\n" }
+      }
+    ],
+    "head": [
+      {
+        "message": "Drop the retry limit",
+        "files": { "queue.txt": "open\nretry forever\nclose\n" }
+      }
+    ],
+    "expect": { "history": [{ "commit": 2, "path": "queue.txt" }], "linked": [] }
+  },
+  {
+    "id": "linked-revert-by-sha",
+    "title": "A revert that names the commit it reverts by sha",
+    "base": [
+      { "message": "Add cache layer", "files": { "cache.txt": "ttl 60\n" } },
+      { "message": "Add logging", "files": { "log.txt": "info\n" } }
+    ],
+    "head": [
+      {
+        "message": "Revert the cache layer\n\nThis reverts commit {0}.",
+        "files": { "cache.txt": "no cache\n" }
+      }
+    ],
+    "expect": { "history": [{ "commit": 0, "path": "cache.txt" }], "linked": [0] }
+  },
+  {
+    "id": "linked-revert-by-subject",
+    "title": "A revert that names the commit only by its subject",
+    "base": [
+      { "message": "Add rate limiter", "files": { "limit.txt": "10 per second\n" } },
+      { "message": "Add metrics", "files": { "metrics.txt": "counter\n" } }
+    ],
+    "head": [{ "message": "Revert \"Add rate limiter\"", "files": { "limit.txt": "unlimited\n" } }],
+    "expect": { "history": [{ "commit": 0, "path": "limit.txt" }], "linked": [0] }
+  }
+]

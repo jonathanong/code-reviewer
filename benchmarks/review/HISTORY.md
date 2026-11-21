@@ -2,6 +2,28 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: first `bench-context` run: is the rule a case depends on in the shared context
+
+Commit 6302658. No model: `bench-context` builds the rule-excerpts section for exactly the
+`expectedSkills` of the 10 tagged synthetic cases (no selection step) and checks that section's
+text, and builds three small history cases in temporary git repositories. Installed plugins:
+`no-mistakes-rules` 0.109.103 and `jong-skills` 2408b5e03fdc. Cost $0.00.
+
+| Check                                           | Result                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------ |
+| Expected skills quoted in full / in part / none | 9 / 1 / 1 (of 11 skill rows; one case names an any-of group) |
+| Expected rule text in the excerpt               | 10 present, 1 cut, 0 missing from the skill, 0 not installed |
+| Most quoted from one skill                      | 4,857 of 6,000 characters (`testing-rules`)                  |
+| Mean / largest rule-excerpts section            | 3,787 / 5,516 characters                                     |
+| History and linked-regression checks            | 5 of 5 found (3 cases)                                       |
+
+The one rule cut from the excerpt is in `jong-skills:bounded-iteration`, which is mostly prose, so
+it is never quoted; the same case also names `no-mistakes-rules:queue-rules`, which is quoted in
+full and holds the sibling rule ("MUST NOT loop until empty"). `postgresql-rules` is quoted in
+part and still holds the rule its case depends on. Every case that depends on one rule therefore
+has that rule in the context, but one case would rest on a skill load if the excerpts replaced
+loading. This does not measure whether a pillar uses the excerpt (`bench --excerpts` does).
+
 ## 2026-11-21: (no run) the pillar's context line says the context is not exhaustive
 
 When a review builds a shared context file, the line that names it in each pillar prompt gains:

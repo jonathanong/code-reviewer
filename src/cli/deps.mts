@@ -77,6 +77,7 @@ export type ReviewDeps = {
   runBench(args: string[]): Promise<number>
   runVerifierBench(args: string[]): Promise<number>
   runSelectionBench(args: string[]): Promise<number>
+  runContextBench(args: string[]): Promise<number>
 }
 
 /** Default dependencies; App or `gh` auth is chosen once, on first use. */
@@ -186,5 +187,7 @@ export function createDefaultDeps(
       (await import('../review/benchmark/verifier-cli.mts')).runReviewVerifierBenchCli(args),
     runSelectionBench: async (args) =>
       (await import('../review/benchmark/selection-cli.mts')).runReviewSelectionBenchCli(args),
+    runContextBench: async (args) =>
+      (await import('../review/benchmark/context-cli.mts')).runReviewContextBenchCli(args),
   }
 }

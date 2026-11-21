@@ -26,7 +26,7 @@ commit listed under linked regressions is to be checked against the change. An i
 excerpt state whether it is quoted in full, in part or not at all, and replaces the "alongside"
 sentence with a block that says skills quoted in full are not to be loaded; a review never sets it.
 A configured pillar
-with a `run` command gets no line, since its command is its whole prompt.
+with a `run` command gets no line, since its command is its whole prompt. `bench-context` checks, without a model, that the rule an expected finding depends on is in these excerpts ([benchmarks](benchmarks.md#shared-context)).
 
 Excerpts stay alongside the Skill loads because a pilot of the `replace` instruction did not justify
 the switch ([benchmark history](../benchmarks/review/HISTORY.md), 2026-11-21 pilot). Every expected
