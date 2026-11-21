@@ -43,7 +43,8 @@ GitHub review. It runs on your machine, for the repositories you pick.
 
 Agreed and not built yet. Nothing below works today.
 
-- **Codex, verified.** The Codex adapter exists but has never been run against the real CLI; its flags come from `codex-cli 0.171.0` help output and its output shapes are assumed.
+- **A real Codex run.** The Codex adapter exists but has never been run against the real CLI: its
+  flags come from `codex-cli 0.171.0` help output and its output shapes are assumed.
 - **Shared context.** The pillars read rule excerpts, the history of the changed lines and linked
   regressions ([Shared context](docs/context.md)), but still load every skill. Excerpts do not yet
   replace Skill loads, and the verifier reads only the linked commits, the split summary and a follow-up's earlier review, other steps none of it.
