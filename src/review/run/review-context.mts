@@ -9,14 +9,11 @@ import { buildContext, sectionsNamed } from '../context/build.mts'
 import type { SplitSummary } from '../context/change-shape/split.mts'
 import type { LinkedCommit, PreviousReview } from '../context/types.mts'
 import { renderContext } from '../context/render.mts'
-import type { SkillChoice } from './types.mts'
+import { CONTEXT_DEADLINE_MS, type SkillChoice } from './types.mts'
 import { listRuleSkillFiles } from './select-skills.mts'
 
 /** The file in the run directory. `context.md` is taken: `prepare` writes the description there. */
 export const CONTEXT_FILE = 'review-context.md'
-
-/** The whole build, git calls and file reads included, gets this long. */
-export const CONTEXT_DEADLINE_MS = 60_000
 
 /**
  * The sections pillars read. Not `change-shape`, and nothing about other reviewers or past
@@ -31,7 +28,7 @@ const FOLLOW_UP_SECTION = 'past-reviews'
 const VERIFIER_TITLES = ['Change shape', 'Past reviews']
 
 export type ReviewContextInput = {
-  steps: Pick<ReviewSteps, 'exec' | 'rulePlugins' | 'stateDir'>
+  steps: Pick<ReviewSteps, 'exec' | 'rulePlugins' | 'stateDir' | 'models'>
   options: Pick<ReviewOptions, 'repo' | 'pr' | 'tree' | 'out'>
   /** A plan with a `sinceSha` makes this a follow-up, which also reads the earlier review. */
   prepared: Pick<PrepareSummary, 'baseSha' | 'headSha'> & { plan?: { sinceSha: string | null } }
@@ -69,9 +66,10 @@ export const reportFields = (context: ReviewContext) => ({
  * failed, timed out or empty build gives a note and no file, and the review goes on without it.
  */
 export async function buildReviewContext(
-  { steps, options, prepared, installs, skillChoice }: ReviewContextInput,
-  deadlineMs = CONTEXT_DEADLINE_MS,
+  input: ReviewContextInput,
+  deadlineMs = input.steps.models?.limits?.contextDeadlineMs ?? CONTEXT_DEADLINE_MS,
 ): Promise<ReviewContext> {
+  const { steps, options, prepared, installs, skillChoice } = input
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), deadlineMs)
   const expired = new Promise<never>((_, fail) =>

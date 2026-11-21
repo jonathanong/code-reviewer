@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
+import { CONTEXT_DEADLINE_MS } from './types.mts'
 import { SECTIONS } from '../context/build.mts'
 import { mixedRepo } from '../context/change-shape/split-fixtures.mts'
 import {
-  CONTEXT_DEADLINE_MS,
   CONTEXT_FILE,
   PILLAR_SECTIONS,
   buildReviewContext,
@@ -121,6 +121,14 @@ describe('buildReviewContext', () => {
     await vi.advanceTimersByTimeAsync(CONTEXT_DEADLINE_MS)
     expect(await pending).toEqual({ note: 'timed out after 60s' })
     expect(signal?.aborted).toBe(true)
+  })
+
+  it('gives up at the configured deadline, named in the note', async () => {
+    vi.useFakeTimers()
+    const exec: Exec = () => new Promise(() => {})
+    const pending = buildReviewContext(input(exec), 5000)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(await pending).toEqual({ note: 'timed out after 5s' })
   })
 
   it('names a failed section in the note when no section had content', async () => {

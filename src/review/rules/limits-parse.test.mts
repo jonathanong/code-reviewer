@@ -43,6 +43,39 @@ describe('parseLimits', () => {
   })
 })
 
+describe('parseLimits whole-number limits', () => {
+  it('reads each key at its bounds', () => {
+    const low = {
+      runTimeoutSeconds: 60,
+      selectTimeoutSeconds: 10,
+      contextDeadlineSeconds: 5,
+      pillarJobs: 1,
+    }
+    const high = {
+      runTimeoutSeconds: 14_400,
+      selectTimeoutSeconds: 1800,
+      contextDeadlineSeconds: 600,
+      pillarJobs: 16,
+    }
+    expect(parse(low)).toEqual({ config: low, problems: [] })
+    expect(parse(high)).toEqual({ config: high, problems: [] })
+  })
+
+  it.each([
+    ['runTimeoutSeconds', 59, '60 to 14400'],
+    ['runTimeoutSeconds', 14_401, '60 to 14400'],
+    ['selectTimeoutSeconds', 9, '10 to 1800'],
+    ['contextDeadlineSeconds', 601, '5 to 600'],
+    ['pillarJobs', 0, '1 to 16'],
+    ['pillarJobs', 2.5, '1 to 16'],
+    ['pillarJobs', '3', '1 to 16'],
+  ])('ignores the key whole for %s = %s', (key, value, range) => {
+    const { config, problems } = parse({ maxCostUsd: 1, [key]: value })
+    expect(config).toBeUndefined()
+    expect(problems).toEqual([`${WHERE}.${key}: must be an integer from ${range}; limits ignored`])
+  })
+})
+
 describe('limits in a config file', () => {
   const text = '{"limits":{"maxCostUsd":3}}'
 

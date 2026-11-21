@@ -5,6 +5,7 @@ import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { resolveAnalysis } from '../review/analysis-settings.mts'
+import { resolveLimits } from '../review/limits-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { requirePillars } from '../review/pillars-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
@@ -25,10 +26,8 @@ import {
 } from './command-loop.mts'
 import type { ReviewDeps } from './deps.mts'
 
-const DEFAULT_JOBS = 3
-
-function jobs(value: string | undefined): number {
-  const count = Number(value ?? String(DEFAULT_JOBS))
+function jobs(value: string | undefined, fallback: number): number {
+  const count = Number(value ?? String(fallback))
   if (!Number.isInteger(count) || count < 1) throw new Error('--jobs must be a positive integer.')
   return count
 }
@@ -60,6 +59,7 @@ export async function reviewCommand(
   const targetOf = () => target
   const own = (await deps.targetConfig(target.repo)).config
   const pillars = requirePillars(deps.configs(), target.repo, own)
+  const limits = resolveLimits(deps.configs(), target.repo)
   const tracker = deps.tracker()
   const startedAt = tracker.now().toISOString()
   const result = await runReview(
@@ -92,13 +92,18 @@ export async function reviewCommand(
       // Machine config, then --model: a repository cannot choose which model reads its code.
       models: {
         plan: resolveModels(deps.configs(), target.repo, overrides).plan,
-        watch: stepWatchFor(values, target.repo, deps),
+        limits: {
+          runTimeoutMs: limits.runTimeoutSeconds * 1000,
+          selectTimeoutMs: limits.selectTimeoutSeconds * 1000,
+          contextDeadlineMs: limits.contextDeadlineSeconds * 1000,
+        },
+        watch: stepWatchFor(values, limits, deps),
       },
       stateDir: tracker.dir,
       exec: deps.exec,
       references: deps.references(),
     },
-    { repo: target.repo, pr: target.pr, out, tree, jobs: jobs(values.jobs) },
+    { repo: target.repo, pr: target.pr, out, tree, jobs: jobs(values.jobs, limits.pillarJobs) },
   )
   const tracked = recordReview(tracker, { ...target, out, startedAt, ...result })
   return { ...result, summary: { ...result.summary, ...tracked } }

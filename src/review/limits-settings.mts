@@ -1,11 +1,17 @@
-import { isCeiling } from './rules/limits-parse.mts'
+import { INT_LIMITS, isCeiling } from './rules/limits-parse.mts'
 import type { RepoConfigs } from './rules/config.mts'
 import { machineSetting, type MachineLayer } from './settings.mts'
 
 export type LimitSettings = {
   /** The most a review may cost in US dollars before no further step starts; undefined means no ceiling. */
   maxCostUsd: number | undefined
-  /** The machine layer whose `limits.maxCostUsd` applies; null when none sets one. */
+  /** Seconds a model run may take; the built-in value when no layer sets it. */
+  runTimeoutSeconds: number
+  selectTimeoutSeconds: number
+  contextDeadlineSeconds: number
+  /** Pillars that run at once when `--jobs` is absent. */
+  pillarJobs: number
+  /** The machine layer whose `limits` key applies; null when none sets it. */
   from: MachineLayer
 }
 
@@ -15,7 +21,15 @@ export type LimitSettings = {
  */
 export function resolveLimits(configs: RepoConfigs, scope: string): LimitSettings {
   const { value, from } = machineSetting(configs, scope, 'limits')
-  return { maxCostUsd: value?.maxCostUsd, from: value?.maxCostUsd === undefined ? null : from }
+  return {
+    maxCostUsd: value?.maxCostUsd,
+    runTimeoutSeconds: value?.runTimeoutSeconds ?? INT_LIMITS.runTimeoutSeconds.default,
+    selectTimeoutSeconds: value?.selectTimeoutSeconds ?? INT_LIMITS.selectTimeoutSeconds.default,
+    contextDeadlineSeconds:
+      value?.contextDeadlineSeconds ?? INT_LIMITS.contextDeadlineSeconds.default,
+    pillarJobs: value?.pillarJobs ?? INT_LIMITS.pillarJobs.default,
+    from: Object.keys(value ?? {}).length === 0 ? null : from,
+  }
 }
 
 /** `--max-cost USD`: a number above zero. Throws a message fit for a usage error. */

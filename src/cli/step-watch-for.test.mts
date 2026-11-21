@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { resolveLimits } from '../review/limits-settings.mts'
 import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import type { ReviewDeps } from './deps.mts'
 import { stepWatchFor } from './step-watch-for.mts'
@@ -11,10 +12,11 @@ const OWNER_CEILING: RepoConfigs = {
   ]),
 }
 
-function fakeDeps(configs: RepoConfigs = NO_CONFIGS) {
+const limitsOf = (configs: RepoConfigs) => resolveLimits(configs, 'acme/widgets')
+
+function fakeDeps() {
   const progress = vi.fn()
   const deps = {
-    configs: () => configs,
     tracker: () => ({ now: () => new Date(5000) }),
     progress,
   } as unknown as ReviewDeps
@@ -24,34 +26,29 @@ function fakeDeps(configs: RepoConfigs = NO_CONFIGS) {
 describe('stepWatchFor', () => {
   it('has no ceiling when neither the flag nor a machine file sets one', () => {
     const { deps } = fakeDeps()
-    expect(stepWatchFor({}, 'acme/widgets', deps).ceilingUsd).toBeUndefined()
+    expect(stepWatchFor({}, limitsOf(NO_CONFIGS), deps).ceilingUsd).toBeUndefined()
   })
 
   it('takes the ceiling from the machine config', () => {
-    const { deps } = fakeDeps(OWNER_CEILING)
-    expect(stepWatchFor({}, 'acme/widgets', deps).ceilingUsd).toBe(4)
+    const { deps } = fakeDeps()
+    expect(stepWatchFor({}, limitsOf(OWNER_CEILING), deps).ceilingUsd).toBe(4)
   })
 
   it('takes --max-cost over the machine config', () => {
-    const { deps } = fakeDeps(OWNER_CEILING)
-    expect(stepWatchFor({ 'max-cost': '1.5' }, 'acme/widgets', deps).ceilingUsd).toBe(1.5)
-  })
-
-  it('reads no config when the flag sets the ceiling', () => {
     const { deps } = fakeDeps()
-    const configs = vi.spyOn(deps, 'configs')
-    stepWatchFor({ 'max-cost': '2' }, 'acme/widgets', deps)
-    expect(configs).not.toHaveBeenCalled()
+    expect(stepWatchFor({ 'max-cost': '1.5' }, limitsOf(OWNER_CEILING), deps).ceilingUsd).toBe(1.5)
   })
 
   it('fails on a bad --max-cost', () => {
     const { deps } = fakeDeps()
-    expect(() => stepWatchFor({ 'max-cost': '0' }, 'acme/widgets', deps)).toThrow('--max-cost')
+    expect(() => stepWatchFor({ 'max-cost': '0' }, limitsOf(NO_CONFIGS), deps)).toThrow(
+      '--max-cost',
+    )
   })
 
   it('writes progress through the injected writer, and reads time from the tracker clock', () => {
     const { deps, progress } = fakeDeps()
-    const watch = stepWatchFor({}, 'acme/widgets', deps)
+    const watch = stepWatchFor({}, limitsOf(NO_CONFIGS), deps)
     watch.write?.('line\n')
     expect(progress).toHaveBeenCalledWith('line\n')
     expect(watch.now()).toBe(5000)
@@ -59,6 +56,6 @@ describe('stepWatchFor', () => {
 
   it('has no writer with --quiet', () => {
     const { deps } = fakeDeps()
-    expect(stepWatchFor({ quiet: true }, 'acme/widgets', deps).write).toBeUndefined()
+    expect(stepWatchFor({ quiet: true }, limitsOf(NO_CONFIGS), deps).write).toBeUndefined()
   })
 })

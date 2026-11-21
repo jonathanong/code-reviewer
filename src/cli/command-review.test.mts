@@ -84,6 +84,30 @@ describe('reviewCommand', () => {
     })
   })
 
+  it('takes the pillar jobs and the timeouts from the machine limits, and --jobs over them', async () => {
+    const limits = {
+      pillarJobs: 7,
+      runTimeoutSeconds: 600,
+      selectTimeoutSeconds: 30,
+      contextDeadlineSeconds: 20,
+    }
+    configs.mockImplementation(() => ({
+      ...NO_CONFIGS,
+      byRepo: new Map([
+        ['acme/widgets', parseRepoConfig(JSON.stringify({ limits }), 'acme/widgets.json', 'repo')],
+      ]),
+    }))
+    const wired = await steps({ out: 'o', tree: 't' })
+    expect(wired.options.jobs).toBe(7)
+    expect(wired.wired.models?.limits).toEqual({
+      runTimeoutMs: 600_000,
+      selectTimeoutMs: 30_000,
+      contextDeadlineMs: 20_000,
+    })
+    vi.clearAllMocks()
+    expect((await steps({ out: 'o', tree: 't', jobs: '2' })).options.jobs).toBe(2)
+  })
+
   it('validates --jobs', async () => {
     expect((await steps({ out: 'o', tree: 't', jobs: '5' })).options.jobs).toBe(5)
     for (const jobs of ['0', 'x', '1.5']) {
@@ -167,10 +191,15 @@ describe('reviewCommand', () => {
 
   it('wires the web references from the machine config only', async () => {
     const reference = { name: 'aws', description: 'Docs.', domains: ['docs.aws.amazon.com'] }
-    configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
-      ...NO_CONFIGS,
-      byRepo: new Map([['acme/widgets', { consumes: [], references: [reference], problems: [] }]]),
-    })
+    configs
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce({
+        ...NO_CONFIGS,
+        byRepo: new Map([
+          ['acme/widgets', { consumes: [], references: [reference], problems: [] }],
+        ]),
+      })
     expect((await steps()).wired.webReferences).toEqual([reference])
   })
 
@@ -265,6 +294,7 @@ describe('reviewCommand', () => {
     configs
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce({
         ...NO_CONFIGS,
         byRepo: new Map([['acme/widgets', { consumes: [], approvalCheck: false, problems: [] }]]),
@@ -276,6 +306,7 @@ describe('reviewCommand', () => {
     expect((await steps()).wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
     vi.clearAllMocks()
     configs
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
