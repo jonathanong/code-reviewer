@@ -44,8 +44,7 @@ GitHub review. It runs on your machine, for the repositories you pick.
 Agreed and not built yet. Nothing below works today.
 
 - **Other harnesses and free tiers.** An adapter for Codex, and selecting the Grok and OpenCode
-  adapters by config, which the harness registry takes with one line each. Free models never run the verifier. A command measures the
-  free models on a fixed set of cases so the choice is not a guess.
+  adapters by config, which the harness registry takes with one line each. Free models never run the verifier.
 - **Extensible pillars.** Config adds a pillar as a trigger an agent decides, the modes it runs
   in, and a command to run. Its findings go through the verifier like any other.
 - **Shared context.** One cheap run builds what every pillar needs once: the relevant rule text
@@ -114,6 +113,7 @@ code-reviewer help
 - [Outcomes](docs/outcomes.md): what became of each posted finding, and the daily digest.
 - [Filing issues](docs/issues.md): opt-in issues in the repositories that own a rule or this
   reviewer, from the outcomes data.
+- [Choosing a model](docs/models.md): `models`, which probes the models a harness offers.
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and
   whose reviews count.

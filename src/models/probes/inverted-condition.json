@@ -1,0 +1,19 @@
+{
+  "name": "inverted-condition",
+  "prompt": "Review the files in the current directory for defects. Read them, then report each real defect.",
+  "files": [
+    {
+      "path": "src/access.js",
+      "content": "export function canEdit(user, doc) {\n  if (user.role === 'admin') return true\n  return doc.ownerId !== user.id\n}\n"
+    },
+    {
+      "path": "src/edit.js",
+      "content": "import { canEdit } from './access.js'\n\nexport function edit(user, doc, text) {\n  if (!canEdit(user, doc)) throw new Error('forbidden')\n  return { ...doc, text }\n}\n"
+    },
+    {
+      "path": "README.txt",
+      "content": "Only the owner of a document or an admin may edit it.\n"
+    }
+  ],
+  "planted": { "path": "src/access.js", "line": 3 }
+}

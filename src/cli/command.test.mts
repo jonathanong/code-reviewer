@@ -133,6 +133,14 @@ afterEach(() => {
 })
 
 describe('runReviewCommand', () => {
+  it('routes models to its command, which names the supported harnesses on a bad one', async () => {
+    const { err } = capture()
+    await expect(runReviewCommand(['models', '--harness', 'claude'], deps(fakeIo()))).resolves.toBe(
+      2,
+    )
+    expect(err.join('')).toContain('--harness opencode')
+  })
+
   it('forwards bench arguments without parsing them', async () => {
     const d = deps(fakeIo())
     await expect(runReviewCommand(['bench', '--cases', 'c'], d)).resolves.toBe(7)
@@ -347,7 +355,7 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, bench, bench-verifier, or bench-selection.',
+      'code-reviewer: give a subcommand: post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, or bench-selection.',
     )
   })
 

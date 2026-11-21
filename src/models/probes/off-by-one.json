@@ -1,0 +1,15 @@
+{
+  "name": "off-by-one",
+  "prompt": "Review the files in the current directory for defects. Read them, then report each real defect.",
+  "files": [
+    {
+      "path": "src/pages.js",
+      "content": "export function lastPage(total, size) {\n  return Math.floor(total / size)\n}\n\nexport function pageItems(items, page, size) {\n  const out = []\n  for (let i = page * size; i <= (page + 1) * size; i++) {\n    out.push(items[i])\n  }\n  return out\n}\n"
+    },
+    {
+      "path": "src/index.js",
+      "content": "import { pageItems } from './pages.js'\n\nexport const firstPage = (items) => pageItems(items, 0, 10)\n"
+    }
+  ],
+  "planted": { "path": "src/pages.js", "line": 7 }
+}
