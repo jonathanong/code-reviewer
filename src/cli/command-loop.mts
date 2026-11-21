@@ -29,7 +29,7 @@ import { resolveLimits } from '../review/limits-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { describePillars, resolvePillars } from '../review/pillars-settings.mts'
-import { checkRunFor, labelsFor, pillarsFor } from './review-settings.mts'
+import { authReport, checkRunFor, labelsFor, pillarsFor } from './review-settings.mts'
 
 export type LoopValues = {
   owner?: string | undefined
@@ -177,7 +177,7 @@ export async function runLoopCommand(
 ): Promise<unknown> {
   switch (subcommand) {
     case 'auth':
-      return { mode: deps.authMode(), ...(await deps.authIdentity()) }
+      return authReport(deps, values)
     case 'settings':
       return settings(values, deps)
     case 'queue':

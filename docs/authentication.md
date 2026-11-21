@@ -26,6 +26,20 @@ The environment overrides the file, for CI: when `CODE_REVIEWER_APP_ID` is set, 
 the file is ignored. `code-reviewer auth` prints the `source` (`env` or the path of the App config file),
 never the key.
 
+## Owners without the App installed
+
+A configured App covers only the accounts it is installed on. For an owner (or, when the lookup is
+by repository, a repository) where GitHub answers 404 to the installation lookup, every call
+uses the local `gh` login, exactly as on a machine with no App configured; the answer is cached
+for the process. Any other failure of the lookup (401, 5xx, network) fails the command. Because
+the reviewer then posts as your own login, a `run` holds the review under the
+`not-app-identity` rule, as it does with no App, and check runs become commit statuses. The App's
+`<slug>[bot]` login is not trusted for that owner; only the `gh` viewer is.
+
+`code-reviewer auth --owner LOGIN` (or `--repo owner/name`) prints the mode for that owner and
+`"appInstalled": false` when the App is not installed there, and `code-reviewer doctor` with
+`--owner` or `--repo` reports a `github-app-installation` warning saying the `gh` login is used.
+
 ## Trusting a repository's own config
 
 A repository's own `.code-reviewer` file may not grant commands, web domains or rule plugins

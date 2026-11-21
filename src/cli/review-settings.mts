@@ -32,11 +32,21 @@ export async function checkRunFor(
   const { owner, name } = splitRepo(target.repo)
   return await reportCheckRun({
     settings: await repoSettings(deps, target.repo),
-    mode: deps.authMode(),
+    mode: await deps.authModeFor(owner, name),
     run: deps.runner(owner, name),
     repo: target.repo,
     headSha: () =>
       headSha === undefined ? deps.createIo(target).headSha() : Promise.resolve(headSha),
     step,
   })
+}
+
+/** The auth mode, for `--repo` or `--owner` as it applies to that owner, and the trusted identity. */
+export async function authReport(
+  deps: Pick<ReviewDeps, 'authMode' | 'authModeFor' | 'authIdentity'>,
+  values: { owner?: string | undefined; repo?: string[] | undefined },
+) {
+  const [owner, name] = values.repo?.[0]?.split('/') ?? [values.owner]
+  if (owner === undefined) return { mode: deps.authMode(), ...(await deps.authIdentity()) }
+  return { mode: await deps.authModeFor(owner, name), ...(await deps.authIdentity(owner, name)) }
 }

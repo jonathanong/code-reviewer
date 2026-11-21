@@ -90,6 +90,7 @@ const rowsOf = (tracker: MemoryTracker) =>
 function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
   return {
     authMode: vi.fn(() => 'gh' as const),
+    authModeFor: vi.fn(async () => 'gh' as const),
     authIdentity: vi.fn(async () => ({})),
     configs: vi.fn(() => NO_CONFIGS),
     targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
@@ -254,7 +255,7 @@ describe('runReviewCommand', () => {
     const io = fakeIo()
     io.headSha.mockResolvedValueOnce(SHA).mockResolvedValue('f'.repeat(40))
     const d = deps(io, JSON.stringify({ findings: [] }))
-    d.authMode.mockReturnValue('app')
+    d.authModeFor.mockResolvedValue('app')
     d.configs.mockReturnValue({
       ...NO_CONFIGS,
       byOwner: new Map([

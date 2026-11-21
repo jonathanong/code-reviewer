@@ -17,6 +17,7 @@ describe('createGhAuth', () => {
     expect(auth.mode).toBe('gh')
     await expect(auth.identity()).resolves.toBeUndefined()
     expect(auth.runner('o', 'r')).toBe(runGh)
+    await expect(auth.modeFor('o', 'r')).resolves.toBe('gh')
     expect(tokensFor).not.toHaveBeenCalled()
   })
 
@@ -47,7 +48,32 @@ describe('createGhAuth', () => {
   })
 })
 
+describe('an owner without an installation', () => {
+  it('is gh mode for that owner only', async () => {
+    const tokens = vi.fn(async (owner: string) => (owner === 'off' ? undefined : 'tok'))
+    const auth = createGhAuth(
+      { CODE_REVIEWER_APP_ID: '1', CODE_REVIEWER_APP_PRIVATE_KEY: KEY },
+      () => tokens,
+      () => async () => 'my-app[bot]',
+    )
+    expect(auth.mode).toBe('app')
+    await expect(auth.modeFor('off', 'r')).resolves.toBe('gh')
+    await expect(auth.modeFor('on', 'r')).resolves.toBe('app')
+  })
+})
+
 describe('appRunner', () => {
+  it('runs plain gh without the App token when the App is not installed', async () => {
+    vi.stubEnv('GH_TOKEN', 'ambient')
+    const exec = vi.fn<ExecFileText>(async () => ({ stdout: 'out' }))
+    await expect(appRunner(async () => undefined, 'o', 'r', exec)(['pr', 'view'])).resolves.toBe(
+      'out',
+    )
+    const [command, args, options] = exec.mock.calls[0]!
+    expect([command, args]).toEqual(['gh', ['pr', 'view']])
+    expect(options?.env.GH_TOKEN).toBe('ambient')
+  })
+
   it('runs gh with GH_TOKEN and without CLICOLOR_FORCE', async () => {
     vi.stubEnv('CLICOLOR_FORCE', '1')
     const tokens = vi.fn(async () => 'tok')

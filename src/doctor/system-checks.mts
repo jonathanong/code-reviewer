@@ -1,6 +1,6 @@
 import { missingWhy, PROBE_TIMEOUT_MS, probeBinary } from './probe.mts'
 import { reasonOf } from './pool.mts'
-import type { Check, Context, DoctorIo } from './types.mts'
+import type { Check, Context, DoctorFlags, DoctorIo } from './types.mts'
 
 /** The smallest Node version a range like `>=24` or `>=24.1` allows; undefined when not that shape. */
 function minimum(range: string): [number, number] | undefined {
@@ -65,9 +65,9 @@ function appCheck(io: DoctorIo): { check: Check; configured: boolean } {
 }
 
 /** Whether `gh` is logged in. Only the exit status is read, so no token reaches the output. */
-async function loginCheck(io: DoctorIo, appConfigured: boolean): Promise<Check> {
+async function loginCheck(io: DoctorIo, appUsed: boolean): Promise<Check> {
   const name = 'gh-login'
-  if (appConfigured) return { name, status: 'ok', detail: 'not needed; calls use the GitHub App' }
+  if (appUsed) return { name, status: 'ok', detail: 'not needed; calls use the GitHub App' }
   try {
     await io.exec('gh', ['auth', 'status'], { timeoutMs: PROBE_TIMEOUT_MS })
     return { name, status: 'ok', detail: 'gh is logged in' }
@@ -81,7 +81,29 @@ async function loginCheck(io: DoctorIo, appConfigured: boolean): Promise<Check> 
   }
 }
 
-export async function authChecks({ io }: Context): Promise<Check[]> {
+/** For a configured App and an owner in scope: whether the App is installed there. */
+async function installCheck(io: DoctorIo, flags: DoctorFlags): Promise<Check | undefined> {
+  const [owner = '', name] = flags.repo?.split('/') ?? [flags.owner]
+  if (owner === '') return undefined
+  const check = 'github-app-installation'
+  try {
+    if ((await io.authModeFor(owner, name)) === 'app') {
+      return { name: check, status: 'ok', detail: `the App is installed for ${owner}` }
+    }
+    return {
+      name: check,
+      status: 'warn',
+      detail: `the App is not installed for ${owner}; calls for it use the gh login, and reviews post as that login`,
+      fix: `install the App on ${owner} to review as the App`,
+    }
+  } catch (error) {
+    return { name: check, status: 'fail', detail: reasonOf(error) }
+  }
+}
+
+export async function authChecks({ io, flags }: Context): Promise<Check[]> {
   const { check, configured } = appCheck(io)
-  return [check, await loginCheck(io, configured)]
+  const installed = configured ? await installCheck(io, flags) : undefined
+  const appUsed = configured && installed?.status !== 'warn'
+  return [check, ...(installed === undefined ? [] : [installed]), await loginCheck(io, appUsed)]
 }

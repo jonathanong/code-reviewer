@@ -36,7 +36,7 @@ function fakeAuth(
     return '[]'
   })
   const runner = vi.fn(() => fakeRun)
-  const getAuth = vi.fn((): GhAuth => ({ mode, identity, runner }))
+  const getAuth = vi.fn((): GhAuth => ({ mode, identity, runner, modeFor: async () => mode }))
   return { fakeRun, runner, getAuth }
 }
 
@@ -115,6 +115,7 @@ describe('createDefaultDeps', () => {
       const getAuth = vi.fn((): GhAuth => ({
         mode: 'gh',
         identity: async () => undefined,
+        modeFor: async () => 'gh',
         runner: () => async (args) => {
           if (args[0] === 'api') throw new Error('HTTP 404')
           return 'lgtm\n'
@@ -138,6 +139,7 @@ describe('createDefaultDeps', () => {
     const getAuth = vi.fn((): GhAuth => ({
       mode: 'gh',
       identity: async () => undefined,
+      modeFor: async () => 'gh',
       runner: () => run,
     }))
     const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs' })
@@ -162,7 +164,12 @@ describe('createDefaultDeps', () => {
       throw new Error(failures[repo])
     })
     const deps = createDefaultDeps(
-      () => ({ mode: 'gh', identity: async () => undefined, runner: () => run }),
+      () => ({
+        mode: 'gh',
+        identity: async () => undefined,
+        modeFor: async () => 'gh',
+        runner: () => run,
+      }),
       {
         CODE_REVIEWER_CONFIG_DIR: '/nowhere/configs',
       },
@@ -268,5 +275,55 @@ describe('createDefaultDeps', () => {
     expect(runReviewVerifierBenchCli).toHaveBeenCalledWith(['--y'])
     await expect(deps.runSelectionBench(['--z'])).resolves.toBe(4)
     expect(runReviewSelectionBenchCli).toHaveBeenCalledWith(['--z'])
+  })
+
+  describe('an owner the App is not installed for', () => {
+    const notInstalled = () => {
+      const run = vi.fn(async (args: string[]) =>
+        args[0] === 'api' ? '{"data":{"viewer":{"login":"me"}}}' : '[]',
+      )
+      const modeFor = vi.fn(
+        async (owner: string) => (owner === 'off' ? 'gh' : 'app') as GhAuth['mode'],
+      )
+      const identity = vi.fn(async () => 'my-app[bot]')
+      const getAuth = (): GhAuth => ({ mode: 'app', identity, runner: () => run, modeFor })
+      return { deps: createDefaultDeps(getAuth, {}), identity }
+    }
+
+    it('reports gh for it and app elsewhere', async () => {
+      const { deps } = notInstalled()
+      await expect(deps.authModeFor('off', 'r')).resolves.toBe('gh')
+      await expect(deps.authModeFor('on')).resolves.toBe('app')
+      expect(deps.authMode()).toBe('app')
+    })
+
+    it('says the App is not installed and names no App login for it', async () => {
+      const { deps, identity } = notInstalled()
+      await expect(deps.authIdentity('off')).resolves.toEqual({ appInstalled: false })
+      expect(identity).not.toHaveBeenCalled()
+      await expect(deps.authIdentity('on', 'r')).resolves.toEqual({ login: 'my-app[bot]' })
+    })
+
+    it('trusts only the gh viewer for it, not the App login', async () => {
+      const { deps, identity } = notInstalled()
+      const off = await deps.createIo({ repo: 'off/r', pr: 1 }).trustedAuthors()
+      expect([...off]).toEqual(['me'])
+      expect(identity).not.toHaveBeenCalled()
+      const on = await deps.createIo({ repo: 'on/r', pr: 1 }).trustedAuthors()
+      expect([...on].sort()).toEqual(['me', 'my-app[bot]'])
+    })
+
+    it('reports no installation state without an App', async () => {
+      const deps = createDefaultDeps(
+        () => ({
+          mode: 'gh',
+          identity: async () => undefined,
+          runner: () => async () => '',
+          modeFor: async () => 'gh',
+        }),
+        {},
+      )
+      await expect(deps.authIdentity('acme')).resolves.toEqual({})
+    })
   })
 })

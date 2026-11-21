@@ -108,10 +108,38 @@ describe('createInstallationTokenProvider', () => {
       'failed with 403',
     )
     expect(denied).toHaveBeenCalledOnce()
+  })
+
+  it('resolves undefined for an owner without an installation, asking once per owner', async () => {
     const missing = fakeFetch(() => ({ ok: false, status: 404 }))
+    const provider = createInstallationTokenProvider(CONFIG, missing, () => T0)
+    await expect(provider('nobody')).resolves.toBeUndefined()
+    await expect(provider('nobody')).resolves.toBeUndefined()
+    expect(missing.mock.calls.map(([url]) => url)).toEqual([
+      'https://api.test/orgs/nobody/installation',
+      'https://api.test/users/nobody/installation',
+    ])
+  })
+
+  it('treats a repository without an installation as no App for that repository only', async () => {
+    const fetchJson = fakeFetch((url) =>
+      url.endsWith('/repos/acme/off/installation')
+        ? { ok: false, status: 404 }
+        : url.includes('/repos/')
+          ? { body: { id: 3 } }
+          : { body: { token: 't', expires_at: expiry(T0 + 3_600_000) } },
+    )
+    const provider = createInstallationTokenProvider(CONFIG, fetchJson, () => T0)
+    await expect(provider('acme', 'off')).resolves.toBeUndefined()
+    await expect(provider('acme', 'off')).resolves.toBeUndefined()
+    await expect(provider('acme', 'on')).resolves.toBe('t')
+  })
+
+  it.each([401, 500])('still fails loudly on a %i installation lookup', async (status) => {
+    const failing = fakeFetch(() => ({ ok: false, status }))
     await expect(
-      createInstallationTokenProvider(CONFIG, missing, () => T0)('nobody'),
-    ).rejects.toThrow('GET /users/nobody/installation failed with 404')
+      createInstallationTokenProvider(CONFIG, failing, () => T0)('acme', 'r'),
+    ).rejects.toThrow(`failed with ${status}`)
   })
 
   it('uses a pinned installation without a lookup', async () => {
@@ -161,11 +189,11 @@ describe('createInstallationTokenProvider', () => {
   it('rejects non-ok responses with the status', async () => {
     const lookup = createInstallationTokenProvider(
       CONFIG,
-      fakeFetch(() => ({ ok: false, status: 404 })),
+      fakeFetch(() => ({ ok: false, status: 403 })),
       () => T0,
     )
     await expect(lookup('o', 'r')).rejects.toThrow(
-      'GitHub App request GET /repos/o/r/installation failed with 404.',
+      'GitHub App request GET /repos/o/r/installation failed with 403.',
     )
     const mint = createInstallationTokenProvider(
       { ...CONFIG, installationId: '8' },

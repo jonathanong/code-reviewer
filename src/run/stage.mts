@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { reviewCommand } from '../cli/command-review.mts'
 import { postCommand } from '../cli/command-post.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
+import { splitRepo } from '../gh-cli/index.mts'
 import { resolveRun } from '../review/index.mts'
 import type { RunSettings } from '../review/rules/run-parse.mts'
 import { changeFacts, runFacts, type RunFacts } from './facts.mts'
@@ -42,15 +43,17 @@ export function runDirFor(deps: ReviewDeps, repo: string, pr: number, headSha: s
 }
 
 /** The held rules, or `--post hold`'s own reason. */
-function decide(
+async function decide(
   stage: Stage,
   facts: RunFacts,
   change: ReturnType<typeof changeFacts>,
   tooLong: string[],
   settings: RunSettings,
-): Held[] {
+): Promise<Held[]> {
   if (stage.flags.post === 'hold') return [{ rule: 'post-hold', why: '--post hold' }]
-  return holdRules({ ...facts, ...change, tooLong, authMode: stage.deps.authMode() }, settings)
+  const { owner, name } = splitRepo(stage.flags.pull.repo)
+  const authMode = await stage.deps.authModeFor(owner, name)
+  return holdRules({ ...facts, ...change, tooLong, authMode }, settings)
 }
 
 /** The review exists and the claim is held: decide, then post or hold. Any failure releases the claim. */
@@ -70,7 +73,7 @@ export async function finish(
     const preview = await postCommand({ ...values, 'dry-run': true }, pull, deps)
     const settings = resolveRun(deps.configs(), pull.repo)
     const change = changeFacts(files, facts.author, settings.riskyPaths)
-    const held = decide(stage, facts, change, preview.outcome.tooLong, settings)
+    const held = await decide(stage, facts, change, preview.outcome.tooLong, settings)
     signal.throwIfAborted()
     const fields = reviewFields(stage.base, summary, facts)
     const problems = [...facts.partial, ...facts.truncated]

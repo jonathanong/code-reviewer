@@ -39,6 +39,8 @@ export type DoctorIo = {
   fs: DoctorFs
   /** The App config, undefined when none is configured; throws when one is wrong. */
   loadApp(): AppConfig | undefined
+  /** `app` when the configured App is installed for the owner (or repository), else `gh`; may reject. */
+  authModeFor(owner: string, repo?: string): Promise<'app' | 'gh'>
   /** The machine config; throws when the directory cannot be read. */
   configs(): RepoConfigs
   configDir: string

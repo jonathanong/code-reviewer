@@ -45,8 +45,15 @@ export function createAppJwt(appId: string, privateKey: string, nowSeconds: numb
 
 type CachedToken = { token: string; expiresAt: number }
 
-/** Token for an owner; `repo` locates the installation, otherwise the organization does. */
-export type TokenProvider = (owner: string, repo?: string) => Promise<string>
+/**
+ * Token for an owner; `repo` locates the installation, otherwise the organization does. Resolves
+ * undefined when the App is not installed there (a 404 on the installation lookup, and nothing
+ * else), which callers treat as no App for that owner.
+ */
+export type TokenProvider = (owner: string, repo?: string) => Promise<string | undefined>
+
+const isNotFound = (error: unknown): boolean =>
+  error instanceof AppAuthError && error.status === 404
 
 const REFRESH_MARGIN_MS = 5 * 60 * 1000
 
@@ -108,27 +115,37 @@ export function createInstallationTokenProvider(
 ): TokenProvider {
   const cache = new Map<string, CachedToken>()
   const installations = new Map<string, string>()
+  const missing = new Set<string>()
   const call = (method: string, path: string) => callApp(config, fetchJson, now, method, path)
-  const installationFor = async (owner: string, repo?: string): Promise<string> => {
+  const lookup = async (owner: string, repo?: string) => {
+    if (repo !== undefined) return call('GET', `/repos/${owner}/${repo}/installation`)
+    try {
+      return await call('GET', `/orgs/${owner}/installation`)
+    } catch (error) {
+      // A personal account has no organization endpoint.
+      if (!isNotFound(error)) throw error
+      return call('GET', `/users/${owner}/installation`)
+    }
+  }
+  const installationFor = async (owner: string, repo?: string): Promise<string | undefined> => {
     if (config.installationId !== undefined) return config.installationId
     const known = installations.get(owner)
     if (known !== undefined) return known
-    const found =
-      repo === undefined
-        ? await call('GET', `/orgs/${owner}/installation`).catch((error: unknown) => {
-            // A personal account has no organization endpoint.
-            if (error instanceof AppAuthError && error.status === 404) {
-              return call('GET', `/users/${owner}/installation`)
-            }
-            throw error
-          })
-        : await call('GET', `/repos/${owner}/${repo}/installation`)
-    const id = String(found.id)
-    installations.set(owner, id)
-    return id
+    const key = repo === undefined ? owner : `${owner}/${repo}`
+    if (missing.has(key)) return undefined
+    try {
+      const id = String((await lookup(owner, repo)).id)
+      installations.set(owner, id)
+      return id
+    } catch (error) {
+      if (!isNotFound(error)) throw error
+      missing.add(key)
+      return undefined
+    }
   }
   return async (owner, repo) => {
     const id = await installationFor(owner, repo)
+    if (id === undefined) return undefined
     const cached = cache.get(id)
     if (cached !== undefined && cached.expiresAt - REFRESH_MARGIN_MS > now()) return cached.token
     const minted = await call('POST', `/app/installations/${id}/access_tokens`)

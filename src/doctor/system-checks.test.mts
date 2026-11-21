@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { AppAuthError } from '../gh-cli/app-auth.mts'
 import type { AppConfig } from '../gh-cli/index.mts'
@@ -108,5 +108,52 @@ describe('github app and gh login', () => {
     })
     expect(appCheck?.fix).toContain('remove it')
     expect(login?.status).toBe('ok')
+  })
+
+  describe('installation', () => {
+    const configured = (authModeFor: () => Promise<'app' | 'gh'>) =>
+      fakeIo({ io: { loadApp: () => app, authModeFor }, exec: { 'gh auth status': '' } })
+
+    it('says the App is not installed for the owner and checks the gh login instead', async () => {
+      const { io } = configured(async () => 'gh')
+      const checks = await authChecks({ io, flags: { offline: false, repo: 'acme/widgets' } })
+      expect(checks.map((c) => [c.name, c.status])).toEqual([
+        ['github-app', 'ok'],
+        ['github-app-installation', 'warn'],
+        ['gh-login', 'ok'],
+      ])
+      expect(checks[1]?.detail).toContain('not installed for acme')
+      expect(checks[2]?.detail).toBe('gh is logged in')
+    })
+
+    it('reports an installed App for --owner, and asks for the repository when given', async () => {
+      const authModeFor = vi.fn(async () => 'app' as const)
+      const { io } = configured(authModeFor)
+      const checks = await authChecks({ io, flags: { offline: false, owner: 'acme' } })
+      expect(checks[1]).toMatchObject({ status: 'ok' })
+      expect(checks[2]?.detail).toContain('GitHub App')
+      expect(authModeFor).toHaveBeenCalledWith('acme', undefined)
+      await authChecks({ io, flags: { offline: false, repo: 'acme/widgets' } })
+      expect(authModeFor).toHaveBeenLastCalledWith('acme', 'widgets')
+    })
+
+    it('fails when the installation lookup fails for another reason', async () => {
+      const { io } = configured(async () => {
+        throw new AppAuthError('GitHub App request GET /orgs/acme/installation failed with 500.')
+      })
+      const checks = await authChecks({ io, flags: { offline: false, owner: 'acme' } })
+      expect(checks[1]).toMatchObject({ name: 'github-app-installation', status: 'fail' })
+    })
+
+    it('does not look an installation up without an owner or without an App', async () => {
+      const authModeFor = vi.fn(async () => 'gh' as const)
+      const { io } = configured(authModeFor)
+      expect(await authChecks({ io, flags })).toHaveLength(2)
+      const none = fakeIo({ io: { authModeFor } })
+      expect(await authChecks({ io: none.io, flags: { offline: false, owner: 'a' } })).toHaveLength(
+        2,
+      )
+      expect(authModeFor).not.toHaveBeenCalled()
+    })
   })
 })

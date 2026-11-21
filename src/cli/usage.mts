@@ -1,4 +1,4 @@
-export const REVIEW_USAGE = `code-reviewer auth
+export const REVIEW_USAGE = `code-reviewer auth [--repo owner/name | --owner LOGIN]
 code-reviewer settings (--repo owner/name | --owner LOGIN)
 code-reviewer queue (--owner LOGIN | --repo owner/name...)
 code-reviewer claim --repo owner/name --pr N [--force]
@@ -27,7 +27,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   auth reports whether gh calls use the GitHub App (app.yaml, .yml, .json or .jsonc in the config home ~/.config/code-reviewer, or
   CODE_REVIEWER_APP_ID with CODE_REVIEWER_APP_PRIVATE_KEY or _PATH, which wins) or the local gh
   login. Under App auth it also prints source (env or the App config file path) and
-  login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. queue lists open pull requests
+  login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. With --repo or --owner it reports the mode for that owner: gh with appInstalled false when the App is not installed there. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
   post, revoke and status use the label names from the machine config (<owner>.yaml, <owner>/<name>.yaml; .yml, .json and .jsonc also) and the
   repository's own .code-reviewer.yaml (or .yml, .json, .jsonc) on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).

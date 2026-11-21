@@ -66,6 +66,7 @@ export function fakeIo(options: FakeOptions = {}) {
     exec,
     fs,
     loadApp: () => undefined,
+    authModeFor: async () => 'app',
     configs: () => NO_CONFIGS,
     configDir: '/cfg/repos',
     stateDir: '/state/code-reviewer',

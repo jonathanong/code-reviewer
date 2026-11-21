@@ -1,3 +1,4 @@
+import { authIdentityOf, identityForRepo } from './deps-auth.mts'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -38,9 +39,21 @@ import {
 } from '../gh-cli/index.mts'
 
 export type ReviewDeps = {
+  /** Whether an App is configured (`app`) or not (`gh`), whichever owner is asked about. */
   authMode(): GhAuth['mode']
-  /** The App's own review login, or why it could not be looked up; empty under a `gh` login. */
-  authIdentity(): Promise<{ source?: string; login?: string; loginError?: string }>
+  /**
+   * What calls for `owner` (and `repo`) authenticate as: `app` only when the App is configured and
+   * installed there, otherwise the local `gh` login, exactly as with no App configured.
+   */
+  authModeFor(owner: string, repo?: string): Promise<GhAuth['mode']>
+  /**
+   * The App's own review login, or why it could not be looked up; empty under a `gh` login. With
+   * `owner`, an owner the App is not installed for reports `appInstalled: false` and no login.
+   */
+  authIdentity(
+    owner?: string,
+    repo?: string,
+  ): Promise<{ source?: string; login?: string; loginError?: string; appInstalled?: false }>
   /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
   /**
@@ -102,35 +115,22 @@ export function createDefaultDeps(
     return read
   }
   const resolved = () => (auth ??= getAuth())
-  const identity = () => resolved().identity()
+  const identityFor = (target: PullTarget) => identityForRepo(resolved(), target.repo)
   const forTarget = (target: PullTarget) => {
     const { owner, name } = splitRepo(target.repo)
     return resolved().runner(owner, name)
   }
   return {
     authMode: () => resolved().mode,
-    authIdentity: async () => {
-      const { source } = resolved()
-      try {
-        const login = await identity()
-        return {
-          ...(source === undefined ? {} : { source }),
-          ...(login === undefined ? {} : { login }),
-        }
-      } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error)
-        return {
-          loginError: `own identity lookup failed, so no review marker is trusted: ${reason}`,
-        }
-      }
-    },
+    authModeFor: (owner, repo) => resolved().modeFor(owner, repo),
+    authIdentity: (owner, repo) => authIdentityOf(resolved(), owner, repo),
     configs,
     targetConfig,
     createIo: (target) =>
       createGhReviewIo(
         target,
         forTarget(target),
-        identity,
+        identityFor(target),
         async () => (await repoSettings({ configs, targetConfig }, target.repo)).labels.approval,
       ),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
@@ -139,7 +139,7 @@ export function createDefaultDeps(
         target,
         forTarget(target),
         runGit,
-        identity,
+        identityFor(target),
         env.CODE_REVIEWER_CLONE_ROOT,
         configDir,
       ),
