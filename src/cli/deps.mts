@@ -6,6 +6,7 @@ import {
   createGhLabelIo,
   createGhPrepareIo,
   repoSettings,
+  trustsRepoConfig,
   type ReviewIo,
   type LabelIo,
   type PrepareIo,
@@ -89,10 +90,14 @@ export function createDefaultDeps(
     const key = repo.toLowerCase()
     const cached = targets.get(key)
     if (cached !== undefined) return cached
-    const read = readTargetConfig(async () => {
-      const { owner, name } = splitRepo(repo)
-      return apiFileReader(resolved().runner(owner, name), repo)()
-    }, repo)
+    const read = readTargetConfig(
+      async () => {
+        const { owner, name } = splitRepo(repo)
+        return apiFileReader(resolved().runner(owner, name), repo)()
+      },
+      repo,
+      trustsRepoConfig(configs(), repo),
+    )
     targets.set(key, read)
     return read
   }

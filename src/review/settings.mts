@@ -1,7 +1,4 @@
 import type { RepoConfig, RepoConfigs } from './rules/config.mts'
-import type { EvidenceSource } from './rules/evidence-parse.mts'
-import type { ReferenceSource } from './rules/references-parse.mts'
-import { DEFAULT_RULE_PLUGINS } from './plugins.mts'
 import { DEFAULT_RUN, type RunSettings } from './rules/run-parse.mts'
 import type { TargetConfig } from './rules/target-config.mts'
 import type { CheckRunSettings, LabelNames } from './rules/settings-parse.mts'
@@ -34,7 +31,7 @@ export type SettingLayers = {
   checkRun: SettingLayer | null
 }
 
-type Candidate = readonly [SettingLayer, RepoConfig | undefined]
+export type Candidate = readonly [Exclude<SettingLayer, 'default'>, RepoConfig | undefined]
 
 /** Highest layer first: machine repo file, machine owner file, then the repository's own file. */
 export function candidates(
@@ -108,30 +105,6 @@ export function machineSetting<K extends keyof RepoConfig>(
   }
 }
 
-export type EvidenceSettings = {
-  sources: EvidenceSource[]
-  /** The machine layer whose list applies; null when none sets one. */
-  from: MachineLayer
-}
-
-/** The evidence sources for `owner/name` (or `owner`); a pull request's repository cannot grant the reviewer commands. */
-export function resolveEvidence(configs: RepoConfigs, scope: string): EvidenceSettings {
-  const { value, from } = machineSetting(configs, scope, 'evidence')
-  return { sources: value ?? [], from }
-}
-
-export type ReferenceSettings = {
-  sources: ReferenceSource[]
-  /** The machine layer whose list applies; null when none sets one. */
-  from: MachineLayer
-}
-
-/** The web references for `owner/name` (or `owner`); a pull request's repository cannot grant the reviewer network access. */
-export function resolveReferences(configs: RepoConfigs, scope: string): ReferenceSettings {
-  const { value, from } = machineSetting(configs, scope, 'references')
-  return { sources: value ?? [], from }
-}
-
 export type ApprovalCheckSettings = {
   enabled: boolean
   /** The machine layer whose value applies; null when none sets one, which leaves the check on. */
@@ -142,22 +115,6 @@ export type ApprovalCheckSettings = {
 export function resolveApprovalCheck(configs: RepoConfigs, scope: string): ApprovalCheckSettings {
   const { value, from } = machineSetting(configs, scope, 'approvalCheck')
   return { enabled: value ?? true, from }
-}
-
-export type RulePluginSettings = {
-  /** Plugin names, the part before `@`; empty means repository rules only. */
-  names: readonly string[]
-  /** The machine layer whose list applies; null when none sets one, which leaves the defaults. */
-  from: MachineLayer
-}
-
-/**
- * The plugins whose skills hold the shared rules: the highest machine layer that sets
- * `rulePlugins` replaces the defaults whole, and an empty list is a value, not an absence.
- */
-export function resolveRulePlugins(configs: RepoConfigs, scope: string): RulePluginSettings {
-  const { value, from } = machineSetting(configs, scope, 'rulePlugins')
-  return { names: value ?? DEFAULT_RULE_PLUGINS, from }
 }
 
 /**

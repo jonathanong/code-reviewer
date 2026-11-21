@@ -53,15 +53,21 @@ export type RepoConfig = {
   consumes: Consumes[]
   labels?: Partial<LabelNames>
   checkRun?: CheckRunSettings
-  /** Machine config only; a reviewed repository's own file never sets it. */
+  /**
+   * Machine config only: `true` lets the reviewed repository's own file set `evidence`,
+   * `references` and `rulePlugins`, so whoever can push to its default branch chooses them.
+   */
+  trustRepoConfig?: boolean
+  /** Machine config, or the repository's own file when `trustRepoConfig` is on for it. */
   evidence?: EvidenceSource[]
-  /** Machine config only: it grants network access, so a reviewed repository's file never sets it. */
+  /** Machine config, or a trusted repository's own file: it grants network access. */
   references?: ReferenceSource[]
   /** Machine config only: `false` switches off the second check on an approval. */
   approvalCheck?: boolean
   /**
-   * Machine config only: the plugins whose skills hold the shared rules, replacing the default
-   * list. An enabled plugin loads its hooks too, so a reviewed repository's file never sets it.
+   * The plugins whose skills hold the shared rules, replacing the default list; machine config, or
+   * a trusted repository's own file. An enabled plugin loads its hooks too, and only an installed
+   * plugin loads.
    */
   rulePlugins?: string[]
   /** Machine config only: it decides what the reviewer posts unattended. */
@@ -79,11 +85,13 @@ export type RepoConfig = {
 
 /**
  * A repository file holds every key; an owner file holds only the settings repositories share; the
- * reviewed repository's own file (`target`) holds everything but `evidence`.
+ * reviewed repository's own file (`target`) holds only the settings it may choose, plus `evidence`,
+ * `references` and `rulePlugins` when it is `trusted`.
  */
-type ConfigScope = 'repo' | 'owner' | 'target'
+export type ConfigScope = 'repo' | 'owner' | 'target' | 'trusted'
 
 const KEYS = new Set([
+  'trustRepoConfig',
   'consumes',
   'labels',
   'checkRun',

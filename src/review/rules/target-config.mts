@@ -71,10 +71,11 @@ export function gitFileReader(
   }
 }
 
-/** Parses the repository's file; a failed read or a bad file is a problem, never an error. */
+/** Parses the repository's file (`trusted` when the machine config sets `trustRepoConfig` for it); a failed read or a bad file is a problem, never an error. */
 export async function readTargetConfig(
   read: TargetFileReader,
   repo: string,
+  trusted = false,
 ): Promise<TargetConfig> {
   try {
     const files = await read()
@@ -84,7 +85,11 @@ export async function readTargetConfig(
       const names = files.map((found) => `${repo}/${found.name}`)
       return { config: undefined, problems: [conflictProblem(names)] }
     }
-    const config = parseRepoConfig(file.text, `${repo}/${file.name}`, 'target')
+    const config = parseRepoConfig(
+      file.text,
+      `${repo}/${file.name}`,
+      trusted ? 'trusted' : 'target',
+    )
     return { config, problems: config.problems }
   } catch (error) {
     const reason = (error instanceof Error ? error.message : String(error)).split('\n')[0]

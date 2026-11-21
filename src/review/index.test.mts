@@ -60,6 +60,7 @@ describe('review index', () => {
       'skipPullRequest',
       'skippedStep',
       'squash',
+      'trustsRepoConfig',
     ])
   })
 })

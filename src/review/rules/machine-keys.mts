@@ -13,6 +13,7 @@ type Json = Record<string, unknown>
 
 type MachineKeys = Pick<
   RepoConfig,
+  | 'trustRepoConfig'
   | 'evidence'
   | 'references'
   | 'approvalCheck'
@@ -25,19 +26,34 @@ type MachineKeys = Pick<
 
 /**
  * The keys only machine files may set. In the reviewed repository's own file (`target`) each is
- * ignored with a problem naming the file. A key left out of the result was absent or invalid.
+ * ignored with a problem naming the file. A `trusted` repository file (the machine config sets
+ * `trustRepoConfig` for it) may also set `evidence`, `references` and `rulePlugins`, parsed as in a
+ * machine file. A key left out of the result was absent or invalid.
  */
 export function parseMachineKeys(
-  scope: 'repo' | 'owner' | 'target',
+  fileScope: 'repo' | 'owner' | 'target' | 'trusted',
   raw: Json,
   file: string,
   problems: string[],
 ): MachineKeys {
-  const evidence = machineOnly(scope, raw.evidence, file, 'evidence', problems, {
+  const scope = fileScope === 'trusted' ? 'target' : fileScope
+  const grantScope = fileScope === 'trusted' ? 'repo' : fileScope
+  const trustRepoConfig = machineOnly(
+    scope,
+    raw.trustRepoConfig,
+    file,
+    'trustRepoConfig',
+    problems,
+    {
+      what: 'trustRepoConfig is',
+      parse: parseSwitch,
+    },
+  )
+  const evidence = machineOnly(grantScope, raw.evidence, file, 'evidence', problems, {
     what: 'evidence sources are',
     parse: parseEvidence,
   })
-  const references = machineOnly(scope, raw.references, file, 'references', problems, {
+  const references = machineOnly(grantScope, raw.references, file, 'references', problems, {
     what: 'references are',
     parse: parseReferences,
   })
@@ -45,7 +61,7 @@ export function parseMachineKeys(
     what: 'approvalCheck is',
     parse: parseSwitch,
   })
-  const rulePlugins = machineOnly(scope, raw.rulePlugins, file, 'rulePlugins', problems, {
+  const rulePlugins = machineOnly(grantScope, raw.rulePlugins, file, 'rulePlugins', problems, {
     what: 'rulePlugins is',
     parse: parseRulePlugins,
   })
@@ -66,6 +82,7 @@ export function parseMachineKeys(
     parse: parseIssues,
   })
   return {
+    ...(trustRepoConfig === undefined ? {} : { trustRepoConfig }),
     ...(evidence === undefined ? {} : { evidence }),
     ...(references === undefined ? {} : { references }),
     ...(approvalCheck === undefined ? {} : { approvalCheck }),
