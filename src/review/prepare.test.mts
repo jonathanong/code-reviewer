@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_PLAN_VALUES } from './plan-settings.mts'
 import { prepareReview } from './prepare.mts'
 import { BASE, HEAD, OLD, PATCH, conversation, fakeIo, inspection } from './prepare-fake-io.mts'
 
@@ -40,6 +41,16 @@ describe('prepareReview', () => {
     expect(io.history).not.toHaveBeenCalled()
   })
 
+  it('plans with the configured generated paths and threshold', async () => {
+    const values = { ...DEFAULT_PLAN_VALUES, generatedPaths: ['src/**'] }
+    const summary = await prepareReview(fakeIo(), { out, values })
+    expect(summary.plan).toMatchObject({ mode: 'light' })
+    expect((await prepareReview(fakeIo(), { out })).plan.mode).toBe('full')
+    const io = fakeIo({ reviewed: OLD })
+    await prepareReview(io, { out, values })
+    expect(io.compare).toHaveBeenCalledWith(OLD, HEAD, ['src/**'])
+  })
+
   it('uses an injected writer', async () => {
     const write = vi.fn()
     await prepareReview(fakeIo(), { out }, write)
@@ -49,7 +60,7 @@ describe('prepareReview', () => {
   it('writes the since diff for an ahead follow-up', async () => {
     const io = fakeIo({ reviewed: OLD })
     const summary = await prepareReview(io, { out })
-    expect(io.compare).toHaveBeenCalledWith(OLD, HEAD)
+    expect(io.compare).toHaveBeenCalledWith(OLD, HEAD, [])
     expect(io.compareDiff).toHaveBeenCalledWith(OLD, HEAD)
     expect(summary.written).toContain('since.patch')
     expect(summary.written).toContain('since/INDEX.md')

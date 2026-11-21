@@ -92,8 +92,8 @@ split. It states facts and does not judge. Everything comes from local `git` in 
 - **Commits**: per commit, files and lines.
 - **Areas**: the top-level directories of hunks outside the listed signatures.
 
-A diff with no more reviewable lines than the small-pull-request threshold of the mode choice
-(`SMALL_PR_LINES`) has no section. Work is bounded by `CAPS` in `src/review/context/change-shape/index.mts`
+A diff with no more reviewable lines than the built-in small-pull-request threshold of the mode choice
+(`SMALL_PR_LINES`; `plan.smallChangeLines` does not move it here) has no section. Work is bounded by `CAPS` in `src/review/context/change-shape/index.mts`
 (patch text, hunks analysed, commits read); when one is hit the section says so. The patch is read whole by `git` before it is cut.
 
 ## Past reviews

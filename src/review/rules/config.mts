@@ -18,6 +18,7 @@ import type { ReferenceSource } from './references-parse.mts'
 import type { LimitsConfig } from './limits-parse.mts'
 import { parseMachineKeys } from './machine-keys.mts'
 import { parsePillars, type PillarsConfig } from './pillars-parse.mts'
+import { parsePlan, type PlanConfig } from './plan-parse.mts'
 import type { RunConfig } from './run-parse.mts'
 import {
   parseCheckRun,
@@ -83,6 +84,7 @@ export type RepoConfig = {
   issues?: IssuesConfig
   /** Built-in pillars to skip and extra pillars to run; a reviewed repository's own file may set it. */
   pillars?: PillarsConfig
+  plan?: PlanConfig
   problems: string[]
 }
 
@@ -108,6 +110,7 @@ const KEYS = new Set([
   'limits',
   'issues',
   'pillars',
+  'plan',
 ])
 
 type Json = Record<string, unknown>
@@ -143,12 +146,14 @@ export function parseRepoConfig(
   }
   const machine = parseMachineKeys(scope, raw, file, problems)
   const pillars = parsePillars(raw.pillars, `${file} pillars`, problems)
+  const plan = parsePlan(scope, raw.plan, `${file} plan`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
     ...(checkRun === undefined ? {} : { checkRun }),
     ...machine,
     ...(pillars === undefined ? {} : { pillars }),
+    ...(plan === undefined ? {} : { plan }),
     problems,
   }
 }

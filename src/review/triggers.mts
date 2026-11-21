@@ -1,3 +1,5 @@
+import { matchesGlob } from 'node:path'
+
 /** Path classification behind pillar dispatch; see skills/review/references/dispatch.md. */
 
 const DOC_RE = /\.(?:md|mdx|markdown|txt|rst|adoc)$/iu
@@ -63,9 +65,15 @@ function basename(path: string): string {
   return path.slice(path.lastIndexOf('/') + 1)
 }
 
-/** Lockfiles, build output, snapshots, and code generators' files: not worth reviewing line by line. */
-export function isGenerated(path: string): boolean {
-  return isLockfile(path) || GENERATED_RES.some((re) => re.test(path))
+const matchesAny = (path: string, globs: readonly string[]) =>
+  globs.some((glob) => matchesGlob(path, glob))
+
+/**
+ * Lockfiles, build output, snapshots, and code generators' files: not worth reviewing line by
+ * line. `extra` are configured globs that count too.
+ */
+export function isGenerated(path: string, extra: readonly string[] = []): boolean {
+  return isLockfile(path) || GENERATED_RES.some((re) => re.test(path)) || matchesAny(path, extra)
 }
 
 /** Dependency manifests, lockfiles, and workflow files: what a Dependabot pull request edits. */
@@ -82,8 +90,14 @@ export function isDependencyFile(path: string): boolean {
 export type ChangedFile = { path: string; lines: number }
 
 /** Changed lines outside generated files. */
-export function reviewableLines(files: readonly ChangedFile[]): number {
-  return files.reduce((sum, file) => sum + (isGenerated(file.path) ? 0 : file.lines), 0)
+export function reviewableLines(
+  files: readonly ChangedFile[],
+  generatedPaths: readonly string[] = [],
+): number {
+  return files.reduce(
+    (sum, file) => sum + (isGenerated(file.path, generatedPaths) ? 0 : file.lines),
+    0,
+  )
 }
 
 export function isDocPath(path: string): boolean {
@@ -103,9 +117,15 @@ export function isTestOrDocsOnly(paths: readonly string[]): boolean {
   return paths.length > 0 && paths.every((path) => isTestPath(path) || isDocPath(path))
 }
 
-/** The changed paths that trigger the security pillar. */
-export function securityTriggers(paths: readonly string[]): string[] {
-  return paths.filter((path) => !isDocPath(path) && SECURITY_RES.some((re) => re.test(path)))
+/** The changed paths that trigger the security pillar; `extra` are configured globs that trigger it too. */
+export function securityTriggers(
+  paths: readonly string[],
+  extra: readonly string[] = [],
+): string[] {
+  return paths.filter(
+    (path) =>
+      !isDocPath(path) && (SECURITY_RES.some((re) => re.test(path)) || matchesAny(path, extra)),
+  )
 }
 
 const HISTORY_RE = /^(?:revert\b|hotfix\b)|\brevert(?:s|ed)?\b|\bhotfix\b/iu

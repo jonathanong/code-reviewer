@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `plan`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -186,7 +186,8 @@ repository's own `.code-reviewer` file that sets it gets `trustRepoConfig is mac
 
 With it off, nothing changes: a repository's own file setting `evidence`, `references` or
 `rulePlugins` is ignored with a problem. With it on for a repository, its own file may set those
-three keys, validated exactly as in a machine file. They are the only keys it unlocks; `run`,
+three keys, validated exactly as in a machine file. It also unlocks `plan.generatedPaths` and
+`plan.smallChangeLines` (see [`plan`](#plan)). Nothing else: `run`,
 `models`, `limits`, `issues` and `approvalCheck` stay machine-only.
 
 **Turning it on means anyone who can push to that repository's default branch chooses the
@@ -225,6 +226,34 @@ among those.
 Every listed plugin must be enabled at user scope: `run` refuses, and `review` fails, naming a
 plugin that is not. `review` also fails naming a listed plugin that holds no skills. `code-reviewer settings` prints the names and the layer they came from. `bench`
 ignores this key and always uses the default list, so scores stay comparable across machines.
+
+## `plan`
+
+Values the dispatcher plans with. Each is optional and the built-in behaviour is the default.
+
+```yaml
+plan:
+  securityPaths: ['infra/**', 'deploy/*.yml']
+  generatedPaths: ['**/*.pb.ts']
+  skipAuthors: ['renovate']
+  smallChangeLines: 200
+```
+
+| Key                | Meaning                                                                                                                                                                                                                   | A repository's own file               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `securityPaths`    | Globs of paths that also run the security pillar, in addition to the built-in ones. A docs path never triggers it.                                                                                                        | May set it.                           |
+| `generatedPaths`   | Globs of paths that also count as generated: their lines do not count toward the size of a change and they are not hand-written for the small-change rule.                                                                | Only when `trustRepoConfig` is on.    |
+| `smallChangeLines` | A first review of at most this many reviewable lines (default 100), with no security trigger path, is light. A non-negative integer.                                                                                      | Only when `trustRepoConfig` is on.    |
+| `skipAuthors`      | Logins reviewed as Dependabot is: lockfile-only changes are skipped, anything else gets a light review, and manifest and workflow edits do not trigger security. `app/` and `[bot]` are ignored and case does not matter. | Machine-only; ignored with a problem. |
+
+Globs match repository-relative paths (`**` crosses directories), as in `run.riskyPaths`. The
+lists add to the built-in ones and never replace them. They also add across layers: the machine
+repository file, the machine owner file and the repository's own file all contribute.
+`smallChangeLines` comes from the highest layer that sets it. A repository's own file can only
+make a review stricter on its own; the settings that reduce review need `trustRepoConfig` or a
+machine file. A refused or invalid value is a problem naming the file and key, and only that value
+is ignored. `code-reviewer settings` prints the resolved values. The change-shape context section
+keeps the built-in thresholds.
 
 ## `pillars`
 

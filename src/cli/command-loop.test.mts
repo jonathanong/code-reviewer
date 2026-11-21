@@ -26,6 +26,7 @@ import {
   resolveThreads,
   skipPullRequest,
 } from '../review/index.mts'
+import { DEFAULT_PLAN_VALUES } from '../review/plan-settings.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import { runLoopCommand, skipCommand } from './command-loop.mts'
 import { BOB, BOB_LABELS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
@@ -38,6 +39,7 @@ afterEach(() => {
 })
 
 const UNSET = {
+  plan: DEFAULT_PLAN_VALUES,
   analysis: { tools: [], from: null },
   evidence: { sources: [], from: null },
   references: { sources: [], from: null },
@@ -277,6 +279,7 @@ describe('runLoopCommand', () => {
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
         limits: { maxCostUsd: 1.5, from: 'machine owner' },
         pillars: UNSET.pillars,
+        plan: UNSET.plan,
         models: {
           steps: {
             ...UNSET.models.steps,
@@ -424,6 +427,7 @@ describe('runLoopCommand', () => {
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       pillars: { disabled: [], extra: [] },
+      values: DEFAULT_PLAN_VALUES,
     })
   })
 
@@ -441,6 +445,7 @@ describe('runLoopCommand', () => {
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       pillars: { disabled: ['history'], extra: [] },
+      values: DEFAULT_PLAN_VALUES,
     })
     vi.mocked(prepareReview).mockClear()
     set({ disabled: ['rules', 'correctness', 'design', 'blast-radius', 'security', 'history'] })
@@ -464,6 +469,7 @@ describe('runLoopCommand', () => {
       tree: '/t',
       clones: '/c',
       pillars: { disabled: [], extra: [] },
+      values: DEFAULT_PLAN_VALUES,
     })
     await expect(
       runLoopCommand('prepare', { out: '/o', effort: 'extreme' }, target, deps),

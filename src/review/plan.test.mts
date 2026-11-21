@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { FollowUpContext } from './context.mts'
-import { SMALL_PR_LINES } from './mode.mts'
+import { DEFAULT_PLAN_VALUES, SMALL_PR_LINES, type PlanValues } from './plan-settings.mts'
 import { planReview, type PlanInput } from './plan.mts'
 
 const HEAD = 'a'.repeat(40)
@@ -371,5 +371,60 @@ describe('planReview light first reviews', () => {
     })
     expect(result.mode).toBe('light')
     expect(names(result)).toEqual(['correctness', 'security'])
+  })
+})
+
+describe('configured plan values', () => {
+  const values = (overrides: Partial<PlanValues>): PlanValues => ({
+    ...DEFAULT_PLAN_VALUES,
+    ...overrides,
+  })
+
+  it('runs the security pillar for a path only a configured pattern matches', () => {
+    const paths = ['infra/network.tf']
+    expect(names(plan({ paths }))).not.toContain('security')
+    const configured = plan({ paths, values: values({ securityPaths: ['infra/**'] }) })
+    expect(names(configured)).toContain('security')
+    expect(configured.reasons).toContain('Security trigger: infra/network.tf.')
+  })
+
+  it('keeps a small change full while a configured security path changes with it', () => {
+    const paths = ['infra/network.tf']
+    expect(plan({ paths, reviewableLines: 5 }).mode).toBe('light')
+    expect(
+      plan({ paths, reviewableLines: 5, values: values({ securityPaths: ['infra/**'] }) }).mode,
+    ).toBe('full')
+  })
+
+  it('does not count a configured generated path toward size or security triggers', () => {
+    const paths = ['gen/auth.ts']
+    expect(plan({ paths, reviewableLines: 5 }).mode).toBe('full')
+    expect(
+      plan({ paths, reviewableLines: 5, values: values({ generatedPaths: ['gen/**'] }) }).mode,
+    ).toBe('light')
+  })
+
+  it('moves the light and full line with the configured threshold', () => {
+    const input = { context: context({ lines: 150 }), reviewableLines: 150 }
+    expect(plan(input).mode).toBe('full')
+    expect(plan({ ...input, values: values({ smallChangeLines: 150 }) }).mode).toBe('light')
+    expect(plan({ ...input, values: values({ smallChangeLines: 149 }) }).mode).toBe('full')
+    expect(
+      plan({ ...input, reviewableLines: 60, values: values({ smallChangeLines: 59 }) }).mode,
+    ).toBe('full')
+  })
+
+  it('treats a configured author like Dependabot, matching bot and app forms', () => {
+    const skipAuthors = ['Renovate[bot]']
+    const lockfiles = { paths: ['pnpm-lock.yaml'], values: values({ skipAuthors }) }
+    const result = plan({ ...lockfiles, authorLogin: 'app/renovate', authorIsBot: true })
+    expect(result).toMatchObject({ mode: 'skip' })
+    expect(plan({ ...lockfiles, authorLogin: 'someone-else' }).mode).not.toBe('skip')
+    expect(plan({ authorLogin: 'renovate' }).mode).toBe('full')
+    const light = plan({ authorLogin: 'renovate', values: values({ skipAuthors }) })
+    expect(light).toMatchObject({
+      mode: 'light',
+      reasons: ['Dependabot pull request: light review.'],
+    })
   })
 })

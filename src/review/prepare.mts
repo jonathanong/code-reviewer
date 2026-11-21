@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { renderFollowUpContext } from './context-render.mts'
@@ -6,13 +6,11 @@ import { buildFollowUpContext } from './context.mts'
 import { ReviewError, type Effort } from './finding.mts'
 import { numberDiff } from './numbered-diff.mts'
 import type { PillarSettings } from './pillars-settings.mts'
+import { DEFAULT_PLAN_VALUES, type PlanValues } from './plan-settings.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
-import { clearCarried } from './carried-file.mts'
-import { clearDependencies } from './dependency.mts'
-import { clearIssues } from './issues.mts'
 import { prepareIssues } from './links-issues.mts'
 import { prepareLinks } from './links-prepare.mts'
 import { prepareCarried } from './carried-prepare.mts'
@@ -24,7 +22,7 @@ import {
   type PushSummary,
 } from './prepare-summary.mts'
 import { preparePush } from './push-prepare.mts'
-import { clearPush } from './push-file.mts'
+import { clearPrepared } from './prepare-clear.mts'
 import { prepareStack } from './stack-prepare.mts'
 import { writeDiffDir, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
@@ -38,6 +36,8 @@ export type PrepareOptions = {
   clones?: string
   /** Built-in pillars to skip and extra pillars to run. */
   pillars?: PillarSettings
+  /** Configured paths, authors and size threshold. */
+  values?: PlanValues
 }
 
 export type PrepareSummary = {
@@ -49,7 +49,6 @@ export type PrepareSummary = {
   plan: ReviewPlan
   /** Files written under `out`, for the pillars and the verifier. */
   written: string[]
-  /** The rule sources staged under `out/rules`: linked repos, unavailable sources. */
   /** Non-fatal problems, such as open pull requests that could not be listed. */
   problems?: string[]
   /** The push since the last trusted review, when it was classified. */
@@ -76,13 +75,7 @@ export async function prepareReview(
   write: Write = (path, text) => writeFileSync(path, text),
 ): Promise<PrepareSummary> {
   mkdirSync(options.out, { recursive: true })
-  // A rerun into the same directory must not leave the stack of an earlier run behind.
-  rmSync(join(options.out, 'stack.json'), { force: true })
-  rmSync(join(options.out, 'stack'), { recursive: true, force: true })
-  clearPush(options.out)
-  clearCarried(options.out)
-  clearDependencies(options.out)
-  clearIssues(options.out)
+  clearPrepared(options.out)
   const [headSha, patch, files, conversation, trusted] = await Promise.all([
     io.headSha(),
     io.diff(options.tree),
@@ -100,6 +93,7 @@ export async function prepareReview(
     }
   }
   const context = buildFollowUpContext(conversation, trusted)
+  const values = options.values ?? DEFAULT_PLAN_VALUES
   const written = writeDiff(options.out, 'diff', patch, write)
   const linkedIssues = await prepareIssues(io, options.out, write, conversation)
   write(join(options.out, 'context.md'), renderFollowUpContext(context, linkedIssues.issues))
@@ -107,7 +101,7 @@ export async function prepareReview(
   written.push('context.md', 'context.json', ...linkedIssues.written)
   let since: SinceDiff | undefined
   if (context.reviewedSha !== null && context.reviewedSha !== headSha) {
-    since = await io.compare(context.reviewedSha, headSha)
+    since = await io.compare(context.reviewedSha, headSha, values.generatedPaths)
     if (since.status === 'ahead') {
       const sincePatch = await io.compareDiff(context.reviewedSha, headSha)
       written.push(...writeDiff(options.out, 'since', sincePatch, write))
@@ -147,7 +141,7 @@ export async function prepareReview(
   written.push(...links.written)
   const planned = planReview({
     paths,
-    reviewableLines: reviewableLines(files),
+    reviewableLines: reviewableLines(files, values.generatedPaths),
     context,
     authorLogin: conversation.author?.login ?? null,
     authorIsBot: conversation.author?.__typename === 'Bot',
@@ -158,6 +152,7 @@ export async function prepareReview(
       : { push: { kind: push.kind, resolvedPaths: push.resolvedPaths } }),
     ...(history === undefined ? {} : { history }),
     ...(options.pillars === undefined ? {} : { pillars: options.pillars }),
+    values,
   })
   const problems = [
     ...(problem === undefined ? [] : [problem]),

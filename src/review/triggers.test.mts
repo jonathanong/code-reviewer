@@ -217,3 +217,23 @@ describe('reviewableLines', () => {
     expect(reviewableLines([])).toBe(0)
   })
 })
+
+describe('configured globs', () => {
+  it('adds security triggers without dropping the built-in ones or triggering on docs', () => {
+    const paths = ['infra/net.tf', 'src/auth.ts', 'infra/README.md', 'src/a.ts']
+    expect(securityTriggers(paths, ['infra/**'])).toEqual(['infra/net.tf', 'src/auth.ts'])
+    expect(securityTriggers(paths)).toEqual(['src/auth.ts'])
+  })
+
+  it('adds generated paths and leaves lines in other files counted', () => {
+    expect(isGenerated('gen/a.ts', ['gen/**'])).toBe(true)
+    expect(isGenerated('gen/a.ts')).toBe(false)
+    expect(isGenerated('pnpm-lock.yaml', ['gen/**'])).toBe(true)
+    const files = [
+      { path: 'gen/a.ts', lines: 40 },
+      { path: 'src/a.ts', lines: 3 },
+    ]
+    expect(reviewableLines(files, ['gen/**'])).toBe(3)
+    expect(reviewableLines(files)).toBe(43)
+  })
+})
