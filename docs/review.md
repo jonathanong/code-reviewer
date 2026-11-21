@@ -17,6 +17,14 @@ user's Claude and Cursor skills, rules, hooks and MCP servers not loaded. It ref
 needs shell prefixes or web hosts, because it cannot confine them, before starting anything. It is
 not selectable by config yet.
 
+OpenCode (`src/harness/opencode.mts`) is a third, run as `opencode run --format json --pure`. It
+runs read-only steps: file reads and searches, or no tools. It confines the step with a deny-all
+permission config in `OPENCODE_CONFIG_CONTENT` that allows only the read tools, so the user's shell
+and MCP tools are gone, and it refuses shell prefixes and web hosts before starting anything. It
+has no schema flag, so the prompt asks for one JSON object and the reply is checked for the
+schema's required keys. It ignores `explorer`, `skills`, `settings`, `addDirs`, `transcript` and
+`maxTurns`, so the turn limit is not enforced. It is not selectable by config yet.
+
 [`run`](run.md) is the unattended path. `review` runs one pull request end to end with headless `claude -p` calls and stops before
 posting, so you can read the result first. `--tree` is a checkout at the pull request head and
 `--out` receives the run files; both become absolute paths. It claims the pull request (a head the
