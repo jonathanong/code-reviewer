@@ -43,7 +43,8 @@ async function run(files: Record<string, object> = {}) {
   const out = mkdtempSync(join(tmpdir(), 'review-carried-'))
   dirs.push(out)
   const prompts: string[] = []
-  const exec: Exec = async (_command, args) => {
+  const exec: Exec = async (command, args) => {
+    if (command === 'git') return ''
     const prompt = args[1] as string
     if (args[args.indexOf('--tools') + 1] === '') {
       return result({ skills: ['jong-skills:documentation'] })

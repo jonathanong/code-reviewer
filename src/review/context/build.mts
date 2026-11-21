@@ -25,6 +25,13 @@ export const SECTIONS: readonly SectionBuilder[] = [
 
 const JOBS = 3
 
+/** The builders named `names`, in `SECTIONS` order; an unknown name throws. */
+export function sectionsNamed(names: readonly string[]): SectionBuilder[] {
+  const unknown = names.filter((name) => !SECTIONS.some((builder) => builder.name === name))
+  if (unknown.length > 0) throw new Error(`unknown context section: ${unknown.join(', ')}`)
+  return SECTIONS.filter((builder) => names.includes(builder.name))
+}
+
 /** Runs the builders (a few at a time), drops empty sections, and reports failures as notes. */
 export async function buildContext(
   input: ContextInput,

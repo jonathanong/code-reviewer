@@ -114,6 +114,9 @@ export function renderReport(data: ReportData): string {
       : renderEvidence(data.evidence, data.findings, money(cost.evidence))),
     '### Pillars',
     `Skills selected: ${data.skillSelection.selected.length === 0 ? 'none' : data.skillSelection.selected.join(', ')}${data.skillSelection.error === undefined ? '' : ` (selection error: ${data.skillSelection.error})`}`,
+    ...(data.contextNote === undefined
+      ? []
+      : [`Context file: not built (${data.contextNote}); the pillars ran without it.`]),
     ...data.pillars.map(pillar),
     '### Skipped pillars',
     data.skipped.length === 0

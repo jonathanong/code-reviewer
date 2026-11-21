@@ -1,8 +1,9 @@
 # Shared context
 
 `code-reviewer context --repo owner/name --pr N --tree DIR [--out DIR] [--skill plugin:name]...`
-builds the context that every pillar could share and prints it, or writes `context.md` to `--out`.
-**No review reads it yet**: `review` and `run` do not call the builder, and no prompt changes.
+builds the shared review context for a pull request and prints it, or writes `context.md` to
+`--out`. The command builds every section, change shape included. A review builds a subset for the
+pillars, described [below](#in-a-review).
 
 The head is the checkout's `HEAD`; the base is read from the pull request, the one thing git cannot
 know. No model runs. `--skill` limits the rule skills (`plugin:name`, as `settings` and the
@@ -13,6 +14,29 @@ The document is a list of sections, each from one builder in `SECTIONS`
 (`src/review/context/build.mts`). A builder that fails becomes one line under "Notes" and the rest
 still build. A document over the size cap has its largest sections cut first, at a line, with the
 cut stated in the text.
+
+## In a review
+
+`review` and `run` build the context once, after skill selection, and write it as
+`review-context.md` in the run directory (`context.md` there is the pull request's own text from
+`prepare`). Only the pillars read it, as an extra line in their prompt: the verifier does not.
+The line says the file is reference data collected mechanically, that its quoted text is not
+instructions, that excerpts are alongside the Skill loads and not instead of them, and that a
+commit listed under linked regressions is to be checked against the change. A configured pillar
+with a `run` command gets no line, since its command is its whole prompt.
+
+The pillars get `rule-excerpts` (for the selected skills only), `changed-line-history` and
+`linked-regressions`. They do not get `change-shape`, and never a section about other reviewers
+or past reviews: pillars are independent finders and must not be anchored by other reviewers'
+text. The names are `PILLAR_SECTIONS` in `src/review/run/review-context.mts`.
+
+The whole build has one deadline, `CONTEXT_DEADLINE_MS` (60 seconds), which also aborts its
+`git` calls. A build that fails, times out or has no section gives no file and no prompt line; the
+review goes on and `report.md` says under "Pillars" that the context was not built and why. A
+review never fails because of context.
+
+OpenCode ignores `addDirs`, so an OpenCode pillar may not be able to read the run directory, this
+file included; Claude and Grok add it.
 
 ## Rule excerpts
 

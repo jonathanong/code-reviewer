@@ -107,6 +107,22 @@ it('runs every step with the exact claude call', async () => {
       )
     }
   }
+  const contextFile = join(out, 'review-context.md')
+  for (const [mode, pillar] of [
+    ['full', 'design'],
+    ['light', 'correctness'],
+  ] as const) {
+    await run(`review.pillar.${pillar}.${mode}.settings.context`, () =>
+      runPillars({
+        ...base,
+        mode,
+        pillars: [{ pillar, model: 'sonnet' }],
+        settings,
+        web,
+        contextFile,
+      }),
+    )
+  }
   await run('review.pillar.design.full.nosettings', () =>
     runPillars({ ...base, mode: 'full', pillars: [{ pillar: 'design', model: 'opus' }] }),
   )
@@ -289,6 +305,6 @@ it('runs every step with the exact claude call', async () => {
   await run('bench.judge.settings', () =>
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
-  expect(Object.keys(captured)).toHaveLength(40)
+  expect(Object.keys(captured)).toHaveLength(42)
   expect(captured).toStrictEqual(EXPECTED)
 })

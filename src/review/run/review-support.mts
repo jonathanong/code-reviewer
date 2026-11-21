@@ -19,6 +19,7 @@ import {
   unloadableMessage,
   unloadableRulePlugins,
   type PluginInfo,
+  type PluginInstall,
 } from '../plugins.mts'
 import type { StepModels } from '../models.mts'
 import type { ReferenceSource } from '../rules/references-parse.mts'
@@ -105,7 +106,7 @@ export function runDir(
  */
 export async function loadRulePlugins(
   steps: ReviewSteps,
-): Promise<{ settings: object; skills: RuleSkill[] }> {
+): Promise<{ settings: object; skills: RuleSkill[]; installs: PluginInstall[] }> {
   const plugins = await steps.plugins()
   const missing = unloadableRulePlugins(plugins.installs, steps.rulePlugins)
   if (missing.length > 0) throw new ReviewError(unloadableMessage(missing))
@@ -114,7 +115,11 @@ export async function loadRulePlugins(
     (name) => !skills.some((skill) => skill.name.startsWith(`${name}:`)),
   )
   if (empty.length > 0) throw new ReviewError(`rule plugins with no skills: ${empty.join(', ')}`)
-  return { settings: pluginSettings(plugins.enabled, steps.rulePlugins), skills }
+  return {
+    settings: pluginSettings(plugins.enabled, steps.rulePlugins),
+    skills,
+    installs: plugins.installs,
+  }
 }
 
 /** The pillar contract and pillar files as the headless runs read them, for the configured rule plugins. */
