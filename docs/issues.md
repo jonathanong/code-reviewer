@@ -28,7 +28,7 @@ A harness is the headless CLI a step ran through (`claude`, `grok`, `opencode`).
 for a reason that is the harness's is recorded in the tracker's `harness-failures.jsonl` with a
 kind: `timeout`, `rate_limited` or `overloaded` (the wait budget ran out), `unsupported_flag` (the
 CLI rejected an argument), `crash` (a non-zero exit with no result) or `unparseable` (no JSON
-result). A step the model answered (such as a turn limit), a credentials failure and an adapter
+result). A step counts whether or not its review finished: a verifier that fails stops the review, and its failure is counted too. A step the model answered (such as a turn limit), a credentials failure and an adapter
 refusing a step are not harness failures. A step that failed and then succeeded on a retry or
 another candidate is not counted. Per harness and kind, at least `HARNESS_MIN_FAILURES` (3) such
 steps in the last `--since` days give one proposal. Its body holds the harness name, the kind, the

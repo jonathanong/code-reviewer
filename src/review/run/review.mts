@@ -78,7 +78,7 @@ async function review(
     ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
-  requireAnswer(results)
+  requireAnswer(results, out)
   const pillarSkips = [...plan.skipped, ...failedSkips(results)]
   const findings = flattenFindings(results)
   const output = await runReviewVerifier(

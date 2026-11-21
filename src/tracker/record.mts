@@ -2,7 +2,7 @@ import { dirname, join, resolve } from 'node:path'
 
 import { SEVERITIES, type Finding } from '../review/finding.mts'
 import type { PostOutcome } from '../review/post.mts'
-import { recordFailures } from './failures.mts'
+import { readFailedSteps, recordFailures } from './failures.mts'
 import { asNumber, asRecord, asString, readJson } from './json.mts'
 import { appendRow } from './store.mts'
 import type { Counts, TrackerIo, TrackerMode, TrackerRow } from './types.mts'
@@ -66,7 +66,11 @@ export function recordReview(io: TrackerIo, run: ReviewRun): Recorded {
     const review = readJson((path) => io.read(path), join(run.out, 'review.json'))
     const report = readJson((path) => io.read(path), join(run.out, 'report.json'))
     const head = asString(summary.headSha) ?? asString(context.headSha) ?? ''
-    recordFailures(io, `${run.repo}#${run.pr}@${head}`, report.ran)
+    const stopped = readFailedSteps((path) => io.read(path), run.out)
+    recordFailures(io, `${run.repo}#${run.pr}@${head}`, [
+      ...(Array.isArray(report.ran) ? report.ran : []),
+      ...stopped,
+    ])
     const questions = Array.isArray(review.questions) ? review.questions.length : null
     const followUp = asString(plan.sinceSha) !== null
     const mode = (followUp ? 'follow-up' : asString(summary.mode)) as TrackerMode | null

@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Exec } from '../benchmark/exec.mts'
+import { ExecError, type Exec } from '../benchmark/exec.mts'
 import { parseReviewInput } from '../finding.mts'
 import type { ReviewPlan } from '../plan.mts'
 import { runReview, type ReviewSteps } from './review.mts'
@@ -478,5 +478,18 @@ describe('runReview', () => {
     expect(String(outcome.summary.error)).toContain('Skill selection failed, so no review was run')
     expect(select).toHaveBeenCalledTimes(2)
     expect(calls).toEqual(['abort'])
+  })
+
+  it('saves a selection that timed out for the tracker, since no report is written', async () => {
+    const select = vi.fn(() => {
+      throw new ExecError('claude exited with null', null, '', { killed: true })
+    })
+    const { out, steps, options } = setup({ exec: claude({ select }) })
+    const outcome = await runReview(steps, options)
+    expect(outcome.ok).toBe(false)
+    expect(readJson(out, 'failed-steps.json')).toEqual([
+      expect.objectContaining({ step: 'selection', harness: 'claude', failure: 'timeout' }),
+    ])
+    expect(existsSync(join(out, 'report.json'))).toBe(false)
   })
 })

@@ -20,6 +20,12 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
+const tmp = () => {
+  const dir = mkdtempSync(join(tmpdir(), 'require-answer-'))
+  dirs.push(dir)
+  return dir
+}
+
 const prompted = (overrides: Partial<ExtraPillarConfig> = {}): ExtraPillarConfig => ({
   name: extraPillar('a11y'),
   modes: ['full'],
@@ -200,16 +206,27 @@ describe('requireAnswer', () => {
   const failed = { pillar: 'a11y', error: 'boom\nmore' } as never
 
   it('accepts a review where any pillar answered', () => {
-    expect(() => requireAnswer([ok, failed])).not.toThrow()
+    expect(() => requireAnswer([ok, failed], tmp())).not.toThrow()
   })
 
   it('fails closed when every pillar failed, naming each', () => {
-    expect(() => requireAnswer([failed])).toThrow(
+    expect(() => requireAnswer([failed], tmp())).toThrow(
       new ReviewError('Every pillar failed: a11y (boom)'),
     )
   })
 
   it('fails when the config left no pillar for the change', () => {
-    expect(() => requireAnswer([])).toThrow(/No pillar is planned for this change/u)
+    expect(() => requireAnswer([], tmp())).toThrow(/No pillar is planned for this change/u)
+  })
+
+  it('saves the pillars that failed because of their harness, and only those', () => {
+    const out = tmp()
+    const ran = { harness: 'claude', model: 'm', waitedMs: 0 }
+    const timedOut = { pillar: 'a11y', error: 'x', ran: { ...ran, failure: 'timeout' } } as never
+    const answeredBadly = { pillar: 'rules', error: 'y', ran } as never
+    expect(() => requireAnswer([timedOut, answeredBadly], out)).toThrow(ReviewError)
+    expect(JSON.parse(readFileSync(join(out, 'failed-steps.json'), 'utf8'))).toEqual([
+      { step: 'a11y', ...ran, failure: 'timeout' },
+    ])
   })
 })

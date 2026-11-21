@@ -2,6 +2,7 @@ import { join } from 'node:path'
 
 import { diffExcerpt, splitDiff } from '../diff-files.mts'
 import { ReviewError } from '../finding.mts'
+import { saveFailedSteps } from './failed-steps.mts'
 import { read, writeJson, type ReviewSteps } from './review-support.mts'
 import { selectSkills, type RuleSkill } from './select-skills.mts'
 import type { SkillChoice } from './types.mts'
@@ -35,6 +36,7 @@ export async function chooseSkills(
   })
   writeJson(join(run.out, 'skills.json'), choice)
   if (choice.error !== undefined) {
+    saveFailedSteps(run.out, [{ step: 'selection', ran: choice.ran }])
     throw new ReviewError(`Skill selection failed, so no review was run: ${choice.error}`)
   }
   return choice
