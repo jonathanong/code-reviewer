@@ -1,0 +1,5 @@
+{"repo":"acme/widgets","pr":7,"head":"1111111111111111111111111111111111111111","state":"reviewed","mode":"full","verdict":"Request Changes","startedAt":"2026-01-02T10:00:00Z","finishedAt":"2026-01-02T10:05:00Z","runDir":"/fixture-state/run-1"}
+{"repo":"acme/widgets","pr":7,"head":"1111111111111111111111111111111111111111","state":"posted","reviewUrl":"https://example.test/acme/widgets/pull/7#pullrequestreview-1","postedAt":"2026-01-02T10:06:00Z"}
+{"repo":"acme/widgets","pr":8,"head":"3333333333333333333333333333333333333333","state":"posted","mode":"full","verdict":"Approve","startedAt":"2026-01-03T10:00:00Z","runDir":"/fixture-state/other"}
+{"repo":"Acme/Widgets","pr":7,"head":"2222222222222222222222222222222222222222","state":"reviewed","mode":"light","verdict":"Comment","startedAt":"2026-01-05T10:00:00Z","finishedAt":"2026-01-05T10:02:00Z","runDir":"/fixture-state/run-2"}
+{"repo":"acme/widgets","pr":7,"head":"4444444444444444444444444444444444444444","state":"failed","reason":"boom","startedAt":"2026-01-06T10:00:00Z"}

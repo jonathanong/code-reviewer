@@ -13,7 +13,20 @@ const input: ContextInput = {
   out: '/out',
   skills: [],
 }
-const deps: ContextDeps = { exec: async () => '', readFile: async () => '' }
+const deps: ContextDeps = {
+  exec: async () => '',
+  readFile: async () => '',
+  gh: async () =>
+    JSON.stringify({
+      data: {
+        repository: {
+          pullRequest: { reviews: { nodes: [] }, reviewThreads: { nodes: [] } },
+        },
+      },
+    }),
+  trusted: async () => new Set(['reviewer-app']),
+  stateDir: '/state',
+}
 
 const ok = (name: string, body: string): SectionBuilder => ({
   name,
@@ -21,12 +34,14 @@ const ok = (name: string, body: string): SectionBuilder => ({
 })
 
 describe('SECTIONS', () => {
-  it('lists the rule excerpts builder', () => {
+  it('lists the builders in order', () => {
     expect(SECTIONS.map((section) => section.name)).toEqual([
       'rule-excerpts',
       'change-shape',
       'changed-line-history',
       'linked-regressions',
+      'past-reviews',
+      'other-reviewers',
     ])
   })
 })

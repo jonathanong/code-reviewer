@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 import { splitRepo } from '../gh-cli/index.mts'
+import { resolveTrustedAuthors } from '../review/trust.mts'
 import { resolveRulePlugins } from '../review/grant-settings.mts'
 import { buildContext } from '../review/context/build.mts'
 import { renderContext } from '../review/context/render.mts'
@@ -17,7 +18,10 @@ export type ContextValues = {
   skill?: string[] | undefined
 }
 
-type Needs = Pick<ReviewDeps, 'configs' | 'targetConfig' | 'pluginInfo' | 'runner' | 'exec'>
+type Needs = Pick<
+  ReviewDeps,
+  'configs' | 'targetConfig' | 'pluginInfo' | 'runner' | 'exec' | 'authIdentity' | 'tracker'
+>
 
 function chosen(all: ContextSkill[], names: readonly string[]): ContextSkill[] {
   const missing = names.filter((name) => !all.some((skill) => skill.name === name))
@@ -59,9 +63,13 @@ export async function contextCommand(
   const unreadable: string[] = []
   const skills = chosen(listRuleSkillFiles(installs, plugins, unreadable), values.skill ?? [])
   const out = resolve(values.out ?? '.')
+  const gh = deps.runner(splitRepo(repo).owner)
   const contextDeps: ContextDeps = {
     exec: deps.exec,
     readFile: async (path) => readFileSync(path, 'utf8'),
+    gh,
+    trusted: () => resolveTrustedAuthors(gh, async () => (await deps.authIdentity()).login),
+    stateDir: deps.tracker().dir,
   }
   const built = await buildContext(
     { repo, pr, tree, baseSha: baseRefOid, headSha: head, out, skills },

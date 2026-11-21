@@ -1,0 +1,15 @@
+{
+  "title": "Quiet",
+  "body": "",
+  "author": null,
+  "closingIssuesReferences": { "nodes": [] },
+  "headRefOid": "2222222222222222222222222222222222222222",
+  "baseRefOid": "0000000000000000000000000000000000000000",
+  "baseRefName": "main",
+  "additions": 0,
+  "deletions": 0,
+  "comments": { "nodes": [] },
+  "commits": { "nodes": [] },
+  "reviews": { "nodes": [] },
+  "reviewThreads": { "nodes": [] }
+}

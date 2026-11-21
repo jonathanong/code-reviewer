@@ -5,6 +5,7 @@ export type Author = { login: string } | null
 
 export type PrReview = {
   id: string
+  url?: string
   author: Author
   state: string
   body: string
@@ -13,6 +14,7 @@ export type PrReview = {
 }
 
 export type ThreadComment = {
+  url?: string
   author: Author
   body: string
   createdAt: string
@@ -61,14 +63,14 @@ const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
       closingIssuesReferences(first: 20) { nodes { number title body } }
       reviews(last: 60) {
         pageInfo { hasPreviousPage }
-        nodes { id state body submittedAt author { login } commit { oid } }
+        nodes { id url state body submittedAt author { login } commit { oid } }
       }
       reviewThreads(last: 100) {
         pageInfo { hasPreviousPage }
         nodes {
           id isResolved isOutdated path line
           comments(first: 4) {
-            nodes { body createdAt author { login } pullRequestReview { id } }
+            nodes { url body createdAt author { login } pullRequestReview { id } }
           }
         }
       }

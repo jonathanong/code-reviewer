@@ -18,6 +18,7 @@ const installPath = fileURLToPath(new URL('../review/context/fixtures/plugin', i
 const unreadablePath = fileURLToPath(
   new URL('../review/context/fixtures/unreadable', import.meta.url),
 )
+const stateDir = fileURLToPath(new URL('../review/context/fixtures/state', import.meta.url))
 const HEAD = 'a'.repeat(40)
 const BASE = 'b'.repeat(40)
 
@@ -40,6 +41,8 @@ function fake(plugins = ['team']) {
       problems: [],
     }),
     targetConfig: async () => ({ config: undefined, problems: [] }),
+    authIdentity: async () => ({ login: 'reviewer-app' }),
+    tracker: () => ({ dir: stateDir }),
     pluginInfo: async () => ({
       enabled: [],
       installs: [

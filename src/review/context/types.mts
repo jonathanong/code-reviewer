@@ -1,4 +1,6 @@
+import type { RunTextCommand } from '../../gh-cli/index.mts'
 import type { Exec } from '../benchmark/exec.mts'
+import type { TrustedAuthors } from '../trust.mts'
 import type { RuleSkill } from '../run/select-skills.mts'
 
 /** A selected rule skill with the absolute path of its SKILL.md. */
@@ -24,6 +26,16 @@ export type ContextSection = { title: string; body: string }
 export type ContextDeps = {
   exec: Exec
   readFile(path: string): Promise<string>
+  /**
+   * The three members below are optional so sections that do not need them (and their tests)
+   * need not supply them; a section that does reports their absence as a note.
+   */
+  /** `gh` for the pull request's owner. */
+  gh?: RunTextCommand
+  /** This reviewer's own logins; empty when the lookup found none. */
+  trusted?: () => Promise<TrustedAuthors>
+  /** The machine-local state directory holding the tracker. */
+  stateDir?: string
 }
 
 /** `null` means the section has nothing to say for this pull request. */
