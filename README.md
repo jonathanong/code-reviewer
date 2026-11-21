@@ -6,6 +6,8 @@ GitHub review. It runs on your machine, for the repositories you pick.
 
 ## Principles
 
+- **How a review feels comes first.** The measure is the experience of the person who receives
+  the review: no needless blocking, no noise.
 - **Local, and never a merge decision.** It runs in local sessions, never in CI, and it never
   merges. Merging stays with a person.
 - **A reviewed repository needs no setup.** Every setting has a default; what the reviewer knows
@@ -22,12 +24,48 @@ GitHub review. It runs on your machine, for the repositories you pick.
 - **Blocking is rare.** Requesting changes is for a defect that must not merge. Everything else
   is a comment or a question.
 - **Short text.** Posted text leads with the defect and its consequence and does not narrate the
-  review.
+  review. Detail that only an agent fixing the issue needs sits in a collapsed section.
 - **When unsure, a human reads it first.** A large or risky change, an open question, or a
   partial failure holds the review instead of posting it.
 - **Fail closed, degrade gracefully.** A config problem stops the run before anything changes. A
   review whose checks all failed never approves. Without a GitHub App, the same features work
   under the local `gh` login.
+
+- **Configurable, with defaults.** Rule plugins, labels, evidence sources and references are
+  config, in YAML or JSON. What decides safety is fixed: how a verdict is derived, what a run may
+  touch, and that anything granting commands, network or plugins is set only on the reviewer's
+  machine.
+- **Not tied to one agent harness.** Every model step is a separate headless run behind a harness
+  adapter, and no built-in prompt calls a harness's own reviewer. Claude Code is the adapter that
+  exists and the one the benchmarks measure.
+
+## Direction
+
+Agreed and not built yet. Nothing below works today.
+
+- **Other harnesses and free tiers.** Adapters for Grok, OpenCode and Codex, with a harness and
+  model chosen per step, an ordered fallback list, and a wait-and-retry on a rate limit instead of
+  a failed step. Free models never run the verifier. A command measures the free models on a
+  fixed set of cases so the choice is not a guess.
+- **Extensible pillars.** Config adds a pillar as a trigger an agent decides, the modes it runs
+  in, and a command to run. Its findings go through the verifier like any other.
+- **Shared context.** One cheap run builds what every pillar needs once: the relevant rule text
+  quoted verbatim with a link to the full skill, the history of the changed lines, linked
+  regressions, and past reviews.
+- **Code analysis.** `no-mistakes` as a read-only analysis plugin for the reviewers.
+- **Feedback loops.** Each finding's outcome is recorded (fixed, disputed, ignored, and
+  reactions: a thumbs-down means the review was bad). A digest proposes rule and prompt changes,
+  as a Claude Doc or a local file per day. Where config opts in, issues are filed in the
+  repository that owns the problem: the rules, the harness, or this reviewer.
+- **Regression fixes.** A pull request that fixes a regression is recognised, the change that
+  introduced it is reviewed, and the review recommends a rule, an eval case, or both.
+- **Re-reviews build on the last one.** On the same machine a re-review starts from the earlier
+  run's saved results and evidence, reviews only the diff since, and adds to it.
+- **Other reviewers.** A still-open blocking or high item from another reviewer is restated with
+  a link; lesser ones are not repeated.
+- **Large changes.** A mechanical change (a lint rule enabled and auto-fixed) is recognised as
+  one; a change that mixes concerns gets a proposed split as the review.
+- **Cost.** Tokens reported per model in the benchmarks, and a cost ceiling per review.
 
 ## Outcomes
 
