@@ -1,0 +1,44 @@
+import { parseArgs } from 'node:util'
+
+/** The flags every subcommand shares, strictly parsed. */
+export function parse(args: string[]) {
+  return parseArgs({
+    args,
+    strict: true,
+    options: {
+      repo: { type: 'string', multiple: true },
+      pr: { type: 'string' },
+      'head-sha': { type: 'string' },
+      input: { type: 'string' },
+      'dry-run': { type: 'boolean' },
+      'allow-long': { type: 'boolean' },
+      'body-target': { type: 'string' },
+      'inline-target': { type: 'string' },
+      owner: { type: 'string' },
+      force: { type: 'boolean' },
+      requeue: { type: 'boolean' },
+      reason: { type: 'string' },
+      out: { type: 'string' },
+      jobs: { type: 'string' },
+      model: { type: 'string', multiple: true },
+      'max-cost': { type: 'string' },
+      quiet: { type: 'boolean' },
+      effort: { type: 'string' },
+      tree: { type: 'string' },
+      clones: { type: 'string' },
+      thread: { type: 'string', multiple: true },
+      require: { type: 'string', multiple: true },
+      since: { type: 'string' },
+      state: { type: 'string' },
+      format: { type: 'string' },
+      run: { type: 'string' },
+      post: { type: 'string' },
+      day: { type: 'string' },
+      offline: { type: 'boolean' },
+      harness: { type: 'string' },
+      free: { type: 'boolean' },
+      probes: { type: 'string' },
+      skill: { type: 'string', multiple: true },
+    },
+  }).values
+}

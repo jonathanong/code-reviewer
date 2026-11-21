@@ -6,6 +6,7 @@ import { DEFAULT_RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
 import {
   SKILL_SELECTION_SCHEMA,
   buildSelectionPrompt,
+  listRuleSkillFiles,
   listRuleSkills,
   selectSkills,
 } from './select-skills.mts'
@@ -30,6 +31,13 @@ describe('listRuleSkills', () => {
         name: 'no-mistakes-rules:typescript-rules',
         description: 'MUST NOT rules for TypeScript and Node.js. Use when writing TS.',
       },
+    ])
+  })
+
+  it('also gives the absolute SKILL.md path of each skill', () => {
+    expect(listRuleSkillFiles(INSTALLS, ['no-mistakes-rules']).map((skill) => skill.file)).toEqual([
+      path('no-mistakes-rules/skills/git-rules/SKILL.md'),
+      path('no-mistakes-rules/skills/typescript-rules/SKILL.md'),
     ])
   })
 

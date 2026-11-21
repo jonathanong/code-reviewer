@@ -27,7 +27,18 @@ export function listRuleSkills(
   installs: readonly PluginInstall[],
   rulePlugins: readonly string[],
 ): RuleSkill[] {
-  const found: RuleSkill[] = []
+  return listRuleSkillFiles(installs, rulePlugins).map(({ name, description }) => ({
+    name,
+    description,
+  }))
+}
+
+/** `listRuleSkills` with the absolute path of each SKILL.md. */
+export function listRuleSkillFiles(
+  installs: readonly PluginInstall[],
+  rulePlugins: readonly string[],
+): (RuleSkill & { file: string })[] {
+  const found: (RuleSkill & { file: string })[] = []
   for (const plugin of rulePlugins) {
     const install = installs.find((candidate) => candidate.name === plugin)
     const root = install === undefined ? '' : join(install.installPath, 'skills')
@@ -39,6 +50,7 @@ export function listRuleSkills(
       found.push({
         name: `${plugin}:${name ?? entry.name}`,
         description: (description ?? '').replace(/\s+/gu, ' ').trim(),
+        file,
       })
     }
   }
