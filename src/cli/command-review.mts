@@ -4,6 +4,7 @@ import { postFinalReview } from '../review/post.mts'
 import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
+import { resolveAnalysis } from '../review/analysis-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { requirePillars } from '../review/pillars-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
@@ -73,6 +74,11 @@ export async function reviewCommand(
       // The reviewed repository's own file adds a source only when the machine config trusts it.
       evidence: async () => ({
         sources: resolveEvidence(deps.configs(), target.repo, own).sources,
+        readGuide: deps.guideReader(resolved.clones),
+      }),
+      // Machine config only, even for a trusted repository file: it grants shell commands.
+      analysis: async () => ({
+        tools: resolveAnalysis(deps.configs(), target.repo).tools,
         readGuide: deps.guideReader(resolved.clones),
       }),
       // Trusted-only for the same reason: a fetch can carry the run's private code out.

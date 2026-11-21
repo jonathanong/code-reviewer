@@ -22,6 +22,14 @@ const CONFIGS: RepoConfigs = {
         {
           labels: { requested: 'review me' },
           checkRun: { name: 'Code review' },
+          analysis: [
+            {
+              name: 'graph',
+              description: 'Code graph.',
+              guide: { text: 'Use it.' },
+              commands: ['graph dependents'],
+            },
+          ],
           evidence: [
             {
               name: 'aws',

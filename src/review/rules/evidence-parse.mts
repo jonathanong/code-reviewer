@@ -21,7 +21,7 @@ const COMMAND_RE = new RegExp(`^${WORD}(?: ${WORD})+$`, 'u')
 const ENV_NAME_RE = /^[A-Z_][A-Z0-9_]*$/u
 const MAX_DESCRIPTION = 300
 
-function guide(raw: unknown): EvidenceGuide | string {
+export function parseGuide(raw: unknown): EvidenceGuide | string {
   if (!isRecord(raw)) return '"guide" must be an object'
   const keys = Object.keys(raw)
   if (keys.length === 1 && keys[0] === 'file') {
@@ -41,7 +41,7 @@ function guide(raw: unknown): EvidenceGuide | string {
   return { repo: repo.toLowerCase(), path }
 }
 
-function commands(raw: unknown): string[] | string {
+export function parseCommands(raw: unknown): string[] | string {
   const list: unknown[] = Array.isArray(raw) ? raw : []
   if (list.length === 0) return '"commands" must be a non-empty array of command prefixes'
   const valid = list.filter((entry) => typeof entry === 'string' && COMMAND_RE.test(entry))
@@ -73,9 +73,9 @@ function source(raw: Json): EvidenceSource | string {
   if (oneLine === '' || oneLine.length > MAX_DESCRIPTION) {
     return `"description" must be one line of at most ${MAX_DESCRIPTION} characters`
   }
-  const found = guide(raw.guide)
+  const found = parseGuide(raw.guide)
   if (typeof found === 'string') return found
-  const run = commands(raw.commands)
+  const run = parseCommands(raw.commands)
   if (typeof run === 'string') return run
   const env = envOf(raw.env)
   if (typeof env === 'string') return env

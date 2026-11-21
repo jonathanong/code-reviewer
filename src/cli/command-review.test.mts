@@ -20,11 +20,15 @@ import { postFinalReview } from '../review/post.mts'
 import { runReview, type ReviewSteps } from '../review/run/review.mts'
 import { abortCommand, claimCommand, prepareCommand, skipCommand } from './command-loop.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
+import { resolveAnalysis } from '../review/analysis-settings.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import type { TargetConfig } from '../review/rules/target-config.mts'
 import type { ReviewDeps } from './deps.mts'
 
-afterEach(() => vi.clearAllMocks())
+afterEach(() => {
+  vi.clearAllMocks()
+  configs.mockImplementation(() => NO_CONFIGS)
+})
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const guide = vi.fn(async () => 'guide text')
@@ -143,6 +147,24 @@ describe('reviewCommand', () => {
     expect((await wired.evidence()).sources).toEqual([])
   })
 
+  it('wires the analysis tools from the machine config and the clone root', async () => {
+    const tool = {
+      name: 'graph',
+      description: 'Code graph.',
+      guide: { text: 'Use it.' },
+      commands: ['graph dependents'],
+    }
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], analysis: [tool], problems: [] }]]),
+    })
+    const { wired } = await steps({ out: 'o', tree: 't', clones: 'c' })
+    const setup = await (wired.analysis as NonNullable<typeof wired.analysis>)()
+    expect(setup.tools).toEqual([tool])
+    expect(guideReader).toHaveBeenCalledWith(resolve('c'))
+    expect(setup.readGuide).toBe(guide)
+  })
+
   it('wires the web references from the machine config only', async () => {
     const reference = { name: 'aws', description: 'Docs.', domains: ['docs.aws.amazon.com'] }
     configs.mockReturnValueOnce(NO_CONFIGS).mockReturnValueOnce({
@@ -198,6 +220,35 @@ describe('reviewCommand', () => {
       expect(wired.webReferences).toEqual(own.references)
       expect(wired.rulePlugins).toEqual(['own-rules'])
       expect((await wired.evidence()).sources).toEqual(own.evidence)
+    } finally {
+      configs.mockReturnValue(NO_CONFIGS)
+      targetConfig.mockResolvedValue({ config: undefined, problems: [] })
+    }
+  })
+
+  it('grants no analysis from a trusted repository file', async () => {
+    const tool = {
+      name: 'own',
+      description: 'Graph.',
+      guide: { text: 'Use it.' },
+      commands: ['graph dependents'],
+    }
+    const own = parseRepoConfig(
+      JSON.stringify({ analysis: [tool] }),
+      'acme/widgets/.code-reviewer.json',
+      'trusted',
+    )
+    expect(own.analysis).toBeUndefined()
+    targetConfig.mockResolvedValue({ config: own, problems: own.problems })
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], trustRepoConfig: true, problems: [] }]]),
+    })
+    try {
+      const { wired } = await steps()
+      const setup = await (wired.analysis as NonNullable<typeof wired.analysis>)()
+      expect(setup.tools).toEqual([])
+      expect(resolveAnalysis(configs(), 'acme/widgets').tools).toEqual([])
     } finally {
       configs.mockReturnValue(NO_CONFIGS)
       targetConfig.mockResolvedValue({ config: undefined, problems: [] })

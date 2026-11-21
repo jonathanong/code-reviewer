@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import type { StepRan } from '../../harness/runner.mts'
+import type { StepAnalysis, StepRan } from '../../harness/runner.mts'
 import type { HarnessResult } from '../../harness/types.mts'
 import {
   VERIFIER_OUTPUT_SCHEMA,
@@ -65,6 +65,8 @@ export type VerifierInput = {
   threads: readonly string[]
   /** Web references the verifier may fetch; none by default. */
   web?: WebReferences
+  /** Read-only analysis tools the verifier may run; none by default. */
+  analysis?: StepAnalysis | undefined
 }
 
 export function buildVerifierRunPrompt(input: VerifierInput): string {

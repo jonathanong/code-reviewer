@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../review/benchmark/exec.mts'
 import { runStep, StepFailure, type StepRuntime } from './runner.mts'
-import type { FailureClass, Harness } from './types.mts'
+import type { FailureClass, Harness, HarnessRun } from './types.mts'
 import { HarnessRefusal } from './refusal.mts'
 import { READ_ONLY } from './types.mts'
 
@@ -10,11 +10,13 @@ const RESULT = { structured: 1, skills: [], usage: {} as never, reportedUsage: n
 
 /** Two adapters that fail as told: the first with a named retry-after, the second never. */
 const calls: string[] = []
+const seen: HarnessRun[] = []
 const failures: FailureClass[] = []
 const fakes: Record<string, Harness> = {
   slow: {
     name: 'slow',
     async run(request) {
+      seen.push(request)
       calls.push(`slow:${request.model}`)
       if (failures.length > 0) throw new Error('limited')
       return RESULT
@@ -25,6 +27,7 @@ const fakes: Record<string, Harness> = {
   steady: {
     name: 'steady',
     async run(request) {
+      seen.push(request)
       calls.push(`steady:${request.model}`)
       return RESULT
     },
@@ -34,7 +37,7 @@ const fakes: Record<string, Harness> = {
 }
 
 vi.mock('./registry.mts', () => ({
-  HARNESS_NAMES: ['slow', 'steady', 'picky'],
+  HARNESS_NAMES: ['slow', 'steady', 'picky', 'strict'],
   harnessNamed: (name: string) => fakes[name],
 }))
 
@@ -46,6 +49,15 @@ fakes.picky = {
     throw new HarnessRefusal('picky cannot confine: shell prefixes (Step)')
   },
   describeFailure: (error) => ({ message: (error as Error).message, usage: null }),
+}
+
+/** Refuses any shell grant before it starts, the way the Grok and OpenCode adapters do. */
+fakes.strict = {
+  ...(fakes.steady as Harness),
+  name: 'strict',
+  assertCan(request) {
+    if (request.can.shell.length > 0) throw new HarnessRefusal('strict cannot confine shell')
+  },
 }
 
 const exec: Exec = async () => ''
@@ -83,6 +95,22 @@ describe('runStep across harnesses', () => {
     expect(sleeps).toEqual([7_000])
     expect(second.ran).toEqual({ harness: 'steady', model: 'y', waitedMs: 0 })
     expect(calls).toEqual(['slow:x', 'slow:x', 'slow:x', 'steady:y'])
+  })
+
+  it('adds the analysis grant and section only when the harness accepts a shell grant', async () => {
+    seen.length = 0
+    failures.length = 0
+    const analysis = { commands: ['tool query'], section: 'SECTION' }
+    const request = { ...REQUEST, can: { ...READ_ONLY, shell: [] }, analysis }
+    const { clock } = runtime(0)
+    await runStep(request, [{ harness: 'slow', model: 'x' }], exec, clock)
+    await runStep(request, [{ harness: 'strict', model: 'y' }], exec, clock)
+    const [confined, unconfined] = seen as [HarnessRun, HarnessRun]
+    expect(confined.can.shell).toEqual(['tool query'])
+    expect(confined.prompt).toBe('P\n\nSECTION')
+    expect(unconfined.can.shell).toEqual([])
+    expect(unconfined.prompt).toBe('P')
+    expect('analysis' in confined || 'analysis' in unconfined).toBe(false)
   })
 })
 

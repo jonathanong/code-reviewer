@@ -31,7 +31,7 @@ const result = (structured: unknown) =>
   JSON.stringify({ type: 'result', total_cost_usd: 0, num_turns: 1, structured_output: structured })
 
 /** Runs a review with a fake `claude` and returns the arguments of every call, run paths masked. */
-async function run(webReferences?: ReviewSteps['webReferences']) {
+async function run(webReferences?: ReviewSteps['webReferences'], extra: Partial<ReviewSteps> = {}) {
   const out = mkdtempSync(join(tmpdir(), 'review-web-'))
   dirs.push(out)
   const seen: string[][] = []
@@ -66,6 +66,7 @@ async function run(webReferences?: ReviewSteps['webReferences']) {
     exec,
     references: fixture('references'),
     ...(webReferences === undefined ? {} : { webReferences }),
+    ...extra,
   } as unknown as ReviewSteps
   const outcome = await runReview(steps, {
     repo: 'acme/widgets',
@@ -97,5 +98,46 @@ describe('runReview web references', () => {
     const none = await run()
     expect(await run([])).toEqual(none)
     expect(JSON.stringify(none)).not.toContain('WebFetch')
+  })
+})
+
+describe('runReview analysis', () => {
+  const analysis = async () => ({
+    tools: [
+      {
+        name: 'graph',
+        description: 'Code graph.',
+        guide: { text: 'GRAPH GUIDE' },
+        commands: ['graph dependents', 'graph call-sites'],
+      },
+    ],
+    readGuide: async () => '',
+  })
+
+  it('gives every pillar and the verifier the commands and the section, and no other run', async () => {
+    const seen = await run(undefined, { analysis })
+    const prompt = (args: string[]) => args[1] as string
+    const granted = seen.filter((args) => args.join(' ').includes('Bash(graph dependents:*)'))
+    const names = [
+      'rules prompt text',
+      'correctness prompt text',
+      'security prompt text',
+      'VERIFIER prompt text',
+    ]
+    expect(granted.map((args) => names.find((name) => prompt(args).includes(name)))).toEqual(names)
+    for (const args of granted) {
+      expect(prompt(args)).toContain('## Code analysis tools')
+      expect(prompt(args)).toContain('GRAPH GUIDE')
+      expect(args[args.indexOf('--allowedTools') + 1]).toContain('Bash(graph call-sites:*)')
+    }
+    const others = seen.filter((args) => !granted.includes(args))
+    expect(others.length).toBeGreaterThan(0)
+    for (const args of others) expect(args.join(' ')).not.toContain('graph')
+  })
+
+  it('runs identically with no tools and with none configured', async () => {
+    const none = await run()
+    const empty = async () => ({ tools: [], readGuide: async () => '' })
+    expect(await run(undefined, { analysis: empty })).toEqual(none)
   })
 })

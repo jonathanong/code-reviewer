@@ -179,6 +179,46 @@ describe('parseRepoConfig references', () => {
   })
 })
 
+describe('parseRepoConfig analysis', () => {
+  const analysis = [
+    {
+      name: 'graph',
+      description: 'Code graph.',
+      guide: { text: 'Use it.' },
+      commands: ['graph dependents'],
+    },
+  ]
+
+  it('reads analysis from a repository file and an owner file', () => {
+    const text = JSON.stringify({ analysis })
+    expect(parseRepoConfig(text, FILE).analysis).toEqual(analysis)
+    expect(parseRepoConfig(text, 'acme.json', 'owner').analysis).toEqual(analysis)
+  })
+
+  it('names the file in a problem and drops a grant that is a whole binary', () => {
+    const text = JSON.stringify({ analysis: [{ ...analysis[0], commands: ['graph'] }] })
+    const parsed = parseRepoConfig(text, FILE)
+    expect(parsed.analysis).toBeUndefined()
+    expect(parsed.problems).toEqual([expect.stringContaining(`${FILE} analysis[0]:`)])
+  })
+
+  it('ignores analysis in a trusted repository file too, since a shell grant is never trusted', () => {
+    const file = 'acme/web/.code-reviewer.json'
+    expect(parseRepoConfig(JSON.stringify({ analysis }), file, 'trusted')).toEqual({
+      consumes: [],
+      problems: [`${file}: analysis tools are machine-only; ignored`],
+    })
+  })
+
+  it('ignores analysis in the reviewed repository own file and says it is machine-only', () => {
+    const file = 'acme/web/.code-reviewer.json'
+    expect(parseRepoConfig(JSON.stringify({ analysis }), file, 'target')).toEqual({
+      consumes: [],
+      problems: [`${file}: analysis tools are machine-only; ignored`],
+    })
+  })
+})
+
 describe('parseRepoConfig approvalCheck', () => {
   it('reads a boolean from a repository file and an owner file', () => {
     expect(parseRepoConfig('{"approvalCheck":false}', FILE).approvalCheck).toBe(false)

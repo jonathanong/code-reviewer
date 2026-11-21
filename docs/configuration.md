@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -110,6 +110,12 @@ of absence only if a control query (the same query loosened so it must return so
 a known-present value or a wider window) returns something; when the control is empty too, the
 run reports the evidence as inconclusive (effect `none`: `report.md` keeps the note, and no
 Evidence line is added to the finding). Evidence is not part of `bench`.
+
+## `analysis`
+
+Read-only code-analysis commands the pillars and the verifier may run in the checkout. Machine-only,
+like `evidence`; a repository file's list replaces its owner file's list whole. See
+[Code analysis tools](analysis.md) for the shape, the prompt section and a `no-mistakes` example.
 
 ## `references`
 
@@ -392,7 +398,7 @@ format of `<owner>.json`; the same keys work in YAML.
   context is the configured name (`via` in the result says which).
 - `consumes` is valid only in a repository file.
 
-`code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings, including the names of the evidence sources and the layer they came from.
+`code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings, including the names of the evidence sources and analysis tools and the layer they came from.
 `code-reviewer skip` closes out a pull request the plan will not review: it posts one COMMENT
 review on the head with a `verdict=Skipped` marker, then swaps the labels. `status` exits 0 for
 a skipped head while its completed label stands (it never counts as approval and the approval label is not added), `claim`

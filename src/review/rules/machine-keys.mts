@@ -1,4 +1,5 @@
 import { parseIssues } from '../../issues/config-parse.mts'
+import { parseAnalysis } from './analysis-parse.mts'
 import { parseEvidence } from './evidence-parse.mts'
 import { parseLimits } from './limits-parse.mts'
 import { machineOnly } from './machine-only.mts'
@@ -15,6 +16,7 @@ type MachineKeys = Pick<
   RepoConfig,
   | 'trustRepoConfig'
   | 'evidence'
+  | 'analysis'
   | 'references'
   | 'approvalCheck'
   | 'rulePlugins'
@@ -53,6 +55,10 @@ export function parseMachineKeys(
     what: 'evidence sources are',
     parse: parseEvidence,
   })
+  const analysis = machineOnly(scope, raw.analysis, file, 'analysis', problems, {
+    what: 'analysis tools are',
+    parse: parseAnalysis,
+  })
   const references = machineOnly(grantScope, raw.references, file, 'references', problems, {
     what: 'references are',
     parse: parseReferences,
@@ -84,6 +90,7 @@ export function parseMachineKeys(
   return {
     ...(trustRepoConfig === undefined ? {} : { trustRepoConfig }),
     ...(evidence === undefined ? {} : { evidence }),
+    ...(analysis === undefined ? {} : { analysis }),
     ...(references === undefined ? {} : { references }),
     ...(approvalCheck === undefined ? {} : { approvalCheck }),
     ...(rulePlugins === undefined ? {} : { rulePlugins }),
