@@ -101,6 +101,11 @@ export function regressionSection(prevent: string | undefined): string[] {
   return prevent === undefined ? [] : [detail('Preventing this regression', prevent)]
 }
 
+/** The proposal to split a large change, for the person reading: one line, not collapsed. */
+export function splitSection(proposal: string | undefined): string[] {
+  return proposal === undefined ? [] : [`**Consider splitting this up:** ${proposal}`]
+}
+
 function skippedSection(skipped: readonly SkippedPillar[]): string[] {
   if (skipped.length === 0) return []
   const rows = skipped.map((entry) => `- **${entry.pillar}**: ${entry.reason}`).join('\n')
@@ -119,6 +124,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
     `## [${verdict}] Code review`,
     `Reviewed \`${headSha.slice(0, 12)}\` at ${input.effort} effort · ${counts(input.findings)}`,
     ...(input.summary ? [input.summary] : []),
+    ...splitSection(input.splitProposal),
     ...(index.length > 0 ? [index.join('\n')] : []),
     ...renderQuestions(input.questions),
     ...notesSection(input.notes),

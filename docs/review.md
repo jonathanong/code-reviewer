@@ -122,6 +122,29 @@ SHOULD NOT sentence, or a test or eval case, that would have caught the regressi
 collapsed `Preventing this regression` section; `report.md` also lists the commits. Nothing files an
 issue from it. With no commit found the prompt, schema and command line are unchanged.
 
+## Large changes that mix mechanical and other edits
+
+The change-shape section ([Shared context](context.md)) measures a large change from git alone:
+hunks that make the same normalised edit, whitespace-only lines, renames, and the config keys that
+changed. `review` builds it in the same context run as the pillars' sections but writes none of it
+to `review-context.md`; it keeps one structured summary of it, so git runs once. The summary
+exists only when a split is worth proposing: the change has at least `SPLIT_MIN_LINES` reviewable
+lines, a mechanical part of at least `SPLIT_MIN_MECHANICAL_LINES` lines, `SPLIT_MIN_MECHANICAL_SHARE`
+of the change and `SPLIT_MIN_MECHANICAL_FILES` files, and a remainder of at least
+`SPLIT_MIN_REMAINDER_LINES` lines and `SPLIT_MIN_REMAINDER_SHARE` of the change (all in
+`src/review/context/change-shape/analyze.mts`). A change that is almost all mechanical, or has no
+mechanical part, or is only big, gets none: a purely mechanical pull request is fine as it is.
+
+With a summary, the verifier prompt gets one more block, the summary as measurement of this diff
+(not instructions), and its output schema an optional top-level `splitProposal` string. The
+verifier gives one or two sentences (under 240 characters) naming what to move into its own pull
+request and what stays, or omits it when a split would not help, for example because the parts
+depend on each other. It is advice: it never changes a finding, a severity or the verdict. It is
+kept only when the block was given, saved as `splitProposal` in `review.json` and `report.json`,
+and shown as one line near the top of the review body (not collapsed) and under `Proposed split` in
+`report.md`. A longer one makes `concise` warn. With no summary the prompt, schema and command
+line are unchanged.
+
 ## Progress and the cost ceiling
 
 `review` writes one line to stderr when each step starts and when it ends, and one when a step

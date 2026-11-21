@@ -5,6 +5,17 @@ import type { Caps, ChangeShape, CommitShape, FileChange, Hunk, Tally } from './
 
 /** A signature must cover at least this many hunks to count as repetition. */
 export const MIN_REPEAT = 3
+/** A change is worth splitting only from this many reviewable lines. */
+export const SPLIT_MIN_LINES = 300
+/** The mechanical part must be this many lines, this share of the change, and span this many files. */
+export const SPLIT_MIN_MECHANICAL_LINES = 100
+export const SPLIT_MIN_MECHANICAL_SHARE = 0.2
+export const SPLIT_MIN_MECHANICAL_FILES = 5
+/** The rest must be this many lines and this share; less is a purely mechanical change. */
+export const SPLIT_MIN_REMAINDER_LINES = 100
+export const SPLIT_MIN_REMAINDER_SHARE = 0.1
+/** A whitespace-only part is listed from this many lines. */
+export const SPLIT_MIN_WHITESPACE_LINES = 20
 const TOP = 3
 /** Commits listed with their sizes. */
 export const COMMITS_LISTED = 12
@@ -84,6 +95,7 @@ export function summarize(m: Measured, caps: Caps): ChangeShape {
     byKind: tally(m.files, kindOf),
     hunks: analysed.length,
     top,
+    repeatedLines: repeated.reduce((total, group) => total + group.lines, 0),
     top1Share: coverage(repeated, 1, analysed.length),
     top3Share: coverage(repeated, TOP, analysed.length),
     renames: m.files.filter((file) => file.status === 'R100').length,

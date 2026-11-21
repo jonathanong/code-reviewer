@@ -27,5 +27,6 @@ export function buildReviewInput(parts: {
     ...(output.regressionPrevent === undefined
       ? {}
       : { regressionPrevent: output.regressionPrevent }),
+    ...(output.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
   }
 }

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
 import { SECTIONS } from '../context/build.mts'
+import { mixedRepo } from '../context/change-shape/split-fixtures.mts'
 import {
   CONTEXT_DEADLINE_MS,
   CONTEXT_FILE,
@@ -53,7 +54,7 @@ describe('buildReviewContext', () => {
     expect(text).not.toContain('team:sample-prose')
   })
 
-  it('gives every command a timeout and the deadline signal, and runs no change-shape call', async () => {
+  it('gives every command a timeout and the deadline signal', async () => {
     const calls: { args: string[]; options: Parameters<Exec>[2] }[] = []
     const exec: Exec = async (_command, args, options) => {
       calls.push({ args, options })
@@ -65,7 +66,6 @@ describe('buildReviewContext', () => {
       expect(call.options?.timeoutMs).toBeGreaterThan(0)
       expect(call.options?.signal).toBeInstanceOf(AbortSignal)
     }
-    expect(calls.some((call) => call.args.includes('--numstat'))).toBe(false)
   })
 
   it('hands back the linked commits it found, and none when there are none', async () => {
@@ -79,6 +79,23 @@ describe('buildReviewContext', () => {
     const built = await buildReviewContext(input(exec))
     expect(built.linked).toEqual([{ sha, subject: 'Add cache', how: 'fixes', files: ['src/c.ts'] }])
     expect(await buildReviewContext(input(async () => ''))).not.toHaveProperty('linked')
+  })
+
+  it('hands back the split summary of a large mixed change, and keeps change-shape out of the file', async () => {
+    const built = await buildReviewContext(input(mixedRepo()))
+    expect(built.split?.mechanical.files).toBe(40)
+    expect(readFileSync(built.file as string, 'utf8')).not.toContain('Change shape')
+    expect(await buildReviewContext(input(async () => ''))).not.toHaveProperty('split')
+  })
+
+  it('hands back the split summary even when no section is for the pillars', async () => {
+    const git = mixedRepo()
+    const diffOnly: Exec = async (command, args, options) =>
+      args[0] === 'diff' ? git(command, args, options) : ''
+    const built = await buildReviewContext(input(diffOnly, { selected: [] }))
+    expect(built).not.toHaveProperty('file')
+    expect(built.note).toContain('no section had anything to say')
+    expect(built.split?.lines).toBe(362)
   })
 
   it('gives a note and no file when nothing has anything to say', async () => {

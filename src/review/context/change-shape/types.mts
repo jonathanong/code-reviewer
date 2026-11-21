@@ -19,6 +19,8 @@ export type SignatureGroup = {
   signature: string
   hunks: number
   files: number
+  /** Removed plus added lines over all its hunks. */
+  lines: number
   example: Hunk
 }
 
@@ -50,6 +52,8 @@ export type ChangeShape = {
   hunks: number
   /** Signature groups with at least `MIN_REPEAT` hunks, at most three, most hunks first. */
   top: SignatureGroup[]
+  /** Removed plus added lines of every signature group with at least `MIN_REPEAT` hunks. */
+  repeatedLines: number
   top1Share: number
   top3Share: number
   renames: number

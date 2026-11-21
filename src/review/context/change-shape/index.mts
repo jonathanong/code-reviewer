@@ -7,6 +7,7 @@ import { configChange } from './config-change.mts'
 import { parseCommits, parseFileChanges, parseNumstat } from './git-output.mts'
 import { capText, parseHunks } from './patch.mts'
 import { renderChangeShape } from './render.mts'
+import { splitSummary } from './split.mts'
 import type { Caps } from './types.mts'
 
 /** What bounds the work; the section says when one was hit. */
@@ -80,6 +81,11 @@ export const changeShape: SectionBuilder = {
       },
       CAPS,
     )
-    return { title: 'Change shape', body: renderChangeShape(shape) }
+    const split = splitSummary(shape)
+    return {
+      title: 'Change shape',
+      body: renderChangeShape(shape),
+      ...(split === null ? {} : { split }),
+    }
   },
 }

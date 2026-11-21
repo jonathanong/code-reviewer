@@ -69,9 +69,17 @@ export function checkPostedText(
 /** The prevention note is one short line; a longer one is a second finding, so it warns. */
 export const PREVENT_TARGET = 160
 
+/** The split proposal is one or two sentences. */
+export const SPLIT_TARGET = 240
+
 function preventWarnings(input: ReviewInput): string[] {
   const note = input.regressionPrevent ?? ''
   return [
+    ...((input.splitProposal?.length ?? 0) > SPLIT_TARGET
+      ? [
+          `splitProposal is ${input.splitProposal?.length} characters, over its ${SPLIT_TARGET} target`,
+        ]
+      : []),
     ...(note.length > PREVENT_TARGET
       ? [`regressionPrevent is ${note.length} characters, over its ${PREVENT_TARGET} target`]
       : []),

@@ -743,6 +743,82 @@
       }
     ]
   },
+  "review.verifier.split": {
+    "arity": 3,
+    "call": [
+      "claude",
+      [
+        "-p",
+        "sha256:a306e59ee1f2931a5ba943bf8ff15821f5f9ca7357a45d511a2216d08658d6ec",
+        "--model",
+        "opus",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--json-schema",
+        "{\"type\":\"object\",\"required\":[\"summary\",\"findings\",\"pullRequestSummary\"],\"additionalProperties\":false,\"properties\":{\"summary\":{\"type\":\"string\"},\"questions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"question\",\"askOf\",\"why\"],\"additionalProperties\":false,\"properties\":{\"question\":{\"type\":\"string\"},\"askOf\":{\"type\":\"string\",\"enum\":[\"author\",\"product\"]},\"why\":{\"type\":\"string\"}}}},\"findings\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"pillar\",\"severity\",\"title\",\"body\",\"sources\"],\"additionalProperties\":false,\"properties\":{\"pillar\":{\"type\":\"string\",\"enum\":[\"rules\",\"correctness\",\"design\",\"blast-radius\",\"security\",\"history\",\"congruence\"]},\"severity\":{\"type\":\"string\",\"enum\":[\"blocking\",\"high\",\"medium\",\"low\"]},\"title\":{\"type\":\"string\"},\"body\":{\"type\":\"string\"},\"path\":{\"type\":\"string\"},\"line\":{\"type\":\"integer\",\"minimum\":1},\"side\":{\"type\":\"string\",\"enum\":[\"LEFT\",\"RIGHT\"]},\"startLine\":{\"type\":\"integer\",\"minimum\":1},\"prevent\":{\"type\":\"string\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"integer\",\"minimum\":0}}}}},\"pullRequestSummary\":{\"type\":\"string\"},\"fixedThreadIds\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"dependencies\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"on\",\"kind\",\"why\"],\"additionalProperties\":false,\"properties\":{\"on\":{\"type\":\"string\"},\"kind\":{\"type\":\"string\",\"enum\":[\"package\",\"service\",\"api\",\"schema\",\"flag\",\"infra\",\"other\"]},\"why\":{\"type\":\"string\"}}}},\"dropped\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"index\",\"reason\"],\"additionalProperties\":false,\"properties\":{\"index\":{\"type\":\"integer\",\"minimum\":0},\"reason\":{\"type\":\"string\"}}}},\"splitProposal\":{\"type\":\"string\"}}}",
+        "--tools",
+        "Read,Grep,Glob,Skill",
+        "--allowedTools",
+        "Read,Grep,Glob,Skill",
+        "--permission-mode",
+        "dontAsk",
+        "--max-turns",
+        "40",
+        "--strict-mcp-config",
+        "--setting-sources",
+        "user",
+        "--effort",
+        "medium",
+        "--add-dir",
+        "/run",
+        "/refs"
+      ],
+      {
+        "cwd": "/tree",
+        "timeoutMs": 1800000
+      }
+    ]
+  },
+  "review.verifier.split.settings.light": {
+    "arity": 3,
+    "call": [
+      "claude",
+      [
+        "-p",
+        "sha256:a306e59ee1f2931a5ba943bf8ff15821f5f9ca7357a45d511a2216d08658d6ec",
+        "--model",
+        "opus",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--json-schema",
+        "{\"type\":\"object\",\"required\":[\"summary\",\"findings\",\"pullRequestSummary\"],\"additionalProperties\":false,\"properties\":{\"summary\":{\"type\":\"string\"},\"questions\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"question\",\"askOf\",\"why\"],\"additionalProperties\":false,\"properties\":{\"question\":{\"type\":\"string\"},\"askOf\":{\"type\":\"string\",\"enum\":[\"author\",\"product\"]},\"why\":{\"type\":\"string\"}}}},\"findings\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"pillar\",\"severity\",\"title\",\"body\",\"sources\"],\"additionalProperties\":false,\"properties\":{\"pillar\":{\"type\":\"string\",\"enum\":[\"rules\",\"correctness\",\"design\",\"blast-radius\",\"security\",\"history\",\"congruence\"]},\"severity\":{\"type\":\"string\",\"enum\":[\"blocking\",\"high\",\"medium\",\"low\"]},\"title\":{\"type\":\"string\"},\"body\":{\"type\":\"string\"},\"path\":{\"type\":\"string\"},\"line\":{\"type\":\"integer\",\"minimum\":1},\"side\":{\"type\":\"string\",\"enum\":[\"LEFT\",\"RIGHT\"]},\"startLine\":{\"type\":\"integer\",\"minimum\":1},\"prevent\":{\"type\":\"string\"},\"sources\":{\"type\":\"array\",\"items\":{\"type\":\"integer\",\"minimum\":0}}}}},\"pullRequestSummary\":{\"type\":\"string\"},\"fixedThreadIds\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"dependencies\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"on\",\"kind\",\"why\"],\"additionalProperties\":false,\"properties\":{\"on\":{\"type\":\"string\"},\"kind\":{\"type\":\"string\",\"enum\":[\"package\",\"service\",\"api\",\"schema\",\"flag\",\"infra\",\"other\"]},\"why\":{\"type\":\"string\"}}}},\"dropped\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"index\",\"reason\"],\"additionalProperties\":false,\"properties\":{\"index\":{\"type\":\"integer\",\"minimum\":0},\"reason\":{\"type\":\"string\"}}}},\"splitProposal\":{\"type\":\"string\"}}}",
+        "--tools",
+        "Read,Grep,Glob,Skill",
+        "--allowedTools",
+        "Read,Grep,Glob,Skill",
+        "--permission-mode",
+        "dontAsk",
+        "--max-turns",
+        "40",
+        "--strict-mcp-config",
+        "--setting-sources",
+        "user",
+        "--settings",
+        "{\"enabledPlugins\":{\"skills@m\":true}}",
+        "--effort",
+        "low",
+        "--add-dir",
+        "/run",
+        "/refs"
+      ],
+      {
+        "cwd": "/tree",
+        "timeoutMs": 1800000
+      }
+    ]
+  },
   "review.verifier.web": {
     "arity": 3,
     "call": [

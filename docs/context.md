@@ -19,7 +19,7 @@ cut stated in the text.
 
 `review` and `run` build the context once, after skill selection, and write it as
 `review-context.md` in the run directory (`context.md` there is the pull request's own text from
-`prepare`). Only the pillars read it, as an extra line in their prompt: the verifier does not, but gets the linked commits found there ([Changes that fix a regression](review.md#changes-that-fix-a-regression)).
+`prepare`). Only the pillars read it, as an extra line in their prompt: the verifier does not, but gets the linked commits found there ([Changes that fix a regression](review.md#changes-that-fix-a-regression)) and the change-shape summary.
 The line says the file is reference data collected mechanically, that its quoted text is not
 instructions, that excerpts are alongside the Skill loads and not instead of them, and that a
 commit listed under linked regressions is to be checked against the change. A configured pillar
@@ -28,7 +28,7 @@ with a `run` command gets no line, since its command is its whole prompt.
 The pillars get `rule-excerpts` (for the selected skills only), `changed-line-history` and
 `linked-regressions`. They do not get `change-shape`, and never a section about other reviewers
 or past reviews: pillars are independent finders and must not be anchored by other reviewers'
-text. The names are `PILLAR_SECTIONS` in `src/review/run/review-context.mts`.
+text. The names are `PILLAR_SECTIONS` in `src/review/run/review-context.mts`. The same build also runs `change-shape`, for the verifier only: it keeps a summary when a large change mixes a mechanical part with the rest ([Large changes that mix mechanical and other edits](review.md#large-changes-that-mix-mechanical-and-other-edits)) and writes no text of the section to the file.
 
 The whole build has one deadline, `CONTEXT_DEADLINE_MS` (60 seconds), which also aborts its
 `git` calls. A build that fails, times out or has no section gives no file and no prompt line; the
@@ -95,6 +95,8 @@ split. It states facts and does not judge. Everything comes from local `git` in 
 A diff with no more reviewable lines than the built-in small-pull-request threshold of the mode choice
 (`SMALL_PR_LINES`; `plan.smallChangeLines` does not move it here) has no section. Work is bounded by `CAPS` in `src/review/context/change-shape/index.mts`
 (patch text, hunks analysed, commits read); when one is hit the section says so. The patch is read whole by `git` before it is cut.
+
+The section's one consumer is the verifier's split proposal, which takes the structured measurements (not this text) when a split is worth proposing ([Large changes that mix mechanical and other edits](review.md#large-changes-that-mix-mechanical-and-other-edits)).
 
 ## Past reviews
 

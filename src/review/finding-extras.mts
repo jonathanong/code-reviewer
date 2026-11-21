@@ -34,3 +34,22 @@ export function parseRegressionPrevent(raw: unknown): { regressionPrevent?: stri
   const line = raw.replace(/\s+/gu, ' ').trim()
   return line === '' ? {} : { regressionPrevent: line }
 }
+
+/** The optional proposal to split a large change that mixes mechanical and other changes. */
+export function parseSplitProposal(raw: unknown): { splitProposal?: string } {
+  if (raw === undefined) return {}
+  if (typeof raw !== 'string') throw new ReviewError('splitProposal must be a string.')
+  const text = raw.replace(/\s+/gu, ' ').trim()
+  return text === '' ? {} : { splitProposal: text }
+}
+
+/** The review-level advice the verifier may add; each part is optional and never part of the verdict. */
+export function parseAdvice(raw: Record<string, unknown>): {
+  regressionPrevent?: string
+  splitProposal?: string
+} {
+  return {
+    ...parseRegressionPrevent(raw.regressionPrevent),
+    ...parseSplitProposal(raw.splitProposal),
+  }
+}

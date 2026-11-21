@@ -187,6 +187,26 @@ it('runs every step with the exact claude call', async () => {
       { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
     ),
   )
+  const split = {
+    files: 49,
+    lines: 362,
+    mechanical: {
+      lines: 160,
+      files: 40,
+      parts: [{ what: 'the same edit repeated', files: 40, lines: 160 }],
+    },
+    explainedBy: ['.oxlintrc.json: rules.prefer-const'],
+    remainder: { lines: 202 },
+  }
+  await run('review.verifier.split', () =>
+    runReviewVerifier({ ...vin, split }, { model: 'opus', mode: 'full', tree: '/tree', exec }),
+  )
+  await run('review.verifier.split.settings.light', () =>
+    runReviewVerifier(
+      { ...vin, split },
+      { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
+    ),
+  )
   await run('review.verifier.web', () =>
     runReviewVerifier(
       { ...vin, web },
@@ -335,6 +355,6 @@ it('runs every step with the exact claude call', async () => {
   await run('bench.judge.settings', () =>
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
-  expect(Object.keys(captured)).toHaveLength(46)
+  expect(Object.keys(captured)).toHaveLength(48)
   expect(captured).toStrictEqual(EXPECTED)
 })

@@ -69,6 +69,8 @@ export type ReportData = {
   contextNote?: string // why the pillars got no context file; absent when they got one
   /** The commits the change says it fixes or reverts, and the verifier's one-line recommendation. */
   regression?: ReportRegression // absent without linked commits
+  /** The verifier's proposal to split a large change with a mechanical part; absent without one. */
+  splitProposal?: string
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
   /** The harness and model that ran each step; absent in a report written before steps recorded them. */
@@ -140,6 +142,7 @@ export function buildReport(input: ReportInput): ReportData {
       : { dependencies: [...input.dependencies] }),
     ...(input.contextNote === undefined ? {} : { contextNote: input.contextNote }),
     ...reportRegression(input.regression, output?.regressionPrevent),
+    ...(output?.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
     verifier:
       input.verifier === undefined
         ? null
