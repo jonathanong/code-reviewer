@@ -97,3 +97,10 @@ pnpm run lint
 pnpm run typecheck
 pnpm run test:coverage   # 100% thresholds
 ```
+
+The plugin is installed as a plain checkout with no `node_modules`, so runtime code imports only
+`node:` builtins and files in this repository (lint enforces it). `vendor/yaml.mjs` is the
+[`yaml`](https://github.com/eemeli/yaml) package bundled into one file for reading YAML config,
+with its license in `vendor/yaml.LICENSE`. After changing the `yaml` version in `package.json` or
+the lockfile, regenerate it with `pnpm run vendor` and commit the result; CI fails when the
+committed file differs from what the installed version produces.

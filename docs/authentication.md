@@ -1,12 +1,16 @@
 # Authentication and trust
 
 Calls use a GitHub App when one is configured, otherwise the local `gh` login. Configure the App
-with `app.json` in the config home, `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer` (the parent of
-the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it). The file may also be named `app.jsonc`, and may
-hold comments and trailing commas; keeping both `app.json` and `app.jsonc` fails the command:
+with `app.yaml` in the config home, `${XDG_CONFIG_HOME:-$HOME/.config}/code-reviewer` (the parent of
+the default `repos` directory; `CODE_REVIEWER_CONFIG_DIR` does not move it). The file may instead
+be named `app.yml`, `app.json` or `app.jsonc` (comments and trailing commas allowed in the JSON
+ones; see [configuration](configuration.md) for how each is read). Keeping the App config in more
+than one of these fails the command:
 
-```json
-{ "appId": "123", "privateKeyPath": "app.pem", "installationId": "456" }
+```yaml
+appId: '123'
+privateKeyPath: app.pem
+installationId: '456'
 ```
 
 `appId` is required (a string or number). `privateKeyPath` defaults to `app.pem` beside the file;
@@ -19,7 +23,7 @@ Windows). Any problem with the file or the key fails the command with a message 
 The environment overrides the file, for CI: when `CODE_REVIEWER_APP_ID` is set, the
 `CODE_REVIEWER_APP_*` variables are used (`CODE_REVIEWER_APP_PRIVATE_KEY` with PEM text, or
 `CODE_REVIEWER_APP_PRIVATE_KEY_PATH`, and optionally `CODE_REVIEWER_APP_INSTALLATION_ID`) and
-`app.json` is ignored. `code-reviewer auth` prints the `source` (`env` or the path of `app.json`),
+the file is ignored. `code-reviewer auth` prints the `source` (`env` or the path of the App config file),
 never the key.
 
 ## Creating the GitHub App
@@ -33,20 +37,20 @@ someone else and write check runs.
    reviewer receives no webhooks. Allow installation only on this account.
 2. Grant these repository permissions and no others:
 
-   | Permission    | Access         | Used for                                                  |
-   | ------------- | -------------- | --------------------------------------------------------- |
-   | Pull requests | Read and write | Reading pull requests, posting reviews, resolving threads |
-   | Issues        | Read and write | Adding and removing the review labels                     |
-   | Contents      | Read-only      | Reading `.code-reviewer.json` or `.jsonc`                 |
-   | Checks        | Read and write | The check run, when `checkRun` is configured              |
-   | Metadata      | Read-only      | Required by GitHub                                        |
+   | Permission    | Access         | Used for                                                   |
+   | ------------- | -------------- | ---------------------------------------------------------- |
+   | Pull requests | Read and write | Reading pull requests, posting reviews, resolving threads  |
+   | Issues        | Read and write | Adding and removing the review labels                      |
+   | Contents      | Read-only      | Reading `.code-reviewer.yaml`, `.yml`, `.json` or `.jsonc` |
+   | Checks        | Read and write | The check run, when `checkRun` is configured               |
+   | Metadata      | Read-only      | Required by GitHub                                         |
 
 3. On the App's page, note the App ID and generate a private key. Move the downloaded `.pem` to
    `app.pem` in the config home and run `chmod 600` on it. Delete the downloaded copy.
 4. Install the App on the account that owns it and select the repositories it reviews. To review
    another account, allow installation on any account in step 1, install it there, and select those
    repositories.
-5. Write `app.json` beside the key with the App ID, then run `code-reviewer auth`. It prints
+5. Write `app.yaml` beside the key with the App ID, then run `code-reviewer auth`. It prints
    `"mode": "app"`, the `source`, and the `login` the reviewer trusts.
 
 Renaming the App changes its login, so reviews it posted under the old name stop counting as its

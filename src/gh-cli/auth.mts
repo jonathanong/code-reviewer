@@ -12,7 +12,7 @@ import { createCommandRunner, runGh, type ExecFileText, type RunTextCommand } fr
 /** How `gh` calls authenticate: as the GitHub App, or with the local `gh` login. */
 export type GhAuth = {
   mode: 'app' | 'gh'
-  /** Where the App config came from (`env` or the `app.json` path); undefined under `gh`. */
+  /** Where the App config came from (`env` or the App config file path); undefined under `gh`. */
   source?: string
   /**
    * The login this auth posts reviews as when `gh` cannot report it: the App's `<slug>[bot]`

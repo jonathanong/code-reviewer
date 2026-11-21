@@ -161,7 +161,7 @@ describe('productionSources', () => {
     })
     expect(sources.configs?.byRepo.size).toBe(0)
     expect(sources.missing).toContain(
-      'acme/self/.code-reviewer{.json,.jsonc}: could not be read (HTTP 500); ignored',
+      'acme/self/.code-reviewer{.json,.jsonc,.yaml,.yml}: could not be read (HTTP 500); ignored',
     )
   })
 })

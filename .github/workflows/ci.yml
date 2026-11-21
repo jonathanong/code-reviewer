@@ -33,6 +33,11 @@ jobs:
           install: false
           node-version-file: false
       - run: pnpm install --frozen-lockfile
+      # A new yaml version fails here until vendor/ is regenerated with `pnpm run vendor`.
+      - name: Vendored YAML parser matches the installed yaml
+        run: |
+          pnpm run vendor
+          git diff --exit-code vendor/
       - run: pnpm run lint
       - run: pnpm run actionlint
       - run: pnpm run typecheck

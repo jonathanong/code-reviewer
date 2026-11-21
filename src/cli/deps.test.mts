@@ -170,7 +170,9 @@ describe('createDefaultDeps', () => {
     await expect(deps.targetConfig('a/none')).resolves.toEqual({ config: undefined, problems: [] })
     await expect(deps.targetConfig('a/bad')).resolves.toEqual({
       config: undefined,
-      problems: ['a/bad/.code-reviewer{.json,.jsonc}: could not be read (HTTP 500); ignored'],
+      problems: [
+        'a/bad/.code-reviewer{.json,.jsonc,.yaml,.yml}: could not be read (HTTP 500); ignored',
+      ],
     })
   })
 
@@ -181,7 +183,9 @@ describe('createDefaultDeps', () => {
     const deps = createDefaultDeps(getAuth, { CODE_REVIEWER_CONFIG_DIR: '/nowhere' })
     await expect(deps.targetConfig('a/b')).resolves.toEqual({
       config: undefined,
-      problems: ['a/b/.code-reviewer{.json,.jsonc}: could not be read (no credentials); ignored'],
+      problems: [
+        'a/b/.code-reviewer{.json,.jsonc,.yaml,.yml}: could not be read (no credentials); ignored',
+      ],
     })
   })
 

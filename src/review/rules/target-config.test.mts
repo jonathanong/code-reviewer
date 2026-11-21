@@ -142,11 +142,13 @@ describe('readTargetConfig', () => {
     }, 'a/b')
     expect(result).toEqual({
       config: undefined,
-      problems: ['a/b/.code-reviewer{.json,.jsonc}: could not be read (HTTP 500); ignored'],
+      problems: [
+        'a/b/.code-reviewer{.json,.jsonc,.yaml,.yml}: could not be read (HTTP 500); ignored',
+      ],
     })
     const odd = await readTargetConfig(() => Promise.reject('x'), 'a/b')
     expect(odd.problems).toEqual([
-      'a/b/.code-reviewer{.json,.jsonc}: could not be read (x); ignored',
+      'a/b/.code-reviewer{.json,.jsonc,.yaml,.yml}: could not be read (x); ignored',
     ])
   })
 })

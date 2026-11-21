@@ -154,7 +154,7 @@ describe('loadAppConfig from app.json', () => {
     const unreadable: AppConfigFs = {
       readText: (path) => {
         if (path === FILE) return '{"appId":"1"}'
-        if (path.endsWith('.jsonc')) return undefined
+        if (!path.endsWith('.pem')) return undefined
         throw new Error('EACCES')
       },
       mode: () => 0o600,
@@ -180,7 +180,9 @@ describe('loadAppConfig defaults', () => {
     const seen: string[] = []
     const fs: AppConfigFs = { readText: (path) => (seen.push(path), undefined), mode: () => 0 }
     loadAppConfig({ XDG_CONFIG_HOME: '/xdg', CODE_REVIEWER_CONFIG_DIR: '/elsewhere' }, fs)
-    expect(seen).toEqual(['/xdg/code-reviewer/app.json', '/xdg/code-reviewer/app.jsonc'])
+    expect(seen).toEqual(
+      ['.json', '.jsonc', '.yaml', '.yml'].map((ext) => `/xdg/code-reviewer/app${ext}`),
+    )
   })
 
   it('reads the real file system for a missing file and reports other errors', () => {

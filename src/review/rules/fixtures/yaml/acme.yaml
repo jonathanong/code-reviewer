@@ -1,0 +1,3 @@
+# shared by every acme repository
+labels:
+  requested: go # trailing comment

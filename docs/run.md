@@ -95,7 +95,7 @@ GitHub retry warnings stay on stderr, after the JSON line; stdout is still exact
 ## Config
 
 A machine-only key, in the files described under [Configuration](configuration.md). A repository's
-own `.code-reviewer.json` cannot set it, because it comes from the reviewed repository. Unknown
+own `.code-reviewer` file cannot set it, because it comes from the reviewed repository. Unknown
 rule names and keys are a config problem, which fails the precondition check.
 
 ```json
