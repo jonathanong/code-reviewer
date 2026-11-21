@@ -120,6 +120,7 @@ export function fakeDeps(options: FakeOptions) {
       })),
     })),
     exec: vi.fn(async () => ''),
+    progress: vi.fn(),
     references: vi.fn(),
     runBench: vi.fn(),
     runVerifierBench: vi.fn(),

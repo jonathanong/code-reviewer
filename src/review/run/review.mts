@@ -7,6 +7,7 @@ import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
 import { applyApprovalCheck } from './approval-check.mts'
+import { withCeilingSkip } from './ceiling-skip.mts'
 import { approvalCheckInput } from './approval-check-prompt.mts'
 import { skipReview } from './review-skip.mts'
 import { applyEvidence } from './evidence-step.mts'
@@ -99,7 +100,7 @@ async function review(
     exec: steps.exec,
     input: approvalCheckInput(steps.references, run, output, results, findings, pillarSkips),
   })
-  const { skipped, questions } = second
+  const { questions } = second
   const { evidence, findings: verified } = await applyEvidence({
     setup: () => steps.evidence(),
     readPrompt: () => read(join(steps.references, 'evidence.md')),
@@ -113,6 +114,8 @@ async function review(
     models,
     exec: steps.exec,
   })
+  // Evidence runs after the check, so a ceiling it hit is only known here.
+  const skipped = withCeilingSkip(second.skipped, models)
   const dependencies = reviewDependencies(run, output.dependencies)
   const input: ReviewInput = {
     effort: plan.effort,

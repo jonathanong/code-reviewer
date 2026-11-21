@@ -7,9 +7,10 @@ import type { ReviewDeps } from '../cli/deps.mts'
 import { resolveRun } from '../review/index.mts'
 import type { RunSettings } from '../review/rules/run-parse.mts'
 import { changeFacts, runFacts, type RunFacts } from './facts.mts'
+import { reviewFields } from './stage-fields.mts'
 import { release, postText, worthALook, writeExplain } from './finish.mts'
 import { holdRules, type Held } from './hold.mts'
-import { RUN_EXIT, runLine, type Counts, type RunLine } from './output.mts'
+import { RUN_EXIT, runLine, type RunLine } from './output.mts'
 import type { Preflight, RunFlags } from './preflight.mts'
 import type { Tree } from './tree.mts'
 
@@ -22,6 +23,8 @@ export type Stage = {
   clones: string | undefined
   jobs: string | undefined
   model: string[] | undefined
+  /** `--max-cost` and `--quiet`, handed to `review` as given. */
+  limits: { 'max-cost': string | undefined; quiet: boolean | undefined }
   effort: string | undefined
   signal: AbortSignal
   /** What every line of this run carries. */
@@ -50,23 +53,6 @@ function decide(
   return holdRules({ ...facts, ...change, tooLong, authMode: stage.deps.authMode() }, settings)
 }
 
-function reviewFields(
-  stage: Stage,
-  summary: Record<string, unknown>,
-  facts: RunFacts,
-): Partial<RunLine> {
-  return {
-    ...stage.base,
-    verdict: summary.verdict as string,
-    findings: summary.findings as Counts,
-    questions: facts.questions,
-    costUsd: summary.costUsd as number,
-    tokens: facts.tokens,
-    mode: summary.mode as string,
-    approvalCheck: (summary.approvalCheck ?? null) as RunLine['approvalCheck'],
-  }
-}
-
 /** The review exists and the claim is held: decide, then post or hold. Any failure releases the claim. */
 export async function finish(
   stage: Stage,
@@ -86,7 +72,7 @@ export async function finish(
     const change = changeFacts(files, facts.author, settings.riskyPaths)
     const held = decide(stage, facts, change, preview.outcome.tooLong, settings)
     signal.throwIfAborted()
-    const fields = reviewFields(stage, summary, facts)
+    const fields = reviewFields(stage.base, summary, facts)
     const problems = [...facts.partial, ...facts.truncated]
     if (held.length > 0) {
       const leftover = await release(pull, deps, true)
@@ -167,6 +153,8 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
       ...(stage.clones === undefined ? {} : { clones: stage.clones }),
       ...(stage.jobs === undefined ? {} : { jobs: stage.jobs }),
       ...(stage.model === undefined ? {} : { model: stage.model }),
+      ...(stage.limits['max-cost'] === undefined ? {} : { 'max-cost': stage.limits['max-cost'] }),
+      ...(stage.limits.quiet === undefined ? {} : { quiet: stage.limits.quiet }),
       ...(stage.effort === undefined ? {} : { effort: stage.effort }),
     },
     pull,

@@ -1,7 +1,7 @@
 # Running a review
 
 ```bash
-code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--force]
+code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--force]
 code-reviewer report --out DIR
 ```
 
@@ -61,6 +61,27 @@ A finding may carry `prevent`, one optional line naming a lint rule, type, test 
 would stop the class of mistake. It is kept in `review.json`, shown as a `**Prevent:**` line under
 the finding in the posted comment and in `report.md`, and absent means nothing is rendered. A
 `prevent` over 160 characters warns like any over-long posted text.
+
+## Progress and the cost ceiling
+
+`review` writes one line to stderr when each step starts and when it ends, and one when a step
+waits on a rate limit:
+
+```text
+code-reviewer: pillar.design claude:sonnet started
+code-reviewer: pillar.design claude:sonnet waiting 5.0s on a rate limit
+code-reviewer: pillar.design claude:sonnet done in 41.2s, $0.31
+code-reviewer: verifier claude:opus failed in 9.8s: claude exited with 1
+code-reviewer: pillar.security claude:sonnet skipped: cost ceiling reached ($1.02 of $1.00)
+```
+
+The harness and model are those that ran the step; the cost is left out when the harness reported
+none. Stdout still carries only the JSON summary, and the lines never reach a prompt or a command
+line. `--quiet` turns them off.
+
+`--max-cost USD`, or [`limits.maxCostUsd`](configuration.md#limits), stops steps from starting once
+the cost reported so far reaches the ceiling. Steps that report no cost count as zero. A review
+that skipped a step this way is never an approval.
 
 ## Headless runs
 

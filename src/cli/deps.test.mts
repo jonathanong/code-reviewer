@@ -241,6 +241,13 @@ describe('createDefaultDeps', () => {
     expect(deps.references().endsWith('skills/review/references')).toBe(true)
   })
 
+  it('writes progress to stderr', () => {
+    const write = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    createDefaultDeps(fakeAuth().getAuth).progress('code-reviewer: step started\n')
+    expect(write).toHaveBeenCalledWith('code-reviewer: step started\n')
+    write.mockRestore()
+  })
+
   it('reads repository guides from the given clone root, else the environment one', async () => {
     const guide = { repo: 'acme/ops', path: 'docs/data.md' }
     const none = createDefaultDeps(fakeAuth().getAuth, {}).guideReader(undefined)

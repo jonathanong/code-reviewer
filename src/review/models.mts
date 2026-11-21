@@ -1,7 +1,9 @@
 import type { Exec } from './benchmark/exec.mts'
 import { HARNESS_NAMES } from '../harness/registry.mts'
+import { watchStep, type StepWatch } from './step-watch.mts'
 import {
   DEFAULT_MAX_WAIT_SECONDS,
+  describeStepFailure,
   realRuntime,
   runStep,
   type StepRun,
@@ -134,7 +136,12 @@ export function modelTable(plan: ModelPlan): Record<string, Candidate[]> {
 }
 
 /** The plan, and the sleep and clock its waits use; tests replace the clock. */
-export type StepModels = { plan: ModelPlan; clock?: Pick<StepRuntime, 'sleep' | 'now'> }
+export type StepModels = {
+  plan: ModelPlan
+  clock?: Pick<StepRuntime, 'sleep' | 'now'>
+  /** Progress lines and the cost ceiling of one review; steps run without them when absent. */
+  watch?: StepWatch
+}
 
 export const DEFAULT_STEP_MODELS: StepModels = { plan: DEFAULT_MODEL_PLAN }
 
@@ -146,5 +153,15 @@ export function runModelStep(
   exec: Exec,
 ): Promise<StepRun> {
   const runtime = { ...realRuntime(models.plan.retry.maxWaitSeconds), ...models.clock }
-  return runStep(request, candidatesFor(models.plan, step.keys, step.fallback), exec, runtime)
+  const candidates = candidatesFor(models.plan, step.keys, step.fallback)
+  const { watch } = models
+  if (watch === undefined || candidates.length === 0)
+    return runStep(request, candidates, exec, runtime)
+  return watchStep(
+    watch,
+    step.keys[0] as string,
+    candidates[0] as Candidate,
+    (onWait) => runStep(request, candidates, exec, { ...runtime, onWait }),
+    describeStepFailure,
+  )
 }

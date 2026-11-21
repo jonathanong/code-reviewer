@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `models`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `models`, `limits`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -230,6 +230,34 @@ the file and key, and the whole `models` key is ignored. It is machine-only, lik
 repository's own file cannot set it, and says `models is machine-only; ignored`. The highest
 machine layer that sets it is used whole. `code-reviewer settings` prints the resolved table.
 `bench` ignores this key and always runs the defaults, so scores stay comparable across machines.
+
+## `limits`
+
+```yaml
+limits:
+  maxCostUsd: 5
+```
+
+A cost ceiling per review, in US dollars: a number above 0. Absent means no ceiling, and every
+step runs as without this key. Before it starts each step, a review compares the cost its steps
+have reported so far with the ceiling; at or above it, the step does not start. The cost is the
+sum of what the harnesses reported for finished and failed steps, so a step that reports no cost
+counts as zero, and a step already running is never stopped. Steps that run at once (the pillars
+at `--jobs` above 1) are checked as each starts, so the total can pass the ceiling by what those
+steps cost.
+
+A pillar, the second check on an approval or the evidence step that did not start is listed as
+skipped with the reason `cost ceiling reached ($X of $Y)`. A review that lost a step this way is
+never an approval: it lists the `approval-check` entry, which makes the verdict a comment. The
+verifier cannot be skipped, so a review that reaches the ceiling before it fails with that reason
+and leaves the pillars' results in its run directory.
+
+`--max-cost USD` on `review` and `run` sets the ceiling for that run and beats the config. A
+value that is not a number above 0 is a usage error. A bad config value is a problem naming the
+file and key, and the whole `limits` key is ignored. It is machine-only, like `models`: a
+repository's own file cannot set it, and says `limits is machine-only; ignored`. The highest
+machine layer that sets it is used. `code-reviewer settings` prints the resolved ceiling
+(`null` for none). `bench` ignores this key.
 
 ## `labels` and `checkRun`
 

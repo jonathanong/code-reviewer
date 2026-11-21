@@ -64,7 +64,6 @@ Agreed and not built yet. Nothing below works today.
   a link; lesser ones are not repeated.
 - **Large changes.** A mechanical change (a lint rule enabled and auto-fixed) is recognised as
   one; a change that mixes concerns gets a proposed split as the review.
-- **Cost.** Tokens reported per model in the benchmarks, and a cost ceiling per review.
 
 ## Outcomes
 

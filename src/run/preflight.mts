@@ -9,6 +9,7 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import { parseModelOverrides } from '../review/models.mts'
+import { parseMaxCost } from '../review/limits-settings.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/settings.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
@@ -31,6 +32,7 @@ type FlagValues = {
   effort?: string | undefined
   force?: boolean | undefined
   model?: string[] | undefined
+  'max-cost'?: string | undefined
 }
 
 /** Validates the flags before anything is read or written. */
@@ -52,6 +54,7 @@ export function parseFlags(values: FlagValues): RunFlags {
   }
   try {
     parseModelOverrides(values.model ?? [])
+    parseMaxCost(values['max-cost'])
   } catch (error) {
     throw new Precondition((error as Error).message, { cause: error })
   }
