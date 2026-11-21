@@ -9,6 +9,7 @@ import {
   notObjectProblem,
   parseConfigText,
 } from './config-files.mts'
+import type { IssuesConfig } from '../../issues/config-parse.mts'
 import type { ModelConfig } from '../models.mts'
 import { consumesList } from './consumes-parse.mts'
 import type { EvidenceSource } from './evidence-parse.mts'
@@ -68,6 +69,8 @@ export type RepoConfig = {
   models?: ModelConfig
   /** Machine config only: the cost ceiling spends the operator's money, so a reviewed repository cannot raise it. */
   limits?: LimitsConfig
+  /** Machine config only: it files issues in other repositories, so a reviewed repository cannot turn it on. */
+  issues?: IssuesConfig
   problems: string[]
 }
 
@@ -88,6 +91,7 @@ const KEYS = new Set([
   'run',
   'models',
   'limits',
+  'issues',
 ])
 
 type Json = Record<string, unknown>

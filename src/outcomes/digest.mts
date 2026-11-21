@@ -2,30 +2,11 @@ import { join } from 'node:path'
 
 import type { TrackerIo } from '../tracker/types.mts'
 import { readOutcomes } from './store.mts'
+import { count, escape, tally } from './group.mts'
+import { findProposals } from './propose.mts'
 import { OUTCOMES, type OutcomeRow } from './types.mts'
 
-/** A pillar or rule needs at least this many findings before it is judged. */
-export const PROPOSAL_MIN_FINDINGS = 3
-/** A group with at least this share of rejected or disputed findings is listed for review. */
-export const PROPOSAL_BAD_SHARE = 0.5
-/** A rule with at least this many fixed findings and no rejected one is listed as working. */
-export const WORKING_MIN_FIXED = 3
-
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/u
-const escape = (text: string) => text.replace(/[[\]|\\<>]/gu, (char) => `\\${char}`)
-
-function tally(rows: readonly OutcomeRow[], by: (row: OutcomeRow) => string | null) {
-  const groups = new Map<string, OutcomeRow[]>()
-  for (const row of rows) {
-    const key = by(row)
-    if (key !== null) groups.set(key, [...(groups.get(key) ?? []), row])
-  }
-  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
-}
-
-const count = (rows: readonly OutcomeRow[], outcome: string) =>
-  rows.filter((row) => row.outcome === outcome).length
-
 function table(heading: string, groups: [string, OutcomeRow[]][]): string[] {
   if (groups.length === 0) return [`## ${heading}`, '', 'None.', '']
   const head = `| ${heading.replace(/^By /u, '')} | total | ${OUTCOMES.join(' | ')} |`
@@ -41,26 +22,11 @@ const link = (row: OutcomeRow) =>
 
 /** Proposals from fixed thresholds only; no model reads the findings. */
 export function proposals(rows: readonly OutcomeRow[]): string[] {
-  const lines: string[] = []
-  const groups = [
-    ['pillar', tally(rows, (row) => row.pillar)],
-    ['rule', tally(rows, (row) => row.rule)],
-  ] as const
-  for (const [kind, entries] of groups) {
-    for (const [name, group] of entries) {
-      const bad = count(group, 'rejected') + count(group, 'disputed')
-      if (group.length >= PROPOSAL_MIN_FINDINGS && bad / group.length >= PROPOSAL_BAD_SHARE) {
-        lines.push(
-          `- Review this ${kind}/prompt: \`${name}\` (${bad} of ${group.length} rejected or disputed)`,
-        )
-      }
-      const fixed = count(group, 'fixed')
-      if (kind === 'rule' && fixed >= WORKING_MIN_FIXED && count(group, 'rejected') === 0) {
-        lines.push(`- Working: \`${name}\` (${fixed} fixed, none rejected)`)
-      }
-    }
-  }
-  return lines
+  return findProposals(rows).map((found) =>
+    found.kind === 'review'
+      ? `- Review this ${found.scope}/prompt: \`${found.name}\` (${found.bad} of ${found.rows.length} rejected or disputed)`
+      : `- Working: \`${found.name}\` (${found.fixed} fixed, none rejected)`,
+  )
 }
 
 /** The digest's Markdown: titles, paths and links only, never code. */

@@ -52,10 +52,8 @@ Agreed and not built yet. Nothing below works today.
   quoted verbatim with a link to the full skill, the history of the changed lines, linked
   regressions, and past reviews.
 - **Code analysis.** `no-mistakes` as a read-only analysis plugin for the reviewers.
-- **Feedback loops.** Each finding's outcome is recorded (fixed, disputed, ignored, and
-  reactions: a thumbs-down means the review was bad). A digest proposes rule and prompt changes,
-  as a Claude Doc or a local file per day. Where config opts in, issues are filed in the
-  repository that owns the problem: the rules, the harness, or this reviewer.
+- **Feedback loops.** The daily digest as a Claude Doc, and issues about the harness, not only
+  rules and pillar prompts.
 - **Regression fixes.** A pull request that fixes a regression is recognised, the change that
   introduced it is reviewed, and the review recommends a rule, an eval case, or both.
 - **Re-reviews build on the last one.** On the same machine a re-review starts from the earlier
@@ -114,6 +112,8 @@ code-reviewer help
 - [Tracker and explainer](docs/tracker.md): the record of every review and the plain-words
   explanation of one.
 - [Outcomes](docs/outcomes.md): what became of each posted finding, and the daily digest.
+- [Filing issues](docs/issues.md): opt-in issues in the repositories that own a rule or this
+  reviewer, from the outcomes data.
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and
   whose reviews count.
