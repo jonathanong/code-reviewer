@@ -2,6 +2,18 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-20: (no run) production verifier reviews a change that fixes a regression
+
+A production review whose pull request names commits it fixes or reverts, found in local history,
+now adds one block to the verifier prompt and an optional `regressionPrevent` to its output schema:
+check that the diff addresses what those commits broke, and give at most one line naming a rule or
+test that would have caught it. The benchmark verifier arm (`buildVerifierPrompt`,
+`VERIFIER_OUTPUT_SCHEMA`) passes no linked commits and is unchanged, so no `bench-verifier` prompt
+differs and no score here measures this. Cases that would be affected if it did: only a case whose
+fixture commit messages revert or fix a commit present in its history. None does today; a new case
+of that kind is where precision could move, because the verifier could raise a finding that a pillar
+did not report. No run was made and no score is re-measured.
+
 ## 2026-11-20: (no run) production verifier may restate other reviewers' blocking/high items
 
 A production review whose pull request has unresolved threads from other reviewers that state a

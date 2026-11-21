@@ -6,6 +6,7 @@ import { raisedByLine } from '../raised-by.mts'
 import { locationText } from '../render.mts'
 import { dependencyLine } from '../dependency-render.mts'
 import { renderCarried } from './carried-report.mts'
+import { renderRegression } from './regression-report.mts'
 import { renderPush } from './push-report.mts'
 import { renderRan } from './report-models.mts'
 import { renderStack } from './stack-report.mts'
@@ -101,6 +102,7 @@ export function renderReport(data: ReportData): string {
             verified(finding, at, data.stack?.fixedLater.find((entry) => entry.finding === at)?.pr),
           )
           .join('\n\n'),
+    ...renderRegression(data.regression),
     ...renderQuestions(data.questions ?? []),
     ...renderApprovalCheck(data.approvalCheck),
     ...renderPostWarnings(data.postWarnings ?? []),

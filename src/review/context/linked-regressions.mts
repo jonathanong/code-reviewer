@@ -1,5 +1,11 @@
-import { parseReferences } from './reference-parse.mts'
-import type { ContextDeps, ContextInput, ContextSection, SectionBuilder } from './types.mts'
+import { parseReferences, type LinkHow } from './reference-parse.mts'
+import type {
+  ContextDeps,
+  ContextInput,
+  ContextSection,
+  LinkedCommit,
+  SectionBuilder,
+} from './types.mts'
 
 /** Referenced commits described at most; the rest are named only. */
 export const MAX_REFERENCES = 6
@@ -12,7 +18,7 @@ export const MAX_SHARED_FILES = 5
 const TIMEOUT_MS = 30_000
 const FORMAT = '--format=%H%x1f%h%x1f%cs%x1f%s'
 
-type Ref = { label: string; sha: string }
+type Ref = { label: string; sha: string; how: LinkHow }
 type Commit = { full: string; short: string; date: string; subject: string; files: string[] }
 
 const reason = (error: unknown): string =>
@@ -82,20 +88,29 @@ export const linkedRegressions: SectionBuilder = {
       `${input.baseSha}..${input.headSha}`,
     ])
     const found = parseReferences(log.split('\u001e'))
-    const refs: Ref[] = found.shas.map((sha) => ({ label: `\`${sha}\``, sha }))
+    const refs: Ref[] = found.shas.map((sha) => ({
+      label: `\`${sha}\``,
+      sha,
+      how: found.how[sha] as LinkHow,
+    }))
     const unresolved: string[] = []
     const tried = [
       ...found.subjects.map((s) => ({
         label: `revert of "${s}"`,
+        how: 'revert' as const,
         find: () => bySubject(git, input, s),
       })),
-      ...found.numbers.map((n) => ({ label: `#${n}`, find: () => byNumber(git, input, n) })),
+      ...found.numbers.map((n) => ({
+        label: `#${n}`,
+        how: 'mentioned' as const,
+        find: () => byNumber(git, input, n),
+      })),
     ]
     for (const item of tried) {
       try {
         const sha = await item.find()
         if (sha === null) unresolved.push(item.label)
-        else refs.push({ label: item.label, sha })
+        else refs.push({ label: item.label, sha, how: item.how })
       } catch (error) {
         unresolved.push(`${item.label} (${reason(error)})`)
       }
@@ -115,12 +130,19 @@ export const linkedRegressions: SectionBuilder = {
     )
     const body: string[] = []
     const seen = new Set<string>()
+    const linked: LinkedCommit[] = []
     for (const ref of refs.slice(0, MAX_REFERENCES)) {
       try {
         const commit = await describe(git, ref.sha)
         if (commit === null) unresolved.push(ref.label)
         else if (!seen.has(commit.full)) {
           seen.add(commit.full)
+          linked.push({
+            sha: commit.full,
+            subject: commit.subject,
+            how: ref.how,
+            files: commit.files.slice(0, MAX_COMMIT_FILES),
+          })
           body.push(lines(commit, ref.label, mine).join('\n'))
         }
       } catch (error) {
@@ -132,6 +154,6 @@ export const linkedRegressions: SectionBuilder = {
     if (unresolved.length > 0) {
       body.push(`Not found in local history: ${unresolved.join('; ')}.`)
     }
-    return { title: 'Linked regressions', body: body.join('\n\n') }
+    return { title: 'Linked regressions', body: body.join('\n\n'), linked }
   },
 }

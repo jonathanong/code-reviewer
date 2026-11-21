@@ -70,6 +70,16 @@ export function checkPostedText(
 export const PREVENT_TARGET = 160
 
 function preventWarnings(input: ReviewInput): string[] {
+  const note = input.regressionPrevent ?? ''
+  return [
+    ...(note.length > PREVENT_TARGET
+      ? [`regressionPrevent is ${note.length} characters, over its ${PREVENT_TARGET} target`]
+      : []),
+    ...findingPreventWarnings(input),
+  ]
+}
+
+function findingPreventWarnings(input: ReviewInput): string[] {
   return input.findings.flatMap((finding, at) =>
     (finding.prevent?.length ?? 0) > PREVENT_TARGET
       ? [

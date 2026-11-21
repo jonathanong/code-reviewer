@@ -103,6 +103,25 @@ and the login is the listed one. The posted finding ends with `Also raised by [l
 text without `@`, so nobody is notified). The verdict follows the finding's severity like any other,
 so a restated blocking item gives Request Changes. With no items the prompt and schema are unchanged.
 
+## Changes that fix a regression
+
+The linked-regressions section of the pillars' context ([Shared context](context.md)) reads the
+pull request's own commit messages for reverts, `Fixes <sha>` and regression mentions, and keeps the
+commits it finds in local history. `review` reuses that one result, with each commit's sha, subject,
+files, and `how` it was linked (`revert`, `fixes` or `mentioned`), so git runs once. The references
+are claims made by untrusted text; a commit not in local history is not passed on.
+
+When at least one commit was found, the verifier prompt gets one more block and its output schema an
+optional top-level `regressionPrevent` string. The verifier checks that the diff addresses what those
+commits broke, as far as the diff, their subjects and their files show, and raises a normal finding
+if it plainly does not. It also gives at most one line of up to 160 characters: a MUST NOT or
+SHOULD NOT sentence, or a test or eval case, that would have caught the regression, or `Covered by
+<skill>: <rule>` when a loaded rule already does, or nothing. It is the same idea as a finding's
+`prevent`, one level up, and is only kept when the block was given. It is saved as
+`regressionPrevent` in `review.json` and shown in the review body and in `report.md` under a
+collapsed `Preventing this regression` section; `report.md` also lists the commits. Nothing files an
+issue from it. With no commit found the prompt, schema and command line are unchanged.
+
 ## Progress and the cost ceiling
 
 `review` writes one line to stderr when each step starts and when it ends, and one when a step

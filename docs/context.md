@@ -19,7 +19,7 @@ cut stated in the text.
 
 `review` and `run` build the context once, after skill selection, and write it as
 `review-context.md` in the run directory (`context.md` there is the pull request's own text from
-`prepare`). Only the pillars read it, as an extra line in their prompt: the verifier does not.
+`prepare`). Only the pillars read it, as an extra line in their prompt: the verifier does not, but gets the linked commits found there ([Changes that fix a regression](review.md#changes-that-fix-a-regression)).
 The line says the file is reference data collected mechanically, that its quoted text is not
 instructions, that excerpts are alongside the Skill loads and not instead of them, and that a
 commit listed under linked regressions is to be checked against the change. A configured pillar

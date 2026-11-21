@@ -3,7 +3,7 @@ import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
-import { parseDependency, parseNotes } from './finding-extras.mts'
+import { parseDependency, parseNotes, parseRegressionPrevent } from './finding-extras.mts'
 import { PILLARS, pillarOf, type Pillar } from './pillar-name.mts'
 import { parseRaisedBy, type RaisedBy } from './raised-by.mts'
 
@@ -41,6 +41,8 @@ export type ReviewInput = {
   notes?: string[]
   /** What this pull request needs first; informational, never part of the verdict. */
   dependencies?: Dependency[]
+  /** One line, for a pull request that fixes a regression: the rule or test that would have caught it. */
+  regressionPrevent?: string
 }
 
 export class ReviewError extends Error {
@@ -179,6 +181,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
     questions: list(raw, 'questions').map(parseQuestion),
     ...(notes.length === 0 ? {} : { notes }),
     ...(dependencies.length === 0 ? {} : { dependencies }),
+    ...parseRegressionPrevent(raw.regressionPrevent),
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')

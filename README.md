@@ -46,11 +46,9 @@ Agreed and not built yet. Nothing below works today.
 - **Other harnesses.** An adapter for Codex, which the harness registry takes with one line.
 - **Shared context.** The pillars read rule excerpts, the history of the changed lines and linked
   regressions ([Shared context](docs/context.md)), but still load every skill. Excerpts do not yet
-  replace Skill loads, past reviews are not built, and the verifier and other steps read none of it.
+  replace Skill loads, past reviews are not built, and the verifier reads only the linked commits, other steps none of it.
 - **Feedback loops.** The daily digest as a Claude Doc, and issues about the harness, not only
   rules and pillar prompts.
-- **Regression fixes.** A pull request that fixes a regression is recognised, the change that
-  introduced it is reviewed, and the review recommends a rule, an eval case, or both.
 - **Re-reviews build on the last one.** On the same machine a re-review starts from the earlier
   run's saved results and evidence, reviews only the diff since, and adds to it.
 - **Large changes.** A mechanical change (a lint rule enabled and auto-fixed) is recognised as

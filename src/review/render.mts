@@ -96,6 +96,11 @@ export function reviewMarker(
   return `<!-- final-review sha=${headSha} verdict=${verdict.replace(' ', '-')} effort=${effort} -->`
 }
 
+/** The rule or test that would have caught the regression this change fixes; collapsed. */
+export function regressionSection(prevent: string | undefined): string[] {
+  return prevent === undefined ? [] : [detail('Preventing this regression', prevent)]
+}
+
 function skippedSection(skipped: readonly SkippedPillar[]): string[] {
   if (skipped.length === 0) return []
   const rows = skipped.map((entry) => `- **${entry.pillar}**: ${entry.reason}`).join('\n')
@@ -118,6 +123,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
     ...renderQuestions(input.questions),
     ...notesSection(input.notes),
     ...dependsOnSection(input.dependencies),
+    ...regressionSection(input.regressionPrevent),
     ...skippedSection(input.skipped),
   ].join('\n\n')
 }

@@ -68,6 +68,19 @@ describe('buildReviewContext', () => {
     expect(calls.some((call) => call.args.includes('--numstat'))).toBe(false)
   })
 
+  it('hands back the linked commits it found, and none when there are none', async () => {
+    const sha = 'a'.repeat(40)
+    const exec: Exec = async (_command, args) => {
+      const git = args.slice(2)
+      if (git[0] === 'log' && git.at(-1) === 'b..h') return `Fixes ${sha}\u001e`
+      if (git[0] === 'show') return `${sha}\u001faaaaaaa\u001f2024-01-01\u001fAdd cache\nsrc/c.ts\n`
+      return ''
+    }
+    const built = await buildReviewContext(input(exec))
+    expect(built.linked).toEqual([{ sha, subject: 'Add cache', how: 'fixes', files: ['src/c.ts'] }])
+    expect(await buildReviewContext(input(async () => ''))).not.toHaveProperty('linked')
+  })
+
   it('gives a note and no file when nothing has anything to say', async () => {
     const built = await buildReviewContext(input(async () => '', { selected: [] }))
     expect(built).toEqual({ note: 'no section had anything to say' })
