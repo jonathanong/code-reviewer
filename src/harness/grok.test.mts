@@ -207,3 +207,10 @@ describe('grok describeFailure', () => {
     expect(harness.describeFailure('y')).toStrictEqual({ message: 'y', usage: null })
   })
 })
+
+describe('grok classifyFailure', () => {
+  it('never classifies a failure as one to wait out', () => {
+    const limited = new ExecError('grok exited with 1', 1, '{"type":"error","message":"429"}', null)
+    expect(harness.classifyFailure(limited)).toStrictEqual({ kind: 'other' })
+  })
+})

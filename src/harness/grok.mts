@@ -20,4 +20,6 @@ export const harness: Harness = {
     return readGrokResult(stdout, request.label)
   },
   describeFailure: describeGrokFailure,
+  // No rate-limit or auth error from Grok has been captured, so nothing is retried on a guess.
+  classifyFailure: () => ({ kind: 'other' }),
 }
