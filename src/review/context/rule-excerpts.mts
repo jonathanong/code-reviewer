@@ -6,6 +6,8 @@ export const LIST_SHARE_MIN = 0.85
 /** Characters of one skill quoted at most; whole sections only. */
 export const SKILL_QUOTE_CAP = 6000
 
+const SEPARATOR = '\n\n'
+
 const quote = (text: string): string =>
   text
     .split('\n')
@@ -25,13 +27,15 @@ function excerpt(skill: ContextSkill, text: string): string {
   const dropped: string[] = []
   let used = 0
   for (const section of splitSections(body)) {
-    if (dropped.length === 0 && used + section.text.length <= SKILL_QUOTE_CAP) {
+    // Sections are joined by a blank line, which counts against the cap too.
+    const cost = section.text.length + (kept.length === 0 ? 0 : SEPARATOR.length)
+    if (dropped.length === 0 && used + cost <= SKILL_QUOTE_CAP) {
       kept.push(section.text)
-      used += section.text.length
+      used += cost
     } else dropped.push(section.heading)
   }
   const lines = describe(skill)
-  if (kept.length > 0) lines.push('', quote(kept.join('\n\n')))
+  if (kept.length > 0) lines.push('', quote(kept.join(SEPARATOR)))
   if (dropped.length > 0) {
     lines.push(
       '',

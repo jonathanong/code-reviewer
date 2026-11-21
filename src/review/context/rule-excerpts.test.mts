@@ -77,6 +77,16 @@ describe('ruleExcerpts', () => {
     expect(section!.body).toContain('Sections not quoted (over the cap): Second; Third.')
   })
 
+  it('counts the blank line between sections against the cap', async () => {
+    const half = (name: string) => `## ${name}\n- ${'x'.repeat(SKILL_QUOTE_CAP / 2 - 7)}`
+    const text = `${half('A')}\n\n${half('B')}\n`
+    expect(half('A')).toHaveLength(SKILL_QUOTE_CAP / 2)
+    const section = await ruleExcerpts.build(input([rules]), deps({ [rules.file]: text }))
+    expect(quoted(section!.body).some((line) => line === '## A')).toBe(true)
+    expect(quoted(section!.body).some((line) => line === '## B')).toBe(false)
+    expect(section!.body).toContain('Sections not quoted (over the cap): B.')
+  })
+
   it('quotes nothing when even the first section is over the cap', async () => {
     const text = `## Only\n- ${'x'.repeat(SKILL_QUOTE_CAP)}\n`
     const section = await ruleExcerpts.build(input([rules]), deps({ [rules.file]: text }))

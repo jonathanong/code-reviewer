@@ -33,10 +33,14 @@ export function listRuleSkills(
   }))
 }
 
-/** `listRuleSkills` with the absolute path of each SKILL.md. */
+/**
+ * `listRuleSkills` with the absolute path of each SKILL.md. A SKILL.md that cannot be read throws,
+ * unless `unreadable` is given: then it is skipped and a line naming it is added there.
+ */
 export function listRuleSkillFiles(
   installs: readonly PluginInstall[],
   rulePlugins: readonly string[],
+  unreadable?: string[],
 ): (RuleSkill & { file: string })[] {
   const found: (RuleSkill & { file: string })[] = []
   for (const plugin of rulePlugins) {
@@ -46,7 +50,15 @@ export function listRuleSkillFiles(
     for (const entry of readdirSync(root, { withFileTypes: true })) {
       const file = join(root, entry.name, 'SKILL.md')
       if (!entry.isDirectory() || !existsSync(file)) continue
-      const { name, description } = parseFrontmatter(readFileSync(file, 'utf8'))
+      let text: string
+      try {
+        text = readFileSync(file, 'utf8')
+      } catch (error) {
+        if (unreadable === undefined) throw error
+        unreadable.push(`${plugin}:${entry.name} could not be read: ${(error as Error).message}`)
+        continue
+      }
+      const { name, description } = parseFrontmatter(text)
       found.push({
         name: `${plugin}:${name ?? entry.name}`,
         description: (description ?? '').replace(/\s+/gu, ' ').trim(),

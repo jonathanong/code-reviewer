@@ -16,6 +16,14 @@ describe('stripFrontmatter', () => {
     expect(stripFrontmatter('---\nname: a\n')).toBe('---\nname: a\n')
   })
 
+  it('accepts CRLF frontmatter and keeps the body', () => {
+    expect(stripFrontmatter('---\r\nname: a\r\n---\r\n- rule\r\n')).toBe('- rule\r\n')
+  })
+
+  it('accepts an empty frontmatter', () => {
+    expect(stripFrontmatter('---\n---\nbody')).toBe('body')
+  })
+
   it('returns nothing for a file that is only frontmatter', () => {
     expect(stripFrontmatter('---\nname: a\n---')).toBe('')
   })
@@ -35,6 +43,19 @@ describe('listShare', () => {
     expect(listShare('- a\nprose\n')).toBe(0.5)
   })
 
+  it('counts numbered items with either delimiter', () => {
+    expect(listShare('1) MUST keep identity.\n2) MUST release resources.\n3. MUST log.\n')).toBe(1)
+  })
+
+  it('is not closed by a shorter or different fence inside a block', () => {
+    const body = '- a\n````\nprose\n```\nmore prose\n~~~~\n````\n- b\n'
+    expect(listShare(body)).toBe(1)
+  })
+
+  it('does not open a code block on a backtick fence whose info string has a backtick', () => {
+    expect(listShare('``` a`b\nprose\n')).toBe(0)
+  })
+
   it('is zero for an empty body', () => {
     expect(listShare('')).toBe(0)
   })
@@ -50,6 +71,19 @@ describe('splitSections', () => {
       'Doodads',
     ])
     expect(sections[2]!.text).toContain('## not a heading, inside a fence')
+  })
+
+  it('does not split on a heading inside a longer fence closed by a shorter line', () => {
+    const body = '## A\n````\n```\n## inside\n````\n## B\n- x\n'
+    expect(splitSections(body).map((section) => section.heading)).toEqual(['A', 'B'])
+  })
+
+  it('keeps the whitespace of nonblank lines and drops only blank lines at the ends', () => {
+    const sections = splitSections('\n  - indented item\n- last   \n\n## B\n\n- b  \n\n')
+    expect(sections.map((section) => section.text)).toEqual([
+      '  - indented item\n- last   ',
+      '## B\n\n- b  ',
+    ])
   })
 
   it('drops an empty introduction', () => {

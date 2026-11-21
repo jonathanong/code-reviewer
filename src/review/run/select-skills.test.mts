@@ -41,6 +41,20 @@ describe('listRuleSkills', () => {
     ])
   })
 
+  it('skips a SKILL.md that cannot be read and says so when asked, else throws', () => {
+    const installs = [
+      {
+        name: 'broken',
+        installPath: fileURLToPath(new URL('../context/fixtures/unreadable', import.meta.url)),
+      },
+    ]
+    const unreadable: string[] = []
+    expect(listRuleSkillFiles(installs, ['broken'], unreadable)).toEqual([])
+    expect(unreadable).toHaveLength(1)
+    expect(unreadable[0]).toContain('broken:broken could not be read')
+    expect(() => listRuleSkillFiles(installs, ['broken'])).toThrow()
+  })
+
   it('lists the skills of the configured plugins only', () => {
     expect(listRuleSkills(INSTALLS, ['no-mistakes-rules']).map((skill) => skill.name)).toEqual([
       'no-mistakes-rules:git-rules',

@@ -15,10 +15,13 @@ afterEach(() => {
 })
 
 const installPath = fileURLToPath(new URL('../review/context/fixtures/plugin', import.meta.url))
+const unreadablePath = fileURLToPath(
+  new URL('../review/context/fixtures/unreadable', import.meta.url),
+)
 const HEAD = 'a'.repeat(40)
 const BASE = 'b'.repeat(40)
 
-function fake() {
+function fake(plugins = ['team']) {
   const calls: string[][] = []
   const deps = {
     exec: async (command: string, args: string[]) => {
@@ -32,12 +35,18 @@ function fake() {
     configs: () => ({
       byRepo: new Map(),
       byOwner: new Map([
-        ['acme', parseRepoConfig('{"rulePlugins": ["team"]}', 'acme.json', 'owner')],
+        ['acme', parseRepoConfig(JSON.stringify({ rulePlugins: plugins }), 'acme.json', 'owner')],
       ]),
       problems: [],
     }),
     targetConfig: async () => ({ config: undefined, problems: [] }),
-    pluginInfo: async () => ({ enabled: [], installs: [{ name: 'team', installPath }] }),
+    pluginInfo: async () => ({
+      enabled: [],
+      installs: [
+        { name: 'team', installPath },
+        { name: 'broken', installPath: unreadablePath },
+      ],
+    }),
   } as unknown as ReviewDeps
   return { deps, calls }
 }
@@ -70,6 +79,18 @@ describe('contextCommand', () => {
     vi.spyOn(process.stdout, 'write').mockImplementation((text) => !!written.push(String(text)))
     await contextCommand(base, fake().deps)
     expect(written.join('')).toContain('## Rule excerpts')
+  })
+
+  it('notes a skill that cannot be read and still builds the others', async () => {
+    const out: string[] = []
+    await contextCommand(
+      { ...base, skill: ['team:sample-rules'] },
+      fake(['team', 'broken']).deps,
+      (text) => void out.push(text),
+    )
+    expect(out[0]).toContain('### team:sample-rules')
+    expect(out[0]).toContain('## Notes')
+    expect(out[0]).toContain('- broken:broken could not be read')
   })
 
   it('limits the skills with --skill', async () => {

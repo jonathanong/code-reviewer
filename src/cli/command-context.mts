@@ -56,18 +56,18 @@ export async function contextCommand(
   const own = (await deps.targetConfig(repo)).config
   const plugins = resolveRulePlugins(deps.configs(), repo, own).names
   const { installs } = await deps.pluginInfo()
-  const skills = chosen(listRuleSkillFiles(installs, plugins), values.skill ?? [])
+  const unreadable: string[] = []
+  const skills = chosen(listRuleSkillFiles(installs, plugins, unreadable), values.skill ?? [])
   const out = resolve(values.out ?? '.')
   const contextDeps: ContextDeps = {
     exec: deps.exec,
     readFile: async (path) => readFileSync(path, 'utf8'),
   }
-  const text = renderContext(
-    await buildContext(
-      { repo, pr, tree, baseSha: baseRefOid, headSha: head, out, skills },
-      contextDeps,
-    ),
+  const built = await buildContext(
+    { repo, pr, tree, baseSha: baseRefOid, headSha: head, out, skills },
+    contextDeps,
   )
+  const text = renderContext({ ...built, notes: [...unreadable, ...built.notes] })
   if (values.out === undefined) write(text)
   else {
     mkdirSync(out, { recursive: true })
