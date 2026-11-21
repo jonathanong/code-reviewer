@@ -6,6 +6,7 @@ import type { Model } from '../plan.mts'
 import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
 import { referenceDomains } from './references-prompt.mts'
+import { withRaisedBy } from './restate-prompt.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
 import {
   REVIEW_VERIFIER_SCHEMA,
@@ -42,7 +43,10 @@ export async function runReviewVerifier(
       prompt: buildVerifierRunPrompt(input),
       label: 'Verifier run',
       maxTurns: REVIEW_MAX_TURNS,
-      schema: withExtraPillars(REVIEW_VERIFIER_SCHEMA, options.extraPillars ?? []),
+      schema: withExtraPillars(
+        withRaisedBy(REVIEW_VERIFIER_SCHEMA, input.restate),
+        options.extraPillars ?? [],
+      ),
       can: { ...SKILL_READER, web: referenceDomains(input.web) },
       cwd: options.tree,
       timeoutMs: RUN_TIMEOUT_MS,
@@ -54,5 +58,8 @@ export async function runReviewVerifier(
     },
     options.exec,
   )
-  return { ...parseReviewVerifier(run, input.findings.length, input.threads), ran: run.ran }
+  return {
+    ...parseReviewVerifier(run, input.findings.length, input.threads, input.restate),
+    ran: run.ran,
+  }
 }

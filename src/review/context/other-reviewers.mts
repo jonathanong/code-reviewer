@@ -17,13 +17,16 @@ const visible = (body: string): string =>
     .replaceAll(/<picture>[\s\S]*?<\/picture>\s*/gu, '')
     .trim()
 
-function quote(raw: string, indent: string): string {
+/** The visible start of a comment, cut at `FIRST_COMMENT_CHARS` with a note when it was cut. */
+export function visibleStart(raw: string): { text: string; cut: boolean } {
   const body = visible(raw)
-  const text = body.slice(0, FIRST_COMMENT_CHARS)
+  return { text: body.slice(0, FIRST_COMMENT_CHARS), cut: body.length > FIRST_COMMENT_CHARS }
+}
+
+function quote(raw: string, indent: string): string {
+  const { text, cut } = visibleStart(raw)
   const lines = text.split('\n').map((line) => `${indent}>${line === '' ? '' : ` ${line}`}`)
-  if (body.length > FIRST_COMMENT_CHARS) {
-    lines.push(`${indent}> [cut at ${FIRST_COMMENT_CHARS} characters]`)
-  }
+  if (cut) lines.push(`${indent}> [cut at ${FIRST_COMMENT_CHARS} characters]`)
   return lines.join('\n')
 }
 

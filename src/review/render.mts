@@ -2,6 +2,7 @@ import { dependsOnSection } from './dependency-render.mts'
 import { notesSection } from './notes.mts'
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
 import { renderQuestions, type Question } from './question.mts'
+import { raisedByLine } from './raised-by.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
 
 export const VERDICTS = ['Approve', 'Request Changes', 'Comment'] as const
@@ -47,9 +48,10 @@ function isShort(body: string): boolean {
   return body.length <= SHORT_BODY_CHARS && body.split('\n').length <= SHORT_BODY_LINES
 }
 
-/** The one-line prevention note, with its blank line; empty when the finding has none. */
+/** The prevention note and the credit to another reviewer, each after a blank line; empty when absent. */
 function preventLine(finding: Finding): string {
-  return finding.prevent === undefined ? '' : `\n\n**Prevent:** ${finding.prevent}`
+  const prevent = finding.prevent === undefined ? '' : `\n\n**Prevent:** ${finding.prevent}`
+  return `${prevent}${raisedByLine(finding.raisedBy)}`
 }
 
 /** Renders a finding: tag and title up front, short bodies inline, long bodies collapsed. */

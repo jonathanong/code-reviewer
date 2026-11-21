@@ -103,6 +103,7 @@ describe('buildFollowUpContext', () => {
       unresolved: [],
       priorQuestions: [],
       others: [],
+      restatable: [],
     })
   })
 

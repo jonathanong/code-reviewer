@@ -53,8 +53,6 @@ Agreed and not built yet. Nothing below works today.
   introduced it is reviewed, and the review recommends a rule, an eval case, or both.
 - **Re-reviews build on the last one.** On the same machine a re-review starts from the earlier
   run's saved results and evidence, reviews only the diff since, and adds to it.
-- **Other reviewers.** A still-open blocking or high item from another reviewer is restated with
-  a link; lesser ones are not repeated.
 - **Large changes.** A mechanical change (a lint rule enabled and auto-fixed) is recognised as
   one; a change that mixes concerns gets a proposed split as the review.
 

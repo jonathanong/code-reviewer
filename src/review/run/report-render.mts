@@ -2,6 +2,7 @@ import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
 import type { Finding } from '../finding.mts'
 import { renderQuestions } from '../question.mts'
+import { raisedByLine } from '../raised-by.mts'
 import { locationText } from '../render.mts'
 import { dependencyLine } from '../dependency-render.mts'
 import { renderCarried } from './carried-report.mts'
@@ -33,7 +34,7 @@ function verified(finding: Finding, index: number, fixedIn?: number): string {
   const later = fixedIn === undefined ? '' : ` (fixed in a later member, #${fixedIn})`
   const head = `${index + 1}. **[${finding.severity}]** ${finding.title}${where(finding)} (${finding.pillar})${later}`
   const prevent = finding.prevent === undefined ? '' : `\n\n**Prevent:** ${finding.prevent}`
-  return `${head}\n\n${quote(finding.body)}${prevent}`
+  return `${head}\n\n${quote(finding.body)}${prevent}${raisedByLine(finding.raisedBy)}`
 }
 
 function raw(finding: ReportFinding): string {
