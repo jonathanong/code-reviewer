@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { ReviewInput } from '../review/finding.mts'
-import { isDependabot } from '../review/mode.mts'
+import { isDependabot } from '../review/author-rules.mts'
 import { APPROVAL_CHECK } from '../review/skipped.mts'
 import { readStackFile } from '../review/stack-file.mts'
 import { isDependencyFile, reviewableLines, type ChangedFile } from '../review/triggers.mts'

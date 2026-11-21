@@ -20,7 +20,7 @@ describe('prepare plan values', () => {
   it('plans with the plan values the machine and the trusted repository files set', async () => {
     const { deps, prepareIo, configs } = fakeDeps()
     const machine = {
-      plan: { skipAuthors: ['renovate'], smallChangeLines: 30 },
+      plan: { authors: [{ login: 'renovate', review: 'skip' }], smallChangeLines: 30 },
       trustRepoConfig: true,
     }
     configs.mockReturnValue({
@@ -39,7 +39,7 @@ describe('prepare plan values', () => {
       values: {
         securityPaths: ['infra/**'],
         generatedPaths: ['gen/**'],
-        skipAuthors: ['renovate'],
+        authors: [{ login: 'renovate', review: 'skip' }],
         smallChangeLines: 30,
       },
     })

@@ -59,6 +59,19 @@ review on the head, then the labels) and writes a short report. If anything fail
 command exits 1. A pillar that fails twice is posted as skipped with a short reason. If every
 pillar fails, the review fails closed instead of approving unchecked code.
 
+## Author rules
+
+The plan picks `skip`, `light` or `full`. A pull request whose author has a rule
+([`plan.authors`](configuration.md#plan); Dependabot has a built-in `light` one) is skipped or
+reviewed lightly, and manifest, lockfile and workflow edits do not trigger the security pillar
+under `light`. The rule holds only while every commit of the pull request is the author's.
+`prepare` lists the pull request's commits from GitHub (REST `pulls/N/commits`, at most 200 read)
+and counts a commit as the author's only when GitHub attributes it to that account, has verified it,
+and records the committer as that account or GitHub itself (`web-flow`). A commit by anyone else,
+an unverified commit, one made by the "Update branch" button, or a list that cannot be read, is
+too long, or does not end at the head, ends the rule: the normal plan applies and the plan's
+reasons say why. An explicit `--effort` keeps its usual precedence over a rule.
+
 ## Configured pillars
 
 [`pillars`](configuration.md#pillars) adds pillars and switches built-in ones off. The plan runs an

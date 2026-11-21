@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { FollowUpContext } from './context.mts'
+import type { AuthorRule } from './author-rules.mts'
 import { DEFAULT_PLAN_VALUES, SMALL_PR_LINES, type PlanValues } from './plan-settings.mts'
 import { planReview, type PlanInput } from './plan.mts'
 
@@ -416,13 +417,13 @@ describe('configured plan values', () => {
   })
 
   it('treats a configured author like Dependabot, matching bot and app forms', () => {
-    const skipAuthors = ['Renovate[bot]']
-    const lockfiles = { paths: ['pnpm-lock.yaml'], values: values({ skipAuthors }) }
+    const authors: AuthorRule[] = [{ login: 'Renovate[bot]', review: 'light' }]
+    const lockfiles = { paths: ['pnpm-lock.yaml'], values: values({ authors }) }
     const result = plan({ ...lockfiles, authorLogin: 'app/renovate', authorIsBot: true })
     expect(result).toMatchObject({ mode: 'skip' })
     expect(plan({ ...lockfiles, authorLogin: 'someone-else' }).mode).not.toBe('skip')
     expect(plan({ authorLogin: 'renovate' }).mode).toBe('full')
-    const light = plan({ authorLogin: 'renovate', values: values({ skipAuthors }) })
+    const light = plan({ authorLogin: 'renovate', values: values({ authors }) })
     expect(light).toMatchObject({
       mode: 'light',
       reasons: ['Dependabot pull request: light review.'],

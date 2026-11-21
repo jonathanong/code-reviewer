@@ -13,7 +13,13 @@ const config = (plan?: PlanConfig, extra: Partial<RepoConfig> = {}): RepoConfig 
 
 const configs: RepoConfigs = {
   byOwner: new Map([
-    ['acme', config({ securityPaths: ['a/**', 'shared/**'], skipAuthors: ['owner-bot'] })],
+    [
+      'acme',
+      config({
+        securityPaths: ['a/**', 'shared/**'],
+        authors: [{ login: 'owner-bot', review: 'skip' }],
+      }),
+    ],
   ]),
   byRepo: new Map([
     [
@@ -21,7 +27,7 @@ const configs: RepoConfigs = {
       config({
         securityPaths: ['shared/**', 'r/**'],
         generatedPaths: ['gen/**'],
-        skipAuthors: ['repo-bot'],
+        authors: [{ login: 'repo-bot', review: 'light' }],
         smallChangeLines: 20,
       }),
     ],
@@ -34,7 +40,7 @@ const configs: RepoConfigs = {
 const own = config({
   securityPaths: ['own/**'],
   generatedPaths: ['own-gen/**'],
-  skipAuthors: ['own-bot'],
+  authors: [{ login: 'own-bot', review: 'skip' }],
   smallChangeLines: 500,
 })
 
@@ -48,7 +54,10 @@ describe('resolvePlanValues', () => {
     expect(resolvePlanValues(configs, 'Acme/web')).toEqual({
       securityPaths: ['shared/**', 'r/**', 'a/**'],
       generatedPaths: ['gen/**'],
-      skipAuthors: ['repo-bot', 'owner-bot'],
+      authors: [
+        { login: 'repo-bot', review: 'light' },
+        { login: 'owner-bot', review: 'skip' },
+      ],
       smallChangeLines: 20,
     })
     expect(resolvePlanValues(configs, 'acme/plain')).toMatchObject({
@@ -58,14 +67,16 @@ describe('resolvePlanValues', () => {
   })
 
   it("resolves an owner's shared settings without a repository", () => {
-    expect(resolvePlanValues(configs, 'acme').skipAuthors).toEqual(['owner-bot'])
+    expect(resolvePlanValues(configs, 'acme').authors).toEqual([
+      { login: 'owner-bot', review: 'skip' },
+    ])
   })
 
   it('takes only security paths from an untrusted repository file', () => {
     expect(resolvePlanValues(configs, 'acme/plain', own)).toEqual({
       securityPaths: ['a/**', 'shared/**', 'own/**'],
       generatedPaths: [],
-      skipAuthors: ['owner-bot'],
+      authors: [{ login: 'owner-bot', review: 'skip' }],
       smallChangeLines: SMALL_PR_LINES,
     })
   })
@@ -74,7 +85,7 @@ describe('resolvePlanValues', () => {
     expect(resolvePlanValues(configs, 'acme/trusting', own)).toEqual({
       securityPaths: ['a/**', 'shared/**', 'own/**'],
       generatedPaths: ['own-gen/**'],
-      skipAuthors: ['owner-bot'],
+      authors: [{ login: 'owner-bot', review: 'skip' }],
       smallChangeLines: 60,
     })
     const bare: RepoConfigs = {

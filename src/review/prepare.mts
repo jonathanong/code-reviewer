@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
+import { planAuthor } from './author-commits.mts'
 import { ReviewError, type Effort } from './finding.mts'
 import { numberDiff } from './numbered-diff.mts'
 import type { PillarSettings } from './pillars-settings.mts'
@@ -139,12 +140,12 @@ export async function prepareReview(
     ...(stack === undefined ? {} : { stack }),
   })
   written.push(...links.written)
+  const author = await planAuthor(io, conversation.author, values.authors, headSha)
   const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files, values.generatedPaths),
     context,
-    authorLogin: conversation.author?.login ?? null,
-    authorIsBot: conversation.author?.__typename === 'Bot',
+    ...author,
     ...(options.requested === undefined ? {} : { requested: options.requested }),
     ...(since === undefined ? {} : { since }),
     ...(push === undefined || push.kind === 'substantive'
