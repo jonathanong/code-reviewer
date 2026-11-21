@@ -47,8 +47,7 @@ Agreed and not built yet. Nothing below works today.
 - **Shared context.** The pillars read rule excerpts, the history of the changed lines and linked
   regressions ([Shared context](docs/context.md)), but still load every skill. Excerpts do not yet
   replace Skill loads, and the verifier reads only the linked commits, the split summary and a follow-up's earlier review, other steps none of it.
-- **Feedback loops.** The daily digest as a Claude Doc, and issues about the harness, not only
-  rules and pillar prompts.
+- **Feedback loops.** Issues about the harness, not only rules and pillar prompts.
 - **Re-reviews reuse the last one's evidence.** A follow-up's verifier already sees the earlier
   review of this machine, but its saved evidence records no files, so it is re-established each time.
 

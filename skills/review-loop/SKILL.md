@@ -169,3 +169,17 @@ posted; approval is the `final approval` label, which `code-reviewer status` che
 requester that messaged with the verdict and the review link.
 
 Merge authority is separate: the human, or the triage loop within its grant, merges.
+
+## Daily digest
+
+Once per UTC day, at start and again the first time a pass finds the date changed, run
+`code-reviewer outcomes --owner <owner>` (with `--repo` for a repository list, `--clones` as in
+Step 1), then `code-reviewer outcomes digest`. It prints `{path}`, the day's `outcomes-DAY.md`; no
+model runs. Skip both when the digest for today was already written this session. A failure of
+either is noted and does not stop the loop.
+
+With a document connector, put the digest's text in the same document as Step 4 as a section for
+that day (headed with the date), the way each pull request has one; without one, the local file
+is the record. Tell the human its path or link. The digest only proposes: change no rule, prompt
+or config and file no issue from it unless the human says so (`issues` stays opt-in, see
+`docs/issues.md`). It is machine-local and lists finding titles and paths: share it nowhere else.
