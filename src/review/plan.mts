@@ -40,6 +40,11 @@ export type PlanInput = {
   authorLogin?: string | null
   /** The author is a bot account (GitHub actor type `Bot`). */
   authorIsBot?: boolean
+  /**
+   * Set (to the reason) when the author's rule must not hold because not every commit is the
+   * author's, or that could not be established: the normal plan applies.
+   */
+  authorSuspended?: string
   /** Built-in pillars to skip and extra pillars to run; none when absent. */
   pillars?: PillarSettings
   /** Configured paths, authors and size threshold; the defaults when absent. */

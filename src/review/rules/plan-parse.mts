@@ -1,3 +1,4 @@
+import type { AuthorReview, AuthorRule } from '../author-rules.mts'
 import { isRecord, unknownKeys } from './settings-parse.mts'
 
 /** The `plan` key as a config file sets it; every part may be absent. */
@@ -6,22 +7,42 @@ export type PlanConfig = {
   securityPaths?: string[]
   /** Globs of repository paths that count as generated, like lockfiles and build output. */
   generatedPaths?: string[]
-  /** Logins whose pull requests are reviewed like Dependabot's. */
-  skipAuthors?: string[]
+  /** Per-author review rules; see `AuthorRule`. */
+  authors?: AuthorRule[]
   /** A first review of at most this many reviewable lines, with no security trigger, is light. */
   smallChangeLines?: number
 }
 
 export type PlanFileScope = 'repo' | 'owner' | 'target' | 'trusted'
 
-type PlanKey = 'securityPaths' | 'generatedPaths' | 'skipAuthors' | 'smallChangeLines'
+type PlanKey = 'securityPaths' | 'generatedPaths' | 'authors' | 'smallChangeLines'
 
-const KEYS: readonly PlanKey[] = [
-  'securityPaths',
-  'generatedPaths',
-  'skipAuthors',
-  'smallChangeLines',
-]
+const KEYS: readonly PlanKey[] = ['securityPaths', 'generatedPaths', 'authors', 'smallChangeLines']
+
+const REVIEWS: readonly AuthorReview[] = ['light', 'skip']
+
+function parseAuthors(raw: unknown, where: string, problems: string[]): AuthorRule[] | undefined {
+  if (raw === undefined) return undefined
+  if (!Array.isArray(raw)) {
+    problems.push(`${where}: must be a list of { login, review } rules; ignored`)
+    return undefined
+  }
+  const rules: AuthorRule[] = []
+  for (const [index, entry] of raw.entries()) {
+    const at = `${where}[${index}]`
+    const login = isRecord(entry) && typeof entry.login === 'string' ? entry.login.trim() : ''
+    const review = REVIEWS.find((name) => isRecord(entry) && entry.review === name)
+    if (login === '' || review === undefined) {
+      problems.push(
+        `${at}: must be { login, review } with a login and review "light" or "skip"; ignored`,
+      )
+      return undefined
+    }
+    problems.push(...unknownKeys(entry as Record<string, unknown>, ['login', 'review'], at))
+    rules.push({ login, review })
+  }
+  return rules
+}
 
 function parseStrings(raw: unknown, where: string, noun: string, problems: string[]) {
   if (raw === undefined) return undefined
@@ -39,7 +60,7 @@ function parseStrings(raw: unknown, where: string, noun: string, problems: strin
 
 /** Why this file may not set `key`, or undefined when it may. */
 function refusal(fileScope: PlanFileScope, key: PlanKey): string | undefined {
-  if (key === 'skipAuthors') {
+  if (key === 'authors') {
     return fileScope === 'target' || fileScope === 'trusted' ? 'machine-only' : undefined
   }
   if (key === 'securityPaths') return undefined
@@ -49,7 +70,7 @@ function refusal(fileScope: PlanFileScope, key: PlanKey): string | undefined {
 /**
  * The `plan` key: values the dispatcher otherwise fixes. A repository's own file (`target`) may
  * add `securityPaths`, which only makes a review stricter. `generatedPaths` and `smallChangeLines`
- * reduce review, so a repository file sets them only when `trusted`; `skipAuthors` is machine-only.
+ * reduce review, so a repository file sets them only when `trusted`; `authors` is machine-only.
  * A value that is refused or invalid is ignored with a problem naming the file and key.
  */
 export function parsePlan(
@@ -63,7 +84,12 @@ export function parsePlan(
     problems.push(`${where}: must be an object; ignored`)
     return undefined
   }
-  problems.push(...unknownKeys(raw, KEYS, where))
+  problems.push(...unknownKeys(raw, [...KEYS, 'skipAuthors'], where))
+  if (raw.skipAuthors !== undefined) {
+    problems.push(
+      `${where}.skipAuthors: no longer a setting; use ${where}.authors: [{ login, review: "light" }]; ignored`,
+    )
+  }
   const value = (key: PlanKey): unknown => {
     const why = refusal(fileScope, key)
     if (why === undefined || raw[key] === undefined) return raw[key]
@@ -82,7 +108,7 @@ export function parsePlan(
     'glob patterns',
     problems,
   )
-  const skipAuthors = parseStrings(value('skipAuthors'), `${where}.skipAuthors`, 'logins', problems)
+  const authors = parseAuthors(value('authors'), `${where}.authors`, problems)
   const lines = value('smallChangeLines')
   const valid = Number.isInteger(lines) && (lines as number) >= 0
   if (lines !== undefined && !valid) {
@@ -91,7 +117,7 @@ export function parsePlan(
   return {
     ...(securityPaths === undefined ? {} : { securityPaths }),
     ...(generatedPaths === undefined ? {} : { generatedPaths }),
-    ...(skipAuthors === undefined ? {} : { skipAuthors }),
+    ...(authors === undefined ? {} : { authors }),
     ...(valid ? { smallChangeLines: lines as number } : {}),
   }
 }

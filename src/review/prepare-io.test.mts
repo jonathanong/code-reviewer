@@ -13,6 +13,21 @@ function setup(run = vi.fn(async (_args: readonly string[]) => '')) {
   }
 }
 
+describe('createGhPrepareIo pullCommits', () => {
+  it('reads the commits of its own pull request from the REST API', async () => {
+    const run = vi.fn(
+      async (_args: readonly string[]) =>
+        '{"sha":"s1","author":"dependabot[bot]","committer":"web-flow","verified":true}\n',
+    )
+    const { io } = setup(run)
+    await expect(io.pullCommits()).resolves.toEqual({
+      commits: [{ sha: 's1', author: 'dependabot[bot]', committer: 'web-flow', verified: true }],
+      complete: true,
+    })
+    expect(run.mock.calls[0]?.[0][1]).toBe('repos/o/r/pulls/7/commits?per_page=100&page=1')
+  })
+})
+
 describe('createGhPrepareIo', () => {
   it('delegates headSha, diff and paths to the gh io', async () => {
     const run = vi.fn(async (args: readonly string[]) => {

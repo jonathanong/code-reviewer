@@ -39,7 +39,7 @@ afterEach(() => {
 })
 
 const UNSET = {
-  plan: DEFAULT_PLAN_VALUES,
+  plan: { ...DEFAULT_PLAN_VALUES, authors: [{ login: 'dependabot[bot]', review: 'light' }] },
   analysis: { tools: [], from: null },
   evidence: { sources: [], from: null },
   references: { sources: [], from: null },

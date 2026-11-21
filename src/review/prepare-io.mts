@@ -10,6 +10,7 @@ import { lookupLinked, type LinkedLookup } from './links-query.mts'
 import type { Ref } from './links-refs.mts'
 import { inspectPush, type PushShas } from './push-inspect.mts'
 import type { PushInspection } from './push-types.mts'
+import { fetchPullCommits, type PullCommits } from './pull-commits.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
@@ -42,6 +43,8 @@ export type PrepareIo = {
   push(tree: string, shas: PushShas): Promise<PushInspection>
   /** Which of the pull request's commits already exist elsewhere, by local git in `tree`; never rejects. */
   carried(tree: string, args: CarriedArgs): Promise<CarriedInspection>
+  /** The pull request's commits as GitHub attributes them, bounded; rejects when GitHub fails. */
+  pullCommits(): Promise<PullCommits>
   /** The merged pull request whose head branch is `ref`, if GitHub knows one. */
   mergedPull(ref: string): Promise<number | undefined>
   /** The state of pull requests and issues this one names, in one lookup; never rejects. */
@@ -135,6 +138,7 @@ export function createGhPrepareIo(
     push: (tree, shas) => inspectPush(git, tree, shas),
     carried: (tree, args) => inspectCarried(git, tree, args),
     linked: (refs) => lookupLinked(run, target.repo, refs),
+    pullCommits: () => fetchPullCommits(run, target.repo, target.pr),
     async commitMessages(tree, baseSha, headSha) {
       const out = await git([
         '-C',

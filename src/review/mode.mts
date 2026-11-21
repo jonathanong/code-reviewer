@@ -1,4 +1,5 @@
 import type { Effort } from './finding.mts'
+import { authorReview, type AuthorReview } from './author-rules.mts'
 import type { PlanInput } from './plan.mts'
 import { DEFAULT_PLAN_VALUES } from './plan-settings.mts'
 import type { LightPush } from './push-types.mts'
@@ -22,30 +23,14 @@ export type ModeChoice = {
   skipReason?: string
 }
 
-const DEPENDABOT_LOGINS: readonly string[] = ['dependabot[bot]', 'app/dependabot']
-
-/** A login without GitHub's `app/` prefix and `[bot]` suffix, lowercased: the forms of one account compare equal. */
-const accountName = (login: string) =>
-  login
-    .toLowerCase()
-    .replace(/^app\//u, '')
-    .replace(/\[bot\]$/u, '')
-
 /**
- * `dependabot` alone is also a possible human login, so it counts only for a bot account. A login
- * in `skipAuthors` (the configured accounts) is reviewed the same way.
+ * The author rule that applies to this pull request: none once its commits are not all the rule
+ * author's (`authorSuspended`).
  */
-export function isDependabot(
-  login: string | null | undefined,
-  isBot: boolean,
-  skipAuthors: readonly string[] = [],
-): boolean {
-  if (login === null || login === undefined) return false
-  return (
-    DEPENDABOT_LOGINS.includes(login) ||
-    (isBot && login === 'dependabot') ||
-    skipAuthors.some((author) => accountName(author) === accountName(login))
-  )
+export function activeAuthorReview(input: PlanInput): AuthorReview | undefined {
+  if (input.authorSuspended !== undefined) return undefined
+  const { authors } = input.values ?? DEFAULT_PLAN_VALUES
+  return authorReview(input.authorLogin, input.authorIsBot === true, authors)
 }
 
 const full = (effort: Effort): ModeChoice => ({ mode: 'full', effort, sinceSha: null })
@@ -80,13 +65,13 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
 }
 
 /**
- * The paths that trigger the security pillar. A Dependabot pull request edits manifests, lockfiles,
- * and workflow files by design, so those do not count for it.
+ * The paths that trigger the security pillar. A pull request under a `light` author rule (Dependabot
+ * by default) edits manifests, lockfiles, and workflow files by design, so those do not count.
  */
 export function securityPaths(input: PlanInput, paths: readonly string[]): string[] {
-  const { securityPaths: extra, skipAuthors } = input.values ?? DEFAULT_PLAN_VALUES
+  const { securityPaths: extra } = input.values ?? DEFAULT_PLAN_VALUES
   const hits = securityTriggers(paths, extra)
-  if (!isDependabot(input.authorLogin, input.authorIsBot === true, skipAuthors)) return hits
+  if (activeAuthorReview(input) !== 'light') return hits
   return hits.filter((path) => !isDependencyFile(path))
 }
 
@@ -94,14 +79,24 @@ export function securityPaths(input: PlanInput, paths: readonly string[]): strin
 export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   const { context, requested } = input
   const values = input.values ?? DEFAULT_PLAN_VALUES
-  const dependabot = isDependabot(input.authorLogin, input.authorIsBot === true, values.skipAuthors)
-  if (dependabot && input.paths.length > 0 && input.paths.every(isLockfile)) {
+  const rule = activeAuthorReview(input)
+  const who = input.authorLogin ?? 'the author'
+  if (input.authorSuspended !== undefined) reasons.push(input.authorSuspended)
+  const lockfilesOnly = input.paths.length > 0 && input.paths.every(isLockfile)
+  if (rule === 'skip' || (rule === 'light' && lockfilesOnly)) {
+    const skipReason =
+      rule === 'skip'
+        ? `Pull request by ${who}, whose plan.authors rule is skip: no review.`
+        : 'Dependabot pull request that changes only lockfiles: no review.'
     if (requested === undefined) {
-      const skipReason = 'Dependabot pull request that changes only lockfiles: no review.'
       reasons.push(skipReason)
       return { mode: 'skip', effort: 'low', sinceSha: null, skipReason }
     }
-    reasons.push(`Dependabot lockfile-only pull request: --effort ${requested} forces a review.`)
+    reasons.push(
+      rule === 'skip'
+        ? `${who}'s plan.authors rule is skip: --effort ${requested} forces a review.`
+        : `Dependabot lockfile-only pull request: --effort ${requested} forces a review.`,
+    )
   }
   if (requested !== undefined && requested !== 'low') return full(requested)
   if (context.reviewedSha !== null) return followUp(input, context.reviewedSha, reasons)
@@ -109,7 +104,7 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
     reasons.push('No earlier review: high effort.')
     return full('high')
   }
-  if (dependabot) {
+  if (rule !== undefined) {
     reasons.push('Dependabot pull request: light review.')
     return light(null)
   }

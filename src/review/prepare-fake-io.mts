@@ -116,6 +116,13 @@ export function fakeIo({
     mergedPull: vi.fn<PrepareIo['mergedPull']>(),
     self: { repo: 'o/r', number: 7 },
     linked: vi.fn<PrepareIo['linked']>().mockResolvedValue({ found: new Map(), problems: [] }),
+    // Every commit is the pull request author's, made through GitHub and verified.
+    pullCommits: vi.fn<PrepareIo['pullCommits']>(async () => ({
+      commits: [
+        { sha: HEAD, author: author?.login ?? 'dev', committer: 'web-flow', verified: true },
+      ],
+      complete: true,
+    })),
     commitMessages: vi.fn<PrepareIo['commitMessages']>().mockResolvedValue([]),
   } satisfies PrepareIo
 }
