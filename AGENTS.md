@@ -5,4 +5,4 @@
 
 ## no-mistakes
 
-- When you find something to fix or improve in `no-mistakes` or its rules (a wrong or missing rule, a false positive, a confusing message), file an issue in `jonathanong/no-mistakes`. Do not work around it here without one.
+- When you find something to fix or improve in `no-mistakes` or its rules (a wrong or missing rule, a false positive, a confusing message), you can file an issue in `jonathanong/no-mistakes`.
