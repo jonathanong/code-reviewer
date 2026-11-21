@@ -107,6 +107,7 @@ code-reviewer help
   headless runs are confined.
 - [Unattended runs](docs/run.md): `run`, its exit codes and JSON line, the hold rules, and use
   from another agent session.
+- [Health check](docs/doctor.md): `doctor`, what it checks and how to read its output.
 - [Posting a review](docs/posting.md): the verdict and review event, dismissals, retries,
   read-back, and text length.
 - [Pull request context](docs/pull-request-context.md): stacks, pushes that only merge the base,

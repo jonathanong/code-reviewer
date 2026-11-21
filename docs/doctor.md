@@ -1,0 +1,44 @@
+# Health check
+
+```
+code-reviewer doctor [--repo owner/name | --owner LOGIN] [--offline]
+```
+
+Run it when a review seems off, or at the start of an unattended loop. It reads and runs
+`--version` style probes only: it changes nothing, posts nothing, and never runs an update or
+install; a fix is printed for a person to run.
+
+Output: one line per check on stderr (`ok`, `warn` or `fail`, with `fix:` under a warn or fail),
+and one JSON line on stdout, `{ok, warn, fail, checks: [{name, status, detail, fix?}]}`. It exits 0
+when nothing failed, 1 otherwise. `--repo` or `--owner` scopes the machine-config problems and the
+`rulePlugins` list to that repository or owner; without either, every config problem is shown and
+the default rule plugins are checked. `--offline` makes no network call.
+
+| Check                     | ok                                                    | warn                                         | fail                                       |
+| ------------------------- | ----------------------------------------------------- | -------------------------------------------- | ------------------------------------------ |
+| `node`                    | at least the `engines` minimum                        | range unreadable                             | older                                      |
+| `git`, `gh`               | runs                                                  |                                              | not on PATH or does not run                |
+| `github-app`              | absent (the `gh` login is used) or parses             |                                              | present and does not parse                 |
+| `gh-login`                | logged in, or an App is configured                    |                                              | not logged in                              |
+| `machine-config`          | no problems                                           |                                              | a problem, or the directory is unreadable  |
+| `rule-plugin:<name>`      | enabled at user scope and holds skills                | installed but holds no skills                | not installed or not enabled at user scope |
+| `plugin-freshness:<name>` | recent, and not behind its remote                     | old, behind, or the remote could not be read |                                            |
+| `harness:claude`          | runs                                                  |                                              | not on PATH or does not run                |
+| `harness:grok`            | runs, or absent (informational)                       |                                              |                                            |
+| `tracker-dir`, `tmp-dir`  | writable, or missing under a writable parent          |                                              | not writable, not a directory              |
+| `clone-root`              | unset, or a directory (with `--repo`: says if cloned) | set but not a directory                      |                                            |
+
+## Plugin freshness
+
+The reviewer assumes plugin auto-update is on; this check is the safety net. For each rule plugin
+it reports the installed version, or the commit for a plugin installed from git, and how long ago
+its install directory last changed. It warns past `STALE_AFTER_DAYS` (14) in
+`src/doctor/freshness.mts`.
+
+Unless `--offline`, a plugin whose install records a commit and whose marketplace records a git
+remote gets one `git ls-remote <remote> HEAD`, bounded by a timeout, and warns
+`behind: installed X, latest Y`. A plugin that only records a version has no commit to compare,
+so only its age is checked. Failing to reach the remote is a warn (`could not check`), never a
+fail. The fix is `claude plugin update <name>`.
+
+Every external call has a timeout, and independent checks run concurrently with a small bound.
