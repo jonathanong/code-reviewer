@@ -21,6 +21,7 @@ import { runReview, type ReviewSteps } from '../review/run/review.mts'
 import { abortCommand, claimCommand, prepareCommand, skipCommand } from './command-loop.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
+import type { TargetConfig } from '../review/rules/target-config.mts'
 import type { ReviewDeps } from './deps.mts'
 
 afterEach(() => vi.clearAllMocks())
@@ -28,10 +29,14 @@ afterEach(() => vi.clearAllMocks())
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const guide = vi.fn(async () => 'guide text')
 const configs = vi.fn(() => NO_CONFIGS)
+const targetConfig = vi.fn(async (_repo: string): Promise<TargetConfig> => ({
+  config: undefined,
+  problems: [],
+}))
 const guideReader = vi.fn(() => guide)
 const deps = {
   configs,
-  targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
+  targetConfig,
   guideReader,
   createIo: vi.fn(() => ({})),
   pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
@@ -166,6 +171,37 @@ describe('reviewCommand', () => {
     )
     expect(runReview).not.toHaveBeenCalled()
     expect(claimCommand).not.toHaveBeenCalled()
+  })
+
+  it('takes evidence, references and rule plugins from a repository file only when trusted', async () => {
+    const own = {
+      consumes: [],
+      evidence: [
+        { name: 'own', description: 'Logs.', guide: { file: '/g.md' }, commands: ['ls'], env: {} },
+      ],
+      references: [{ name: 'own', description: 'Docs.', domains: ['own.example.com'] }],
+      rulePlugins: ['own-rules'],
+      problems: [],
+    }
+    targetConfig.mockResolvedValue({ config: own, problems: [] })
+    const untrusted = await steps()
+    expect(targetConfig).toHaveBeenCalledWith('acme/widgets')
+    expect(untrusted.wired.webReferences).toEqual([])
+    expect(untrusted.wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
+    vi.clearAllMocks()
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], trustRepoConfig: true, problems: [] }]]),
+    })
+    try {
+      const { wired } = await steps()
+      expect(wired.webReferences).toEqual(own.references)
+      expect(wired.rulePlugins).toEqual(['own-rules'])
+      expect((await wired.evidence()).sources).toEqual(own.evidence)
+    } finally {
+      configs.mockReturnValue(NO_CONFIGS)
+      targetConfig.mockResolvedValue({ config: undefined, problems: [] })
+    }
   })
 
   it('has no web references without a machine list', async () => {

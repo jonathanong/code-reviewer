@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `pillars`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -74,9 +74,10 @@ A malformed file, an unknown key, or a configured repository with no clone is li
 ## `evidence`
 
 Evidence sources let a review check findings against real data, such as production logs, instead
-of guessing. They are machine-only: `evidence` in a repository's own `.code-reviewer` file is
-ignored with a problem, because that file is controlled by whoever can merge to the default
-branch and a source grants command access and credentials. A repository file's list replaces its
+of guessing. They are machine-only unless [`trustRepoConfig`](#trustrepoconfig) is on: `evidence`
+in a repository's own `.code-reviewer` file is otherwise ignored with a problem, because that file
+is controlled by whoever can push to the default branch and a source grants command access and
+credentials. A repository file's list replaces its
 owner file's list whole; `[]` switches evidence off for that repository.
 
 ```yaml
@@ -113,9 +114,10 @@ Evidence line is added to the finding). Evidence is not part of `bench`.
 ## `references`
 
 References let a review check the code against external documentation, such as AWS API
-parameter names, limits, IAM actions, CLI flags and config keys. They are machine-only, like
-`evidence`: `references` in a repository's own `.code-reviewer` file is ignored with a problem,
-because it grants network access while the run holds private code. A repository file's list
+parameter names, limits, IAM actions, CLI flags and config keys. They are machine-only unless
+`trustRepoConfig` is on, like `evidence`: `references` in a repository's own `.code-reviewer` file
+is otherwise ignored with a problem, because it grants network access while the run holds private
+code. A repository file's list
 replaces its owner file's list whole; `[]` switches references off for that repository.
 
 ```json
@@ -166,6 +168,32 @@ approvalCheck: false
 It is on by default and, like `evidence`, machine-only: a repository's own file cannot switch it
 off. `code-reviewer settings` prints the resolved value and its layer.
 
+## `trustRepoConfig`
+
+```yaml
+trustRepoConfig: true
+```
+
+Machine-only, default `false`: set in a machine repository file or a machine owner file (the
+repository file beats the owner file, so `false` there overrides a `true` in the owner file). A
+repository's own `.code-reviewer` file that sets it gets `trustRepoConfig is machine-only; ignored`.
+
+With it off, nothing changes: a repository's own file setting `evidence`, `references` or
+`rulePlugins` is ignored with a problem. With it on for a repository, its own file may set those
+three keys, validated exactly as in a machine file. They are the only keys it unlocks; `run`,
+`models`, `limits`, `issues` and `approvalCheck` stay machine-only.
+
+**Turning it on means anyone who can push to that repository's default branch chooses the
+commands the evidence step runs on this machine, with the credentials in the source's `env`, and
+the domains the reviewers fetch while holding private code.** The file is still read from the
+default branch, never from the pull request, so a pull request cannot change it before it merges.
+
+Precedence follows the other layered keys: per key, the machine repository file, then the machine
+owner file, then the repository's own file, and the highest layer that sets the key replaces the
+lower lists whole. A machine file therefore overrides a trusted repository file, and `[]` in a
+machine file switches that key off. `code-reviewer settings --repo` shows `repository file` as the
+layer when a value came from there. `doctor` checks rule plugins from the machine files only.
+
 ## `rulePlugins`
 
 ```yaml
@@ -179,10 +207,14 @@ file's. `[]` is valid: rules then come only from the reviewed repository's `AGEN
 skills, skill selection is skipped, and every headless run enables no plugin. Names are letters,
 digits, `.`, `_` and `-`, each listed once.
 
-It is machine-only, like `evidence`: a repository's own file cannot set it, and says
-`rulePlugins is machine-only; ignored`. An enabled plugin brings its hooks, agents and commands
+It is machine-only unless `trustRepoConfig` is on, like `evidence`: otherwise a repository's own
+file cannot set it, and says `rulePlugins is machine-only; ignored`. An enabled plugin brings its hooks, agents and commands
 into a headless run, and every skill description from it sits in each run's context, so the list
 decides what a pull request's review is allowed to load.
+
+Rule plugins are never installed or fetched by a review: a name, whichever file lists it, must
+already be installed and enabled on the machine, and a trusted repository's file can only pick
+among those.
 
 Every listed plugin must be enabled at user scope: `run` refuses, and `review` fails, naming a
 plugin that is not. `review` also fails naming a listed plugin that holds no skills. `code-reviewer settings` prints the names and the layer they came from. `bench`

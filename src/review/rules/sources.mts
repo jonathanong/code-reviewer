@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { splitRepo, type RunTextCommand } from '../../gh-cli/index.mts'
+import { trustsRepoConfig } from '../grant-settings.mts'
 import { loadRepoConfigs } from './config.mts'
 import { defaultRef, gitReader } from './reader.mts'
 import { readTargetConfig, withTargetConsumes, type TargetFileReader } from './target-config.mts'
@@ -75,7 +76,7 @@ export async function productionSources(args: {
 }): Promise<Sources> {
   const { git, clones, tree, baseSha, repoId } = args
   const machine = loadRepoConfigs(args.configDir)
-  const target = await readTargetConfig(args.targetFile, repoId)
+  const target = await readTargetConfig(args.targetFile, repoId, trustsRepoConfig(machine, repoId))
   const configs = withTargetConsumes(machine, repoId, target.config)
   const related = clones === undefined ? [] : await cloneCandidates(clones, git, repoId)
   const missing = [

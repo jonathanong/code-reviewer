@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 
 import { unloadableRulePlugins } from '../review/plugins.mts'
-import { resolveRulePlugins } from '../review/settings.mts'
+import { resolveRulePlugins } from '../review/grant-settings.mts'
 import { freshnessCheck } from './freshness.mts'
 import { listPlugins } from './plugin-list.mts'
 import { mapBounded, reasonOf } from './pool.mts'

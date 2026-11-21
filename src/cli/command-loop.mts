@@ -64,8 +64,8 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   else assertRepo(repo)
   const configs = deps.configs()
   const target = repo === undefined ? undefined : await deps.targetConfig(repo)
-  const evidence = resolveEvidence(configs, scope)
-  const references = resolveReferences(configs, scope)
+  const evidence = resolveEvidence(configs, scope, target?.config)
+  const references = resolveReferences(configs, scope, target?.config)
   const approvalCheck = resolveApprovalCheck(configs, scope)
   const models = resolveModels(configs, scope)
   const limits = resolveLimits(configs, scope)
@@ -80,7 +80,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       from: references.from,
     },
     approvalCheck,
-    rulePlugins: resolveRulePlugins(configs, scope),
+    rulePlugins: resolveRulePlugins(configs, scope, target?.config),
     pillars: describePillars(resolvePillars(configs, scope, target?.config)),
     // What each step runs on; a pillar with no setting follows the plan (see docs/configuration.md).
     models: {

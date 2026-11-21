@@ -147,6 +147,25 @@ describe('productionSources', () => {
     ])
   })
 
+  it('accepts the machine-only keys in the repository file only when the machine config trusts it', async () => {
+    const dir = clones([], ['acme'])
+    writeFileSync(join(dir, 'acme/web.json'), '{"trustRepoConfig":true}')
+    const args = {
+      git,
+      clones: undefined,
+      tree: undefined,
+      baseSha: 'a'.repeat(40),
+      configDir: dir,
+      targetFile: async () => [{ name: '.code-reviewer.json', text: '{"rulePlugins":["own"]}' }],
+    }
+    const untrusted = await productionSources({ ...args, repoId: 'acme/other' })
+    expect(untrusted.missing).toContain(
+      'acme/other/.code-reviewer.json: rulePlugins is machine-only; ignored',
+    )
+    const trusted = await productionSources({ ...args, repoId: 'acme/web' })
+    expect(trusted.missing.filter((line) => line.includes('machine-only'))).toEqual([])
+  })
+
   it('degrades to the machine configs when the repository file cannot be read', async () => {
     const sources = await productionSources({
       git,

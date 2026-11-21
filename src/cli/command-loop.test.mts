@@ -308,6 +308,35 @@ describe('runLoopCommand', () => {
       )
     })
 
+    it('shows evidence, references and rule plugins from a trusted repository file as its own layer', async () => {
+      const base = fakeDeps().deps
+      const trusted = parseRepoConfig(
+        '{"rulePlugins":["own-rules"],"references":[{"name":"docs","description":"Docs.","domains":["docs.example.com"]}]}',
+        'acme/c/.code-reviewer.json',
+        'trusted',
+      )
+      const configs = {
+        byOwner: new Map(),
+        byRepo: new Map([
+          ['acme/c', parseRepoConfig('{"trustRepoConfig":true}', 'acme/c.json', 'repo')],
+        ]),
+        problems: [],
+      }
+      const deps = { ...base, configs: () => configs }
+      targetConfig.mockResolvedValueOnce({ config: trusted, problems: [] })
+      const result = (await runLoopCommand('settings', { repo: ['acme/c'] }, target, deps)) as {
+        rulePlugins: unknown
+        references: unknown
+        evidence: unknown
+      }
+      expect(result.rulePlugins).toEqual({ names: ['own-rules'], from: 'repository file' })
+      expect(result.references).toEqual({
+        sources: [{ name: 'docs', domains: ['docs.example.com'] }],
+        from: 'repository file',
+      })
+      expect(result.evidence).toEqual({ sources: [], from: null })
+    })
+
     it('layers the repository file under the machine files and says where each value came from', async () => {
       const { deps } = fakeDeps()
       await expect(runLoopCommand('settings', { repo: ['acme/c'] }, target, deps)).resolves.toEqual(

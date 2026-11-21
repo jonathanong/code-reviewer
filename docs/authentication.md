@@ -26,6 +26,13 @@ The environment overrides the file, for CI: when `CODE_REVIEWER_APP_ID` is set, 
 the file is ignored. `code-reviewer auth` prints the `source` (`env` or the path of the App config file),
 never the key.
 
+## Trusting a repository's own config
+
+A repository's own `.code-reviewer` file may not grant commands, web domains or rule plugins
+unless the machine config sets `trustRepoConfig` for it; see
+[configuration](configuration.md#trustrepoconfig) for what that hands to whoever can push to the
+default branch.
+
 ## Creating the GitHub App
 
 A GitHub App gives the reviewer its own identity, so it can review your own pull requests as

@@ -1,14 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { DEFAULT_RULE_PLUGINS } from './plugins.mts'
 import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './rules/config.mts'
 import {
   DEFAULT_LABELS,
   repoSettings,
-  resolveEvidence,
   resolveApprovalCheck,
-  resolveReferences,
-  resolveRulePlugins,
   reviewSettings,
   settingLayers,
   settingsProblems,
@@ -124,78 +120,6 @@ describe('the repository file layer', () => {
   })
 })
 
-describe('resolveEvidence', () => {
-  const source = (name: string) => ({
-    name,
-    description: 'Logs.',
-    guide: { file: '/g.md' },
-    commands: ['aws logs get-query-results'],
-    env: {},
-  })
-  const configs: RepoConfigs = {
-    byOwner: new Map([['acme', { consumes: [], evidence: [source('owner')], problems: [] }]]),
-    byRepo: new Map([
-      ['acme/web', { consumes: [], evidence: [source('repo')], problems: [] }],
-      ['acme/off', { consumes: [], evidence: [], problems: [] }],
-      ['acme/plain', { consumes: [], problems: [] }],
-    ]),
-    problems: [],
-  }
-
-  it('takes the repository list over the owner list, replacing it whole', () => {
-    expect(resolveEvidence(configs, 'acme/web')).toEqual({
-      sources: [source('repo')],
-      from: 'machine repo',
-    })
-  })
-
-  it('falls back to the owner list, and lets a repository switch evidence off with []', () => {
-    expect(resolveEvidence(configs, 'Acme/plain')).toEqual({
-      sources: [source('owner')],
-      from: 'machine owner',
-    })
-    expect(resolveEvidence(configs, 'acme')).toEqual({
-      sources: [source('owner')],
-      from: 'machine owner',
-    })
-    expect(resolveEvidence(configs, 'acme/off')).toEqual({ sources: [], from: 'machine repo' })
-  })
-
-  it('has none without a machine list', () => {
-    expect(resolveEvidence(NO_CONFIGS, 'acme/web')).toEqual({ sources: [], from: null })
-  })
-})
-
-describe('resolveReferences', () => {
-  const source = (name: string) => ({ name, description: 'Docs.', domains: ['docs.example.com'] })
-  const configs: RepoConfigs = {
-    byOwner: new Map([['acme', { consumes: [], references: [source('owner')], problems: [] }]]),
-    byRepo: new Map([
-      ['acme/web', { consumes: [], references: [source('repo')], problems: [] }],
-      ['acme/off', { consumes: [], references: [], problems: [] }],
-      ['acme/plain', { consumes: [], problems: [] }],
-    ]),
-    problems: [],
-  }
-
-  it('takes the repository list over the owner list, replacing it whole', () => {
-    expect(resolveReferences(configs, 'acme/web')).toEqual({
-      sources: [source('repo')],
-      from: 'machine repo',
-    })
-  })
-
-  it('falls back to the owner list, and lets a repository switch references off with []', () => {
-    expect(resolveReferences(configs, 'Acme/plain').from).toBe('machine owner')
-    expect(resolveReferences(configs, 'acme').sources).toEqual([source('owner')])
-    expect(resolveReferences(configs, 'acme/off')).toEqual({ sources: [], from: 'machine repo' })
-  })
-
-  it('has none without a machine list', () => {
-    expect(resolveReferences(NO_CONFIGS, 'acme/web')).toEqual({ sources: [], from: null })
-  })
-})
-
 describe('resolveApprovalCheck', () => {
   const configs: RepoConfigs = {
     byOwner: new Map([['acme', { consumes: [], approvalCheck: false, problems: [] }]]),
@@ -220,36 +144,6 @@ describe('resolveApprovalCheck', () => {
       from: 'machine owner',
     })
     expect(resolveApprovalCheck(configs, 'acme').enabled).toBe(false)
-  })
-})
-
-describe('resolveRulePlugins', () => {
-  const configs: RepoConfigs = {
-    byOwner: new Map([['acme', { consumes: [], rulePlugins: ['owner-rules'], problems: [] }]]),
-    byRepo: new Map([
-      ['acme/none', { consumes: [], rulePlugins: [], problems: [] }],
-      ['acme/plain', { consumes: [], problems: [] }],
-    ]),
-    problems: [],
-  }
-
-  it('is the default list without a machine value', () => {
-    expect(resolveRulePlugins(NO_CONFIGS, 'acme/web')).toEqual({
-      names: DEFAULT_RULE_PLUGINS,
-      from: null,
-    })
-  })
-
-  it('replaces the default whole, and the repository list replaces the owner list', () => {
-    expect(resolveRulePlugins(configs, 'acme/plain')).toEqual({
-      names: ['owner-rules'],
-      from: 'machine owner',
-    })
-    expect(resolveRulePlugins(configs, 'acme').names).toEqual(['owner-rules'])
-  })
-
-  it('treats an empty list as a value, not as unset', () => {
-    expect(resolveRulePlugins(configs, 'acme/none')).toEqual({ names: [], from: 'machine repo' })
   })
 })
 
