@@ -96,7 +96,13 @@ export async function selectSkills(input: SelectionInput): Promise<SkillChoice> 
   const first = await selectOnce(input, available)
   if (first.error === undefined) return first
   const second = await selectOnce(input, available)
-  return { ...second, usage: addUsage(first.usage, second.usage) }
+  // The second attempt's model is the one recorded; the first attempt's wait still happened.
+  const waited = first.ran?.waitedMs ?? 0
+  const ran =
+    second.ran === undefined
+      ? {}
+      : { ran: { ...second.ran, waitedMs: second.ran.waitedMs + waited } }
+  return { ...second, usage: addUsage(first.usage, second.usage), ...ran }
 }
 
 /** One call on the `select` step's small model, with no tools. */

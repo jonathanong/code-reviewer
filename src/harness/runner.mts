@@ -1,5 +1,5 @@
 import type { Exec } from '../review/benchmark/exec.mts'
-import type { Usage } from '../review/benchmark/usage.mts'
+import { addUsage, type Usage } from '../review/benchmark/usage.mts'
 import { harness as claude } from './claude.mts'
 import { harnessNamed } from './registry.mts'
 import type { Candidate, Harness, HarnessResult, HarnessRun } from './types.mts'
@@ -51,20 +51,26 @@ export function describeStepFailure(error: unknown): {
 
 export type StepRequest = Omit<HarnessRun, 'model'>
 
+/** A step's result: `usage` counts every attempt, `failedUsage` only the ones that failed. */
+export type StepRun = HarnessResult & { ran: StepRan; failedUsage: Usage | null }
+
 /**
  * Runs a step on its first candidate. A rate limit or overload waits (the named retry-after, else
  * an exponential backoff with a cap) and retries the same candidate until the wait budget is
  * spent, then moves to the next candidate. An auth failure moves on at once. Any other failure is
  * the step's failure, as it always was. When the candidates run out the last failure is thrown as
- * a `StepFailure`.
+ * a `StepFailure`. The usage every failed attempt reported adds to the result's `usage` (and to
+ * the `StepFailure`'s); `failedUsage` is that part alone, `reportedUsage` the last attempt's own.
  */
 export async function runStep(
   request: StepRequest,
   candidates: readonly Candidate[],
   exec: Exec,
   runtime: StepRuntime = realRuntime(),
-): Promise<HarnessResult & { ran: StepRan }> {
+): Promise<StepRun> {
   let waitedMs = 0
+  // What attempts that were retried or fell back to another candidate reported; it still cost.
+  let failedUsage: Usage | null = null
   const budgetMs = runtime.maxWaitSeconds * 1000
   for (const [position, candidate] of candidates.entries()) {
     const adapter = harnessNamed(candidate.harness) as Harness
@@ -73,9 +79,11 @@ export async function runStep(
       const ran = { harness: candidate.harness, model: candidate.model, waitedMs }
       try {
         const result = await adapter.run({ ...request, model: candidate.model }, exec)
-        return { ...result, ran }
+        return { ...result, usage: addUsage(failedUsage, result.usage) as Usage, ran, failedUsage }
       } catch (error) {
         const failure = adapter.classifyFailure(error)
+        const { message, usage } = adapter.describeFailure(error)
+        failedUsage = addUsage(failedUsage, usage)
         const wait =
           failure.kind === 'rate_limited' && failure.retryAfterSeconds !== undefined
             ? failure.retryAfterSeconds * 1000
@@ -89,8 +97,7 @@ export async function runStep(
         }
         const moveOn = waits || failure.kind === 'auth'
         if (!moveOn || last) {
-          const { message, usage } = adapter.describeFailure(error)
-          throw new StepFailure(message, usage, ran, error)
+          throw new StepFailure(message, failedUsage, ran, error)
         }
         break
       }

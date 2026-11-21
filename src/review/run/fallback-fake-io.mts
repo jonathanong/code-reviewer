@@ -16,7 +16,7 @@ export function fallbackModels(step: string): StepModels {
   }
 }
 
-const limited = (status: number) =>
+export const rateLimit = (status = 429) =>
   new ExecError(
     'claude exited with 1',
     1,
@@ -28,7 +28,7 @@ const limited = (status: number) =>
 export function limitedExec(answer: string, limitedModels: readonly string[], status = 429) {
   return vi.fn(async (_command: string, args: string[]) => {
     const model = args[args.indexOf('--model') + 1] as string
-    if (limitedModels.includes(model)) throw limited(status)
+    if (limitedModels.includes(model)) throw rateLimit(status)
     return answer
   })
 }

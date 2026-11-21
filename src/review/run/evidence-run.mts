@@ -1,7 +1,7 @@
 import { describeStepFailure, type StepRan, type StepRequest } from '../../harness/runner.mts'
 import { EFFORT } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
-import type { Usage } from '../benchmark/usage.mts'
+import { addUsage, type Usage } from '../benchmark/usage.mts'
 import type { Finding } from '../finding.mts'
 import { DEFAULT_STEP_MODELS, runModelStep, type StepModels } from '../models.mts'
 import type { EvidenceSource } from '../rules/evidence-parse.mts'
@@ -119,7 +119,7 @@ export async function runEvidenceModel(
         options.exec,
       )
       ran = run.ran
-      reported = run.reportedUsage
+      reported = addUsage(run.failedUsage, run.reportedUsage)
       const { structured, usage } = run
       return { output: validateEvidenceOutput(structured, known), usage, failedAttempts, ran }
     } catch (error) {

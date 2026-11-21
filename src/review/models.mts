@@ -4,11 +4,11 @@ import {
   DEFAULT_MAX_WAIT_SECONDS,
   realRuntime,
   runStep,
-  type StepRan,
+  type StepRun,
   type StepRequest,
   type StepRuntime,
 } from '../harness/runner.mts'
-import type { Candidate, HarnessResult } from '../harness/types.mts'
+import type { Candidate } from '../harness/types.mts'
 import { PILLARS } from './finding.mts'
 import type { Model } from './plan.mts'
 
@@ -118,13 +118,17 @@ export function parseModelOverrides(values: readonly string[]): Record<string, C
   return found
 }
 
-/** Each step with the candidates it resolves to, for `settings`; pillars with no setting show the default. */
+/** The keys a step looks up, most specific first: a pillar falls back to `pillars`. */
+export const stepKeys = (step: string): string[] =>
+  step.startsWith('pillar.') ? [step, 'pillars'] : [step]
+
+/** Each step with the candidates the runner resolves it to, for `settings`. */
 export function modelTable(plan: ModelPlan): Record<string, Candidate[]> {
   const steps = { ...DEFAULT_STEPS, ...plan.steps }
   return Object.fromEntries(
-    Object.entries(steps).map(([step, setting]) => [
+    Object.keys(steps).map((step) => [
       step,
-      typeof setting === 'string' ? plan.tiers[setting] : setting,
+      candidatesFor(plan, stepKeys(step), DEFAULT_STEPS[step] as Tier),
     ]),
   )
 }
@@ -140,7 +144,7 @@ export function runModelStep(
   step: { keys: readonly string[]; fallback: Tier },
   request: StepRequest,
   exec: Exec,
-): Promise<HarnessResult & { ran: StepRan }> {
+): Promise<StepRun> {
   const runtime = { ...realRuntime(models.plan.retry.maxWaitSeconds), ...models.clock }
   return runStep(request, candidatesFor(models.plan, step.keys, step.fallback), exec, runtime)
 }

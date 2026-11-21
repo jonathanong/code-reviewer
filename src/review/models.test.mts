@@ -114,6 +114,17 @@ describe('modelTable', () => {
     ])
   })
 
+  it('resolves a pillar with the keys the runner uses, so `pillars` reaches history', () => {
+    const table = modelTable(resolveModelPlan({ steps: { pillars: 'large' } }))
+    expect(table['pillar.history']).toEqual([claude('opus')])
+    expect(table.pillars).toEqual([claude('opus')])
+    expect(table.select).toEqual([claude('haiku')])
+    const own = modelTable(
+      resolveModelPlan({ steps: { pillars: 'large', 'pillar.history': 'medium' } }),
+    )
+    expect(own['pillar.history']).toEqual([claude('sonnet')])
+  })
+
   it('shows a step with its own list as that list', () => {
     const table = modelTable(resolveModelPlan({ steps: { evidence: [claude('q')] } }))
     expect(table.evidence).toEqual([claude('q')])

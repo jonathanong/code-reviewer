@@ -149,6 +149,40 @@ describe('runStep', () => {
     expect(failure.usage?.costUsd).toBe(0.5)
   })
 
+  describe('usage of attempts that did not answer', () => {
+    const costly = (status: number, cost: number) =>
+      new ExecError(
+        'claude exited with 1',
+        1,
+        JSON.stringify({
+          type: 'result',
+          is_error: true,
+          api_error_status: status,
+          total_cost_usd: cost,
+        }),
+        undefined,
+      )
+
+    it('adds it to the answer after a retry, and keeps the last call apart', async () => {
+      const { exec } = fakeExec({ a: [costly(429, 0.5)] })
+      const run = await runStep(REQUEST, [A], exec, fakeRuntime(600).runtime)
+      expect(run.usage.costUsd).toBe(0.5)
+      expect(run.failedUsage?.costUsd).toBe(0.5)
+      expect(run.reportedUsage?.costUsd).toBeNull()
+    })
+
+    it('adds it to the answer of the next candidate, and to the failure when none answers', async () => {
+      const { exec } = fakeExec({ a: [costly(429, 0.5)] })
+      const run = await runStep(REQUEST, [A, B], exec, fakeRuntime(0).runtime)
+      expect(run.usage.costUsd).toBe(0.5)
+      const failing = fakeExec({ a: [costly(429, 0.5)], b: [costly(500, 1)] })
+      const failure = (await runStep(REQUEST, [A, B], failing.exec, fakeRuntime(0).runtime).catch(
+        (error: unknown) => error,
+      )) as StepFailure
+      expect(failure.usage?.costUsd).toBe(1.5)
+    })
+  })
+
   it('refuses a step with no candidate', async () => {
     const { exec } = fakeExec({})
     await expect(runStep(REQUEST, [], exec, fakeRuntime(0).runtime)).rejects.toThrow(

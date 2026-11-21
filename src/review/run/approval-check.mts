@@ -89,8 +89,10 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
   }
   const before = deriveVerdict(base.findings, base.questions, base.skipped)
   if (!step.enabled || step.mode !== 'full' || before !== 'Approve') return base
+  // Set once the model has answered, so an answer that fails to parse still names who gave it.
+  let ran: StepRan | undefined
   try {
-    const ran = await runModelStep(
+    const answered = await runModelStep(
       step.models ?? DEFAULT_STEP_MODELS,
       { keys: ['approvalCheck'], fallback: tierOfPlanned(step.model) },
       {
@@ -108,13 +110,14 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
       },
       step.exec,
     )
-    const run = parseApprovalCheck(ran)
+    ran = answered.ran
+    const run = parseApprovalCheck(answered)
     const findings = [...base.findings, ...run.findings]
     const questions = [...base.questions, ...run.questions]
     const after = deriveVerdict(findings, questions, base.skipped)
     const check: ApprovalCheck = {
-      model: ran.ran.model,
-      ran: ran.ran,
+      model: answered.ran.model,
+      ran: answered.ran,
       outcome: after === 'Approve' ? 'upheld' : 'changed',
       verdictBefore: before,
       verdictAfter: after,
@@ -125,7 +128,8 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
     }
     return { check, findings, questions, skipped: base.skipped }
   } catch (error) {
-    const { message, usage, ran } = describeStepFailure(error)
+    const { message, usage, ran: failedRun } = describeStepFailure(error)
+    ran = failedRun ?? ran
     const reason = `The second check on the approval did not complete (${firstLine(message).slice(0, 160)}), so this is a comment, not an approval.`
     const skipped: SkippedPillar[] = [...base.skipped, { pillar: APPROVAL_CHECK, reason }]
     const check: ApprovalCheck = {

@@ -2,14 +2,14 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveModelPlan } from '../models.mts'
 import { applyApprovalCheck } from './approval-check.mts'
 import { approvalCheckInput } from './approval-check-prompt.mts'
 import { runEvidenceModel } from './evidence-run.mts'
 import { applyEvidence } from './evidence-step.mts'
-import { fallbackModels, limitedExec, modelsOf, noModels } from './fallback-fake-io.mts'
+import { fallbackModels, limitedExec, modelsOf, noModels, rateLimit } from './fallback-fake-io.mts'
 import { runPillars } from './pillars.mts'
 import { selectSkills } from './select-skills.mts'
 import { runReviewVerifier } from './verify-run.mts'
@@ -43,6 +43,31 @@ describe('skill selection', () => {
     const choice = await selectSkills({ ...input, models: fallbackModels('select'), exec })
     expect(modelsOf(exec)).toEqual(['a', 'b'])
     expect(choice).toMatchObject({ selected: ['p:a'], ran: RAN_B })
+  })
+
+  it("keeps the second attempt's model and adds the first attempt's wait to it", async () => {
+    let time = 0
+    const models = {
+      plan: resolveModelPlan({ steps: { select: [{ harness: 'claude', model: 'a' }] } }),
+      clock: {
+        sleep: async (ms: number) => {
+          time += ms
+        },
+        now: () => time,
+      },
+    }
+    const replies: Array<string | Error> = [
+      rateLimit(),
+      answer({ nope: 1 }),
+      answer({ skills: ['p:a'] }),
+    ]
+    const exec = vi.fn(async () => {
+      const next = replies.shift() as string | Error
+      if (typeof next !== 'string') throw next
+      return next
+    })
+    const choice = await selectSkills({ ...input, models, exec })
+    expect(choice).toMatchObject({ selected: ['p:a'], ran: { model: 'a', waitedMs: 5_000 } })
   })
 
   it('records the model that failed when every candidate does', async () => {
@@ -222,6 +247,24 @@ describe('evidence', () => {
     const failed = await applyEvidence(step(limitedExec('', ['a', 'b'])))
     expect(failed.evidence).toMatchObject({ model: 'b', ran: RAN_B })
     expect(failed.evidence?.error).toContain('claude exited with 1')
+  })
+})
+
+describe('approval check answer that cannot be read', () => {
+  it('still names the model that answered, and lists it in the report', async () => {
+    const run = { out: '/run', sinceSha: null, hasRules: false }
+    const output = { summary: 's', findings: [], questions: [], sources: [], dropped: new Map() }
+    const exec = limitedExec(answer({ summary: 7 }), [])
+    const { check } = await applyApprovalCheck({
+      enabled: true,
+      mode: 'full',
+      model: 'opus',
+      tree: '/tree',
+      models: fallbackModels('approvalCheck'),
+      exec,
+      input: approvalCheckInput(references, run, output as never, [], [], []),
+    })
+    expect(check).toMatchObject({ outcome: 'failed', model: 'a', ran: { model: 'a' } })
   })
 })
 
