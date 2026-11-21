@@ -60,6 +60,7 @@ describe('previousReview', () => {
         reviewUrl: null,
         findings: [],
       },
+      previousRunDir: '/fixture-state/run-2',
     })
     expect(calls[0]).toEqual(['-C', '/tree', 'merge-base', '--is-ancestor', MID, HEAD])
   })

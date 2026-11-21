@@ -69,6 +69,31 @@ describe('parseEvidence', () => {
     expect(problems).toEqual([`${WHERE}[0]: unknown key "token" ignored`])
   })
 
+  it('reads declared paths and removes repeats', () => {
+    const { sources, problems } = parse(with_({ paths: ['src/a.ts', 'docs/', 'src/a.ts'] }))
+    expect(sources?.[0]?.paths).toEqual(['src/a.ts', 'docs/'])
+    expect(problems).toEqual([])
+    expect(parse([AWS]).sources?.[0]).not.toHaveProperty('paths')
+  })
+
+  it.each([
+    [[]],
+    ['src/'],
+    [['/etc/passwd']],
+    [['../x']],
+    [['src/../x']],
+    [['./a']],
+    [['a//b']],
+    [['']],
+    [['/']],
+    [[3]],
+    [['a\\b']],
+  ])('drops a source whose paths are %j', (paths) => {
+    const { sources, problems } = parse(with_({ paths }))
+    expect(sources).toBeUndefined()
+    expect(problems).toEqual([expect.stringMatching(/\[0\]: .*paths.*; source ignored$/u)])
+  })
+
   it('drops a duplicate name, case-insensitively', () => {
     const { sources, problems } = parse([AWS, { ...AWS, name: 'AWS' }])
     expect(sources).toHaveLength(1)

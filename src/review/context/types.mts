@@ -68,6 +68,8 @@ export type ContextSection = {
   split?: SplitSummary
   previous?: PreviousReview
   previousNote?: string
+  /** The earlier review's run directory, where its saved evidence is; not shown to any model. */
+  previousRunDir?: string
 }
 
 /** What builders may touch, injected so tests use fakes. */

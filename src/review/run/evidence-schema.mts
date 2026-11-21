@@ -73,7 +73,7 @@ export const EVIDENCE_OUTPUT_SCHEMA = {
   },
 } as const
 
-const LIMITS = { command: 1000, result: 2000, note: 300, reason: 500, claim: 500 }
+export const EVIDENCE_LIMITS = { command: 1000, result: 2000, note: 300, reason: 500, claim: 500 }
 
 function text(value: unknown, limit: number): string {
   const flat = (typeof value === 'string' ? value : '').replace(/\s+/gu, ' ').trim()
@@ -97,8 +97,8 @@ function oneOf<T extends string>(values: readonly T[], value: unknown, what: str
 
 function commandOf(raw: unknown): EvidenceCommand | undefined {
   if (!isObject(raw)) return undefined
-  const command = text(raw.command, LIMITS.command)
-  return command === '' ? undefined : { command, result: text(raw.result, LIMITS.result) }
+  const command = text(raw.command, EVIDENCE_LIMITS.command)
+  return command === '' ? undefined : { command, result: text(raw.result, EVIDENCE_LIMITS.result) }
 }
 
 function queryOf(raw: unknown): EvidenceQuery | undefined {
@@ -114,7 +114,7 @@ function sourceOf(raw: Record<string, unknown>): EvidenceSourceReport {
   const name = text(raw.name, 64)
   const status: EvidenceStatus = oneOf(EVIDENCE_STATUSES, raw.status, `status for "${name}"`)
   const queries = array(raw.queries, 'queries').flatMap((item) => queryOf(item) ?? [])
-  const reason = text(raw.reason, LIMITS.reason)
+  const reason = text(raw.reason, EVIDENCE_LIMITS.reason)
   if (status === 'checked' && queries.length === 0) {
     throw new ReviewError(`Evidence source "${name}" is checked without a recorded query.`)
   }
@@ -156,14 +156,14 @@ export function validateEvidenceOutput(
       return {
         id: text(item.id, 16),
         effect: effectOf(item),
-        note: text(item.note, LIMITS.note),
+        note: text(item.note, EVIDENCE_LIMITS.note),
         ...(named === undefined ? {} : { sources: named }),
       }
     })
   const claims = entries(structured.claims, 'claims').map((item): EvidenceClaimNote => ({
-    claim: text(item.claim, LIMITS.claim),
+    claim: text(item.claim, EVIDENCE_LIMITS.claim),
     effect: effectOf(item),
-    note: text(item.note, LIMITS.note),
+    note: text(item.note, EVIDENCE_LIMITS.note),
   }))
   return { sources, findings, claims }
 }

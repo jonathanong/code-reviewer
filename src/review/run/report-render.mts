@@ -125,6 +125,11 @@ export function renderReport(data: ReportData): string {
     ...(data.earlierReviewNote === undefined
       ? []
       : [`Earlier review: not given to the verifier (${data.earlierReviewNote}).`]),
+    ...(data.earlierEvidence === undefined
+      ? []
+      : [
+          `Earlier evidence offered to the verifier as still holding: ${data.earlierEvidence.map((item) => `${item.source} (${item.status} at ${item.commit.slice(0, 12)})`).join(', ')}.`,
+        ]),
     ...data.pillars.map(pillar),
     '### Skipped pillars',
     data.skipped.length === 0

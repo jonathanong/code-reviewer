@@ -47,9 +47,9 @@ Agreed and not built yet. Nothing below works today.
 - **Shared context.** The pillars read rule excerpts, the history of the changed lines and linked
   regressions ([Shared context](docs/context.md)), but still load every skill. Excerpts do not yet
   replace Skill loads, and the verifier reads only the linked commits, the split summary and a follow-up's earlier review, other steps none of it.
-- **Re-reviews reuse the last one's evidence.** A follow-up's verifier already sees the earlier
-  review of this machine. Saved evidence records the head it ran against and its scope, which is
-  unknown for what a model ran, and `evidenceHolds` can judge it, but no step offers it yet, so it is re-established each time.
+- **Re-reviews skip evidence that still holds.** A follow-up's verifier is offered the earlier
+  evidence whose declared `paths` did not change, but the evidence step still runs on every
+  follow-up.
 
 ## Outcomes
 

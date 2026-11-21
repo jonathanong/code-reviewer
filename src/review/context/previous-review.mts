@@ -38,7 +38,7 @@ async function isAncestor(sha: string, input: ContextInput, deps: ContextDeps): 
   }
 }
 
-type Found = Pick<ContextSection, 'previous' | 'previousNote'>
+type Found = Pick<ContextSection, 'previous' | 'previousNote' | 'previousRunDir'>
 
 async function readReview(row: TrackerRow, deps: ContextDeps): Promise<Found> {
   const sha = row.head.slice(0, 12)
@@ -55,6 +55,7 @@ async function readReview(row: TrackerRow, deps: ContextDeps): Promise<Found> {
   }
   const stamp = row.finishedAt ?? row.startedAt
   return {
+    previousRunDir: row.runDir,
     previous: {
       sha: row.head,
       date: stamp === null ? null : stamp.slice(0, 10),
