@@ -56,5 +56,5 @@ jobs:
         with:
           # Offline: only links between files in this repository. Most external links here point
           # at private repositories, which answer 404 without a token.
-          args: --no-progress --offline '*.md' 'skills/**/*.md' 'benchmarks/*/*.md'
+          args: --no-progress --offline '*.md' 'docs/*.md' 'skills/**/*.md' 'benchmarks/*/*.md'
           fail: true
