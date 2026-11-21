@@ -37,14 +37,19 @@ export const hunkSignature = (hunk: Hunk): string =>
 
 /** Groups hunks by signature, most hunks first; ties keep first-seen order. */
 export function groupHunks(hunks: readonly Hunk[]): SignatureGroup[] {
-  const groups = new Map<string, { hunks: number; files: Set<string>; example: Hunk }>()
+  const groups = new Map<
+    string,
+    { hunks: number; lines: number; files: Set<string>; example: Hunk }
+  >()
   for (const hunk of hunks) {
+    const lines = hunk.removed.length + hunk.added.length
     const signature = hunkSignature(hunk)
     const group = groups.get(signature)
     if (group === undefined) {
-      groups.set(signature, { hunks: 1, files: new Set([hunk.path]), example: hunk })
+      groups.set(signature, { hunks: 1, lines, files: new Set([hunk.path]), example: hunk })
     } else {
       group.hunks += 1
+      group.lines += lines
       group.files.add(hunk.path)
     }
   }
@@ -53,6 +58,7 @@ export function groupHunks(hunks: readonly Hunk[]): SignatureGroup[] {
       signature,
       hunks: group.hunks,
       files: group.files.size,
+      lines: group.lines,
       example: group.example,
     }))
     .sort((a, b) => b.hunks - a.hunks)

@@ -103,6 +103,7 @@ export function renderReport(data: ReportData): string {
           )
           .join('\n\n'),
     ...renderRegression(data.regression),
+    ...(data.splitProposal === undefined ? [] : [`### Proposed split\n\n${data.splitProposal}`]),
     ...renderQuestions(data.questions ?? []),
     ...renderApprovalCheck(data.approvalCheck),
     ...renderPostWarnings(data.postWarnings ?? []),

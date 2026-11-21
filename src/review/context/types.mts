@@ -2,6 +2,7 @@ import type { RunTextCommand } from '../../gh-cli/index.mts'
 import type { LinkHow } from './reference-parse.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import type { TrustedAuthors } from '../trust.mts'
+import type { SplitSummary } from './change-shape/split.mts'
 import type { RuleSkill } from '../run/select-skills.mts'
 
 /** A selected rule skill with the absolute path of its SKILL.md. */
@@ -30,10 +31,16 @@ export type LinkedCommit = {
 }
 
 /**
- * One part of the shared context: a title and a markdown body without its heading. `linked` is
- * the structured form of the linked-regressions section, so the verifier needs no second git run.
+ * One part of the shared context: a title and a markdown body without its heading. `linked` and
+ * `split` are the structured forms of the linked-regressions and change-shape sections, so the
+ * verifier needs no second git run; `split` is set only when a split is worth proposing.
  */
-export type ContextSection = { title: string; body: string; linked?: LinkedCommit[] }
+export type ContextSection = {
+  title: string
+  body: string
+  linked?: LinkedCommit[]
+  split?: SplitSummary
+}
 
 /** What builders may touch, injected so tests use fakes. */
 export type ContextDeps = {

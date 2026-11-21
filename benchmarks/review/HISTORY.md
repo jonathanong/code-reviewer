@@ -2,6 +2,18 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) production verifier may propose splitting a large mixed change
+
+A production review of a large change whose git-measured shape has both a substantial mechanical
+part (the same edit repeated across files, or whitespace-only lines) and a substantial remainder
+now adds one block to the verifier prompt and an optional `splitProposal` to its output schema: one
+or two sentences naming what to move into its own pull request, or nothing when a split would not
+help. It never changes a finding, a severity or the verdict. The benchmark verifier arm
+(`buildVerifierPrompt`, `VERIFIER_OUTPUT_SCHEMA`) passes no summary and is unchanged, so no
+`bench-verifier` prompt differs and no score here measures this. Cases that would be affected if it
+did: only one whose fixture diff is large and mixes a repeated mechanical edit with hand-written
+changes. None does today. No run was made and no score is re-measured.
+
 ## 2026-11-20: (no run) production verifier reviews a change that fixes a regression
 
 A production review whose pull request names commits it fixes or reverts, found in local history,

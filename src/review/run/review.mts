@@ -14,7 +14,7 @@ import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
 import { runPillars } from './pillars.mts'
-import { buildReviewContext } from './review-context.mts'
+import { buildReviewContext, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
 import { webReferences } from './references-prompt.mts'
@@ -89,7 +89,7 @@ async function review(
       findings,
       skipped: pillarSkips,
       ...verifierContext(out),
-      ...(context.linked === undefined ? {} : { regression: context.linked }),
+      ...verifierContextFields(context),
       analysis,
       ...(web === undefined ? {} : { web }),
     },
