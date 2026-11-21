@@ -216,7 +216,8 @@ none. Stdout still carries only the JSON summary, and the lines never reach a pr
 line. `--quiet` turns them off.
 
 `--max-cost USD`, or [`limits.maxCostUsd`](configuration.md#limits), is a circuit breaker for
-runaway runs: set it well above a normal review's cost. Once the cost reported so far reaches it,
+runaway runs. It is 25 US dollars unless set, well above the few dollars a normal review costs;
+raise it for very large pull requests. Once the cost reported so far reaches it,
 no further step starts and the review fails whole, never as a partial review. Steps that report no
 cost count as zero, and steps already running finish, so the total can pass the ceiling by what they
 cost. `review` prints the line above on stderr, then the JSON summary on stdout with

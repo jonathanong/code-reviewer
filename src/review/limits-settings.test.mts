@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { DEFAULT_MAX_COST_USD } from './rules/limits-parse.mts'
 import { limitsProblems, parseMaxCost, requireLimits, resolveLimits } from './limits-settings.mts'
 import { NO_CONFIGS, parseRepoConfig, type RepoConfigs } from './rules/config.mts'
 
@@ -20,15 +21,17 @@ const DEFAULTS = {
 }
 
 describe('resolveLimits', () => {
-  it('has no ceiling when no machine file sets one', () => {
+  it('has the default ceiling when no machine file sets one', () => {
     expect(resolveLimits(NO_CONFIGS, 'acme/widgets')).toEqual({
       ...DEFAULTS,
-      maxCostUsd: undefined,
+      maxCostUsd: DEFAULT_MAX_COST_USD,
+      maxCostFrom: null,
       from: null,
     })
     expect(resolveLimits(configs({}), 'acme/widgets')).toEqual({
       ...DEFAULTS,
-      maxCostUsd: undefined,
+      maxCostUsd: DEFAULT_MAX_COST_USD,
+      maxCostFrom: null,
       from: null,
     })
   })
@@ -38,11 +41,13 @@ describe('resolveLimits', () => {
     expect(resolveLimits(both, 'acme/widgets')).toEqual({
       ...DEFAULTS,
       maxCostUsd: 2,
+      maxCostFrom: 'machine repo',
       from: 'machine repo',
     })
     expect(resolveLimits(both, 'acme')).toEqual({
       ...DEFAULTS,
       maxCostUsd: 9,
+      maxCostFrom: 'machine owner',
       from: 'machine owner',
     })
   })
@@ -57,7 +62,8 @@ describe('resolveLimits', () => {
       selectTimeoutSeconds: 30,
       contextDeadlineSeconds: 90,
       pillarJobs: 5,
-      maxCostUsd: undefined,
+      maxCostUsd: DEFAULT_MAX_COST_USD,
+      maxCostFrom: null,
       from: 'machine repo',
     })
     expect(resolveLimits(both, 'acme')).toMatchObject({
@@ -77,6 +83,7 @@ describe('resolveLimits', () => {
       maxCostUsd: 9,
       runTimeoutSeconds: 600,
       pillarJobs: 5,
+      maxCostFrom: 'machine owner',
       from: 'machine repo',
     })
   })
@@ -85,6 +92,7 @@ describe('resolveLimits', () => {
     expect(resolveLimits(configs(undefined, { maxCostUsd: 9 }), 'acme/widgets')).toEqual({
       ...DEFAULTS,
       maxCostUsd: 9,
+      maxCostFrom: 'machine owner',
       from: 'machine owner',
     })
   })

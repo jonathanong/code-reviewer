@@ -84,8 +84,8 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       retry: models.plan.retry,
       from: models.from,
     },
-    // null means no ceiling: a review spends what its steps cost.
-    limits: { ...limits, maxCostUsd: limits.maxCostUsd ?? null },
+    // `maxCostFrom` null means maxCostUsd is the built-in default.
+    limits,
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

@@ -380,7 +380,7 @@ limits:
 
 | Key                      | Meaning                                                             | Default | Range / type     |
 | ------------------------ | ------------------------------------------------------------------- | ------- | ---------------- |
-| `maxCostUsd`             | Cost ceiling per review, in US dollars. Absent means no ceiling.    | none    | number above 0   |
+| `maxCostUsd`             | Cost ceiling per review, in US dollars; see below.                  | 25      | number above 0   |
 | `runTimeoutSeconds`      | Time one pillar, verifier, evidence or approval-check run may take. | 1800    | integer 60-14400 |
 | `selectTimeoutSeconds`   | Time the skill-selection call may take.                             | 120     | integer 10-1800  |
 | `contextDeadlineSeconds` | Time the whole context build may take; see [context](context.md).   | 60      | integer 5-600    |
@@ -393,13 +393,14 @@ each `limits` key resolves on its own: the highest machine layer that sets that 
 layer sets takes the default, so a repository file that sets only `pillarJobs` keeps the owner
 file's `maxCostUsd`. A bad value, an out-of-range number or an unknown key is a problem naming the
 file and key, and `review` stops with it before claiming anything, so a ceiling is never dropped
-silently. `code-reviewer settings` prints every resolved value (`maxCostUsd` is `null` for no
-ceiling). `bench` ignores this key. The posted-text length targets (1,200 and 800 characters),
+silently. `code-reviewer settings` prints every resolved value, and `maxCostFrom` says which
+machine layer set `maxCostUsd` (`null` means the built-in default of 25). `bench` ignores this key. The posted-text length targets (1,200 and 800 characters),
 the caps in the context sections and the other fixed numbers stay fixed; `post` takes
 `--body-target` and `--inline-target` for one run.
 
-The ceiling is a circuit breaker against a runaway run, not a budget to tune a review to. Set it
-well above what a normal review costs, so only a run that has gone wrong reaches it. Before it
+The ceiling is a circuit breaker against a runaway run, not a budget to tune a review to. A
+normal review costs a few dollars, so the default of 25 is reached only by a run that has gone
+wrong; raise it for very large pull requests. Before it
 starts each step, a review compares the cost its steps have reported so far with `maxCostUsd`. At
 or above it the step does not start and the review stops whole: it fails with
 `cost ceiling reached ($X of $Y)` and the name of the step that did not start, writes no

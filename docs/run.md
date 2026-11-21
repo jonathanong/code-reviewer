@@ -23,7 +23,7 @@ a session that dispatches it without watching. It:
 Progress goes to stderr: the lines `review` writes for each step (see
 [Progress and the cost ceiling](review.md#progress-and-the-cost-ceiling)), which `--quiet` turns
 off. Stdout is exactly one JSON line. `--max-cost USD` sets the review's cost ceiling (a circuit breaker for runaway runs) over
-[`limits.maxCostUsd`](configuration.md#limits); a bad value fails the precondition check.
+[`limits.maxCostUsd`](configuration.md#limits), which is 25 US dollars by default (a normal review costs a few dollars; raise it for very large pull requests); a bad value fails the precondition check.
 
 ## Exit codes
 

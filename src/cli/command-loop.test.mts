@@ -45,7 +45,7 @@ const UNSET = {
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
-  limits: { ...LIMIT_DEFAULTS, maxCostUsd: null, from: null },
+  limits: { ...LIMIT_DEFAULTS, maxCostFrom: null, from: null },
   pillars: {
     disabled: [],
     extra: [],
@@ -277,7 +277,12 @@ describe('runLoopCommand', () => {
         },
         approvalCheck: { enabled: false, from: 'machine owner' },
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
-        limits: { ...LIMIT_DEFAULTS, maxCostUsd: 1.5, from: 'machine owner' },
+        limits: {
+          ...LIMIT_DEFAULTS,
+          maxCostUsd: 1.5,
+          maxCostFrom: 'machine owner',
+          from: 'machine owner',
+        },
         pillars: UNSET.pillars,
         plan: UNSET.plan,
         models: {
