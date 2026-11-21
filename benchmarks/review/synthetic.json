@@ -51,6 +51,12 @@
     "id": "rules-test-only-global-call-count",
     "fixture": "fixtures/rules-test-only-global-call-count",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:testing-rules",
+        "text": "MUST NOT patch a process-wide global and assert an exact call count; other code in the process calls it too."
+      }
+    ],
     "title": "test: cover fetchRate",
     "kind": "positive",
     "reason": "A test-only change. The tests spy on globalThis.fetch and assert toHaveBeenCalledTimes. That looks idiomatic; only the shared no-mistakes testing-rules forbid it (\"MUST NOT patch a process-wide global and assert an exact call count; other code in the process calls it too\"), and the repository's AGENTS.md is silent.",
@@ -68,6 +74,16 @@
     "id": "rules-skills-sweep-until-empty",
     "fixture": "fixtures/rules-skills-sweep-until-empty",
     "expectedSkills": [["jong-skills:bounded-iteration", "no-mistakes-rules:queue-rules"]],
+    "expectedRules": [
+      {
+        "skill": "jong-skills:bounded-iteration",
+        "text": "Never loop until empty"
+      },
+      {
+        "skill": "no-mistakes-rules:queue-rules",
+        "text": "MUST NOT loop until empty or default a cap to infinity; cap rows, batches, or time per run."
+      }
+    ],
     "title": "feat: purge expired sessions every 15 minutes",
     "kind": "positive",
     "reason": "Each statement is bounded, but the run loops until a batch comes back short. The bounded-iteration skill of the installed skills plugin requires a per-run cap, a report of remaining work, and a persisted resume position, and says never loop until empty.",
@@ -85,6 +101,12 @@
     "id": "rules-test-only-per-item",
     "fixture": "fixtures/rules-test-only-per-item",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:testing-rules",
+        "text": "MUST NOT assert something about every item in a collection without asserting it is non-empty; a per-item assertion passes over zero items."
+      }
+    ],
     "title": "test: cover overdueInvoices",
     "kind": "positive",
     "reason": "A test-only change. The first test asserts on every returned invoice in a loop without asserting the result is non-empty, so it passes if the function returns nothing. Only the shared no-mistakes testing-rules state this; the repository's AGENTS.md is silent.",
@@ -102,6 +124,12 @@
     "id": "rules-workflow-only-path-filtered-required-check",
     "fixture": "fixtures/rules-workflow-only-path-filtered-required-check",
     "expectedSkills": ["no-mistakes-rules:github-actions-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:github-actions-rules",
+        "text": "MUST NOT path-filter a required check; skipped jobs look missing. Use an always-reporting gate."
+      }
+    ],
     "title": "ci: add a lint workflow",
     "kind": "positive",
     "reason": "A workflow-only change. The new Lint workflow is a required check on main (the PR says so) but its pull_request trigger has a paths filter, so a PR that touches neither src/ nor package.json never reports it. Only the shared no-mistakes github-actions-rules state this; the repository's AGENTS.md is silent.",
@@ -119,6 +147,12 @@
     "id": "rules-manifest-only-duplicate-utility",
     "fixture": "fixtures/rules-manifest-only-duplicate-utility",
     "expectedSkills": ["no-mistakes-rules:dependency-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:dependency-rules",
+        "text": "SHOULD NOT add a dependency when an existing utility fits"
+      }
+    ],
     "title": "chore: add slugify",
     "kind": "positive",
     "reason": "A manifest-only change. The new slugify dependency duplicates the existing toSlug utility in src/text.ts. Only the shared no-mistakes dependency-rules state this; the repository's AGENTS.md is silent.",
@@ -136,6 +170,12 @@
     "id": "rules-content-only-renamed-log-field",
     "fixture": "fixtures/rules-content-only-renamed-log-field",
     "expectedSkills": ["no-mistakes-rules:observability-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:observability-rules",
+        "text": "MUST NOT rename or retype a log field or metric that a monitor or dashboard reads without updating it in the same change."
+      }
+    ],
     "title": "refactor: name the invite retry field after its parameter",
     "kind": "positive",
     "reason": "The changed file's path gives no hint of the topic. The change renames the retryCount log field, but ops/monitors.json still queries retryCount, so the monitor stops matching. Only the shared no-mistakes observability-rules state this.",
@@ -153,6 +193,12 @@
     "id": "rules-content-only-metrics-on-tx-client",
     "fixture": "fixtures/rules-content-only-metrics-on-tx-client",
     "expectedSkills": ["no-mistakes-rules:postgresql-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:postgresql-rules",
+        "text": "MUST NOT run logging or metrics code that queries the database on the transaction's connection; its failure aborts the transaction."
+      }
+    ],
     "title": "feat: record where members sign up from",
     "kind": "positive",
     "reason": "The changed file's path gives no hint of the topic. A best-effort signup_events insert runs on the signup transaction's own client inside a try/catch that swallows its error. A failed statement aborts the transaction, so COMMIT then fails and the signup is rolled back. Only the shared no-mistakes postgresql-rules state this.",
@@ -170,6 +216,12 @@
     "id": "rules-content-only-unordered-pick",
     "fixture": "fixtures/rules-content-only-unordered-pick",
     "expectedSkills": ["no-mistakes-rules:queue-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:queue-rules",
+        "text": "MUST NOT leave a non-terminal state without a timeout exit, or pick work without an `ORDER BY`."
+      }
+    ],
     "title": "feat: claim due reminders in batches",
     "kind": "positive",
     "reason": "The changed file's path gives no hint of the topic. claimDue locks a batch of due reminders with LIMIT and FOR UPDATE SKIP LOCKED but no ORDER BY, so which reminders a run takes is arbitrary and an old one can wait indefinitely. Only the shared no-mistakes queue-rules state this (\"MUST NOT leave a non-terminal state without a timeout exit, or pick work without an `ORDER BY`\").",
@@ -187,6 +239,12 @@
     "id": "rules-content-only-argv-entry-check",
     "fixture": "fixtures/rules-content-only-argv-entry-check",
     "expectedSkills": ["no-mistakes-rules:typescript-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:typescript-rules",
+        "text": "MUST NOT detect the entry module by comparing `process.argv[1]`; use the runtime's main-module check."
+      }
+    ],
     "title": "feat: run the member export from the command line",
     "kind": "positive",
     "reason": "The changed file's path gives no hint of the topic. The module decides whether it is the entry point by comparing process.argv[1] with its own path, a common idiom. Only the shared no-mistakes typescript-rules forbid it (\"MUST NOT detect the entry module by comparing `process.argv[1]`; use the runtime's main-module check\").",
@@ -252,6 +310,12 @@
     "id": "rules-near-miss-renamed-log-field-monitor-updated",
     "fixture": "fixtures/rules-near-miss-renamed-log-field-monitor-updated",
     "expectedSkills": ["no-mistakes-rules:observability-rules"],
+    "expectedRules": [
+      {
+        "skill": "no-mistakes-rules:observability-rules",
+        "text": "MUST NOT rename or retype a log field or metric that a monitor or dashboard reads without updating it in the same change."
+      }
+    ],
     "title": "refactor: name the invite retry field after its parameter",
     "kind": "negative",
     "reason": "Same rename as rules-content-only-renamed-log-field, but the same change updates the invite-retries-high monitor to the new field name, which is what the observability-rules require. Nothing should be flagged at high or above.",

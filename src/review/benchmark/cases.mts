@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 
 import { ReviewError, SEVERITIES, type Severity } from '../finding.mts'
 import { PILLARS, type Pillar } from '../pillar-name.mts'
+import { parseExpectedRules, type ExpectedRule } from './expected-rules.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 
 export type ExpectedFinding = {
@@ -20,6 +21,8 @@ type CaseBase = {
   expected: ExpectedFinding[]
   /** Rule skills a run should load by full `plugin:skill` name; an array entry is any-of. */
   expectedSkills?: ExpectedSkill[]
+  /** Rule lines the expected finding depends on; `bench-context` checks the excerpts hold them. */
+  expectedRules?: ExpectedRule[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -147,10 +150,12 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
   if (raw.kind === 'negative' && parsed.length > 0)
     fail(where, 'a negative case has no expected findings')
   const expectedSkills = skillNames(raw.expectedSkills, where)
+  const expectedRules = parseExpectedRules(raw.expectedRules, expectedSkills, where)
   return {
     id: str(raw, 'id', where),
     ...origin,
     ...(expectedSkills === undefined ? {} : { expectedSkills }),
+    ...(expectedRules === undefined ? {} : { expectedRules }),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',

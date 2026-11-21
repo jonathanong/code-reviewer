@@ -25,6 +25,7 @@ code-reviewer models --harness opencode [--free] [--model ID]... [--probes N] [-
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
+code-reviewer bench-context [--cases cases.json]... [--history history.json]... --out DIR [--case ID]...
   auth reports whether gh calls use the GitHub App (app.yaml, .yml, .json or .jsonc in the config home ~/.config/code-reviewer, or
   CODE_REVIEWER_APP_ID with CODE_REVIEWER_APP_PRIVATE_KEY or _PATH, which wins) or the local gh
   login. Under App auth it also prints source (env or the App config file path) and
@@ -110,7 +111,11 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   attempt to --out/raw/<case>/<n>.json. It scores how often every expected skill is selected, per
   case and per expected skill, with mean skills selected and cost by model. It does not run a
   reviewer, so it does not show that a selected skill is then loaded or applied. --cache DIR
-  reuses the clone cache of an earlier bench; --score-only re-scores saved attempts. bench and bench-verifier stage the same rule sources under
+  reuses the clone cache of an earlier bench; --score-only re-scores saved attempts.
+  bench-context makes no model call: for each case with expectedSkills it builds the rule-excerpts
+  section for exactly those skills and reports each skill quoted in full, in part or not, and
+  whether each expectedRules text is quoted, cut, or missing from the installed skill; --history
+  files build small git repositories and check the history sections find the commits. It exits 0. bench and bench-verifier stage the same rule sources under
   .review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
   the case's repoId); --no-rules stages none and withholds the Skill tool, for control
