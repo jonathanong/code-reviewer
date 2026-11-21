@@ -97,6 +97,11 @@ evidence:
   `{ "file" }` is a path on this machine, `~/` allowed.
 - `commands`: command prefixes of at least two words, each allowed as `Bash(<prefix>:*)`; beyond
   them the run has only the read-only commands Claude Code always permits. Grant read-only prefixes: a prefix is only as safe as the CLI's subcommand.
+- `paths` (optional): repository paths the source's results are a function of, each a file or a
+  directory with a trailing `/`, relative to the repository root and without `.` or `..`. A bad
+  value is a problem and drops the source, like the other fields. Declare it only when the result
+  depends on those files and on nothing else: a source that reads production data or logs changes
+  regardless of the diff, so it must leave `paths` out. Undeclared is the safe default.
 - `env` (optional): variables set for the run. Values are never printed, logged, or put in a
   prompt, report, or `settings` output; only names are.
 
@@ -113,11 +118,12 @@ Evidence line is added to the finding). Evidence is not part of `bench`.
 
 Each source in `evidence.json` also records the head it was checked against and a `scope`: what
 it covers, so a later review can tell whether new commits touched it. The commands are the model's
-choice, so the scope of every source is `unknown`, and unknown never counts as still valid. The
-pure `evidenceHolds` (`src/review/run/evidence-scope.mts`) answers `holds`, `stale` or `unknown`
-from a saved item and the paths changed since its head (`pathsChangedBetween` reads them with
-local `git diff`); it is the basis for reusing evidence, and no step calls it yet. An
-`evidence.json` saved before these fields existed has neither and is treated as unknown.
+choice, so the scope of a source is `unknown` unless its `paths` are declared, in which case it is
+those paths; unknown never counts as still valid. The pure `evidenceHolds`
+(`src/review/run/evidence-scope.mts`) answers `holds`, `stale` or `unknown` from a saved item and
+the paths changed since its head (`pathsChangedBetween` reads them with local `git diff`); a
+follow-up uses it to [offer earlier evidence](review.md#follow-ups-build-on-this-machines-last-review).
+An `evidence.json` saved before these fields existed has neither and is treated as unknown.
 
 ## `analysis`
 

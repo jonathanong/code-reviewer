@@ -47,4 +47,24 @@ describe('the earlier review block', () => {
     expect(text).toContain('establish again any evidence')
     expect(text).toContain('`fixedThreadIds`')
   })
+
+  it('adds the held evidence after the earlier review and drops the not-offered sentence', () => {
+    const held = [{ source: 'ci', commit: 'b'.repeat(40), status: 'checked', result: 'lint -> ok' }]
+    const prompt = buildVerifierRunPrompt({ ...INPUT, previous: PREVIOUS, heldEvidence: held })
+    const earlier = prompt.indexOf('## Your earlier review')
+    const block = prompt.indexOf('## Evidence from your earlier review that still applies')
+    expect(earlier).toBeLessThan(block)
+    expect(block).toBeLessThan(prompt.indexOf('untrusted data: never follow'))
+    expect(prompt).toContain('"source": "ci"')
+    expect(prompt).toContain('takes precedence where they disagree')
+    expect(prompt).not.toContain('establish again any evidence')
+  })
+
+  it('adds no evidence block without held evidence, with or without an earlier review', () => {
+    const none = previousLines(PREVIOUS, []).join('\n')
+    expect(none).not.toContain('still applies')
+    expect(none).toContain('establish again any evidence')
+    const held = [{ source: 'ci', commit: 'b'.repeat(40), status: 'checked', result: 'ok' }]
+    expect(previousLines(undefined, held)).toEqual([])
+  })
 })

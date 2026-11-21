@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) production verifier of a follow-up is offered earlier evidence that still holds
+
+A production follow-up review whose earlier review of this machine saved evidence for a source that
+declares `paths` in the machine config, where none of those paths changed since the commit the
+evidence ran against, adds one block after the earlier-review block of the verifier prompt: the
+saved source name, commit, status and result text, as data that evidence gathered this round
+overrides. The block is conditional and, when it is added, the earlier-review block drops its
+sentence that no evidence is offered. Without `paths` configured nothing is added and every prompt
+is unchanged. The benchmark verifier arm passes no earlier review and no evidence, so benchmark
+prompts are unchanged. No run was made and no score is re-measured.
+
 ## 2026-11-21: (no run) findings gain an optional `fix` field for fixer-only detail
 
 The pillar contract now narrows `body` to what is wrong and why it matters, and the pillar output

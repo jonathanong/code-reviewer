@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import type { Exec } from '../benchmark/exec.mts'
 import type { StepModels } from '../models.mts'
 import type { Finding } from '../finding.mts'
-import { UNKNOWN_SCOPE } from './evidence-scope.mts'
+import type { EvidenceSource } from '../rules/evidence-parse.mts'
+import { UNKNOWN_SCOPE, type EvidenceScope } from './evidence-scope.mts'
 import { EVIDENCE_MODEL, findingId, runEvidenceModel, type UsableSource } from './evidence-run.mts'
 import type { EvidenceReport, EvidenceSetup, EvidenceSourceReport } from './evidence-types.mts'
 import { message, writeJson } from './review-support.mts'
@@ -31,9 +32,18 @@ function blocked(name: string, reason: string): EvidenceSourceReport {
   return { name, status: 'blocked', reason, queries: [] }
 }
 
-// The model chose the commands, so what a result covers is not mechanically known.
-const stamped = (sources: EvidenceSourceReport[], headSha: string): EvidenceSourceReport[] =>
-  sources.map((source) => ({ ...source, headSha, scope: UNKNOWN_SCOPE }))
+// The model chose the commands, so what a result covers is known only where the operator declared
+// `paths` for the source; every other source is `unknown`.
+const stamped = (
+  sources: EvidenceSourceReport[],
+  headSha: string,
+  configured: readonly EvidenceSource[],
+): EvidenceSourceReport[] =>
+  sources.map((source) => {
+    const paths = configured.find(({ name }) => name === source.name)?.paths
+    const scope: EvidenceScope = paths === undefined ? UNKNOWN_SCOPE : { kind: 'paths', paths }
+    return { ...source, headSha, scope }
+  })
 
 function emptyReport(sources: EvidenceSourceReport[]): EvidenceReport {
   return {
@@ -87,7 +97,8 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
   const setup = await input.setup()
   if (setup.sources.length === 0) return undefined
   const { usable, unusable } = await readSources(setup)
-  if (usable.length === 0) return emptyReport(stamped([...unusable.values()], input.headSha))
+  if (usable.length === 0)
+    return emptyReport(stamped([...unusable.values()], input.headSha, setup.sources))
   const run = await runEvidenceModel(
     {
       prompt: input.readPrompt(),
@@ -106,7 +117,7 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
   )
   if ('error' in run) {
     return {
-      ...emptyReport(stamped([...unusable.values()], input.headSha)),
+      ...emptyReport(stamped([...unusable.values()], input.headSha, setup.sources)),
       error: run.error,
       failedAttempts: run.failedAttempts,
       ...(run.ran === undefined ? {} : { model: run.ran.model, ran: run.ran }),
@@ -121,6 +132,7 @@ async function gather(input: EvidenceStepInput): Promise<EvidenceReport | undefi
         blocked(name, 'The evidence run did not report this source.'),
     ),
     input.headSha,
+    setup.sources,
   )
   return {
     ...run.output,

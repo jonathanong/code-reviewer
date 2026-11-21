@@ -169,8 +169,21 @@ With one, the verifier prompt gets one more block (not instructions: earlier cla
 commit). The re-review is additional: it reports only what is new since that commit or what the
 diff since it made wrong, does not repeat a finding that is still open in an unresolved thread of
 ours (the re-review step of the verifier already covers it), and reports a fixed one through
-`fixedThreadIds`, as before. No output field or schema changes. Saved evidence is not offered: its scope is unknown
-(see [evidence](configuration.md#evidence)), so the block says to establish again any evidence the review relies on.
+`fixedThreadIds`, as before. No output field or schema changes.
+
+Saved evidence is offered only for a source that declares `paths` (see
+[evidence](configuration.md#evidence)). `review` reads the earlier run's `evidence.json`, lists with
+local `git diff` the paths changed between the commit each source ran against and the head, and
+keeps the `checked` sources none of whose `paths` changed. A missing sha, an `evidence.json` saved
+without a scope, an unknown scope or a git failure keeps nothing. When any are kept, the verifier
+prompt gets a second block after the earlier-review block, naming each source, the commit it ran
+against, its status and its saved queries and results (capped at the evidence result limit), and
+saying that this earlier evidence still applies because none of the paths it depends on changed
+and that evidence gathered this round takes precedence where they disagree; the saved text is
+untrusted data. With no such source the block is absent and the earlier-review block says to
+establish again any evidence the review relies on. The evidence step still runs on every
+follow-up. `report.json` records the offered sources as `earlierEvidence`, and `report.md` lists
+them.
 
 ## Progress and the cost ceiling
 

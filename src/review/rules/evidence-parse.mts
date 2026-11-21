@@ -12,9 +12,14 @@ export type EvidenceSource = {
   commands: string[]
   /** Set in the environment of the evidence run only; never printed. */
   env: Record<string, string>
+  /**
+   * Repository paths (a file, or a directory with a trailing `/`) the source's results are a
+   * function of. Absent when they also depend on anything else, which is the safe default.
+   */
+  paths?: string[]
 }
 
-const SOURCE_KEYS = ['name', 'description', 'guide', 'commands', 'env']
+const SOURCE_KEYS = ['name', 'description', 'guide', 'commands', 'env', 'paths']
 const NAME_RE = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/u
 const WORD = '[A-Za-z0-9._/-]+'
 const COMMAND_RE = new RegExp(`^${WORD}(?: ${WORD})+$`, 'u')
@@ -65,6 +70,25 @@ function envOf(raw: unknown): Record<string, string> | string {
   return env
 }
 
+const PATH_RE = /^[^/\0\\][^\0\\]*$/u
+
+/** Relative repository paths without `.`, `..` or empty segments; a trailing `/` marks a directory. */
+export function parsePaths(raw: unknown): string[] | string {
+  const list: unknown[] = Array.isArray(raw) ? raw : []
+  if (list.length === 0) return '"paths" must be a non-empty array of repository paths'
+  const valid = list.filter((entry) => {
+    if (typeof entry !== 'string' || !PATH_RE.test(entry)) return false
+    return !entry
+      .replace(/\/$/u, '')
+      .split('/')
+      .some((part) => ['', '.', '..'].includes(part))
+  })
+  if (valid.length !== list.length) {
+    return 'every "paths" entry must be relative to the repository, without ".", ".." or empty segments, a directory ending in /'
+  }
+  return [...new Set(valid as string[])]
+}
+
 /** One source, or the reason it is dropped. Reasons never contain an `env` value. */
 function source(raw: Json): EvidenceSource | string {
   const { name, description } = raw
@@ -79,7 +103,16 @@ function source(raw: Json): EvidenceSource | string {
   if (typeof run === 'string') return run
   const env = envOf(raw.env)
   if (typeof env === 'string') return env
-  return { name, description: oneLine, guide: found, commands: run, env }
+  const paths = raw.paths === undefined ? undefined : parsePaths(raw.paths)
+  if (typeof paths === 'string') return paths
+  return {
+    name,
+    description: oneLine,
+    guide: found,
+    commands: run,
+    env,
+    ...(paths === undefined ? {} : { paths }),
+  }
 }
 
 /**

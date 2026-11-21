@@ -1,0 +1,30 @@
+{
+  "sources": [
+    {
+      "name": "docs",
+      "status": "checked",
+      "queries": [{ "command": "grep -c retry docs/api.md", "result": "3" }],
+      "headSha": "1111111111111111111111111111111111111111",
+      "scope": { "kind": "paths", "paths": ["docs/"] }
+    },
+    {
+      "name": "logs",
+      "status": "checked",
+      "queries": [{ "command": "aws logs read", "result": "0" }],
+      "headSha": "1111111111111111111111111111111111111111",
+      "scope": { "kind": "unknown" }
+    },
+    {
+      "name": "lint",
+      "status": "checked",
+      "queries": [{ "command": "pnpm lint", "result": "ok" }],
+      "headSha": "1111111111111111111111111111111111111111",
+      "scope": { "kind": "paths", "paths": ["src/"] }
+    },
+    {
+      "name": "old",
+      "status": "checked",
+      "queries": [{ "command": "x y", "result": "z" }]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import type { LinkedCommit } from '../context/types.mts'
 import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
 import type { ApprovalCheck } from './approval-check.mts'
+import type { HeldEvidence } from './evidence-reuse.mts'
 import type { EvidenceReport } from './evidence-types.mts'
 import { reportPush, type ReportPush } from './push-report.mts'
 import { reportRegression, type ReportRegression } from './regression-report.mts'
@@ -69,6 +70,8 @@ export type ReportData = {
   contextNote?: string // why the pillars got no context file; absent when they got one
   /** Why a follow-up's verifier got no earlier review of this machine; absent when it got one or had none to look for. */
   earlierReviewNote?: string
+  /** The earlier review's evidence offered to the verifier as still holding; absent when none was. */
+  earlierEvidence?: Array<{ source: string; commit: string; status: string }>
   /** The commits the change says it fixes or reverts, and the verifier's one-line recommendation. */
   regression?: ReportRegression // absent without linked commits
   /** The verifier's proposal to split a large change with a mechanical part; absent without one. */
@@ -102,6 +105,7 @@ export type ReportInput = {
   dependencies?: readonly Dependency[] | undefined
   contextNote?: string | undefined
   earlierReviewNote?: string | undefined
+  earlierEvidence?: readonly HeldEvidence[] | undefined
   regression?: readonly LinkedCommit[] | undefined
 }
 
@@ -147,6 +151,15 @@ export function buildReport(input: ReportInput): ReportData {
     ...(input.earlierReviewNote === undefined
       ? {}
       : { earlierReviewNote: input.earlierReviewNote }),
+    ...(input.earlierEvidence === undefined
+      ? {}
+      : {
+          earlierEvidence: input.earlierEvidence.map(({ source, commit, status }) => ({
+            source,
+            commit,
+            status,
+          })),
+        }),
     ...reportRegression(input.regression, output?.regressionPrevent),
     ...(output?.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
     verifier:

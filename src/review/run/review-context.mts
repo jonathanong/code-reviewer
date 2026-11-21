@@ -9,6 +9,7 @@ import { buildContext, sectionsNamed } from '../context/build.mts'
 import type { SplitSummary } from '../context/change-shape/split.mts'
 import type { LinkedCommit, PreviousReview } from '../context/types.mts'
 import { renderContext } from '../context/render.mts'
+import { heldEvidence, type HeldEvidence } from './evidence-reuse.mts'
 import { CONTEXT_DEADLINE_MS, type SkillChoice } from './types.mts'
 import { listRuleSkillFiles } from './select-skills.mts'
 
@@ -45,6 +46,8 @@ export type ReviewContext = {
   previous?: PreviousReview
   /** Why a follow-up got no earlier review, for the report. */
   previousNote?: string
+  /** The earlier review's evidence that still holds at the head; absent when none does. */
+  held?: HeldEvidence[]
 }
 
 /** The structured results the verifier takes from the build, each only when there is one. */
@@ -52,6 +55,7 @@ export const verifierContextFields = (context: ReviewContext) => ({
   ...(context.linked === undefined ? {} : { regression: context.linked }),
   ...(context.split === undefined ? {} : { split: context.split }),
   ...(context.previous === undefined ? {} : { previous: context.previous }),
+  ...(context.held === undefined ? {} : { heldEvidence: context.held }),
 })
 
 /** What the report records of the build: why there is no context file, the linked commits, the earlier-review note. */
@@ -59,6 +63,7 @@ export const reportFields = (context: ReviewContext) => ({
   contextNote: context.note,
   regression: context.linked,
   earlierReviewNote: context.previousNote,
+  earlierEvidence: context.held,
 })
 
 /**
@@ -110,9 +115,20 @@ export async function buildReviewContext(
     const earlier = built.sections.find((section) => section.title === 'Past reviews')
     const failed = built.notes.find((note) => note.startsWith(`${FOLLOW_UP_SECTION} failed`))
     const previousNote = earlier?.previousNote ?? failed
+    const held =
+      earlier?.previous === undefined || earlier.previousRunDir === undefined
+        ? []
+        : await heldEvidence({
+            runDir: earlier.previousRunDir,
+            headSha: prepared.headSha,
+            tree: options.tree,
+            exec,
+            readFile: async (path) => readFileSync(path, 'utf8'),
+          })
     const previousFields = {
       ...(earlier?.previous === undefined ? {} : { previous: earlier.previous }),
       ...(previousNote === undefined ? {} : { previousNote }),
+      ...(held.length === 0 ? {} : { held }),
     }
     const kept = built.notes.filter((note) => note !== failed)
     if (forPillars.length === 0) {

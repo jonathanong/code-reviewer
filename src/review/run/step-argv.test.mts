@@ -227,6 +227,21 @@ it('runs every step with the exact claude call', async () => {
       { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
     ),
   )
+  const heldEvidence = [
+    { source: 'ci', commit: 'b'.repeat(40), status: 'checked', result: 'lint -> 0 findings' },
+  ]
+  await run('review.verifier.held', () =>
+    runReviewVerifier(
+      { ...vin, previous, heldEvidence },
+      { model: 'opus', mode: 'full', tree: '/tree', exec },
+    ),
+  )
+  await run('review.verifier.held.settings.light', () =>
+    runReviewVerifier(
+      { ...vin, previous, heldEvidence },
+      { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
+    ),
+  )
   await run('review.verifier.web', () =>
     runReviewVerifier(
       { ...vin, web },
@@ -375,6 +390,6 @@ it('runs every step with the exact claude call', async () => {
   await run('bench.judge.settings', () =>
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
-  expect(Object.keys(captured)).toHaveLength(50)
+  expect(Object.keys(captured)).toHaveLength(52)
   expect(captured).toStrictEqual(EXPECTED)
 })

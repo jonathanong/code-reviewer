@@ -108,6 +108,16 @@ describe('applyEvidence', () => {
     }
   })
 
+  it('stamps the declared paths as the scope of that source only', async () => {
+    const { input, saved } = setup([{ ...source('aws'), paths: ['docs/', 'a.ts'] }, source('dd')])
+    await applyEvidence(input)
+    expect(saved().sources[0]).toMatchObject({
+      name: 'aws',
+      scope: { kind: 'paths', paths: ['docs/', 'a.ts'] },
+    })
+    expect(saved().sources[1]).toMatchObject({ name: 'dd', scope: { kind: 'unknown' } })
+  })
+
   it('stamps the sources of a run that never started and of a failed run', async () => {
     const none = setup([source('aws')], { aws: new Error('no clone') })
     await applyEvidence(none.input)
