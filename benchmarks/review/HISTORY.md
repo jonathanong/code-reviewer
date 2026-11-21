@@ -2,6 +2,26 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: pilot of `bench --excerpts`: one attempt per arm on five synthetic rules cases
+
+Commit 6ce16d7. Reviewer Sonnet (`claude-sonnet-5-5`), judge Opus, one attempt per arm, both arms in
+the same session, `--pillar rules --select`. Cases: `rules-test-only-global-call-count`,
+`rules-test-only-per-item`, `rules-content-only-argv-entry-check`,
+`rules-workflow-only-path-filtered-required-check`, `rules-content-only-renamed-log-field`.
+
+| Arm | Recall | Findings per PR | Distinct skills loaded per run | Turns per run | Input tokens per run | Cost per run | Total |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `alongside` | 5 of 5 | 1.2 | 4.0 | 15.2 | 130,500 | $0.13 | $0.66 |
+| `replace` | 5 of 5 | 1.4 | 2.2 | 11.4 | 103,511 | $0.14 | $0.71 |
+
+Under `replace` the pillar loaded fewer skills and took fewer turns, and every expected claim was
+still found. Cost did not fall: the saved cache reads were offset by more cache creation. In one
+case (`rules-workflow-only-path-filtered-required-check`) the `replace` run loaded no skill at all,
+including two that were not quoted, so the override can also suppress loads it should not. In two
+cases it still loaded a `no-mistakes-rules` skill. Grounded recall is not comparable between the
+arms, because a fully quoted skill is not loaded. One attempt per arm cannot resolve a difference in
+recall or cost; this is a pilot, not a measurement, and no README row changes.
+
 ## 2026-11-21: (no run) `bench --excerpts` arm: shared rule excerpts with or without loading quoted skills
 
 `bench` gains an opt-in `--excerpts alongside|replace` (requires `--select`). It builds review's
