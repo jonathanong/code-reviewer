@@ -22,7 +22,11 @@ const ok = (name: string, body: string): SectionBuilder => ({
 
 describe('SECTIONS', () => {
   it('lists the rule excerpts builder', () => {
-    expect(SECTIONS.map((section) => section.name)).toEqual(['rule-excerpts'])
+    expect(SECTIONS.map((section) => section.name)).toEqual([
+      'rule-excerpts',
+      'changed-line-history',
+      'linked-regressions',
+    ])
   })
 })
 

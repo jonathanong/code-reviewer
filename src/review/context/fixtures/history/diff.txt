@@ -1,0 +1,33 @@
+diff --git a/src/app.mts b/src/app.mts
+index 111..222 100644
+--- a/src/app.mts
++++ b/src/app.mts
+@@ -3,2 +3,3 @@ head
+-old
+-older
++new
+@@ -10 +11,0 @@
+-gone
+@@ -20,0 +21,2 @@
++added only
++again
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -1 +1 @@
+-x
++y
+diff --git a/new.mts b/new.mts
+new file mode 100644
+--- /dev/null
++++ b/new.mts
+@@ -0,0 +1 @@
++hi
+diff --git a/logo.png b/logo.png
+Binary files a/logo.png and b/logo.png differ
+diff --git a/doc.md b/doc.md
+--- a/doc.md
++++ b/doc.md
+@@ -1 +1 @@
+--- looks like a header
++kept

@@ -22,3 +22,26 @@ verbatim, a whole `## ` section at a time, up to a per-skill cap; sections over 
 dropped whole and named. A skill that is mostly prose is not quoted: code never paraphrases, so
 the full file is the only source. Quoted lines are block-quoted with a `> ` prefix and are
 otherwise the source's lines.
+
+## Changed-line history
+
+For the lines the pull request changes or deletes, the earlier commits that last touched them.
+The diff is `baseSha...headSha`, so the old side is the merge base; each file gets one
+`git blame --porcelain` at the merge base over the old-side range of every hunk. Per file it lists
+the distinct commits, newest first, with short sha, date, subject, the pull request number when
+the subject ends in `(#N)`, and how many of the lines each owns. A diff that only adds lines
+gives no section. The work is bounded by constants in `changed-line-history.mts`: a file cap (also
+the blame call cap), a hunk cap per file, a commit cap per file, and a cap on old-side lines per
+file. Binary files, generated and lock files, and files over the line cap are not blamed. A
+failing blame is a note under that file. Everything is local; nothing calls GitHub.
+
+## Linked regressions
+
+What the pull request says it fixes or reverts, read from its own commit messages
+(`baseSha..headSha`): `This reverts commit <sha>`, `Revert "<subject>"`, `Fixes <sha>` (also
+`Fixes:`, `Closes`, `Resolves`), and any line that mentions a regression together with a sha or
+`#N`. A bare word that happens to be hex is not a sha. A `#N` is resolved with
+`git log --grep '(#N)$'` on the base branch, and a reverted subject by an exact subject match
+there; the API is not called. For each commit found locally the section gives its short sha,
+date, subject, its files (capped), and whether it touched files this pull request also changes.
+References not found locally are listed as such. Nothing referenced gives no section.
