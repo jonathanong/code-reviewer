@@ -66,6 +66,8 @@ export type ReviewDeps = {
   pluginInfo(): Promise<PluginInfo>
   /** Runs a binary (`claude`) and resolves its stdout. */
   exec: Exec
+  /** Writes a review's progress text; its timings read the tracker's clock. */
+  progress(text: string): void
   /** The directory holding the verifier and pillar prompts (`skills/review/references`). */
   references(): string
   runBench(args: string[]): Promise<number>
@@ -167,6 +169,7 @@ export function createDefaultDeps(
     },
     exec: async (command, args, options) =>
       (await import('../review/benchmark/exec.mts')).defaultExec(command, args, options),
+    progress: (text) => void process.stderr.write(text),
     references: () => join(pluginRoot(), 'skills/review/references'),
     runBench: async (args) => (await import('../review/benchmark/cli.mts')).runReviewBenchCli(args),
     runVerifierBench: async (args) =>

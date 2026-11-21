@@ -13,6 +13,8 @@ export type StepRuntime = {
   maxWaitSeconds: number
   sleep: (ms: number) => Promise<void>
   now: () => number
+  /** Told before each wait on a rate limit or overload: how long, on which candidate, and why. */
+  onWait?: (ms: number, on: StepRan, why: string) => void
 }
 
 export const DEFAULT_MAX_WAIT_SECONDS = 600
@@ -90,6 +92,7 @@ export async function runStep(
             : Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt)
         const waits = failure.kind === 'rate_limited' || failure.kind === 'overloaded'
         if (waits && waitedMs + wait <= budgetMs) {
+          runtime.onWait?.(wait, ran, failure.kind === 'rate_limited' ? 'a rate limit' : 'overload')
           const started = runtime.now()
           await runtime.sleep(wait)
           waitedMs += runtime.now() - started

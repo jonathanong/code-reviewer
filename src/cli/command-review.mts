@@ -5,6 +5,7 @@ import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { resolveModels } from '../review/models-settings.mts'
+import { stepWatchFor } from './step-watch-for.mts'
 import { recordReview } from '../tracker/record.mts'
 import {
   resolveApprovalCheck,
@@ -32,7 +33,12 @@ function jobs(value: string | undefined): number {
 
 /** `code-reviewer review`: a whole headless review that stops before posting. */
 export async function reviewCommand(
-  values: LoopValues & { jobs?: string | undefined; model?: string[] | undefined },
+  values: LoopValues & {
+    jobs?: string | undefined
+    model?: string[] | undefined
+    'max-cost'?: string | undefined
+    quiet?: boolean | undefined
+  },
   target: PullTarget,
   deps: ReviewDeps,
 ): Promise<ReviewResult> {
@@ -73,7 +79,10 @@ export async function reviewCommand(
       // Machine config only: an enabled plugin loads its hooks too, so a repository cannot pick them.
       rulePlugins: resolveRulePlugins(deps.configs(), target.repo).names,
       // Machine config, then --model: a repository cannot choose which model reads its code.
-      models: { plan: resolveModels(deps.configs(), target.repo, overrides).plan },
+      models: {
+        plan: resolveModels(deps.configs(), target.repo, overrides).plan,
+        watch: stepWatchFor(values, target.repo, deps),
+      },
       exec: deps.exec,
       references: deps.references(),
     },

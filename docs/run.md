@@ -1,7 +1,7 @@
 # Unattended runs: `run`
 
 ```bash
-code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--force] [--jobs N] [--clones DIR]
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--force] [--jobs N] [--clones DIR]
 ```
 
 `run` takes one pull request from a label request to a posted or held review in one process, for
@@ -20,7 +20,10 @@ a session that dispatches it without watching. It:
    `run` adds the request label first when neither it nor the in-progress label is present.
 5. Posts through `post` (which records the tracker row and moves the labels), or holds.
 
-Progress goes to stderr. Stdout is exactly one JSON line.
+Progress goes to stderr: the lines `review` writes for each step (see
+[Progress and the cost ceiling](review.md#progress-and-the-cost-ceiling)), which `--quiet` turns
+off. Stdout is exactly one JSON line. `--max-cost USD` sets the review's cost ceiling over
+[`limits.maxCostUsd`](configuration.md#limits); a bad value fails the precondition check.
 
 ## Exit codes
 

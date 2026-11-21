@@ -117,8 +117,9 @@ describe('reviewCommand', () => {
       commands: ['aws logs get-query-results'],
       env: {},
     }
-    // The web references, the approval check, the rule plugins and the models read the configs first, when wired.
+    // The web references, the approval check, the rule plugins, the models and the limits read the configs first, when wired.
     configs
+      .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
       .mockReturnValueOnce(NO_CONFIGS)
@@ -169,6 +170,29 @@ describe('reviewCommand', () => {
         byRepo: new Map([['acme/widgets', { consumes: [], rulePlugins: [], problems: [] }]]),
       })
     expect((await steps()).wired.rulePlugins).toEqual([])
+  })
+
+  it('gives the models a watch that writes progress to deps unless --quiet', async () => {
+    const progress = vi.fn()
+    const loud = { ...deps, progress } as unknown as ReviewDeps
+    await reviewCommand({ out: 'o', tree: 't' }, TARGET, loud)
+    const [first] = vi.mocked(runReview).mock.calls[0] as unknown as [ReviewSteps]
+    first.models?.watch?.write?.('hello\n')
+    expect(progress).toHaveBeenCalledWith('hello\n')
+    vi.clearAllMocks()
+    await reviewCommand({ out: 'o', tree: 't', quiet: true }, TARGET, loud)
+    const [second] = vi.mocked(runReview).mock.calls[0] as unknown as [ReviewSteps]
+    expect(second.models?.watch?.write).toBeUndefined()
+  })
+
+  it('sets the cost ceiling from --max-cost, and rejects a bad one before anything runs', async () => {
+    const { wired } = await steps({ out: 'o', tree: 't', 'max-cost': '3' })
+    expect(wired.models?.watch?.ceilingUsd).toBe(3)
+    vi.clearAllMocks()
+    await expect(
+      reviewCommand({ out: 'o', tree: 't', 'max-cost': '-1' }, TARGET, deps),
+    ).rejects.toThrow('--max-cost')
+    expect(runReview).not.toHaveBeenCalled()
   })
 
   it('previews with a dry run', async () => {

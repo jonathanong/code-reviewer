@@ -104,6 +104,7 @@ function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
     listPlugins: vi.fn(async () => [{ id: 'rules@m', version: '1.0.0' }]),
     pluginInfo: vi.fn(async () => ({ enabled: [], installs: [] })),
     exec: vi.fn(async () => ''),
+    progress: vi.fn(),
     references: vi.fn(() => '/references'),
     runBench: vi.fn(async () => 7),
     runVerifierBench: vi.fn(async () => 8),

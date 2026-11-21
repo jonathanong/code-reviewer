@@ -11,16 +11,14 @@ import {
 } from './config-files.mts'
 import type { ModelConfig } from '../models.mts'
 import { consumesList } from './consumes-parse.mts'
-import { parseEvidence, type EvidenceSource } from './evidence-parse.mts'
-import { parseReferences, type ReferenceSource } from './references-parse.mts'
-import { machineOnly } from './machine-only.mts'
-import { parseModels } from './models-parse.mts'
-import { parseRulePlugins } from './rule-plugins-parse.mts'
-import { parseRun, type RunConfig } from './run-parse.mts'
+import type { EvidenceSource } from './evidence-parse.mts'
+import type { ReferenceSource } from './references-parse.mts'
+import type { LimitsConfig } from './limits-parse.mts'
+import { parseMachineKeys } from './machine-keys.mts'
+import type { RunConfig } from './run-parse.mts'
 import {
   parseCheckRun,
   parseLabels,
-  parseSwitch,
   type CheckRunSettings,
   type LabelNames,
 } from './settings-parse.mts'
@@ -68,6 +66,8 @@ export type RepoConfig = {
   run?: RunConfig
   /** Machine config only: it picks the harness and model of every step, so a reviewed repository cannot. */
   models?: ModelConfig
+  /** Machine config only: the cost ceiling spends the operator's money, so a reviewed repository cannot raise it. */
+  limits?: LimitsConfig
   problems: string[]
 }
 
@@ -87,6 +87,7 @@ const KEYS = new Set([
   'rulePlugins',
   'run',
   'models',
+  'limits',
 ])
 
 type Json = Record<string, unknown>
@@ -120,40 +121,12 @@ export function parseRepoConfig(
   if (scope === 'owner' && raw.consumes !== undefined) {
     problems.push(`${file}: "consumes" is repo-level only; ignored`)
   }
-  const evidence = machineOnly(scope, raw.evidence, file, 'evidence', problems, {
-    what: 'evidence sources are',
-    parse: parseEvidence,
-  })
-  const references = machineOnly(scope, raw.references, file, 'references', problems, {
-    what: 'references are',
-    parse: parseReferences,
-  })
-  const approvalCheck = machineOnly(scope, raw.approvalCheck, file, 'approvalCheck', problems, {
-    what: 'approvalCheck is',
-    parse: parseSwitch,
-  })
-  const rulePlugins = machineOnly(scope, raw.rulePlugins, file, 'rulePlugins', problems, {
-    what: 'rulePlugins is',
-    parse: parseRulePlugins,
-  })
-  const run = machineOnly(scope, raw.run, file, 'run', problems, {
-    what: 'run settings are',
-    parse: parseRun,
-  })
-  const models = machineOnly(scope, raw.models, file, 'models', problems, {
-    what: 'models is',
-    parse: parseModels,
-  })
+  const machine = parseMachineKeys(scope, raw, file, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
     ...(labels === undefined ? {} : { labels }),
     ...(checkRun === undefined ? {} : { checkRun }),
-    ...(evidence === undefined ? {} : { evidence }),
-    ...(references === undefined ? {} : { references }),
-    ...(approvalCheck === undefined ? {} : { approvalCheck }),
-    ...(rulePlugins === undefined ? {} : { rulePlugins }),
-    ...(run === undefined ? {} : { run }),
-    ...(models === undefined ? {} : { models }),
+    ...machine,
     problems,
   }
 }

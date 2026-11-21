@@ -17,6 +17,8 @@ export type RunValues = {
   force?: boolean | undefined
   jobs?: string | undefined
   model?: string[] | undefined
+  'max-cost'?: string | undefined
+  quiet?: boolean | undefined
   clones?: string | undefined
 }
 
@@ -97,6 +99,7 @@ async function execute(
       clones,
       jobs: values.jobs,
       model: values.model,
+      limits: { 'max-cost': values['max-cost'], quiet: values.quiet },
       effort: values.effort,
       signal,
       base,

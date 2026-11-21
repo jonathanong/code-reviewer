@@ -41,6 +41,7 @@ const UNSET = {
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
+  limits: { maxCostUsd: null, from: null },
   models: {
     steps: {
       select: [{ harness: 'claude', model: 'haiku' }],
@@ -261,6 +262,7 @@ describe('runLoopCommand', () => {
         },
         approvalCheck: { enabled: false, from: 'machine owner' },
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
+        limits: { maxCostUsd: 1.5, from: 'machine owner' },
         models: {
           steps: {
             ...UNSET.models.steps,

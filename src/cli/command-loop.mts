@@ -24,6 +24,7 @@ import {
 import { splitRepo } from '../gh-cli/index.mts'
 import { modelTable } from '../review/models.mts'
 import { resolveModels } from '../review/models-settings.mts'
+import { resolveLimits } from '../review/limits-settings.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
@@ -66,6 +67,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   const references = resolveReferences(configs, scope)
   const approvalCheck = resolveApprovalCheck(configs, scope)
   const models = resolveModels(configs, scope)
+  const limits = resolveLimits(configs, scope)
   return {
     scope,
     ...reviewSettings(configs, scope, target?.config),
@@ -85,6 +87,8 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       retry: models.plan.retry,
       from: models.from,
     },
+    // null means no ceiling: a review spends what its steps cost.
+    limits: { maxCostUsd: limits.maxCostUsd ?? null, from: limits.from },
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),
       ...(target?.problems ?? []),

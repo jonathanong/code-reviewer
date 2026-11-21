@@ -36,6 +36,7 @@ const CONFIGS: RepoConfigs = {
           ],
           approvalCheck: false,
           rulePlugins: ['team-rules'],
+          limits: { maxCostUsd: 1.5 },
           models: {
             tiers: { small: [{ harness: 'claude', model: 'sonnet' }] },
             steps: { select: 'small', 'pillar.design': [{ harness: 'claude', model: 'opus' }] },

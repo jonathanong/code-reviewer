@@ -50,6 +50,8 @@ function parse(args: string[]) {
       out: { type: 'string' },
       jobs: { type: 'string' },
       model: { type: 'string', multiple: true },
+      'max-cost': { type: 'string' },
+      quiet: { type: 'boolean' },
       effort: { type: 'string' },
       tree: { type: 'string' },
       clones: { type: 'string' },

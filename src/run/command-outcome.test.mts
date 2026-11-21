@@ -9,7 +9,7 @@ import { reviewCommand } from '../cli/command-review.mts'
 import { runReviewCommand } from '../cli/command.mts'
 import { processRetrier } from '../gh-cli/retry.mts'
 import type { FakeOptions } from './fake-deps.mts'
-import { runWith, setup as makeFake, type Review } from './harness.mts'
+import { PULL, runWith, setup as makeFake, type Review } from './harness.mts'
 
 let root: string
 let stdout: string[]
@@ -113,6 +113,29 @@ describe('run reading the post outcome', () => {
     expect(again.code).toBe(11)
     expect(again.lines[0]?.reason).toContain('an unposted review of this head waits in')
     expect(vi.mocked(reviewCommand)).toHaveBeenCalledOnce()
+  })
+})
+
+describe('run --max-cost and --quiet', () => {
+  it('hands both flags to the review, and neither when not given', async () => {
+    await runWith(setup(), stdout, { ...PULL, 'max-cost': '2.5', quiet: true })
+    expect(vi.mocked(reviewCommand).mock.calls[0]?.[0]).toMatchObject({
+      'max-cost': '2.5',
+      quiet: true,
+    })
+    vi.mocked(reviewCommand).mockClear()
+    await runWith(setup(), stdout)
+    const passed = vi.mocked(reviewCommand).mock.calls[0]?.[0] as object
+    expect(passed).not.toHaveProperty('max-cost')
+    expect(passed).not.toHaveProperty('quiet')
+  })
+
+  it.each(['0', '-1', 'lots'])('refuses --max-cost %s before anything is claimed', async (cost) => {
+    const fake = setup()
+    const { code, lines } = await runWith(fake, stdout, { ...PULL, 'max-cost': cost })
+    expect(code).toBe(12)
+    expect(lines[0]?.reason).toBe('--max-cost must be a number of US dollars greater than 0.')
+    expect(vi.mocked(reviewCommand)).not.toHaveBeenCalled()
   })
 })
 

@@ -5,8 +5,8 @@ code-reviewer claim --repo owner/name --pr N [--force]
 code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
-code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--clones DIR] [--effort low|medium|high] [--force]
-code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--clones DIR]
+code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--effort low|medium|high] [--force]
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR]
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run] [--allow-long] [--body-target N] [--inline-target N]
@@ -58,6 +58,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   directory with the request label back and the command that posts it in postCommand.
   --model STEP=HARNESS:MODEL (review and run, repeatable) sets one step's harness and model for that run, over the models config; a step named twice gets fallbacks in flag order. STEP is select, pillars, pillar.NAME, verifier, verifier.light, evidence or approvalCheck.
   doctor checks, without changing or posting anything, Node, git, gh, the App config, the machine config, the rule plugins (and how current they are), the harness binaries and the state directories, and prints one JSON line {ok, warn, fail, checks}; it exits 1 on a fail (docs/doctor.md).
+  --max-cost USD (review and run) stops starting steps once the cost the harnesses reported has reached USD, over limits.maxCostUsd in the machine config; the review lists what it skipped and is never an approval. --quiet turns off the progress lines review and run print to stderr, one when each step starts and ends.
   resolve resolves review threads of fixed findings.
   review and post also append a row to the machine-local tracker, reviews.jsonl in the state home
   ($XDG_STATE_HOME/code-reviewer, default ~/.local/state/code-reviewer, or CODE_REVIEWER_STATE_DIR).
