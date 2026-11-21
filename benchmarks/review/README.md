@@ -112,6 +112,9 @@ pnpm exec code-reviewer bench \
   --pillar design --jobs 3
 ```
 
+`bench --select --excerpts alongside|replace` compares loading every selected skill with skipping
+those already quoted in the shared context; see [the benchmarks reference](../../docs/benchmarks.md).
+
 Other commands: `bench-selection` and `bench-verifier`; `--score-only` re-scores saved results
 without model calls. A run costs dollars and minutes per case, so run only the pillars
 whose prompts changed, and read [AGENTS.md](AGENTS.md) first. Raw results land in

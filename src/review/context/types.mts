@@ -5,6 +5,12 @@ import type { TrustedAuthors } from '../trust.mts'
 import type { SplitSummary } from './change-shape/split.mts'
 import type { RuleSkill } from '../run/select-skills.mts'
 
+/**
+ * How the pillars are told to treat quoted rules. `alongside` (what a review does) loads every
+ * selected skill as well as quoting it; `replace` has them skip a skill quoted in full.
+ */
+export type ExcerptsMode = 'alongside' | 'replace'
+
 /** A selected rule skill with the absolute path of its SKILL.md. */
 export type ContextSkill = RuleSkill & { file: string }
 
@@ -19,6 +25,8 @@ export type ContextInput = {
   /** The run directory the context may be written to. */
   out: string
   skills: readonly ContextSkill[]
+  /** Only `replace` changes the rule-excerpts text: each skill then states how much is quoted. */
+  excerpts?: ExcerptsMode
 }
 
 /** A commit the pull request says it fixes or reverts, found in local history. */

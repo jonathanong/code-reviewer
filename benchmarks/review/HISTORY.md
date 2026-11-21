@@ -2,6 +2,19 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: (no run) `bench --excerpts` arm: shared rule excerpts with or without loading quoted skills
+
+`bench` gains an opt-in `--excerpts alongside|replace` (requires `--select`). It builds review's
+rule-excerpts section for the selected skills, writes it to `.review/review-context.md` and adds
+review's line about that file to the pillar prompt. `alongside` adds only that, which is what a
+review sends today; `replace` also marks each skill as quoted in full, in part or not at all, and
+ends the prompt with a block telling the pillar not to load fully quoted skills (overriding the
+contract's and the selection step's "load every skill" lines). `summary.json` records the arm and
+distinct skills loaded per run, and the printed table names the arm. Without the flag the pillar
+prompt, argv and outputs are unchanged, so no existing case moves. The bench pillar prompt
+previously had no excerpts at all, so `alongside` is not comparable with any earlier entry.
+No run was made and no score is re-measured.
+
 ## 2026-11-21: (no run) production verifier of a follow-up is offered earlier evidence that still holds
 
 A production follow-up review whose earlier review of this machine saved evidence for a source that

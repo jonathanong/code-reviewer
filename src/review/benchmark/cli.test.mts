@@ -136,6 +136,11 @@ describe('runReviewBenchCli runs', () => {
     expect(markdown).toContain('| security | 2 | 100% |')
     expect(markdown).not.toContain('Errors and skipped runs')
     expect(out).toHaveBeenCalledWith(`${markdown.trimEnd()}\n`)
+    // Without --excerpts nothing records an arm, so the output and the prompt are as before.
+    expect(summary[0]).not.toHaveProperty('excerpts')
+    expect(summary[0]).not.toHaveProperty('skillLoads')
+    expect(markdown).not.toContain('Excerpts')
+    expect(h.execCalls[0]?.args[1]).not.toContain('review-context.md')
   })
 
   it('stages rules and records their digest', async () => {

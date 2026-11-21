@@ -102,6 +102,20 @@ pillar prompt with the instruction to load the skills it named, so the bench mea
 resumes) and as `selected` in each raw result. `--no-rules` ignores it. Without `--select` the
 pillar gets only the contract's general instruction to load matching skills.
 
+`--excerpts alongside|replace` (needs `--select`, not with `--no-rules`) also builds review's
+`rule-excerpts` section for the selected skills and writes it to `.review/review-context.md` in
+each snapshot, with the line `review` gives the pillar about that file; a plain `bench` has neither.
+The two values differ only in the instruction. `alongside` is what a review sends: excerpts, and
+load every selected skill. `replace` marks each skill in the excerpts as "quoted in full", "quoted
+in part (sections dropped: ...)" or "not quoted", and ends the prompt with a block telling the
+pillar not to load a skill quoted in full and to load only the others. That block overrides, for
+fully quoted skills, the contract's and the selection step's "load every skill" lines, which are
+static text, so the arm can still be pulled both ways by the prompt. Each raw result records
+`excerpts`, and with the flag `summary.json` entries gain `excerpts` and `skillLoads` (`runs`,
+`total`, `mean`: distinct skills loaded through the `Skill` tool, not calls), the table header
+names the arm, and an "Excerpts arm and Skill loads" table is printed beside the cost tables.
+`review` has no such option. Compare arms by input tokens per run and skills loaded per run.
+
 Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
 `--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
 `jong-skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
