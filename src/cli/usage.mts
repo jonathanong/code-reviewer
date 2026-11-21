@@ -18,6 +18,7 @@ code-reviewer tracker [--repo owner/name]... [--since ISO_DATE] [--state reviewe
 code-reviewer explain (--run DIR | --repo owner/name --pr N)
 code-reviewer outcomes (--repo owner/name... | --owner LOGIN) [--pr N] [--since DAYS] [--clones DIR]
 code-reviewer outcomes digest [--day YYYY-MM-DD] [--out DIR]
+code-reviewer doctor [--repo owner/name | --owner LOGIN] [--offline]
 code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
@@ -55,6 +56,7 @@ code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--
   the hold rules are in docs/run.md). It prints one JSON line and exits 0 posted, 10 held, 11 nothing
   to do, 12 precondition or config failure, 13 review or post failure. A held review stays in the run
   directory with the request label back and the command that posts it in postCommand.
+  doctor checks, without changing or posting anything, Node, git, gh, the App config, the machine config, the rule plugins (and how current they are), the harness binaries and the state directories, and prints one JSON line {ok, warn, fail, checks}; it exits 1 on a fail (docs/doctor.md).
   resolve resolves review threads of fixed findings.
   review and post also append a row to the machine-local tracker, reviews.jsonl in the state home
   ($XDG_STATE_HOME/code-reviewer, default ~/.local/state/code-reviewer, or CODE_REVIEWER_STATE_DIR).

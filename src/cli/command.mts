@@ -4,6 +4,7 @@ import { reviewStatus, numberDiff, revokeFinalApproval, type PullTarget } from '
 import { runGit, takeRetryCount } from '../gh-cli/index.mts'
 import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
+import { doctorCommand } from './command-doctor.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
 import { labelsFor } from './review-settings.mts'
@@ -16,7 +17,7 @@ import { REVIEW_USAGE } from './usage.mts'
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, bench, bench-verifier, or bench-selection'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, doctor, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -59,6 +60,7 @@ function parse(args: string[]) {
       run: { type: 'string' },
       post: { type: 'string' },
       day: { type: 'string' },
+      offline: { type: 'boolean' },
     },
   }).values
 }
@@ -108,6 +110,7 @@ async function run(
     process.stdout.write(explainCommand(values, deps.tracker()))
     return 0
   }
+  if (subcommand === 'doctor') return doctorCommand(values, deps)
   if (subcommand === 'report') {
     print(reportCommand(values))
     return 0
