@@ -71,6 +71,14 @@ describe('checkPostedText', () => {
     ])
   })
 
+  it('warns when the regression recommendation is longer than one short line', () => {
+    const at = (length: number) => ({ ...input, regressionPrevent: 'r'.repeat(length) })
+    expect(checkPostedText(at(160), post('Short.')).warnings).toEqual([])
+    expect(checkPostedText(at(161), post('Short.')).warnings).toEqual([
+      'regressionPrevent is 161 characters, over its 160 target',
+    ])
+  })
+
   it('refuses only above three times the target, and not for collapsed or hidden text', () => {
     const hidden = `<!-- ${'m'.repeat(5000)} -->\n<details>${'d'.repeat(5000)}</details>`
     expect(checkPostedText(input, post(`Short.\n${hidden}`)).warnings).toEqual([])

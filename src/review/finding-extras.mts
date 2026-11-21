@@ -26,3 +26,11 @@ export function parseDependency(raw: unknown, index: number): Dependency {
     why: text(raw, 'why', where).trim(),
   }
 }
+
+/** The optional one-line recommendation for a change that fixes a regression. */
+export function parseRegressionPrevent(raw: unknown): { regressionPrevent?: string } {
+  if (raw === undefined) return {}
+  if (typeof raw !== 'string') throw new ReviewError('regressionPrevent must be a string.')
+  const line = raw.replace(/\s+/gu, ' ').trim()
+  return line === '' ? {} : { regressionPrevent: line }
+}

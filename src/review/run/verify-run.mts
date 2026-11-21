@@ -7,6 +7,7 @@ import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
 import { referenceDomains } from './references-prompt.mts'
 import { withRaisedBy } from './restate-prompt.mts'
+import { withRegressionPrevent } from './regression-prompt.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
 import {
   REVIEW_VERIFIER_SCHEMA,
@@ -44,7 +45,10 @@ export async function runReviewVerifier(
       label: 'Verifier run',
       maxTurns: REVIEW_MAX_TURNS,
       schema: withExtraPillars(
-        withRaisedBy(REVIEW_VERIFIER_SCHEMA, input.restate),
+        withRaisedBy(
+          withRegressionPrevent(REVIEW_VERIFIER_SCHEMA, input.regression),
+          input.restate,
+        ),
         options.extraPillars ?? [],
       ),
       can: { ...SKILL_READER, web: referenceDomains(input.web) },
@@ -59,7 +63,13 @@ export async function runReviewVerifier(
     options.exec,
   )
   return {
-    ...parseReviewVerifier(run, input.findings.length, input.threads, input.restate),
+    ...parseReviewVerifier(
+      run,
+      input.findings.length,
+      input.threads,
+      input.restate,
+      input.regression,
+    ),
     ran: run.ran,
   }
 }

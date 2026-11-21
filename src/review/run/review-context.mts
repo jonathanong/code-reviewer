@@ -6,6 +6,7 @@ import type { Exec } from '../benchmark/exec.mts'
 import type { PrepareSummary } from '../prepare.mts'
 import type { ReviewOptions, ReviewSteps } from './review-support.mts'
 import { buildContext, sectionsNamed } from '../context/build.mts'
+import type { LinkedCommit } from '../context/types.mts'
 import { renderContext } from '../context/render.mts'
 import type { SkillChoice } from './types.mts'
 import { listRuleSkillFiles } from './select-skills.mts'
@@ -31,7 +32,7 @@ export type ReviewContextInput = {
 }
 
 /** The path of the written file, or the one line the report records for why there is none. */
-export type ReviewContext = { file?: string; note?: string }
+export type ReviewContext = { file?: string; note?: string; linked?: LinkedCommit[] }
 
 /**
  * Builds the context the pillars read and writes it to `out/review-context.md`. Never throws: a
@@ -70,7 +71,8 @@ export async function buildReviewContext(
     }
     const file = join(options.out, CONTEXT_FILE)
     writeFileSync(file, renderContext({ ...built, notes: [...unreadable, ...built.notes] }))
-    return { file }
+    const linked = built.sections.find((section) => section.linked !== undefined)?.linked
+    return { file, ...(linked === undefined || linked.length === 0 ? {} : { linked }) }
   } catch (error) {
     return { note: (error as Error).message.split('\n')[0] as string }
   } finally {

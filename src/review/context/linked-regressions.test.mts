@@ -82,6 +82,22 @@ describe('linkedRegressions', () => {
     )
   })
 
+  it('returns the structured commits it found, with how each was linked', async () => {
+    const deps = fake({
+      log: `Revert "Add widget"\n${RS}Fix regression from #7${RS}Fixes ${FULL_B}${RS}`,
+      known: {
+        [FULL_A]: aCommit,
+        [FULL_B]: { ...aCommit, full: FULL_B, short: 'bbbbbbb', subject: 'Add gadget' },
+      },
+      grep: { 'Add widget': `${FULL_A}${US}Add widget\n` },
+    })
+    const section = await linkedRegressions.build(input, deps)
+    expect(section?.linked).toEqual([
+      { sha: FULL_B, subject: 'Add gadget', how: 'fixes', files: ['src/a.mts', 'src/b.mts'] },
+      { sha: FULL_A, subject: 'Add widget', how: 'revert', files: ['src/a.mts', 'src/b.mts'] },
+    ])
+  })
+
   it('resolves a revert subject and a regression number on the base branch, once per commit', async () => {
     const deps = fake({
       log: `Revert "Add widget"\n${RS}Fix regression from #7${RS}`,

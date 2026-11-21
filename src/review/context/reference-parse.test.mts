@@ -8,7 +8,12 @@ describe('parseReferences', () => {
       `Revert "Add widget"\n\nThis reverts commit ${'A'.repeat(40)}.\n`,
       'Revert "Add gadget"\n\nbody',
     ])
-    expect(found).toEqual({ shas: ['a'.repeat(40)], numbers: [], subjects: ['Add gadget'] })
+    expect(found).toEqual({
+      shas: ['a'.repeat(40)],
+      numbers: [],
+      subjects: ['Add gadget'],
+      how: { ['a'.repeat(40)]: 'revert' },
+    })
   })
 
   it('reads Fixes trailers with a sha but not Fixes of an issue or a plain word', () => {
@@ -46,6 +51,20 @@ describe('parseReferences', () => {
       shas: [],
       numbers: [],
       subjects: [],
+      how: {},
+    })
+  })
+
+  it('records how each sha was linked by the first message that named it', () => {
+    const found = parseReferences([
+      'Fix it\n\nFixes abc1234',
+      'Regression from 1234567 and abc1234',
+      `Revert "x"\n\nThis reverts commit ${'c'.repeat(40)}.`,
+    ])
+    expect(found.how).toEqual({
+      abc1234: 'fixes',
+      '1234567': 'mentioned',
+      ['c'.repeat(40)]: 'revert',
     })
   })
 })

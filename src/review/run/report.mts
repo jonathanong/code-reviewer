@@ -1,16 +1,19 @@
 import type { Usage } from '../benchmark/usage.mts'
-import { summarizeModels, type ModelTotals } from '../benchmark/usage-summary.mts'
+import type { ModelTotals } from '../benchmark/usage-summary.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
 import type { Question } from '../question.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
 import type { CarriedFile } from '../carried-file.mts'
 import type { Dependency } from '../dependency.mts'
+import type { LinkedCommit } from '../context/types.mts'
 import type { PushFile } from '../push-file.mts'
 import type { StackFile } from '../stack-file.mts'
 import type { ApprovalCheck } from './approval-check.mts'
 import type { EvidenceReport } from './evidence-types.mts'
 import { reportPush, type ReportPush } from './push-report.mts'
+import { reportRegression, type ReportRegression } from './regression-report.mts'
+import { byStep, evidenceUsages } from './report-usage.mts'
 import { ranRows, type RanRow } from './report-models.mts'
 import { markDropped } from './report-pillars.mts'
 import { reportStack, type ReportStack } from './stack-report.mts'
@@ -64,6 +67,8 @@ export type ReportData = {
   carried?: CarriedFile // absent when git found no commit already elsewhere and the base is fine
   dependencies?: Dependency[] // absent when the pull request depends on nothing
   contextNote?: string // why the pillars got no context file; absent when they got one
+  /** The commits the change says it fixes or reverts, and the verifier's one-line recommendation. */
+  regression?: ReportRegression // absent without linked commits
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
   /** The harness and model that ran each step; absent in a report written before steps recorded them. */
@@ -92,41 +97,12 @@ export type ReportInput = {
   carried?: CarriedFile | undefined
   dependencies?: readonly Dependency[] | undefined
   contextNote?: string | undefined
+  regression?: readonly LinkedCommit[] | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
 export function flattenFindings(pillars: readonly PillarResult[]): Finding[] {
   return pillars.flatMap((result) => result.findings)
-}
-
-function present(usages: ReadonlyArray<Usage | null>): Usage[] {
-  return usages.filter((usage): usage is Usage => usage !== null)
-}
-
-function evidenceUsages(evidence: EvidenceReport | undefined): Array<Usage | null> {
-  return evidence === undefined
-    ? []
-    : [evidence.usage, ...evidence.failedAttempts.map((attempt) => attempt.usage)]
-}
-
-function byStep(input: ReportInput) {
-  const pillars = input.pillars.flatMap((pillar) => [
-    pillar.usage,
-    ...pillar.failedAttempts.map((attempt) => attempt.usage),
-  ])
-  return [
-    { name: 'selection', models: summarizeModels(present([input.skillSelection.usage])) },
-    { name: 'pillars', models: summarizeModels(present(pillars)) },
-    { name: 'verifier', models: summarizeModels(present([input.verifier?.output.usage ?? null])) },
-    ...(input.evidence === undefined
-      ? []
-      : [{ name: 'evidence', models: summarizeModels(present(evidenceUsages(input.evidence))) }]),
-    ...(input.approvalCheck === undefined
-      ? []
-      : [
-          { name: 'approval check', models: summarizeModels(present([input.approvalCheck.usage])) },
-        ]),
-  ]
 }
 
 export function buildReport(input: ReportInput): ReportData {
@@ -163,6 +139,7 @@ export function buildReport(input: ReportInput): ReportData {
       ? {}
       : { dependencies: [...input.dependencies] }),
     ...(input.contextNote === undefined ? {} : { contextNote: input.contextNote }),
+    ...reportRegression(input.regression, output?.regressionPrevent),
     verifier:
       input.verifier === undefined
         ? null

@@ -1,4 +1,5 @@
 import type { RunTextCommand } from '../../gh-cli/index.mts'
+import type { LinkHow } from './reference-parse.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import type { TrustedAuthors } from '../trust.mts'
 import type { RuleSkill } from '../run/select-skills.mts'
@@ -19,8 +20,20 @@ export type ContextInput = {
   skills: readonly ContextSkill[]
 }
 
-/** One part of the shared context: a title and a markdown body without its heading. */
-export type ContextSection = { title: string; body: string }
+/** A commit the pull request says it fixes or reverts, found in local history. */
+export type LinkedCommit = {
+  sha: string
+  subject: string
+  /** What the pull request's own text claimed; a claim, not a fact. */
+  how: LinkHow
+  files: string[]
+}
+
+/**
+ * One part of the shared context: a title and a markdown body without its heading. `linked` is
+ * the structured form of the linked-regressions section, so the verifier needs no second git run.
+ */
+export type ContextSection = { title: string; body: string; linked?: LinkedCommit[] }
 
 /** What builders may touch, injected so tests use fakes. */
 export type ContextDeps = {

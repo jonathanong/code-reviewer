@@ -175,6 +175,18 @@ it('runs every step with the exact claude call', async () => {
       { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
     ),
   )
+  const regression = [
+    { sha: 'a'.repeat(40), subject: 'Add cache', how: 'revert' as const, files: ['src/cache.ts'] },
+  ]
+  await run('review.verifier.regression', () =>
+    runReviewVerifier({ ...vin, regression }, { model: 'opus', mode: 'full', tree: '/tree', exec }),
+  )
+  await run('review.verifier.regression.settings.light', () =>
+    runReviewVerifier(
+      { ...vin, regression },
+      { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
+    ),
+  )
   await run('review.verifier.web', () =>
     runReviewVerifier(
       { ...vin, web },
@@ -323,6 +335,6 @@ it('runs every step with the exact claude call', async () => {
   await run('bench.judge.settings', () =>
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
-  expect(Object.keys(captured)).toHaveLength(44)
+  expect(Object.keys(captured)).toHaveLength(46)
   expect(captured).toStrictEqual(EXPECTED)
 })

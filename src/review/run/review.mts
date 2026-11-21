@@ -1,7 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { ReviewInput } from '../finding.mts'
 import { DEFAULT_STEP_MODELS } from '../models.mts'
 import { deriveVerdict } from '../render.mts'
 import { buildReport, flattenFindings, type ReportData } from './report.mts'
@@ -16,6 +15,7 @@ import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
 import { runPillars } from './pillars.mts'
 import { buildReviewContext } from './review-context.mts'
+import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
 import { webReferences } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
@@ -24,7 +24,6 @@ import { verifierContext } from './verifier-context.mts'
 
 import {
   loadRulePlugins,
-  noteFields,
   pillarTexts,
   reviewDependencies,
   failedSkips,
@@ -90,6 +89,7 @@ async function review(
       findings,
       skipped: pillarSkips,
       ...verifierContext(out),
+      ...(context.linked === undefined ? {} : { regression: context.linked }),
       analysis,
       ...(web === undefined ? {} : { web }),
     },
@@ -124,15 +124,15 @@ async function review(
   // Evidence runs after the check, so a ceiling it hit is only known here.
   const skipped = withCeilingSkip(second.skipped, models)
   const dependencies = reviewDependencies(run, output.dependencies)
-  const input: ReviewInput = {
+  const input = buildReviewInput({
     effort: plan.effort,
-    summary: output.summary,
+    output,
     skipped,
     findings: verified,
     questions,
-    ...noteFields(run),
-    ...(dependencies.length === 0 ? {} : { dependencies }),
-  }
+    run,
+    dependencies,
+  })
   writeJson(join(out, 'review.json'), input)
   const outcome = await steps.preview(input, headSha)
   writeFileSync(join(out, 'preview.md'), renderPreview(outcome))
@@ -156,6 +156,7 @@ async function review(
     carried: run.carried,
     dependencies,
     contextNote: context.note,
+    regression: context.linked,
   })
   const report = writeReportFiles(out, data)
   return {
