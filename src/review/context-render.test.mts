@@ -22,6 +22,7 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     unresolved: [],
     priorQuestions: [],
     others: [],
+    restatable: [],
     ...overrides,
   }
 }

@@ -5,6 +5,7 @@ import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
 import { parseDependency, parseNotes } from './finding-extras.mts'
 import { PILLARS, pillarOf, type Pillar } from './pillar-name.mts'
+import { parseRaisedBy, type RaisedBy } from './raised-by.mts'
 
 export const SEVERITIES = ['blocking', 'high', 'medium', 'low'] as const
 export type Severity = (typeof SEVERITIES)[number]
@@ -26,6 +27,8 @@ export type Finding = {
   startLine?: number
   /** One line naming a mechanical check (lint rule, type, test, CI guard) that would stop this class of mistake. */
   prevent?: string
+  /** Another reviewer's open thread that raised the same problem; credited and linked when posted. */
+  raisedBy?: RaisedBy
 }
 
 export type ReviewInput = {
@@ -105,6 +108,11 @@ function parsePrevent(record: Json, where: string): Pick<Finding, 'prevent'> {
   return prevent === '' ? {} : { prevent }
 }
 
+function parseCredit(record: Json, where: string): Pick<Finding, 'raisedBy'> {
+  const raisedBy = parseRaisedBy(record, where)
+  return raisedBy === undefined ? {} : { raisedBy }
+}
+
 function parsePillarName(raw: unknown, where: string): Pillar {
   const pillar = raw === APPROVAL_CHECK ? undefined : pillarOf(raw)
   if (pillar === undefined) {
@@ -123,6 +131,7 @@ function parseFinding(raw: unknown, index: number): Finding {
     body: text(raw, 'body', where).trim(),
     ...parseLocation(raw, where),
     ...parsePrevent(raw, where),
+    ...parseCredit(raw, where),
   }
 }
 

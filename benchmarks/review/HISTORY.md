@@ -2,6 +2,19 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-20: (no run) production verifier may restate other reviewers' blocking/high items
+
+A production review whose pull request has unresolved threads from other reviewers that state a
+blocking or high severity now adds one block to the verifier prompt and an optional `raisedBy` to
+its output schema; the verifier may restate a valid item as a finding that credits and links the
+reviewer. The benchmark verifier arm (`buildVerifierPrompt`, `VERIFIER_OUTPUT_SCHEMA`) passes no such
+items and is unchanged, so no `bench-verifier` prompt differs and no score here measures this.
+Cases that would be affected if it did: only a case whose fixture lists another reviewer's open
+thread with a blocking or high marker. The one fixture with another reviewer's note,
+`lock-scope-race-response`, states P2 (medium), so even then it would pass no item; a new case
+with a P0 or P1 note is where precision could move, because the verifier could then keep an item no
+pillar reported. No run was made and no score is re-measured.
+
 ## 2026-11-20: (no run) production pillars may read a context file
 
 A production review now builds `review-context.md` (rule excerpts quoted from the selected skills,

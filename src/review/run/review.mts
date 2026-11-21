@@ -20,6 +20,7 @@ import { reviewSummary } from './review-summary.mts'
 import { webReferences } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
 import { runReviewVerifier } from './verify-run.mts'
+import { verifierContext } from './verifier-context.mts'
 
 import {
   loadRulePlugins,
@@ -30,7 +31,6 @@ import {
   message,
   read,
   runDir,
-  threadIdsOf,
   titleOf,
   writeJson,
   type ReviewOptions,
@@ -89,7 +89,7 @@ async function review(
       run,
       findings,
       skipped: pillarSkips,
-      threads: threadIdsOf(out),
+      ...verifierContext(out),
       analysis,
       ...(web === undefined ? {} : { web }),
     },

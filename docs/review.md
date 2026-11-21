@@ -85,6 +85,24 @@ would stop the class of mistake. It is kept in `review.json`, shown as a `**Prev
 the finding in the posted comment and in `report.md`, and absent means nothing is rendered. A
 `prevent` over 160 characters warns like any over-long posted text.
 
+## Other reviewers' open items
+
+Normally a finding that repeats another reviewer's open thread is dropped as already raised. `prepare`
+records in `context.json` (`restatable`, at most 10) the unresolved, not outdated threads started by
+anyone but this reviewer whose first comment states a blocking or high severity through a marker in
+`SEVERITY_MARKERS` ([Shared context](context.md#other-reviewers)): author, link, location and the
+visible start of the comment. It reads the conversation `prepare` already fetched.
+
+When the list is not empty, the verifier prompt gets one more block, separate from the thread ids,
+and its output schema allows `raisedBy` on a finding. The verifier checks each item against the head
+like a pillar finding. A valid, still present item it would rate blocking or high itself becomes a
+finding in its own words that carries `raisedBy: { login, url }`; if one of its findings already
+covers it, that finding gets the credit instead. An invalid or fixed item is left out, and an item of
+a lower or unstated severity behaves as before. The credit counts only when `url` is a listed item,
+and the login is the listed one. The posted finding ends with `Also raised by [login](link)` (link
+text without `@`, so nobody is notified). The verdict follows the finding's severity like any other,
+so a restated blocking item gives Request Changes. With no items the prompt and schema are unchanged.
+
 ## Progress and the cost ceiling
 
 `review` writes one line to stderr when each step starts and when it ends, and one when a step

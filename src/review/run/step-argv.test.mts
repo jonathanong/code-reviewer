@@ -157,6 +157,24 @@ it('runs every step with the exact claude call', async () => {
   await run('review.verifier.settings.light', () =>
     runReviewVerifier(vin, { model: 'opus', mode: 'light', tree: '/tree', settings, exec }),
   )
+  const restate = [
+    {
+      login: 'codex[bot]',
+      url: 'https://example.test/c/1',
+      where: 'a.ts:1',
+      stated: 'P1 (Codex; high tier)',
+      text: 'Stale cache.',
+    },
+  ]
+  await run('review.verifier.restate', () =>
+    runReviewVerifier({ ...vin, restate }, { model: 'opus', mode: 'full', tree: '/tree', exec }),
+  )
+  await run('review.verifier.restate.settings.light', () =>
+    runReviewVerifier(
+      { ...vin, restate },
+      { model: 'opus', mode: 'light', tree: '/tree', settings, exec },
+    ),
+  )
   await run('review.verifier.web', () =>
     runReviewVerifier(
       { ...vin, web },
@@ -305,6 +323,6 @@ it('runs every step with the exact claude call', async () => {
   await run('bench.judge.settings', () =>
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
-  expect(Object.keys(captured)).toHaveLength(42)
+  expect(Object.keys(captured)).toHaveLength(44)
   expect(captured).toStrictEqual(EXPECTED)
 })
