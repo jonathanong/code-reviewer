@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { SECTIONS, buildContext } from './build.mts'
+import { SECTIONS, buildContext, sectionsNamed } from './build.mts'
 import { CONTEXT_MAX_CHARS, renderContext } from './render.mts'
 import type { ContextDeps, ContextInput, SectionBuilder } from './types.mts'
 
@@ -43,6 +43,18 @@ describe('SECTIONS', () => {
       'past-reviews',
       'other-reviewers',
     ])
+  })
+})
+
+describe('sectionsNamed', () => {
+  it('returns the named builders in SECTIONS order', () => {
+    expect(
+      sectionsNamed(['linked-regressions', 'rule-excerpts']).map((section) => section.name),
+    ).toEqual(['rule-excerpts', 'linked-regressions'])
+  })
+
+  it('throws on an unknown name', () => {
+    expect(() => sectionsNamed(['nope'])).toThrow('unknown context section: nope')
   })
 })
 

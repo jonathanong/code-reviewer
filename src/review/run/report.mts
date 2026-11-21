@@ -63,6 +63,7 @@ export type ReportData = {
   push?: ReportPush // absent for a first review, or when the head did not move
   carried?: CarriedFile // absent when git found no commit already elsewhere and the base is fine
   dependencies?: Dependency[] // absent when the pull request depends on nothing
+  contextNote?: string // why the pillars got no context file; absent when they got one
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
   /** The harness and model that ran each step; absent in a report written before steps recorded them. */
@@ -90,6 +91,7 @@ export type ReportInput = {
   push?: PushFile | undefined
   carried?: CarriedFile | undefined
   dependencies?: readonly Dependency[] | undefined
+  contextNote?: string | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
@@ -160,6 +162,7 @@ export function buildReport(input: ReportInput): ReportData {
     ...(input.dependencies === undefined || input.dependencies.length === 0
       ? {}
       : { dependencies: [...input.dependencies] }),
+    ...(input.contextNote === undefined ? {} : { contextNote: input.contextNote }),
     verifier:
       input.verifier === undefined
         ? null

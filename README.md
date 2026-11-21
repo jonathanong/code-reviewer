@@ -44,9 +44,9 @@ GitHub review. It runs on your machine, for the repositories you pick.
 Agreed and not built yet. Nothing below works today.
 
 - **Other harnesses.** An adapter for Codex, which the harness registry takes with one line.
-- **Shared context.** One cheap run builds what every pillar needs once. The builder and the
-  rule excerpts exist ([Shared context](docs/context.md)) but are not yet given to the pillars;
-  the history of the changed lines, linked regressions, and past reviews are not built.
+- **Shared context.** The pillars read rule excerpts, the history of the changed lines and linked
+  regressions ([Shared context](docs/context.md)), but still load every skill. Excerpts do not yet
+  replace Skill loads, past reviews are not built, and the verifier and other steps read none of it.
 - **Feedback loops.** The daily digest as a Claude Doc, and issues about the harness, not only
   rules and pillar prompts.
 - **Regression fixes.** A pull request that fixes a regression is recognised, the change that
@@ -111,8 +111,8 @@ code-reviewer help
   reviewer, from the outcomes data.
 - [Code analysis tools](docs/analysis.md): `analysis`, read-only command line tools for the pillars and
   the verifier, with a ready `no-mistakes` example.
-- [Shared context](docs/context.md): `context`, the builder of what pillars could share; no
-  review reads it yet.
+- [Shared context](docs/context.md): `context`, and the file of excerpts, line history and linked
+  regressions that a review gives its pillars.
 - [Choosing a model](docs/models.md): `models`, which probes the models a harness offers.
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and

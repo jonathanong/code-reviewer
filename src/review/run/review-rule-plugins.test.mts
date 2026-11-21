@@ -47,7 +47,8 @@ async function run(
   const out = mkdtempSync(join(tmpdir(), 'review-rules-'))
   dirs.push(out)
   const seen: string[][] = []
-  const exec: Exec = async (_command, args) => {
+  const exec: Exec = async (command, args) => {
+    if (command === 'git') return ''
     seen.push(args)
     if (args[args.indexOf('--tools') + 1] === '') {
       return result({ skills: ['jong-skills:documentation'] })

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ReviewInput } from '../finding.mts'
 import { DEFAULT_STEP_MODELS } from '../models.mts'
 import { deriveVerdict } from '../render.mts'
-import { buildReport, flattenFindings, costBreakdown, type ReportData } from './report.mts'
+import { buildReport, flattenFindings, type ReportData } from './report.mts'
 import { writeReportFiles } from './report-file.mts'
 import { applyApprovalCheck } from './approval-check.mts'
 import { withCeilingSkip } from './ceiling-skip.mts'
@@ -15,6 +15,8 @@ import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
 import { runPillars } from './pillars.mts'
+import { buildReviewContext } from './review-context.mts'
+import { reviewSummary } from './review-summary.mts'
 import { webReferences } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
 import { runReviewVerifier } from './verify-run.mts'
@@ -24,7 +26,6 @@ import {
   noteFields,
   pillarTexts,
   reviewDependencies,
-  countFindings,
   failedSkips,
   message,
   read,
@@ -51,10 +52,11 @@ async function review(
   const base = { repo: options.repo, pr: options.pr, title, headSha, effort: plan.effort }
   const mode = plan.mode
   if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed)
-  const { settings, skills } = await loadRulePlugins(steps)
+  const { settings, skills, installs } = await loadRulePlugins(steps)
   const models = steps.models ?? DEFAULT_STEP_MODELS
   const followUp = plan.sinceSha !== null
   const skillChoice = await chooseSkills(steps, { out, tree, title, followUp, skills, settings })
+  const context = await buildReviewContext({ steps, options, prepared, installs, skillChoice })
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
   const analysis = steps.analysis && (await buildAnalysis(await steps.analysis()))
@@ -73,6 +75,7 @@ async function review(
     settings,
     models,
     analysis,
+    contextFile: context.file,
     ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
@@ -152,23 +155,20 @@ async function review(
     push: run.push,
     carried: run.carried,
     dependencies,
+    contextNote: context.note,
   })
   const report = writeReportFiles(out, data)
   return {
     ok: true,
-    summary: {
-      claimed: true,
-      mode,
-      verdict: data.verdict,
-      findings: countFindings(verified),
-      questions: questions.length,
-      ...(second.check === undefined ? {} : { approvalCheck: second.check.outcome }),
-      costUsd: costBreakdown(data).total,
+    summary: reviewSummary({
+      data,
+      verified,
+      questions,
+      check: second.check,
       report,
-      review: join(out, 'review.json'),
+      out,
       headSha,
-      fixedThreadIds: output.fixedThreadIds,
-    },
+    }),
   }
 }
 

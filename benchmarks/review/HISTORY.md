@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-20: (no run) production pillars may read a context file
+
+A production review now builds `review-context.md` (rule excerpts quoted from the selected skills,
+history of the changed lines, commits the change says it fixes or reverts) and adds one paragraph
+to each pillar prompt that names it. The benchmark does not build or pass that file, and
+`src/review/benchmark/runner.mts` is unchanged, so no `bench` prompt differs and no score here
+measures the context. Production pillar prompts differ from the benchmark's by that paragraph
+whenever a context file was built. A later opt-in arm will compare pillars with and without the
+file in one session. No run was made and no score is re-measured.
+
 ## 2026-11-21: (no run) security pillar no longer calls /security-review
 
 `pillars/security.md` lost its "Built-in reviewer" section, which told the pillar to run a host's

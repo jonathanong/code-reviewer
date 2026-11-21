@@ -39,7 +39,7 @@ posting, so you can read the result first. `--tree` is a checkout at the pull re
 `--out` receives the run files; both become absolute paths. It claims the pull request (a head the
 newest review already covers is declined unless `--force`), runs `prepare`, asks Haiku to pick
 rule skills for the changed files (the review stops there, with nothing posted, when that call fails
-twice or no rule skill is installed), runs the pillars the plan chose (`--jobs` at a time, default 3,
+twice or no rule skill is installed), builds the [pillar context](context.md#in-a-review) when it can, runs the pillars the plan chose (`--jobs` at a time, default 3,
 each retried once), runs the verifier, and writes:
 
 - `review.json`: the input `post` accepts. Post it after reading `preview.md`:
@@ -51,6 +51,7 @@ each retried once), runs the verifier, and writes:
   table for selection, pillars (failed attempts included), and verifier, and a "Models" table with the harness and model each step ran on and how long it waited on rate limits. `report.md` is rendered from
   `report.json`; `code-reviewer report --out DIR` renders it again, for a running document.
 - `skills.json`, `pillars/<pillar>.json`, `verifier.json`: the intermediate results.
+- `review-context.md`: the context the pillars read; absent when it was not built.
 
 The run prints one JSON line with the mode, verdict, finding counts, total cost, and file paths.
 Labels stay at processing. A `skip` plan closes the pull request through `skip` (a short skip

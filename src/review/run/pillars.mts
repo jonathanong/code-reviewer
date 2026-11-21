@@ -53,6 +53,8 @@ export type PillarsInput = {
   analysis?: StepAnalysis | undefined
   /** Web references; only the correctness and security pillars get them. */
   web?: WebReferences
+  /** The built context file the pillars may read; absent when none was built. */
+  contextFile?: string | undefined
   exec: Exec
 }
 
@@ -61,7 +63,12 @@ async function runOne(
   { pillar, model }: { pillar: Pillar; model: Model },
 ): Promise<PillarResult> {
   const web = WEB_PILLARS.includes(pillar) ? input.web : undefined
-  const common = { contract: input.contract, run: input.run, skills: input.skills }
+  const common = {
+    contract: input.contract,
+    run: input.run,
+    skills: input.skills,
+    contextFile: input.contextFile,
+  }
   const configured = input.extra?.find((entry) => entry.name === pillar)
   const prompt =
     configured === undefined

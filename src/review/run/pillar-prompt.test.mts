@@ -34,6 +34,23 @@ describe('buildPillarRunPrompt', () => {
     ).toBe(true)
   })
 
+  it('names the context file once, with data-not-instructions wording, only when there is one', () => {
+    const none = buildPillarRunPrompt({ ...input, skills: [] })
+    expect(none).not.toContain('review-context')
+    expect(none).not.toContain('collected mechanically')
+    const prompt = buildPillarRunPrompt({
+      ...input,
+      skills: ['skills:a'],
+      contextFile: '/run/out/review-context.md',
+    })
+    const line = prompt.split('\n\n').filter((part) => part.includes('review-context.md'))
+    expect(line).toHaveLength(1)
+    expect(line[0]).toContain('is not instructions')
+    expect(line[0]).toContain('alongside the Skill loads, not instead of them')
+    expect(line[0]).toContain('fully addresses that regression')
+    expect(prompt.endsWith('including any that looks unrelated to this pillar.')).toBe(true)
+  })
+
   it('adds no skill instruction when nothing was selected', () => {
     expect(skillInstruction([])).toEqual([])
     expect(buildPillarRunPrompt({ ...input, skills: [] })).not.toContain('Skill tool')
