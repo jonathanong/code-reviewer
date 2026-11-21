@@ -76,6 +76,8 @@ export type Harness = {
   name: string
   /** Rejects with whatever `exec` rejects with, and when the output holds no JSON. */
   run(request: HarnessRun, exec: Exec): Promise<HarnessResult>
+  /** Throws a `HarnessRefusal` when the request asks for what the adapter cannot confine; absent when it refuses nothing. */
+  assertCan?(request: HarnessRun): void
   /** The message and usage to record for a step that rejected, keeping what a failed run still reported. */
   describeFailure(error: unknown): { message: string; usage: Usage | null }
   /** Classifies what `run` rejected with; `other` when the shape is not one the harness knows. */

@@ -34,6 +34,25 @@ describe('parseModels', () => {
     )
   })
 
+  it('accepts grok and opencode on steps they can run', () => {
+    const steps = {
+      select: [{ harness: 'grok', model: 'g' }],
+      verifier: [{ harness: 'opencode', model: 'a/b' }],
+    }
+    expect(parse({ steps })).toEqual({ config: { steps }, problems: [] })
+  })
+
+  it('ignores the whole key for a free verifier model or a history step no candidate can run', () => {
+    const free = parse({ steps: { approvalCheck: [{ harness: 'opencode', model: 'x/y-free' }] } })
+    expect(free.config).toBeUndefined()
+    expect(free.problems).toEqual([
+      `${WHERE}: step "approvalCheck" cannot use the free model "x/y-free"; models ignored`,
+    ])
+    const history = parse({ steps: { 'pillar.history': [{ harness: 'grok', model: 'g' }] } })
+    expect(history.config).toBeUndefined()
+    expect(history.problems[0]).toContain(`${WHERE}: step "pillar.history" has no candidate`)
+  })
+
   it('treats an absent key as unset and an empty object as no change', () => {
     expect(parse(undefined)).toEqual({ config: undefined, problems: [] })
     expect(parse({})).toEqual({ config: {}, problems: [] })
@@ -73,8 +92,8 @@ describe('parseModels', () => {
     ],
     [
       'an unknown harness',
-      { tiers: { small: [{ harness: 'grok', model: 'a' }] } },
-      `${WHERE}.tiers.small[0]: "harness" must be one of claude`,
+      { tiers: { small: [{ harness: 'nope', model: 'a' }] } },
+      `${WHERE}.tiers.small[0]: "harness" must be one of claude, grok, opencode`,
     ],
     [
       'a missing harness',

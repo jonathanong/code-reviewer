@@ -11,7 +11,7 @@ Measures the models a harness offers so a review step's model is chosen, not gue
 
 1. **List.** `opencode models` prints one `provider/model` id per line. `--model ID` (repeatable)
    replaces the listing. `--free` keeps ids whose model part ends in `-free`, plus a short named
-   list of free ids without that suffix (`KNOWN_FREE` in `src/models/list.mts`). That is a naming
+   list of free ids without that suffix (`KNOWN_FREE` in `src/harness/free-model.mts`). That is a naming
    heuristic: it can miss a free model and keep one that is not free, so read the list.
 2. **Probe.** Each model runs every probe `--probes` times (default 1), `--jobs` at a time
    (default 2), through the OpenCode adapter with read-only capabilities. A probe is a tiny

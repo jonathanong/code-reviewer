@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { isFreeModel, listModels, parseModelList } from './list.mts'
+import { isFreeModel } from '../harness/free-model.mts'
+import { listModels, parseModelList } from './list.mts'
 
 const LISTING = [
   'opencode/big-pickle',

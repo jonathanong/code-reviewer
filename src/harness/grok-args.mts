@@ -1,4 +1,4 @@
-import { ReviewError } from '../review/finding.mts'
+import { HarnessRefusal } from './refusal.mts'
 import type { HarnessRun } from './types.mts'
 
 const READ_TOOLS = 'read_file,list_dir,grep'
@@ -21,10 +21,10 @@ export const GROK_ENV: Record<string, string> = Object.fromEntries(
  */
 export function assertGrokCan(request: HarnessRun): void {
   if (request.can.shell.length > 0) {
-    throw new ReviewError(`grok cannot confine: shell prefixes (${request.label})`)
+    throw new HarnessRefusal(`grok cannot confine: shell prefixes (${request.label})`)
   }
   if (request.can.web.length > 0) {
-    throw new ReviewError(`grok cannot confine: web hosts (${request.label})`)
+    throw new HarnessRefusal(`grok cannot confine: web hosts (${request.label})`)
   }
 }
 

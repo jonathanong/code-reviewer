@@ -1,4 +1,5 @@
 import { HARNESS_NAMES } from '../../harness/registry.mts'
+import { modelConfigProblems } from '../models-check.mts'
 import { TIERS, isStepName, type Candidate, type ModelConfig, type Tier } from '../models.mts'
 import { isRecord, unknownKeys } from './settings-parse.mts'
 
@@ -100,13 +101,15 @@ export function parseModels(
   const tiers = raw.tiers === undefined ? undefined : parseTiers(raw.tiers, `${where}.tiers`, found)
   const steps = raw.steps === undefined ? undefined : parseSteps(raw.steps, `${where}.steps`, found)
   const retry = raw.retry === undefined ? undefined : parseRetry(raw.retry, `${where}.retry`, found)
-  if (found.length > 0) {
-    problems.push(...found.map((problem) => `${problem}; models ignored`))
-    return undefined
-  }
-  return {
+  const config: ModelConfig = {
     ...(tiers === undefined ? {} : { tiers }),
     ...(steps === undefined ? {} : { steps }),
     ...(retry === undefined ? {} : { retry }),
   }
+  if (found.length === 0) found.push(...modelConfigProblems(config).map((m) => `${where}: ${m}`))
+  if (found.length > 0) {
+    problems.push(...found.map((problem) => `${problem}; models ignored`))
+    return undefined
+  }
+  return config
 }

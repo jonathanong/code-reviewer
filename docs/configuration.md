@@ -259,8 +259,15 @@ ordered list of `{harness, model}` candidates; unset, they are Claude's `haiku`,
 `pillars`, `pillar.<name>` (for a built-in or a configured pillar), `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
 pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; light reviews
 use only `verifier.light`. A step that is not set runs exactly as it would without this key, and
-a set key replaces only that key. The explorer subagent's model is not configurable. `claude` is
-the only harness; a name that is not registered is a problem.
+a set key replaces only that key. The explorer subagent's model is not configurable. The harnesses
+are `claude`, `grok` and `opencode`; a name that is not registered is a problem. Selecting `grok` or
+`opencode` sends the pull request's diff and files to that provider. OpenCode at its free usage
+limit hangs until the step timeout and is then treated as rate limited, so the step moves on.
+A free OpenCode model (an id ending `-free`, or a known free id) may not run `verifier`,
+`verifier.light` or `approvalCheck`, in any candidate. `pillar.history` and `evidence` need shell,
+which Grok and OpenCode refuse, so a list with no Claude candidate for them is a problem (a
+`pillars` list reaches `pillar.history` unless that step is set). Refused web hosts are not known
+from the step name, so they are refused at run time and the step moves to its next candidate.
 
 A step tries its candidates in order. A rate limit or an overloaded API waits (the delay the
 harness reports, else exponential backoff with a cap) and retries the same candidate until
@@ -270,10 +277,10 @@ as without this key, and so is running out of candidates. `report.md` lists the 
 each step ran on and how long it waited.
 
 `--model step=harness:model` on `review` and `run` sets one step for that run and beats the
-config. Repeat it for a step to give that step ordered fallbacks. A bad step, harness or value is
-a usage error.
+config. Repeat it for a step to give that step ordered fallbacks. A bad step, harness or value, or
+a free verifier or shell-less history or evidence list, is a usage error.
 
-An unknown tier, step or harness, an empty list, or a value of the wrong type is a problem naming
+An unknown tier, step or harness, an empty list, a candidate a step cannot use as above, or a value of the wrong type is a problem naming
 the file and key, and the whole `models` key is ignored. It is machine-only, like `evidence`: a
 repository's own file cannot set it, and says `models is machine-only; ignored`. The highest
 machine layer that sets it is used whole. `code-reviewer settings` prints the resolved table.

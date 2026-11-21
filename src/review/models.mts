@@ -12,6 +12,7 @@ import {
 } from '../harness/runner.mts'
 import type { Candidate } from '../harness/types.mts'
 import { PILLARS } from './pillar-name.mts'
+import { stepProblems } from './step-check.mts'
 import type { Model } from './plan.mts'
 
 export type { Candidate } from '../harness/types.mts'
@@ -125,6 +126,10 @@ export function parseModelOverrides(values: readonly string[]): Record<string, C
       )
     }
     found[step] = [...(found[step] ?? []), { harness, model }]
+  }
+  for (const [step, list] of Object.entries(found)) {
+    const [problem] = stepProblems(step, list)
+    if (problem !== undefined) throw new Error(`--model ${step}: ${problem}.`)
   }
   return found
 }
