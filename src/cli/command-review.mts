@@ -5,11 +5,11 @@ import { rerenderReport } from '../review/run/report-file.mts'
 import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { resolveAnalysis } from '../review/analysis-settings.mts'
-import { resolveLimits } from '../review/limits-settings.mts'
+import { requireLimits } from '../review/limits-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { requirePillars } from '../review/pillars-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
-import { recordReview } from '../tracker/record.mts'
+import { recordReview, recordStoppedReview } from '../tracker/record.mts'
 import {
   resolveApprovalCheck,
   resolveEvidence,
@@ -59,10 +59,10 @@ export async function reviewCommand(
   const targetOf = () => target
   const own = (await deps.targetConfig(target.repo)).config
   const pillars = requirePillars(deps.configs(), target.repo, own)
-  const limits = resolveLimits(deps.configs(), target.repo)
+  const limits = requireLimits(deps.configs(), target.repo)
   const tracker = deps.tracker()
   const startedAt = tracker.now().toISOString()
-  const result = await runReview(
+  const running = runReview(
     {
       claim: () => claimCommand(resolved, targetOf, deps),
       prepare: () => prepareCommand(resolved, targetOf, deps),
@@ -105,6 +105,11 @@ export async function reviewCommand(
     },
     { repo: target.repo, pr: target.pr, out, tree, jobs: jobs(values.jobs, limits.pillarJobs) },
   )
+  const result = await running.catch((error: unknown) => {
+    // Never masks the review's own error; the tracker's problem has nowhere to go on this path.
+    recordStoppedReview(tracker, { ...target, out })
+    throw error
+  })
   const tracked = recordReview(tracker, { ...target, out, startedAt, ...result })
   return { ...result, summary: { ...result.summary, ...tracked } }
 }

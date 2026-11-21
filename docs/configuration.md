@@ -386,10 +386,12 @@ limits:
 
 Every key is machine-only, because a longer timeout or more parallel pillars can raise what a
 review costs and a repository must not set its own: the reviewed repository's own file, with or
-without `trustRepoConfig`, says `limits is machine-only; ignored`. The highest machine layer that
-sets `limits` is used whole, and a key it leaves out takes the default. A bad value, an
-out-of-range number or an unknown key is a problem naming the file and key, and the whole `limits`
-key is ignored. `code-reviewer settings` prints every resolved value (`maxCostUsd` is `null` for no
+without `trustRepoConfig`, says `limits is machine-only; ignored`. Unlike the other layered keys,
+each `limits` key resolves on its own: the highest machine layer that sets that key wins, a key no
+layer sets takes the default, so a repository file that sets only `pillarJobs` keeps the owner
+file's `maxCostUsd`. A bad value, an out-of-range number or an unknown key is a problem naming the
+file and key, and `review` stops with it before claiming anything, so a ceiling is never dropped
+silently. `code-reviewer settings` prints every resolved value (`maxCostUsd` is `null` for no
 ceiling). `bench` ignores this key. The posted-text length targets (1,200 and 800 characters),
 the caps in the context sections and the other fixed numbers stay fixed; `post` takes
 `--body-target` and `--inline-target` for one run.

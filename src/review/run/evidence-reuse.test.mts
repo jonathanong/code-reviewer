@@ -43,6 +43,7 @@ describe('heldEvidence', () => {
       '/tree',
       'diff',
       '--name-only',
+      '--no-renames',
       '-z',
       `${OLD}..${HEAD}`,
     ])
