@@ -103,6 +103,13 @@ describe('otherReviewers', () => {
     expect(await otherReviewers.build(input, deps(fixture('quiet'), ['reviewer-app']))).toBeNull()
   })
 
+  it('fails the build, which becomes a note, without a gh runner or identity', async () => {
+    const { gh: _gh, ...noGh } = deps(fixture('quiet'), ['x'])
+    const { trusted: _trusted, ...noTrusted } = deps(fixture('quiet'), ['x'])
+    await expect(otherReviewers.build(input, noGh)).rejects.toThrow('no gh')
+    await expect(otherReviewers.build(input, noTrusted)).rejects.toThrow('no gh')
+  })
+
   it('fails the build, which becomes a note, when the own identity is unknown or the fetch fails', async () => {
     await expect(otherReviewers.build(input, deps(fixture('quiet'), []))).rejects.toThrow(
       'identity is unknown',

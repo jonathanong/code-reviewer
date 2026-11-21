@@ -102,6 +102,11 @@ describe('pastReviews', () => {
     expect(await pastReviews.build(input, missing)).toBeNull()
   })
 
+  it('fails the build, which becomes a note, without a state directory', async () => {
+    const { stateDir: _omitted, ...without } = fake().deps
+    await expect(pastReviews.build(input, without)).rejects.toThrow('no state directory')
+  })
+
   it('lets a tracker read failure other than a missing file fail the build', async () => {
     const { deps } = fake()
     const broken: ContextDeps = {

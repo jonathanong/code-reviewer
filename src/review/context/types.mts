@@ -33,7 +33,7 @@ export type ContextDeps = {
   /** `gh` for the pull request's owner. */
   gh?: RunTextCommand
   /** This reviewer's own logins; empty when the lookup found none. */
-  trusted?(): Promise<TrustedAuthors>
+  trusted?: () => Promise<TrustedAuthors>
   /** The machine-local state directory holding the tracker. */
   stateDir?: string
 }
