@@ -1,10 +1,11 @@
 import { harness as claude } from './claude.mts'
+import { harness as codex } from './codex.mts'
 import { harness as grok } from './grok.mts'
 import { harness as opencode } from './opencode.mts'
 import type { Harness } from './types.mts'
 
 /** Every harness a config may name. Adding one is one line here. */
-const HARNESSES: readonly Harness[] = [claude, grok, opencode]
+const HARNESSES: readonly Harness[] = [claude, grok, opencode, codex]
 
 export const HARNESS_NAMES: readonly string[] = HARNESSES.map((harness) => harness.name)
 

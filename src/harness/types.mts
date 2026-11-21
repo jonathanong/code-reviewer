@@ -44,6 +44,8 @@ export type HarnessRun = {
   addDirs?: readonly string[]
   /** The `pluginSettings` object limiting the step to the rule plugins; opaque to callers. */
   settings?: object
+  /** The machine config accepts that this candidate's harness may read outside the checkout and run directory. */
+  readsOutsideCheckout?: boolean
   /** Read the step's transcript, so the result lists the skills it loaded. */
   transcript?: boolean
 }
@@ -59,7 +61,7 @@ export type HarnessResult = {
 }
 
 /** One harness and the model it runs; a step tries its candidates in order. */
-export type Candidate = { harness: string; model: string }
+export type Candidate = { harness: string; model: string; readsOutsideCheckout?: true }
 
 /**
  * Why a run failed, as far as the harness can tell. `rate_limited` and `overloaded` are worth

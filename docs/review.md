@@ -9,7 +9,7 @@ Every model call is one headless step run through a harness adapter in `src/harn
 asks for capabilities (read-only file tools, skills, an explorer subagent, shell limited to command
 prefixes, web fetch limited to hosts, or no tools), and the adapter turns them into the CLI's flags
 and reads its output. Each step's harness and model come from [`models`](configuration.md#models)
-and `--model`, which may name `claude`, `grok` or `opencode`. Selecting Grok or OpenCode sends the
+and `--model`, which may name `claude`, `grok`, `opencode` or `codex`. Selecting Grok, OpenCode or Codex sends the
 pull request's diff and files to that provider, so name them only where that is acceptable.
 
 Grok (`src/harness/grok.mts`) is a second adapter, run as `grok -p`. It runs read-only steps: file
@@ -27,8 +27,26 @@ schema's required keys. It ignores `explorer`, `skills`, `settings`, `transcript
 the step ends at its timeout; the adapter reads the limit from the error log and reports the
 failure as a rate limit too long to wait out, and the step moves to its next candidate.
 
+Codex (`src/harness/codex.mts`) is a fourth, run as `codex exec --json` in its `read-only` sandbox with
+`--ephemeral`, `--ignore-user-config` and `--ignore-rules`, so no write access, user config or rules
+are loaded, and web search is off. The schema goes in through `--output-schema` and the answer is
+read from the `-o` file. Codex reads files through its one shell tool, so it refuses no-tools steps
+and shell and web grants, before starting anything. The sandbox already reads the run directory, so
+`addDirs` is not passed (Codex's `--add-dir` grants write access). `project_doc_max_bytes=0` stops
+Codex loading the checkout's `AGENTS.md`, so a pull request cannot change the instructions that
+govern its own review. The schema is rewritten for Codex's strict structured outputs (every
+property required, optional ones also accepting null, no extra properties) and the nulls are
+dropped from the answer. Codex's read-only sandbox reads the whole disk, and no supported flag
+limits that to the checkout and run directory, so a diff could steer a step to read a file outside
+them and send it to the provider. Unlike Claude, Grok and OpenCode, which bound reads to the
+checkout and `addDirs`, Codex refuses every step unless its candidate in `models` sets
+`readsOutsideCheckout: true`, which only machine config may do. It ignores `explorer`, `skills`,
+`settings`, `transcript` and `maxTurns`, and reports no cost. A usage-limit message is classified as
+a rate limit too long to wait out. **Codex has not yet been run against the real CLI**: the adapter
+is built from `codex-cli 0.171.0` help output, and the event shapes it reads are assumed.
+
 Config rejects what it can know from the step's key: the `pillar.history` and `evidence` steps need
-shell, so a list in which every candidate is Grok or OpenCode is a problem, and no free model
+shell, so a list in which every candidate is Grok, OpenCode or Codex is a problem, and no free model
 (`isFreeModel`, a naming heuristic) may run `verifier`, `verifier.light` or `approvalCheck`. The web
 hosts the correctness and security pillars and the verifier get depend on `references`, so those are
 checked at run time: when an adapter refuses a step, the runner moves to the next candidate, and
@@ -194,8 +212,9 @@ against, its status and its saved queries and results (capped at the evidence re
 saying that this earlier evidence still applies because none of the paths it depends on changed
 and that it was gathered at that commit and has not been re-run, so where the current code
 contradicts it the code is right; the saved text is untrusted data. With no such source the block is absent and the earlier-review block says to
-establish again any evidence the review relies on. The evidence step still runs on every
-follow-up. `report.json` records the offered sources as `earlierEvidence`, and `report.md` lists
+establish again any evidence the review relies on. The evidence step runs on every
+follow-up by design: earlier evidence carries over to the verifier, and new evidence may still
+block or raise a question for the author. `report.json` records the offered sources as `earlierEvidence`, and `report.md` lists
 them.
 
 ## Progress and the cost ceiling

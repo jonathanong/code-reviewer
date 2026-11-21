@@ -42,6 +42,18 @@ describe('parseModels', () => {
     expect(parse({ steps })).toEqual({ config: { steps }, problems: [] })
   })
 
+  it('accepts readsOutsideCheckout only as true', () => {
+    const steps = { verifier: [{ harness: 'codex', model: 'm', readsOutsideCheckout: true }] }
+    expect(parse({ steps })).toEqual({ config: { steps }, problems: [] })
+    const bad = parse({
+      steps: { verifier: [{ harness: 'codex', model: 'm', readsOutsideCheckout: 1 }] },
+    })
+    expect(bad.config).toBeUndefined()
+    expect(bad.problems).toEqual([
+      `${WHERE}.steps.verifier[0]: "readsOutsideCheckout" must be true when set; models ignored`,
+    ])
+  })
+
   it('ignores the whole key for a free verifier model or a history step no candidate can run', () => {
     const free = parse({ steps: { approvalCheck: [{ harness: 'opencode', model: 'x/y-free' }] } })
     expect(free.config).toBeUndefined()
@@ -93,7 +105,7 @@ describe('parseModels', () => {
     [
       'an unknown harness',
       { tiers: { small: [{ harness: 'nope', model: 'a' }] } },
-      `${WHERE}.tiers.small[0]: "harness" must be one of claude, grok, opencode`,
+      `${WHERE}.tiers.small[0]: "harness" must be one of claude, grok, opencode, codex`,
     ],
     [
       'a missing harness',

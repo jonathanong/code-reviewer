@@ -68,9 +68,14 @@ export type StepRequest = Omit<HarnessRun, 'model'> & { analysis?: StepAnalysis 
  * What `adapter` runs for `request`. The analysis grant and section go in unless the adapter's own
  * `assertCan` refuses the request with them, so one check decides what a harness can confine.
  */
-function forAdapter(request: StepRequest, adapter: Harness, model: string): HarnessRun {
+function forAdapter(request: StepRequest, adapter: Harness, candidate: Candidate): HarnessRun {
+  const { model, readsOutsideCheckout: reads } = candidate
   const { analysis, ...rest } = request
-  const plain: HarnessRun = { ...rest, model }
+  const plain: HarnessRun = {
+    ...rest,
+    model,
+    ...(reads === true ? { readsOutsideCheckout: true } : {}),
+  }
   if (analysis === undefined) return plain
   const granted: HarnessRun = {
     ...plain,
@@ -113,7 +118,7 @@ export async function runStep(
     for (let attempt = 0; ; attempt += 1) {
       const ran = { harness: candidate.harness, model: candidate.model, waitedMs }
       try {
-        const result = await adapter.run(forAdapter(request, adapter, candidate.model), exec)
+        const result = await adapter.run(forAdapter(request, adapter, candidate), exec)
         return { ...result, usage: addUsage(failedUsage, result.usage) as Usage, ran, failedUsage }
       } catch (error) {
         const failure = adapter.classifyFailure(error)

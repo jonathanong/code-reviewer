@@ -6,11 +6,16 @@ import { harnessChecks } from './harness-checks.mts'
 describe('harness binaries', () => {
   it('reports each binary with its version', async () => {
     const { io } = fakeIo({
-      exec: { 'claude --version': '2.1.0 (Claude Code)\n', 'grok --version': 'grok 0.4\n' },
+      exec: {
+        'claude --version': '2.1.0 (Claude Code)\n',
+        'grok --version': 'grok 0.4\n',
+        'codex --version': 'codex-cli 0.171.0\n',
+      },
     })
     expect(await harnessChecks(io)).toEqual([
       { name: 'harness:claude', status: 'ok', detail: '2.1.0 (Claude Code)' },
       { name: 'harness:grok', status: 'ok', detail: 'grok 0.4' },
+      { name: 'harness:codex', status: 'ok', detail: 'codex-cli 0.171.0' },
     ])
   })
 
