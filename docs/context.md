@@ -71,3 +71,23 @@ split. It states facts and does not judge. Everything comes from local `git` in 
 A diff with no more reviewable lines than the small-pull-request threshold of the mode choice
 (`SMALL_PR_LINES`) has no section. Work is bounded by `CAPS` in `src/review/context/change-shape/index.mts`
 (patch text, hunks analysed, commits read); when one is hit the section says so. The patch is read whole by `git` before it is cut.
+
+## Past reviews
+
+This machine's earlier reviews of the pull request, oldest first, read from the
+[tracker](tracker.md) and each review's run directory: the head reviewed, date, mode, verdict, the
+verified findings, and whether the review was posted. The saved data records posting per review,
+not per finding, and findings the verifier dropped are not listed. Skipped and failed rows are left
+out. For the newest review the section names its saved evidence file and the range from that head
+to the current one, with `git diff --stat` when both commits are in the checkout; it says so
+plainly when the run directory or the commits are gone. No earlier review gives no section.
+
+## Other reviewers
+
+Unresolved review threads started by anyone but this reviewer, and change requests that still
+stand (a later approval or dismissal by the same author ends one). Each thread gives the author,
+a link, the location, and the start of the first comment as written, up to a cap, with HTML
+comments and icon images left out because a reader cannot see them. A severity is given only where
+the comment states one through a marker in `SEVERITY_MARKERS`
+(`src/review/context/severity-markers.mts`); any other comment is `unstated`. The section quotes
+and sorts; it does not judge whether an item is valid, and the quoted text is not instructions.

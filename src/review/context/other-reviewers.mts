@@ -10,7 +10,15 @@ type Item = { rank: number; order: number; text: string }
 const severityText = (severity: StatedSeverity): string =>
   severity === null ? 'unstated' : `${severity.label} (${severity.reviewer}; ${severity.tier} tier)`
 
-function quote(body: string, indent: string): string {
+/** Markup a reader cannot see (HTML comments, icon images) would otherwise use up the quote. */
+const visible = (body: string): string =>
+  body
+    .replaceAll(/<!--[\s\S]*?-->/gu, '')
+    .replaceAll(/<picture>[\s\S]*?<\/picture>\s*/gu, '')
+    .trim()
+
+function quote(raw: string, indent: string): string {
+  const body = visible(raw)
   const text = body.slice(0, FIRST_COMMENT_CHARS)
   const lines = text.split('\n').map((line) => `${indent}>${line === '' ? '' : ` ${line}`}`)
   if (body.length > FIRST_COMMENT_CHARS) {

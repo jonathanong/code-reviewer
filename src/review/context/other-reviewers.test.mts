@@ -124,6 +124,18 @@ describe('otherReviewers', () => {
   })
 })
 
+describe('quoting', () => {
+  it('leaves out markup a reader cannot see before cutting', () => {
+    const body = `<!-- generated -->\n\n**<picture><img src="https://example.com/i.svg"></picture> Minor** · **Area**\n\n${'x'.repeat(FIRST_COMMENT_CHARS)}`
+    const pull = fixture('threads')
+    pull.reviewThreads.nodes[0]!.comments.nodes[0]!.body = body
+    const text = describeOthers(pull, new Set())!.body
+    expect(text).toContain('> **Minor** · **Area**')
+    expect(text).not.toContain('<picture>')
+    expect(text).not.toContain('generated')
+  })
+})
+
 describe('statedSeverity', () => {
   it.each([
     ['_⚠️ Potential issue_ | _🔴 Critical_', 'CodeRabbit', 'Critical', 'blocking'],
