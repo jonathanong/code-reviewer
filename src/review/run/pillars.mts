@@ -1,7 +1,12 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { describeStepFailure, type StepRan, type StepRequest } from '../../harness/runner.mts'
+import {
+  describeStepFailure,
+  type StepAnalysis,
+  type StepRan,
+  type StepRequest,
+} from '../../harness/runner.mts'
 import { EFFORT } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import { addUsage, type Usage } from '../benchmark/usage.mts'
@@ -44,6 +49,8 @@ export type PillarsInput = {
   settings?: object
   /** The harness and model of each pillar; the default tiers when absent. */
   models?: StepModels
+  /** Read-only analysis tools every pillar may run; none when absent. */
+  analysis?: StepAnalysis | undefined
   /** Web references; only the correctness and security pillars get them. */
   web?: WebReferences
   exec: Exec
@@ -74,6 +81,8 @@ async function runOne(
     effort: EFFORT[input.mode],
     addDirs: [input.run.out],
     transcript: true,
+    // A configured pillar runs with the same read-only tools as a built-in one, no shell.
+    analysis: configured === undefined ? input.analysis : undefined,
     ...(input.settings === undefined ? {} : { settings: input.settings }),
   }
   const failedAttempts: FailedAttempt[] = []

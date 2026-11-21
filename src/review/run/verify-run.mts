@@ -49,6 +49,7 @@ export async function runReviewVerifier(
       effort: EFFORT[options.mode],
       addDirs: [input.run.out, input.references],
       transcript: true,
+      analysis: input.analysis,
       ...(options.settings === undefined ? {} : { settings: options.settings }),
     },
     options.exec,

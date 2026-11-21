@@ -23,6 +23,7 @@ import {
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import { modelTable } from '../review/models.mts'
+import { analysisSummary } from '../review/analysis-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { resolveLimits } from '../review/limits-settings.mts'
 import type { ReviewDeps } from './deps.mts'
@@ -66,7 +67,6 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
   const target = repo === undefined ? undefined : await deps.targetConfig(repo)
   const evidence = resolveEvidence(configs, scope, target?.config)
   const references = resolveReferences(configs, scope, target?.config)
-  const approvalCheck = resolveApprovalCheck(configs, scope)
   const models = resolveModels(configs, scope)
   const limits = resolveLimits(configs, scope)
   return {
@@ -75,11 +75,12 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
     from: settingLayers(configs, scope, target?.config),
     // Names only: a source's env values and commands stay out of any output.
     evidence: { sources: evidence.sources.map((source) => source.name), from: evidence.from },
+    analysis: analysisSummary(configs, scope),
     references: {
       sources: references.sources.map(({ name, domains }) => ({ name, domains })),
       from: references.from,
     },
-    approvalCheck,
+    approvalCheck: resolveApprovalCheck(configs, scope),
     rulePlugins: resolveRulePlugins(configs, scope, target?.config),
     pillars: describePillars(resolvePillars(configs, scope, target?.config)),
     // What each step runs on; a pillar with no setting follows the plan (see docs/configuration.md).

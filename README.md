@@ -47,7 +47,6 @@ Agreed and not built yet. Nothing below works today.
 - **Shared context.** One cheap run builds what every pillar needs once: the relevant rule text
   quoted verbatim with a link to the full skill, the history of the changed lines, linked
   regressions, and past reviews.
-- **Code analysis.** `no-mistakes` as a read-only analysis plugin for the reviewers.
 - **Feedback loops.** The daily digest as a Claude Doc, and issues about the harness, not only
   rules and pillar prompts.
 - **Regression fixes.** A pull request that fixes a regression is recognised, the change that
@@ -110,6 +109,8 @@ code-reviewer help
 - [Outcomes](docs/outcomes.md): what became of each posted finding, and the daily digest.
 - [Filing issues](docs/issues.md): opt-in issues in the repositories that own a rule or this
   reviewer, from the outcomes data.
+- [Code analysis tools](docs/analysis.md): `analysis`, read-only command line tools for the pillars and
+  the verifier, with a ready `no-mistakes` example.
 - [Choosing a model](docs/models.md): `models`, which probes the models a harness offers.
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and

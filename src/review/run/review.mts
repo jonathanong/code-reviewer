@@ -10,6 +10,7 @@ import { applyApprovalCheck } from './approval-check.mts'
 import { withCeilingSkip } from './ceiling-skip.mts'
 import { approvalCheckInput } from './approval-check-prompt.mts'
 import { skipReview } from './review-skip.mts'
+import { buildAnalysis } from './analysis-prompt.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
@@ -56,6 +57,7 @@ async function review(
   const skillChoice = await chooseSkills(steps, { out, tree, title, followUp, skills, settings })
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
+  const analysis = steps.analysis && (await buildAnalysis(await steps.analysis()))
   const prompts = pillarTexts(steps)
   const extra = steps.pillars?.extra ?? []
   const extraPillars = extra.map((entry) => entry.name)
@@ -70,6 +72,7 @@ async function review(
     skills: skillChoice.selected,
     settings,
     models,
+    analysis,
     ...(web === undefined ? {} : { web }),
     exec: steps.exec,
   })
@@ -84,6 +87,7 @@ async function review(
       findings,
       skipped: pillarSkips,
       threads: threadIdsOf(out),
+      analysis,
       ...(web === undefined ? {} : { web }),
     },
     { model: plan.verifierModel, extraPillars, mode, tree, settings, models, exec: steps.exec },

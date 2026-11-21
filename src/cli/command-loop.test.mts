@@ -38,6 +38,7 @@ afterEach(() => {
 })
 
 const UNSET = {
+  analysis: { tools: [], from: null },
   evidence: { sources: [], from: null },
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
@@ -266,6 +267,7 @@ describe('runLoopCommand', () => {
           },
           checkRun: 'machine owner',
         },
+        analysis: { tools: ['graph'], from: 'machine owner' },
         evidence: { sources: ['aws'], from: 'machine owner' },
         references: {
           sources: [{ name: 'aws-docs', domains: ['docs.aws.amazon.com'] }],

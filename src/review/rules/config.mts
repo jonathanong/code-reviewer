@@ -12,6 +12,7 @@ import {
 import type { IssuesConfig } from '../../issues/config-parse.mts'
 import type { ModelConfig } from '../models.mts'
 import { consumesList } from './consumes-parse.mts'
+import type { AnalysisTool } from './analysis-parse.mts'
 import type { EvidenceSource } from './evidence-parse.mts'
 import type { ReferenceSource } from './references-parse.mts'
 import type { LimitsConfig } from './limits-parse.mts'
@@ -60,6 +61,8 @@ export type RepoConfig = {
   trustRepoConfig?: boolean
   /** Machine config, or the repository's own file when `trustRepoConfig` is on for it. */
   evidence?: EvidenceSource[]
+  /** Machine config only, even for a trusted repository file: it grants the pillars and the verifier shell commands. */
+  analysis?: AnalysisTool[]
   /** Machine config, or a trusted repository's own file: it grants network access. */
   references?: ReferenceSource[]
   /** Machine config only: `false` switches off the second check on an approval. */
@@ -96,6 +99,7 @@ const KEYS = new Set([
   'labels',
   'checkRun',
   'evidence',
+  'analysis',
   'references',
   'approvalCheck',
   'rulePlugins',

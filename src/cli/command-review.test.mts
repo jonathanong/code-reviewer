@@ -24,7 +24,10 @@ import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import type { TargetConfig } from '../review/rules/target-config.mts'
 import type { ReviewDeps } from './deps.mts'
 
-afterEach(() => vi.clearAllMocks())
+afterEach(() => {
+  vi.clearAllMocks()
+  configs.mockImplementation(() => NO_CONFIGS)
+})
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const guide = vi.fn(async () => 'guide text')
@@ -141,6 +144,24 @@ describe('reviewCommand', () => {
     expect(guideReader).toHaveBeenCalledWith(resolve('c'))
     expect(setup.readGuide).toBe(guide)
     expect((await wired.evidence()).sources).toEqual([])
+  })
+
+  it('wires the analysis tools from the machine config and the clone root', async () => {
+    const tool = {
+      name: 'graph',
+      description: 'Code graph.',
+      guide: { text: 'Use it.' },
+      commands: ['graph dependents'],
+    }
+    configs.mockReturnValue({
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/widgets', { consumes: [], analysis: [tool], problems: [] }]]),
+    })
+    const { wired } = await steps({ out: 'o', tree: 't', clones: 'c' })
+    const setup = await (wired.analysis as NonNullable<typeof wired.analysis>)()
+    expect(setup.tools).toEqual([tool])
+    expect(guideReader).toHaveBeenCalledWith(resolve('c'))
+    expect(setup.readGuide).toBe(guide)
   })
 
   it('wires the web references from the machine config only', async () => {

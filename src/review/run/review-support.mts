@@ -22,6 +22,7 @@ import {
 } from '../plugins.mts'
 import type { StepModels } from '../models.mts'
 import type { ReferenceSource } from '../rules/references-parse.mts'
+import type { AnalysisSetup } from './analysis-prompt.mts'
 import type { EvidenceSetup } from './evidence-types.mts'
 import type { RunDir } from './pillar-prompt.mts'
 import { renderRulePlugins } from './rule-plugins-prompt.mts'
@@ -43,6 +44,8 @@ export type ReviewSteps = {
   rulePlugins: readonly string[]
   /** The machine-configured evidence sources for the repository and the reader for their guides. */
   evidence(): Promise<EvidenceSetup>
+  /** The machine-configured analysis tools and the reader for their guides; none when absent. */
+  analysis?(): Promise<AnalysisSetup>
   /** The machine-configured web references for the repository; none when absent. */
   webReferences?: readonly ReferenceSource[]
   /** False when the settings switch off the second check on an approval. */

@@ -52,7 +52,32 @@ export function describeStepFailure(error: unknown): {
   return claude.describeFailure(error)
 }
 
-export type StepRequest = Omit<HarnessRun, 'model'>
+/** Optional shell commands and the prompt section that explains them; a harness that refuses the shell grant gets neither. */
+export type StepAnalysis = { commands: readonly string[]; section: string }
+
+export type StepRequest = Omit<HarnessRun, 'model'> & { analysis?: StepAnalysis | undefined }
+
+/**
+ * What `adapter` runs for `request`. The analysis grant and section go in unless the adapter's own
+ * `assertCan` refuses the request with them, so one check decides what a harness can confine.
+ */
+function forAdapter(request: StepRequest, adapter: Harness, model: string): HarnessRun {
+  const { analysis, ...rest } = request
+  const plain: HarnessRun = { ...rest, model }
+  if (analysis === undefined) return plain
+  const granted: HarnessRun = {
+    ...plain,
+    prompt: `${rest.prompt}\n\n${analysis.section}`,
+    can: { ...rest.can, shell: [...rest.can.shell, ...analysis.commands] },
+  }
+  try {
+    adapter.assertCan?.(granted)
+  } catch {
+    // `assertCan` throws nothing but a refusal.
+    return plain
+  }
+  return granted
+}
 
 /** A step's result: `usage` counts every attempt, `failedUsage` only the ones that failed. */
 export type StepRun = HarnessResult & { ran: StepRan; failedUsage: Usage | null }
@@ -81,7 +106,7 @@ export async function runStep(
     for (let attempt = 0; ; attempt += 1) {
       const ran = { harness: candidate.harness, model: candidate.model, waitedMs }
       try {
-        const result = await adapter.run({ ...request, model: candidate.model }, exec)
+        const result = await adapter.run(forAdapter(request, adapter, candidate.model), exec)
         return { ...result, usage: addUsage(failedUsage, result.usage) as Usage, ran, failedUsage }
       } catch (error) {
         const failure = adapter.classifyFailure(error)
