@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util'
 
 import { reviewStatus, numberDiff, revokeFinalApproval, type PullTarget } from '../review/index.mts'
-import { takeRetryCount } from '../gh-cli/index.mts'
+import { runGit, takeRetryCount } from '../gh-cli/index.mts'
 import { checkPlugins } from '../review/plugins.mts'
 import { reportCommand, reviewCommand } from './command-review.mts'
 import { runLoopCommand } from './command-loop.mts'
@@ -10,12 +10,13 @@ import { labelsFor } from './review-settings.mts'
 import { createDefaultDeps, type ReviewDeps } from './deps.mts'
 import { explainCommand, trackerCommand } from './command-tracker.mts'
 import { runCommand, usageFailure } from '../run/command.mts'
+import { digestCommand, outcomesCommand } from '../outcomes/command.mts'
 import { REVIEW_USAGE } from './usage.mts'
 
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, bench, bench-verifier, or bench-selection'
+  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, report, resolve, plugins, tracker, explain, outcomes, bench, bench-verifier, or bench-selection'
 
 function target(values: { repo?: string[] | undefined; pr?: string | undefined }): PullTarget {
   const repo = values.repo?.[0]
@@ -57,6 +58,7 @@ function parse(args: string[]) {
       format: { type: 'string' },
       run: { type: 'string' },
       post: { type: 'string' },
+      day: { type: 'string' },
     },
   }).values
 }
@@ -73,7 +75,8 @@ async function run(
   if (subcommand === 'bench') return deps.runBench(args)
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
   if (subcommand === 'bench-selection') return deps.runSelectionBench(args)
-  const values = parse(args)
+  const digest = subcommand === 'outcomes' && args[0] === 'digest'
+  const values = parse(digest ? args.slice(1) : args)
   if (subcommand === undefined) throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
   if (subcommand === 'plugins') {
     const result = checkPlugins(await deps.listPlugins(), values.require ?? [])
@@ -84,6 +87,21 @@ async function run(
     const { output, problems } = trackerCommand(values, deps.tracker())
     for (const problem of problems) process.stderr.write(`code-reviewer: ${problem}\n`)
     process.stdout.write(output)
+    return 0
+  }
+  if (subcommand === 'outcomes') {
+    if (digest) {
+      print(digestCommand(values, deps.tracker()))
+      return 0
+    }
+    const io = {
+      run: (owner: string, repo: string) => deps.runner(owner, repo),
+      git: runGit,
+      findClone: deps.findClone(values.clones),
+    }
+    const { summary, messages } = await outcomesCommand(values, deps.tracker(), io)
+    for (const message of messages) process.stderr.write(`code-reviewer: ${message}\n`)
+    print(summary)
     return 0
   }
   if (subcommand === 'explain') {

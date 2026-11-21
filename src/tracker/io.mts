@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
@@ -30,6 +30,13 @@ export function createTrackerIo(env: Record<string, string | undefined>): Tracke
     append: (path, text) => {
       mkdirSync(dirname(path), { recursive: true })
       appendFileSync(path, text)
+    },
+    // Written beside the target and renamed over it, so a reader never sees half a file.
+    write: (path, text) => {
+      mkdirSync(dirname(path), { recursive: true })
+      const temp = `${path}.${process.pid}.tmp`
+      writeFileSync(temp, text)
+      renameSync(temp, path)
     },
     now: () => new Date(),
   }

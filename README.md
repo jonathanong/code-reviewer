@@ -114,6 +114,7 @@ code-reviewer help
   dead bases and carried commits, dependencies, and linked issues.
 - [Tracker and explainer](docs/tracker.md): the record of every review and the plain-words
   explanation of one.
+- [Outcomes](docs/outcomes.md): what became of each posted finding, and the daily digest.
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and
   whose reviews count.

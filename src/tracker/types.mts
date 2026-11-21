@@ -44,5 +44,7 @@ export type TrackerIo = {
   read(path: string): string | undefined
   /** Appends `text` in one write, creating the directory first. */
   append(path: string, text: string): void
+  /** Replaces the file with `text` atomically, creating the directory first. */
+  write(path: string, text: string): void
   now(): Date
 }

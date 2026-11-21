@@ -19,7 +19,7 @@ function bounded(text: string): string {
   return text
 }
 
-async function cloneOf(clones: string, repo: string, git: RunTextCommand): Promise<string> {
+export async function cloneOf(clones: string, repo: string, git: RunTextCommand): Promise<string> {
   const names = readdirSync(clones, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
