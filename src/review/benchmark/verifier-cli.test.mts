@@ -194,12 +194,11 @@ describe('runReviewVerifierBenchCli', () => {
     expect(markdown).toContain('judged by haiku')
     expect(markdown).toContain('| 1 | n/a | n/a → n/a | n/a | n/a (0) | n/a | 1.0 → 0.0 |')
     expect(markdown).toContain('- x1: not graded')
-    expect(markdown).toContain('| Run | Model | Runs | Input tokens | Output tokens | Cost |')
-    expect(markdown).toContain('| verifier | opus | 2 | 200 | 20 | $3.00 |')
-    expect(markdown).toContain('| checker | opus | 1 | 100 | 10 | $3.00 |')
-    expect(markdown).toContain('| all | opus | 3 | 300 | 30 | $6.00 |')
+    expect(markdown).toContain('| Group | Arm | Model | Runs | Input |')
+    expect(markdown).toContain('| verifier | with skills | opus | 2 of 2 of 3 | 200 / 100 |')
+    expect(markdown).toContain('| checker | with skills | opus | 1 of 1 of 1 | 100 / 100 |')
     const saved = JSON.parse(h.store.get('o/summary.json') as string)
-    expect(saved.models.map((group: { name: string }) => group.name)).toEqual([
+    expect(saved.models.map((group: { group: string }) => group.group)).toEqual([
       'verifier',
       'checker',
     ])

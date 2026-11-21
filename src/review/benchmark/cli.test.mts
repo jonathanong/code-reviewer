@@ -271,12 +271,29 @@ describe('runReviewBenchCli runs', () => {
     expect(raw.usage.costUsd).toBe(3)
     const markdown = h.files.get('out/summary.md') as string
     expect(markdown).toContain('| security | 1 | $3.00 | $3.00 | n/a | n/a |')
-    expect(markdown).toContain('| Pillar | Model | Runs | Input tokens | Output tokens | Cost |')
-    expect(markdown).toContain('| security | opus | 1 | 1,500 | 50 | $3.00 |')
-    expect(markdown).toContain('| all | opus | 1 | 1,500 | 50 | $3.00 |')
+    expect(markdown).toContain('| Group | Arm | Model | Runs | Input | Cache read |')
+    expect(markdown).toContain(
+      '| security | with skills | opus | 1 of 1 of 1 | 1,000 / 1,000 | 500 / 500 | n/a | 50 / 50 | $3.00 / $3.00 |',
+    )
     const saved = JSON.parse(h.files.get('out/summary.json') as string)
-    expect(saved[0].summary.usage.models).toEqual([
-      { model: 'opus', runs: 1, inputTokens: 1500, outputTokens: 50, costUsd: 3 },
+    expect(saved[0].models).toEqual([
+      {
+        group: 'security',
+        arm: 'with skills',
+        runs: 1,
+        covered: 1,
+        models: [
+          {
+            model: 'opus',
+            runs: 1,
+            inputTokens: { total: 1000, mean: 1000, runs: 1 },
+            cacheReadTokens: { total: 500, mean: 500, runs: 1 },
+            cacheCreationTokens: null,
+            outputTokens: { total: 50, mean: 50, runs: 1 },
+            costUsd: { total: 3, mean: 3, runs: 1 },
+          },
+        ],
+      },
     ])
   })
 
@@ -369,6 +386,7 @@ describe('skill loads', () => {
     expect(markdown).toContain('| security | 3 | 100% | 100% | 0% (1) | 0.7 | 33% | 50% |')
     // Raw results saved before usage was recorded count as missing, not zero.
     expect(markdown).toContain('| security | 0 | n/a | n/a | n/a | n/a |')
+    expect(markdown).toContain('| security | with skills | n/a | 0 of 0 of 3 | n/a |')
     expect(markdown).toContain('- security p2: caught without rules:testing-rules')
     expect(markdown).toContain('- security n1: missing rules:testing-rules')
     expect(markdown).not.toContain('Control run')
@@ -447,10 +465,18 @@ describe('runReviewBenchCli --score-only', () => {
         findings: hit,
         skills: ['rules:testing-rules'],
       }),
-      'ctl/raw/security/p1.json': JSON.stringify({ findings: hit, skills: [], skillTool: false }),
+      'ctl/raw/security/p1.json': JSON.stringify({
+        findings: hit,
+        skills: [],
+        skillTool: false,
+        usage: { costUsd: 1, byModel: { opus: { inputTokens: 7, costUsd: 1 } } },
+      }),
     })
     await runReviewBenchCli([...scoreOnly, '--baseline', 'ctl'], h.deps)
     const markdown = h.files.get('out/summary.md') as string
+    // Records saved before models were kept are n/a; the control arm is listed apart.
+    expect(markdown).toContain('| security | with skills | n/a | 0 of 0 of 1 |')
+    expect(markdown).toContain('| security | control | opus | 1 of 1 of 1 | 7 / 7 |')
     expect(markdown).toContain('Control recall')
     expect(markdown).toContain('- security: control caught p1: does not discriminate')
     await expect(

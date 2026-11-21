@@ -8,7 +8,8 @@ import { readCaseResult } from './case-result.mts'
 import { renderSummaryTable, summarizePillar, type CaseScore } from './score.mts'
 import { skillNotes, type SkillCase } from './skills-score.mts'
 import type { Usage } from './usage.mts'
-import { renderCostTable, renderModelTable } from './usage-summary.mts'
+import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
+import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
   out: string
@@ -25,6 +26,8 @@ export type Options = {
   baseline?: string | undefined
 }
 
+const armName = (noRules: boolean) => (noRules ? 'control' : 'with skills')
+
 export function scoreAll(
   cases: EvalCase[],
   pillars: Pillar[],
@@ -39,8 +42,10 @@ export function scoreAll(
     const errors: string[] = []
     const tools: boolean[] = []
     const usages: Usage[] = []
+    const runUsages: Array<Usage | null> = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
+      runUsages.push(result.usage)
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
@@ -57,7 +62,14 @@ export function scoreAll(
         skillCases,
         readBaseline(cases, pillar, control, judge, deps),
       )
-    return { summary, scores, skillCases, errors }
+    const models: ModelReport[] = [summarizeByModel(pillar, armName(options.noRules), runUsages)]
+    if (control !== undefined) {
+      const controlUsages = casesForPillar(cases, pillar).map(
+        (item) => readCaseResult(item, pillar, control, judge, deps).usage,
+      )
+      models.push(summarizeByModel(pillar, armName(true), controlUsages))
+    }
+    return { summary, scores, skillCases, errors, models }
   })
   deps.writeFile(join(out, 'summary.json'), `${JSON.stringify(report, null, 2)}\n`)
   const errorLines = report.flatMap((entry) =>
@@ -79,10 +91,8 @@ export function scoreAll(
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',
     renderCostTable(report.map((entry) => entry.summary)),
-    'Tokens by model (input includes cache reads and writes):',
-    renderModelTable(
-      report.map((entry) => ({ name: entry.summary.pillar, models: entry.summary.usage.models })),
-    ),
+    'Tokens by model (each figure is total / per run; Runs is using the model of covered of expected):',
+    renderModelReports(report.flatMap((entry) => entry.models)),
     ...(notes.length > 0 ? ['Skills:', notes.join('\n')] : []),
     ...(controlNotes.length > 0 ? ['Control:', controlNotes.join('\n')] : []),
     ...(errorLines.length > 0 ? ['Errors and skipped runs:', errorLines.join('\n')] : []),
