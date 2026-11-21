@@ -8,7 +8,13 @@ code-reviewer report --out DIR
 Every model call is one headless step run through a harness adapter in `src/harness/`. A step
 asks for capabilities (read-only file tools, skills, an explorer subagent, shell limited to command
 prefixes, web fetch limited to hosts, or no tools), and the adapter turns them into the CLI's flags
-and reads its output. Claude Code is the one adapter.
+and reads its output. Claude Code is the adapter every run uses.
+
+Grok (`src/harness/grok.mts`) is a second adapter, run as `grok -p`. It runs read-only steps: file
+reads and searches, or no tools, with Grok's subagents, web search and MCP gateway off and the
+user's Claude and Cursor skills, rules, hooks and MCP servers not loaded. It refuses a step that
+needs shell prefixes or web hosts, because it cannot confine them, before starting anything. It is
+not selectable by config yet.
 
 [`run`](run.md) is the unattended path. `review` runs one pull request end to end with headless `claude -p` calls and stops before
 posting, so you can read the result first. `--tree` is a checkout at the pull request head and
