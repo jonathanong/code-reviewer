@@ -18,10 +18,19 @@ function describe(skill: ContextSkill): string[] {
   return [`### ${skill.name}`, `Full skill: ${skill.file}`, `Description: ${skill.description}`]
 }
 
-function excerpt(skill: ContextSkill, text: string): string {
+function status(kept: number, dropped: readonly string[]): string {
+  if (dropped.length === 0) return 'quoted in full'
+  return kept === 0 ? 'not quoted' : `quoted in part (sections dropped: ${dropped.join('; ')})`
+}
+
+function excerpt(skill: ContextSkill, text: string, mark: boolean): string {
   const body = stripFrontmatter(text)
   if (listShare(body) < LIST_SHARE_MIN) {
-    return [...describe(skill), 'Not quoted: mostly prose. Read the full skill.'].join('\n')
+    return [
+      ...describe(skill),
+      ...(mark ? ['Status: not quoted'] : []),
+      'Not quoted: mostly prose. Read the full skill.',
+    ].join('\n')
   }
   const kept: string[] = []
   const dropped: string[] = []
@@ -35,6 +44,7 @@ function excerpt(skill: ContextSkill, text: string): string {
     } else dropped.push(section.heading)
   }
   const lines = describe(skill)
+  if (mark) lines.push(`Status: ${status(kept.length, dropped)}`)
   if (kept.length > 0) lines.push('', quote(kept.join(SEPARATOR)))
   if (dropped.length > 0) {
     lines.push(
@@ -51,7 +61,9 @@ export const ruleExcerpts: SectionBuilder = {
   async build(input, deps): Promise<ContextSection | null> {
     if (input.skills.length === 0) return null
     const parts = await Promise.all(
-      input.skills.map(async (skill) => excerpt(skill, await deps.readFile(skill.file))),
+      input.skills.map(async (skill) =>
+        excerpt(skill, await deps.readFile(skill.file), input.excerpts === 'replace'),
+      ),
     )
     return { title: 'Rule excerpts', body: parts.join('\n\n') }
   },

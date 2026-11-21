@@ -1,3 +1,4 @@
+import type { ExcerptsMode } from '../context/types.mts'
 import { describeStepFailure } from '../../harness/runner.mts'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
@@ -29,8 +30,17 @@ export type RawResult =
       selected?: string[]
       /** Cost, turns, and tokens of the run; absent in older results. */
       usage?: Usage
+      /** The `--excerpts` arm the run was in; absent when the flag was not given. */
+      excerpts?: ExcerptsMode
     }
-  | { error: string; rules?: string; plugins?: string[]; selected?: string[]; usage?: Usage }
+  | {
+      error: string
+      rules?: string
+      excerpts?: ExcerptsMode
+      plugins?: string[]
+      selected?: string[]
+      usage?: Usage
+    }
 
 export type JudgeDeps = {
   exec: Exec

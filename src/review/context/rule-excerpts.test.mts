@@ -94,6 +94,43 @@ describe('ruleExcerpts', () => {
     expect(section!.body).toContain('Sections not quoted (over the cap): Only.')
   })
 
+  it('marks nothing unless asked, so the default text has no status line', async () => {
+    const section = await ruleExcerpts.build(input([rules, prose]), deps())
+    expect(section!.body).not.toContain('Status:')
+  })
+
+  describe('in replace mode', () => {
+    const replace = (skills: ContextSkill[]): ContextInput => ({
+      ...input(skills),
+      excerpts: 'replace',
+    })
+
+    it('marks a skill quoted in full and one that is not quoted', async () => {
+      const section = await ruleExcerpts.build(replace([rules, prose]), deps())
+      expect(section!.body).toContain('Status: quoted in full')
+      expect(section!.body).toContain('Status: not quoted\nNot quoted: mostly prose')
+    })
+
+    it('marks a skill quoted in part with the sections dropped', async () => {
+      const big = `- ${'x'.repeat(SKILL_QUOTE_CAP - 100)}`
+      const text = `## First\n${big}\n\n## Second\n- ${'y'.repeat(200)}\n\n## Third\n- z\n`
+      const section = await ruleExcerpts.build(replace([rules]), deps({ [rules.file]: text }))
+      expect(section!.body).toContain('Status: quoted in part (sections dropped: Second; Third)')
+    })
+
+    it('marks a skill whose first section is over the cap as not quoted', async () => {
+      const text = `## Only\n- ${'x'.repeat(SKILL_QUOTE_CAP)}\n`
+      const section = await ruleExcerpts.build(replace([rules]), deps({ [rules.file]: text }))
+      expect(section!.body).toContain('Status: not quoted\n\nSections not quoted')
+    })
+
+    it('keeps the quoted text the same as the default arm', async () => {
+      const plain = await ruleExcerpts.build(input([rules]), deps())
+      const marked = await ruleExcerpts.build(replace([rules]), deps())
+      expect(marked!.body.replace('Status: quoted in full\n', '')).toBe(plain!.body)
+    })
+  })
+
   it('keeps the threshold between the two fixtures', () => {
     expect(LIST_SHARE_MIN).toBeGreaterThan(0.5)
     expect(LIST_SHARE_MIN).toBeLessThan(1)

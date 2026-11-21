@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 
+import type { ExcerptsMode } from '../context/types.mts'
 import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
 import type { BenchDeps } from './cli.mts'
@@ -9,8 +10,17 @@ import type { Usage } from './usage.mts'
 import { expectedSkillsFor, scoreSkills, type SkillCase } from './skills-score.mts'
 
 export type CaseResult =
-  | { error: string; usage: Usage | null }
-  | { score: CaseScore; skillCase: SkillCase | null; skillTool: boolean; usage: Usage | null }
+  | { error: string; usage: Usage | null; excerpts: ExcerptsMode | null }
+  | {
+      score: CaseScore
+      skillCase: SkillCase | null
+      skillTool: boolean
+      usage: Usage | null
+      /** The `--excerpts` arm of the run; null when the flag was not given. */
+      excerpts: ExcerptsMode | null
+      /** Distinct skills the run loaded; null for a result saved before they were recorded. */
+      skillLoads: number | null
+    }
 
 /**
  * Reads one saved raw result and scores it. With `judge`, a result lacking a current judgement
@@ -24,22 +34,30 @@ export function readCaseResult(
   deps: Pick<BenchDeps, 'exists' | 'readFile'>,
 ): CaseResult {
   const path = join(out, 'raw', pillar, `${item.id}.json`)
-  if (!deps.exists(path)) return { error: 'not run', usage: null }
+  if (!deps.exists(path)) return { error: 'not run', usage: null, excerpts: null }
   const raw = JSON.parse(deps.readFile(path)) as RawResult
   // Results saved before usage was recorded have none: missing, not zero.
   const usage = raw.usage ?? null
-  if ('error' in raw) return { error: raw.error, usage }
+  const excerpts = raw.excerpts ?? null
+  if ('error' in raw) return { error: raw.error, usage, excerpts }
   let assignment: ReturnType<typeof currentAssignment>
   if (judge !== undefined) {
     const expected = item.expected.filter((entry) => entry.pillar === pillar)
     assignment = currentAssignment(raw, expected, judge)
     // Unjudged cases stay out of judged metrics rather than falling back to locations.
-    if (assignment === undefined) return { error: 'not judged', usage }
+    if (assignment === undefined) return { error: 'not judged', usage, excerpts }
   }
   const score = scoreCase(item, pillar, raw.findings, assignment)
   const wanted = expectedSkillsFor(item, pillar)
   const caught = score.expected > 0 && score.matched === score.expected
   // Results saved before skills were recorded count as nothing loaded.
   const skillCase = wanted.length > 0 ? scoreSkills(item, wanted, raw.skills ?? [], caught) : null
-  return { score, skillCase, skillTool: raw.skillTool !== false, usage }
+  return {
+    score,
+    skillCase,
+    skillTool: raw.skillTool !== false,
+    usage,
+    excerpts,
+    skillLoads: raw.skills?.length ?? null,
+  }
 }
