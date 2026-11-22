@@ -98,6 +98,12 @@ describe('parseEvalCases', () => {
     expect(message([{ ...bare, fixture: 3 }])).toBe('cases[0]: fixture must be a string')
   })
 
+  it('keeps the description a mined case records for its head', () => {
+    const [parsed] = parseEvalCases([positive({ body: 'As it read then.' })])
+    expect(parsed).toMatchObject({ pr: 3, body: 'As it read then.' })
+    expect(parseEvalCases([positive()])[0]).not.toHaveProperty('body')
+  })
+
   it('rejects non-array input and duplicate ids', () => {
     expect(message({})).toBe('Eval cases must be a JSON array.')
     expect(message([positive(), positive()])).toBe('Duplicate eval case id: p1')
@@ -118,6 +124,7 @@ describe('parseEvalCases', () => {
     )
     expect(message([positive({ pr: 0 })])).toBe('cases[0]: pr must be a positive integer')
     expect(message([positive({ pr: 'x' })])).toBe('cases[0]: pr must be a positive integer')
+    expect(message([positive({ body: 4 })])).toBe('cases[0]: body must be a string')
     expect(message([positive({ expected: 'x' })])).toBe('cases[0]: expected must be an array')
     expect(message([positive({ expected: [] })])).toBe(
       'cases[0]: a positive case needs an expected finding',

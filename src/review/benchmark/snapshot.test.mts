@@ -139,6 +139,20 @@ describe('prepareSnapshot', () => {
     )
   })
 
+  it('writes the description a case records instead of the current one', async () => {
+    const recorded = { ...item, body: 'As it read at this head.' }
+    const snapshot = await prepareSnapshot(
+      recorded,
+      join(root, 'cache'),
+      join(root, 'work'),
+      fakeExec([]),
+    )
+    expect(snapshot.body).toBe('As it read at this head.')
+    expect(readFileSync(join(snapshot.dir, CONTEXT_DIR, 'pr.md'), 'utf8')).toBe(
+      '# My title\n\nAs it read at this head.\n',
+    )
+  })
+
   it('shares one cache between parallel cases of a repository', async () => {
     const calls: Call[] = []
     const other = { ...item, id: 'case-2' }

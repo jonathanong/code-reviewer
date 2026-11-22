@@ -46,7 +46,9 @@ async function prepareRepoSnapshot(
     '--json',
     'body,baseRefName',
   ])
-  const { body, baseBranch } = parsePullRequest(view)
+  const { body: current, baseBranch } = parsePullRequest(view)
+  // A description edited after the head was pushed can state the fix a later head made.
+  const body = item.body ?? current
   await buildTree(dir, repoDir, { baseBranch, baseSha: item.baseSha, headSha: item.headSha }, exec)
   const diff = await exec('git', [
     '-C',

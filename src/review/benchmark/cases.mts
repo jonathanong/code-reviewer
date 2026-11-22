@@ -34,6 +34,8 @@ export type RepoCase = CaseBase & {
   pr: number
   baseSha: string
   headSha: string
+  /** The description as it read at `headSha`; without it the snapshot uses the current one. */
+  body?: string
 }
 
 /** A synthetic case: a directory holding `base/`, `head/`, `pr.md`, and optional `context.md`. */
@@ -118,7 +120,8 @@ function source(
     fail(where, 'baseSha and headSha must be full SHAs')
   if (!Number.isInteger(raw.pr) || (raw.pr as number) <= 0)
     fail(where, 'pr must be a positive integer')
-  return { repo, pr: raw.pr as number, baseSha, headSha }
+  const origin = { repo, pr: raw.pr as number, baseSha, headSha }
+  return raw.body === undefined ? origin : { ...origin, body: str(raw, 'body', where) }
 }
 
 function skillName(value: unknown, where: string): string {

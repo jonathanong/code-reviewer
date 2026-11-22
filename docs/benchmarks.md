@@ -19,10 +19,14 @@ Use a line range only when the defect lives on specific lines. Approach-level cl
 congruence, and history findings) use `"lines": null`, so any finding on the file counts: a
 reviewer may rightly raise the same concern far from where a labeler guessed.
 
-This repository is private. `cases.json` holds cases mined from real pull requests, most of them in
-private repositories: a run fetches each case's base and head commits with the `gh` login and
-checks the head out as a git repository with its history (see
+`cases.json` holds cases mined from real pull requests: a run fetches each case's base and head
+commits with the `gh` login and checks the head out as a git repository with its history (see
 [Mined case checkouts](#mined-case-checkouts)).
+
+A mined case may carry `"body"`: the description as it read at `headSha`. The reviewer is then
+given that text. Without it the run reads the pull request's current description, which is right
+for a merged pull request and wrong for an earlier head of one that was revised: a description
+rewritten after review can state the fix, and the reviewer finds the defect by comparing the two.
 
 ### Fixture cases
 
@@ -53,6 +57,14 @@ Fixture cases are cached by a content hash of the fixture directory instead of a
 options finding), and
 the `rules-*` cases, one per shared rule skill. It is separate from `cases.json`; run it with `--cases
 benchmarks/review/synthetic.json`. A fixture must be synthetic: never copy private code.
+
+`revisions.json` holds cases mined from review rounds instead of reverts: one case per reviewed
+head of a pull request that went through several rounds. A positive's expected findings are the
+defects a final review reported at that head; its `reason` says how many of them the full review
+run at that head reported. A negative is a head the final review approved with no defect. Each
+case carries `body`. These labels are weaker than a revert: a finding the author then fixed is
+`"confidence": "high"`, one that was only reasoned is `"medium"`, and an approved head was judged
+clean, not proven clean.
 
 Labels are written by people or agents from the revert and fix history. Add cases by mining new
 reverts and regression fixes, and keep negatives at roughly a third of the set.

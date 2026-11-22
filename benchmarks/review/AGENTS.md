@@ -18,7 +18,8 @@
   them on every pillar for comparison) and 3 with `--no-rules` in the same session, then score
   with `--score-only --baseline <control dir>`. Run without either flag (every skill offered, none
   named) only to separate a selection failure from a reviewer miss.
-- Do not run the whole of `cases.json` unless the owner asks: large cases cost dollars per run.
+- Do not run the whole of `cases.json` or `revisions.json` unless the owner asks: large cases cost dollars per run.
+- Give a mined case `body` (the description as it read at `headSha`) whenever the description was edited after that head; a later edit can state the fix.
 - Give every positive case `expectedSkills` with full `plugin:skill` names when a shared rule
   skill states its rule. Do not write a case for a rule no skill states.
 - `unwantedSkills` (full `plugin:skill` names, scored only by `bench-selection`) lists skills the selection
