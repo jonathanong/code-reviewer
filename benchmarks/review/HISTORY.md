@@ -2,6 +2,26 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: skill loading, pointed against forced: `rules` pillar, three attempts on five synthetic cases
+
+Commit 0ba88c2. Reviewer Sonnet (`claude-sonnet-5-5`), judge Opus, `--pillar rules`, three runs per
+arm in the same session, the five cases of the `--excerpts` pilot. "Pointed" is `bench` without
+`--select`: the contract alone tells the pillar to load the skills whose description matches.
+"Forced" is `bench --select`: the selection step picks skills and the pillar is told to load every
+one, as a review does. Neither arm had a context file. Reviewer cost $3.73.
+
+| Arm     | Recall   | Expected skill loaded | Distinct skills loaded per run | Turns per run | Cost per run |
+| ------- | -------- | --------------------- | ------------------------------ | ------------- | ------------ |
+| Pointed | 15 of 15 | 15 of 15              | 1.0                            | 9.4           | $0.12        |
+| Forced  | 15 of 15 | 15 of 15              | 3.6                            | 16.2          | $0.13        |
+
+Pointed, the pillar loaded exactly the expected skill in every run and nothing else. Forced, it also
+loaded the selected prose skills (`typescript-authoring` 12 times, `test-authoring` 6) and took
+about 70% more turns for the same findings. All five cases expect a `no-mistakes-rules` skill, so
+this does not show whether a pointed pillar loads a prose skill it needs, and it covers one pillar:
+`bench --pillar correctness` ran no case, because these cases expect only `rules` findings. Recall
+is at the ceiling in both arms, so the sample cannot show a recall difference.
+
 ## 2026-11-21: first `bench-context` run: is the rule a case depends on in the shared context
 
 Commit 6302658. No model: `bench-context` builds the rule-excerpts section for exactly the
