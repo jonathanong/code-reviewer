@@ -86,13 +86,16 @@ function fixed(value: number | null, digits: number, prefix = ''): string {
 
 /** Renders the cost table that sits under the score table. */
 export function renderCostTable(
-  summaries: ReadonlyArray<{ pillar: string; usage: UsageSummary }>,
+  summaries: ReadonlyArray<{ pillar: string; usage: UsageSummary; harness?: string }>,
 ): string {
-  const rows = summaries.map(({ pillar, usage }) => {
+  const rows = summaries.map(({ pillar, usage, harness }) => {
+    // A harness that reports no cost shows a dash, never $0.
+    const money = (value: number | null) =>
+      value === null && harness !== undefined ? '-' : fixed(value, 2, '$')
     const cells = [
       String(usage.runs),
-      fixed(usage.totalCostUsd, 2, '$'),
-      fixed(usage.meanCostUsd, 2, '$'),
+      money(usage.totalCostUsd),
+      money(usage.meanCostUsd),
       fixed(usage.meanTurns, 1),
       fixed(usage.meanInputTokens, 0),
     ]

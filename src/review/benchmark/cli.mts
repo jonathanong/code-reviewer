@@ -6,6 +6,7 @@ import { PILLARS, type Pillar } from '../pillar-name.mts'
 import { defaultSelectStep, type SelectStep } from './case-selection.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
 import { parseExcerpts } from './excerpts.mts'
+import { assertPillarHarness, otherHarness } from './harness-option.mts'
 import { judgeAll } from './judge-all.mts'
 import { runAll } from './run-all.mts'
 import { scoreAll, type Options } from './score-all.mts'
@@ -59,11 +60,19 @@ function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] 
   return PILLARS.filter((pillar) => used.has(pillar))
 }
 
-function assertLoadsOnly(values: { pillar?: string[]; [flag: string]: unknown }): void {
+function assertLoadsOnly(values: {
+  pillar?: string[]
+  harness?: unknown
+  [flag: string]: unknown
+}): void {
   if (values.pillar === undefined) throw new Error('bench --loads-only needs --pillar.')
   for (const flag of ['judge', 'baseline', 'no-rules'])
     if (values[flag] !== undefined)
       throw new Error(`bench --loads-only cannot be combined with --${flag}.`)
+  if (otherHarness(values.harness as string | undefined) !== undefined)
+    throw new Error(
+      'bench --loads-only needs --harness claude: other harnesses report no loaded skills.',
+    )
 }
 
 /** `code-reviewer bench`: run pillar prompts over labeled cases and score them. */
@@ -81,6 +90,8 @@ export async function runReviewBenchCli(
       pillar: { type: 'string', multiple: true },
       case: { type: 'string', multiple: true },
       model: { type: 'string' },
+      harness: { type: 'string' },
+      'reads-outside-checkout': { type: 'boolean' },
       'max-turns': { type: 'string' },
       jobs: { type: 'string' },
       'score-only': { type: 'boolean' },
@@ -106,6 +117,7 @@ export async function runReviewBenchCli(
     dirname(values.cases),
   ).filter((item) => ids.size === 0 || ids.has(item.id))
   const pillars = pickPillars(values.pillar ?? [], cases)
+  assertPillarHarness(values, pillars, values['no-rules'] !== true)
   const excerpts =
     values.excerpts === undefined
       ? {}
@@ -128,6 +140,8 @@ export async function runReviewBenchCli(
     select: values.select === true,
     ...(values['select-all-pillars'] === true ? { selectAllPillars: true } : {}),
     ...(values['loads-only'] === true ? { loadsOnly: true } : {}),
+    ...(otherHarness(values.harness) === undefined ? {} : { harness: values.harness }),
+    ...(values['reads-outside-checkout'] === true ? { readsOutsideCheckout: true } : {}),
     ...excerpts,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }

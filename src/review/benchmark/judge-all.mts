@@ -32,11 +32,14 @@ export type RawResult =
       usage?: Usage
       /** The `--excerpts` arm the run was in; absent when the flag was not given. */
       excerpts?: ExcerptsMode
+      /** The harness that ran the pillar agent; absent for Claude. */
+      harness?: string
     }
   | {
       error: string
       rules?: string
       excerpts?: ExcerptsMode
+      harness?: string
       plugins?: string[]
       selected?: string[]
       usage?: Usage

@@ -25,6 +25,8 @@ export type ModelReport = {
   /** Runs whose usage lists models; the rest are missing, not zero. Older records have none. */
   covered: number
   models: ModelFigures[]
+  /** Set when a non-Claude harness ran the group: a missing cost shows a dash. */
+  harness?: string
 }
 
 type Field = 'inputTokens' | 'cacheReadTokens' | 'cacheCreationTokens' | 'outputTokens' | 'costUsd'
@@ -74,8 +76,8 @@ export function summarizeByModel(
   return { group, arm, runs: usages.length, covered, models }
 }
 
-function cell(value: Figure, money = false): string {
-  if (value === null) return 'n/a'
+function cell(value: Figure, money = false, missing = 'n/a'): string {
+  if (value === null) return missing
   const text = (n: number) => (money ? `$${n.toFixed(2)}` : Math.round(n).toLocaleString('en-US'))
   return `${text(value.total)} / ${text(value.mean)}`
 }
@@ -97,7 +99,7 @@ export function renderModelReports(reports: readonly ModelReport[]): string {
         cell(m.cacheReadTokens),
         cell(m.cacheCreationTokens),
         cell(m.outputTokens),
-        cell(m.costUsd, true),
+        cell(m.costUsd, true, report.harness === undefined ? 'n/a' : '-'),
       ]
       return `${prefix} ${m.model} | ${m.runs} of ${report.covered} of ${report.runs} | ${cells.join(' | ')} |`
     })

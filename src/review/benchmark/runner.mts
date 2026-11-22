@@ -53,6 +53,10 @@ export type PillarRun = {
   selectAllPillars?: boolean
   /** Set by `--excerpts`: the rule-excerpts file is in the snapshot, and this is the arm. */
   excerpts?: ExcerptsMode
+  /** The harness running the pillar agent; Claude when omitted. */
+  harness?: string
+  /** Lets a non-Claude harness read outside the checkout, as its adapter requires. */
+  readsOutsideCheckout?: boolean
   /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
   settings?: object
 }
@@ -84,6 +88,14 @@ export async function runPillar(
       ...(run.settings === undefined ? {} : { settings: run.settings }),
     },
     exec,
+    ...(run.harness === undefined
+      ? []
+      : [
+          {
+            harness: run.harness,
+            ...(run.readsOutsideCheckout === true ? { readsOutsideCheckout: true as const } : {}),
+          },
+        ]),
   )
   return parsePillarOutput(result, run.pillar)
 }

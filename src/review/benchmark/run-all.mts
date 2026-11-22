@@ -81,6 +81,7 @@ export async function runAll(
       ...(chosen === undefined ? {} : { selected: chosen }),
       ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
     }
+    const ranOn = options.harness === undefined ? {} : { harness: options.harness }
     let result: RawResult
     try {
       const { model, maxTurns } = options
@@ -90,16 +91,18 @@ export async function runAll(
         model,
         maxTurns,
         skills: !options.noRules,
+        ...(options.harness === undefined ? {} : { harness: options.harness }),
+        ...(options.readsOutsideCheckout === true ? { readsOutsideCheckout: true } : {}),
         ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
         ...(chosen === undefined ? {} : { selected: chosen }),
         ...(options.selectAllPillars === true ? { selectAllPillars: true } : {}),
         ...(settings === undefined ? {} : { settings }),
       }
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
-      result = { findings, skills, skillTool: !options.noRules, usage, ...seen }
+      result = { findings, skills, skillTool: !options.noRules, usage, ...seen, ...ranOn }
     } catch (error) {
       const { message, usage } = describeStepFailure(error)
-      result = { error: message, ...(usage === null ? {} : { usage }), ...seen }
+      result = { error: message, ...(usage === null ? {} : { usage }), ...seen, ...ranOn }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
   })
