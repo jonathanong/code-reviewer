@@ -11,6 +11,7 @@ import { skillNotes, type SkillCase } from './skills-score.mts'
 import type { Usage } from './usage.mts'
 import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
 import { armOf, renderArms, summarizeLoads, type ArmSummary } from './excerpts-arm.mts'
+import { scoreLoads } from './loads-only.mts'
 import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
@@ -28,6 +29,8 @@ export type Options = {
   select: boolean
   /** `--out` of an earlier `--no-rules` run of the same cases, for the paired control. */
   baseline?: string | undefined
+  /** Run each pillar on every selected case and report only the skills it loaded; no judge. */
+  loadsOnly?: boolean
 }
 
 const armLabel = (report: ReadonlyArray<{ arm: ArmSummary }>) =>
@@ -42,6 +45,7 @@ export function scoreAll(
   deps: BenchDeps,
 ): string {
   const { out, judge, baseline: control } = options
+  if (options.loadsOnly === true) return scoreLoads(cases, pillars, out, deps)
   if (control !== undefined) assertBaseline(cases, pillars, control, deps)
   const report = pillars.map((pillar) => {
     const scores: CaseScore[] = []

@@ -3,6 +3,8 @@
 - Load `jong-skills:evals` before changing a case, a fixture, a grader, or these documents.
 - Run one case with `pnpm exec code-reviewer bench --cases <file> --pillar <p> --case <id> --out <dir>`.
   Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
+- Record which skills any pillar loads on a case with `bench ... --pillar <p> --case <id> --loads-only` (add `--select`
+  for the forced arm); it skips the judge and reports no recall.
 - Run the skill-selection eval with `pnpm exec code-reviewer bench-selection --cases <file>... --out <dir>`; it costs one Haiku call per attempt, and a case tagged `expectedSkills` is in it.
 - Check the shared context with `pnpm exec code-reviewer bench-context --cases <file>... --history <file>... --out <dir>`;
   it makes no model call and costs nothing. Give a tagged case `expectedRules` (a verbatim substring of the
