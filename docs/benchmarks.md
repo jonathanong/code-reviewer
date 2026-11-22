@@ -284,6 +284,25 @@ Each raw result and each pillar of `summary.json` records `shell`, and `summary.
 "Shell granted to the pillar agent: ...". Such rows are not comparable with normal rows: the pillar
 has tools a review does not grant. `--score-only` reads the prefixes from the saved results.
 
+### Reasoning effort for the pillar agent
+
+`--effort LEVEL` runs the pillar agent at `low`, `medium`, `high` or `xhigh`, on Claude or on
+`--harness codex`; `max` (and Codex's `ultra`) is not allowed. Any other level is refused before
+any work, naming the flag and the levels. A review runs at `medium` in full mode and `low` in light
+mode, so the flag is for testing whether a pillar's recall is an effort problem. `medium` is the
+default: `--effort medium` records nothing and its rows are comparable with a run without the flag.
+
+```bash
+pnpm exec code-reviewer bench --cases benchmarks/review/cases.json \
+  --prompts skills/review/references/pillars --out "$TMPDIR/review-bench-high" \
+  --pillar correctness --effort high
+```
+
+A run at another level records `effort` in each raw result and in each pillar of `summary.json`,
+and `summary.md` opens with an `Effort:` line saying its rows are not comparable with normal rows.
+`--score-only` reads the effort from the saved results. Only the pillar agent changes; the judge,
+selection and verifier keep their own effort.
+
 Results are written to `<out>/raw/<pillar>/<case>.json`, then `summary.json` and `summary.md`. Use
 `--score-only` to re-score existing raw results, and `--case <id>` to run one case. Runs cost
 money and take minutes per case, so run only the pillars whose prompts changed.

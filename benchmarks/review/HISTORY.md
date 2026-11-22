@@ -2,6 +2,52 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `correctness` on the mined cases at `high` effort: Sonnet and Codex Terra
+
+Same session and cases as the three entries below; three attempts per arm, file and line matching,
+no judge. `--effort high` on the pillar agent only.
+
+| Arm                             | Expected locations matched | Findings in all | Negative runs with a finding | Turns per run | Input tokens per run | Cost   |
+| ------------------------------- | -------------------------- | --------------- | ---------------------------- | ------------- | -------------------- | ------ |
+| Sonnet, `high`                  | 8 of 24                    | 48              | 20 of 36                     | 18.9          | about 375,000        | $15.51 |
+| Sonnet, `medium` (entry below)  | 4 of 24                    | 18              | 11 of 36                     | about 10      | about 136,000        | $8.49  |
+| Codex `gpt-6.1-terra`, `high`   | 11 of 21                   | 73              | 24 of 36                     | not reported  | about 258,000        | -      |
+| Codex `gpt-6.1-terra`, `medium` | 12 of 24                   | 67              | 23 of 35                     | not reported  | about 194,000        | -      |
+
+Matches per case over three attempts, `high` (Sonnet / Terra): `vouchington-tooling-154` 3 of 6 /
+3 of 4, `vouchington-tooling-187` 1 of 6 / 3 of 6, `vouchington-3419` 2 of 3 / 3 of 3,
+`vouchington-2936` 2 of 3 / 2 of 2, `vouchington-4154` 0 / 0, `vouchington-clients-130` 0 / 0.
+
+All three attempts of both `high` arms were then re-scored with `--score-only --judge opus`, which
+reads the claims:
+
+| Arm                           | Location matches | Judged matches |
+| ----------------------------- | ---------------- | -------------- |
+| Sonnet, `high`                | 8 of 24          | 3 of 24        |
+| Codex `gpt-6.1-terra`, `high` | 11 of 21         | 7 of 21        |
+
+- Higher effort did not help Sonnet. All three judged matches are `vouchington-tooling-154`, the
+  case it already matched at `medium`. Its location matches on `vouchington-3419` and
+  `vouchington-2936` state a different problem. It reported in 20 of 36 negative runs against 11,
+  and cost about twice as much.
+- Terra's judged matches are `vouchington-tooling-154` (3), `vouchington-3419` (2) and
+  `vouchington-2936` (2). Two of its runs failed with `max_output_tokens` (`vouchington-2936`,
+  `vouchington-tooling-154`), so its denominator is 21. It did not improve on `medium` by location.
+- Neither model, at either effort, has a judged match on `vouchington-tooling-187`,
+  `vouchington-4154` or `vouchington-clients-130`.
+- The `medium` rows have a judge score for one attempt only (entry below), and the findings on
+  negative cases were not checked by the verifier. Rows at `high` are not comparable with rows at
+  the default effort except as this experiment, and the Codex and Sonnet rows differ in harness as
+  well as model.
+
+## 2026-11-21: `bench --effort` (no run)
+
+`bench --effort LEVEL` runs the pillar agent at low, medium, high or xhigh instead of the `medium` a
+full review uses; `max` is refused. No prompt, schema, case or grader changed and no model ran. A
+run without the flag, or with `--effort medium`, writes what it did before. Raw results, `summary.json`
+and `summary.md` of a run at another level record the effort, and those rows are not comparable with
+any earlier entry or with rows at the default effort.
+
 ## 2026-11-21: `correctness` on the mined cases: Sonnet with shell, and a judged re-score
 
 Follows the entry "Codex Sol, Codex Terra, Claude Sonnet" (same session, same cases).

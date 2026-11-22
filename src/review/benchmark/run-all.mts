@@ -81,7 +81,10 @@ export async function runAll(
       ...(chosen === undefined ? {} : { selected: chosen }),
       ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
     }
-    const ranOn = options.harness === undefined ? {} : { harness: options.harness }
+    const ranOn = {
+      ...(options.harness === undefined ? {} : { harness: options.harness }),
+      ...(options.effort === undefined ? {} : { effort: options.effort }),
+    }
     const shelled = options.shell === undefined ? {} : { shell: options.shell }
     let result: RawResult
     try {
@@ -93,6 +96,7 @@ export async function runAll(
         maxTurns,
         skills: !options.noRules,
         ...(options.harness === undefined ? {} : { harness: options.harness }),
+        ...(options.effort === undefined ? {} : { effort: options.effort }),
         ...(options.readsOutsideCheckout === true ? { readsOutsideCheckout: true } : {}),
         ...(options.shell === undefined ? {} : { shell: options.shell }),
         ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),

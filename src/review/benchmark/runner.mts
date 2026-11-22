@@ -1,5 +1,5 @@
 import { runFixedModel } from '../../harness/runner.mts'
-import { EFFORT } from '../../harness/types.mts'
+import { EFFORT, type BenchEffort } from '../../harness/types.mts'
 import type { Pillar } from '../pillar-name.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import { pillarCapabilities } from '../run/pillar-capabilities.mts'
@@ -53,6 +53,8 @@ export type PillarRun = {
   selectAllPillars?: boolean
   /** Set by `--excerpts`: the rule-excerpts file is in the snapshot, and this is the arm. */
   excerpts?: ExcerptsMode
+  /** Set by `bench --effort`: the reasoning effort for the pillar agent; a review's own when omitted. */
+  effort?: BenchEffort
   /** The harness running the pillar agent; Claude when omitted. */
   harness?: string
   /** Lets a non-Claude harness read outside the checkout, as its adapter requires. */
@@ -85,7 +87,7 @@ export async function runPillar(
       schema: PILLAR_OUTPUT_SCHEMA,
       can: pillarCapabilities(run.pillar, run.skills !== false, [], run.shell),
       cwd: dir,
-      effort: EFFORT.full,
+      effort: run.effort ?? EFFORT.full,
       transcript: true,
       ...(run.settings === undefined ? {} : { settings: run.settings }),
     },

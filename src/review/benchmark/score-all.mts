@@ -12,6 +12,8 @@ import type { Usage } from './usage.mts'
 import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
 import { armOf, renderArms, summarizeLoads, type ArmSummary } from './excerpts-arm.mts'
 import { scoreLoads } from './loads-only.mts'
+import { savedEffort } from './effort-option.mts'
+import type { BenchEffort } from '../../harness/types.mts'
 import { otherHarness } from './harness-option.mts'
 import { grantedShell, shellNote } from './shell-option.mts'
 import { renderCostTable } from './usage-summary.mts'
@@ -41,6 +43,8 @@ export type Options = {
   readsOutsideCheckout?: boolean
   /** Set by `--shell`: command prefixes granted to the pillar agent on top of its own. */
   shell?: string[]
+  /** Set by `--effort` when not the default `medium`. */
+  effort?: BenchEffort
 }
 
 const armLabel = (report: ReadonlyArray<{ arm: ArmSummary }>) =>
@@ -68,12 +72,17 @@ export function scoreAll(
     const loads: Array<number | null> = []
     const harnesses: Array<string | null> = []
     const shells: Array<string[] | null> = []
+    const efforts: Array<BenchEffort | null> = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
       runUsages.push(result.usage)
       arms.push(result.excerpts)
       harnesses.push(result.harness)
-      shells.push(result.shell)
+      // A case that was never run records nothing, which is not a different arm.
+      if (!('error' in result) || result.error !== 'not run') {
+        shells.push(result.shell)
+        efforts.push(result.effort)
+      }
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
@@ -93,6 +102,8 @@ export function scoreAll(
     if (ranOn !== undefined) summary.harness = ranOn
     const granted = grantedShell(options.shell, shells)
     if (granted !== undefined) summary.shell = granted
+    const level = savedEffort(options.effort, efforts)
+    if (level !== undefined) summary.effort = level
     if (control !== undefined)
       summary.baseline = compareBaseline(
         skillCases,
@@ -128,6 +139,7 @@ export function scoreAll(
   )
   const ranOn = [...new Set(report.map((entry) => entry.summary.harness).filter(Boolean))]
   const shelled = report.find((entry) => entry.summary.shell !== undefined)?.summary.shell
+  const levels = [...new Set(report.map((entry) => entry.summary.effort).filter(Boolean))]
   const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
   const markdown = [
     ...(ranOn.length === 0
@@ -136,6 +148,11 @@ export function scoreAll(
           `Harness: pillar agent on ${ranOn.join(', ')}, model ${options.model}; the judge, selection and verifier stay on Claude. Cost and loaded skills are not reported, so these rows are not comparable with Claude rows.`,
         ]),
     ...(shelled === undefined ? [] : [shellNote(shelled)]),
+    ...(levels.length === 0
+      ? []
+      : [
+          `Effort: pillar agent at ${levels.join(', ')}; not what a review uses, so these rows are not comparable with normal rows.`,
+        ]),
     `Matching: ${matching}.${armed ? ` Excerpts: ${armLabel(report)}.` : ''}`,
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',
