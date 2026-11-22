@@ -309,7 +309,7 @@ selection and verifier keep their own effort.
 test whether low recall comes from the agent stopping early. Each later round runs the same
 pillar step with one extra block appended to the prompt by the benchmark only: the findings so far
 (path, line, title, body, as data) and an instruction to look for problems not in that list, to
-return only new findings, and to return none if there are none. A round that adds no finding ends
+return only new findings, and to return none if there are none. A round after the first that adds no finding ends
 the run, and a later finding at a file and line already reported is dropped. `review` and `run`
 never do this. Anything but 1 to 3 fails before any work, naming the flag, as does `--loads-only`.
 The default, 1, writes exactly the normal output.

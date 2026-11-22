@@ -85,16 +85,16 @@ describe('runReviewBenchCli --rounds', () => {
     expect(String(stdout.mock.calls.at(-1)?.[0])).toContain(note)
   })
 
-  it('stops when a round adds nothing, and when the first finds nothing', async () => {
+  it('stops when a later round adds nothing, but looks again when the first finds nothing', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = setup([[found('a.ts', 1)], [found('a.ts', 1)], [found('c.ts', 3)]])
     await runReviewBenchCli([...PILLAR, '--rounds', '3'], h.deps)
     expect(h.calls).toHaveLength(2)
     expect(h.raw()).toMatchObject({ roundsRun: 2, roundFindings: [1, 0] })
-    const empty = setup([[]])
-    await runReviewBenchCli([...PILLAR, '--rounds', '2'], empty.deps)
-    expect(empty.calls).toHaveLength(1)
-    expect(empty.raw().roundFindings).toEqual([0])
+    const empty = setup([[], [found('d.ts', 4)], []])
+    await runReviewBenchCli([...PILLAR, '--rounds', '3'], empty.deps)
+    expect(empty.calls).toHaveLength(3)
+    expect(empty.raw().roundFindings).toEqual([0, 1, 0])
   })
 
   it('keeps earlier findings when a later round errors', async () => {
