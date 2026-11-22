@@ -11,6 +11,71 @@ No benchmark row is affected. No benchmark exercises the approval check: `bench`
 and the verifier alone (`src/review/benchmark` does not call `applyApprovalCheck`), and
 `benchmarks/review/README.md` has no approval-check row.
 
+## 2026-11-22: `vouchington-6174-b1a495fe` added to `revisions.json`
+
+Case added, not yet measured; no score changes. It adds a row, so totals over
+`revisions.json` are not comparable with earlier entries (50 cases, 29 pull requests).
+
+One pilot attempt checked the grader and the baseline: correctness pillar, Sonnet at medium effort,
+judge Opus, commit `a12d167`. It raised no finding in 6 turns for $0.16 (0 of 1). One attempt is
+not a rate.
+
+Source: `vouchington/vouchington` pull request 6174 (the soft-deleted-user purge), base
+`1dbac5c467f0d919bc0ab97d1e192e690d76d49d`, head `b1a495fe4a4280ade451df8d06760fc3287c5f50`. The
+guard is removed in `258c64ad7` and is still removed at the head; `6ddb9f6596ca382a44dbab5a9d29cfbc333f6849`
+restores it, keyed on `membership_lineage_bindings.user_id`.
+
+What it checks: a review told the author the refund guard in the purge `DELETE` was unreachable
+because `NOT EXISTS memberships` implied it. An earlier stage of the same transaction
+(`cleanup-user-preserved-rows.mts`, "remove membership projections") has already deleted the
+memberships rows, so the guard was live. The case passes when a correctness-pillar finding says
+the removal is wrong for that reason (the purge can delete a user with a refund pending). It fails
+when the review accepts the removal, is silent, or objects only to something else. The expected
+claim carries the pass and fail text for the judge; the reviewer never sees it.
+
+Unlike the other cases here, it was not cut from the Opus audit: it records a known miss of the
+review pilot, where the orchestrating session made the wrong claim itself. `body` is the description edit current when the head was pushed (edit of
+18:40 UTC, before the restoring commit at 19:10), and it carries the author's "removed as
+unreachable" claim, so the reviewer has to rebut it. The format has no `expectedReads`, so the
+file with the earlier statement is not listed.
+
+## 2026-11-22: pilot, one removed lock per reviewer, by model and effort
+
+Pilot only. No case file, prompt or score in the tree changes; nothing here is a README row.
+
+Question: the review run misses most lock-removal defects in `revisions.json`. Does giving one
+reviewer one removed lock, instead of the whole diff, find them, and at what model and effort?
+
+Setup, none of it in the tree: 4 single-site cases cut from heads where an audit found a defect
+behind a removed lock (#6055 finalize, #6059 aliases, #6059 link, #6076 flags), each telling the
+reviewer which removed lock to judge; a correctness prompt narrowed to concurrency; description
+as it read at the head. Correctness pillar, `--select`, judge Opus 5.5, 3 attempts per arm, same
+day, commit 955bfa7 (before the subagent change below).
+
+| Arm                                      | Caught   | Cost per site                 | Finding on #6087 |
+| ---------------------------------------- | -------- | ----------------------------- | ---------------- |
+| Sonnet 5.5, medium (the review's effort) | 4 of 12  | $0.23                         | 1 of 3           |
+| Sonnet 5.5, high                         | 8 of 12  | $0.42                         | 2 of 3           |
+| Sonnet 5.5, xhigh                        | 11 of 12 | $1.00 on Sonnet, $1.82 billed | 0 of 3           |
+| Opus 5.5, medium                         | 11 of 12 | $0.80                         | 3 of 3           |
+
+- Medium caught only the two #6059 sites. High added #6076 flags (2 of 3). No Sonnet arm below
+  xhigh caught #6055 finalize (0 of 6).
+- The xhigh arm is confounded: 8 of its 15 runs dispatched a built-in subagent on another model
+  (entry below). On the 7 positive runs that used only Sonnet it caught 6.
+- #6087 was labelled clean but is an accepted outcome change, so a finding there is not a false
+  alarm; the column is not a false-positive rate. The medium arm also ran 3 other clean sites, 9
+  runs, with no finding. The other arms did not run them.
+- Two earlier arms on whole heads, same day: a hand-written list of the other writers of each
+  locked row took the focused prompt from 1 of 12 to 8 of 12, but a script-generated list of the
+  same kind gave 1 of 12 and findings on clean heads in 2 of 9 runs. A mechanical writers list is
+  not worth building.
+
+What it shows: narrowing to one site helps at every setting, and the rest of the gap is reasoning
+depth. Sonnet at xhigh matches Opus at medium and costs more. This is pillar recall; the verifier
+was not run on these findings. Sample: 12 attempts per arm cannot resolve a difference of one or
+two catches.
+
 ## 2026-11-22: a pillar dispatches only the `explorer` subagent
 
 No cases change. Pillar runs before this change could dispatch Claude Code's built-in subagents
