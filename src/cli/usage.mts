@@ -22,7 +22,7 @@ code-reviewer outcomes digest [--day YYYY-MM-DD] [--out DIR]
 code-reviewer issues [--dry-run] [--since DAYS]
 code-reviewer doctor [--repo owner/name | --owner LOGIN] [--offline]
 code-reviewer models --harness opencode [--free] [--model ID]... [--probes N] [--jobs N] [--out DIR]
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--harness NAME [--reads-outside-checkout]] [--shell PREFIX]... [--effort LEVEL] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select [--select-all-pillars]] [--baseline DIR]
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--harness NAME [--reads-outside-checkout]] [--shell PREFIX]... [--effort LEVEL] [--rounds N] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select [--select-all-pillars]] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
 code-reviewer bench-context [--cases cases.json]... [--history history.json]... --out DIR [--case ID]...
@@ -105,6 +105,7 @@ code-reviewer bench-context [--cases cases.json]... [--history history.json]... 
   and the rows are not comparable with Claude rows. --loads-only needs Claude.
   bench --shell PREFIX (repeatable, Claude only, an experiment) adds read-only shell command prefixes such as "git log" to the pillar agent on top of what the pillar already has; real reviews do not grant them. A prefix is a command name and subcommand: empty or with shell syntax (; | & < > backtick $() is refused, as is --shell with another --harness. summary.json and summary.md record the prefixes, and the rows are not comparable with normal rows.
   bench --effort LEVEL (low, medium, high, xhigh; never max) runs the pillar agent at that reasoning effort on Claude or --harness; a review uses only low or medium, so a run at another level is labelled and its rows are not comparable with normal rows. medium is the default and records nothing.
+  bench --rounds N (1 to 3, an experiment) runs the pillar agent up to N times per case; each later round is told the findings so far and asked for others, and stops when a round adds none. A finding at a file and line already reported is dropped. The raw result records rounds, roundsRun and the findings each round added; usage is summed. A later round that fails keeps the earlier findings and records roundError. Anything but 1 to 3 fails before any work, as does --loads-only. summary.json and summary.md record the rounds, and the rows are not comparable with normal rows.
   bench-verifier records and prints the same by model for its verifier and checker runs. review
   shows cost and tokens by model for the whole review in report.json and report.md.
   bench-verifier runs only the verifier, one call per case

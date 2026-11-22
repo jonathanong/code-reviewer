@@ -303,6 +303,30 @@ and `summary.md` opens with an `Effort:` line saying its rows are not comparable
 `--score-only` reads the effort from the saved results. Only the pillar agent changes; the judge,
 selection and verifier keep their own effort.
 
+### Rounds for the pillar agent
+
+`--rounds N` (1 to 3) is an experiment flag: it runs the pillar agent up to N times per case, to
+test whether low recall comes from the agent stopping early. Each later round runs the same
+pillar step with one extra block appended to the prompt by the benchmark only: the findings so far
+(path, line, title, body, as data) and an instruction to look for problems not in that list, to
+return only new findings, and to return none if there are none. A round that adds no finding ends
+the run, and a later finding at a file and line already reported is dropped. `review` and `run`
+never do this. Anything but 1 to 3 fails before any work, naming the flag, as does `--loads-only`.
+The default, 1, writes exactly the normal output.
+
+```bash
+pnpm exec code-reviewer bench --cases benchmarks/review/cases.json \
+  --prompts skills/review/references/pillars --out "$TMPDIR/review-bench-rounds" \
+  --pillar correctness --rounds 2
+```
+
+The raw result holds the merged findings, `rounds` (requested), `roundsRun`, and `roundFindings`
+(what each round added); usage is the sum across rounds. A later round that fails keeps the earlier
+findings and records `roundError`. `summary.json` records `rounds`, and `summary.md` opens with
+"Rounds: pillar agent run up to N times per case; ...". Such rows are not comparable with normal
+rows. `--score-only` reads the rounds from the saved results and refuses a directory whose results
+differ.
+
 Results are written to `<out>/raw/<pillar>/<case>.json`, then `summary.json` and `summary.md`. Use
 `--score-only` to re-score existing raw results, and `--case <id>` to run one case. Runs cost
 money and take minutes per case, so run only the pillars whose prompts changed.

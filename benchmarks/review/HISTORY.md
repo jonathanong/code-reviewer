@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `bench --rounds` added (no run)
+
+Adds `bench --rounds N` (1 to 3), a benchmark-only experiment. Round two and three append one block
+to the pillar prompt ("Earlier rounds ... the findings below ... Look for problems that are NOT in
+that list. Return only new findings, and return none if there are none.", then the findings so far
+as JSON). The block is a benchmark-only prompt addition: a review never builds it, and the pillar
+prompt, schemas and review argv are unchanged. Rows run with `--rounds` above 1 are not comparable
+with any earlier row. No run was made; no score changed, and the default (1) is unchanged.
+
 ## 2026-11-21: `correctness` on the mined cases at `high` effort: Sonnet and Codex Terra
 
 Same session and cases as the three entries below; three attempts per arm, file and line matching,

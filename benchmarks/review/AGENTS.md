@@ -6,6 +6,7 @@
 - Measure a pillar on another harness with `bench ... --harness codex --model <id> --reads-outside-checkout`; only the pillar agent moves, and its rows are not comparable with Claude rows.
 - `bench ... --shell "git grep"` (repeatable, Claude only) grants the pillar agent extra shell prefixes as an experiment; rows are labeled and not comparable with normal rows.
 - Test whether recall is an effort problem with `bench ... --effort high` (low, medium, high or xhigh; never `max`); its rows are not comparable with normal rows.
+- `bench ... --rounds 2` (1 to 3) runs the pillar agent again with its earlier findings as extra prompt text, as an experiment; rows are labeled and not comparable with normal rows.
 - Record which skills any pillar loads on a case with `bench ... --pillar <p> --case <id> --loads-only` (add `--select`
   for the forced arm); it skips the judge and reports no recall.
 - Run the skill-selection eval with `pnpm exec code-reviewer bench-selection --cases <file>... --out <dir>`; it costs one Haiku call per attempt, and a case tagged `expectedSkills` is in it.

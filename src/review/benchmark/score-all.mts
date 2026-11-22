@@ -16,6 +16,7 @@ import { savedEffort } from './effort-option.mts'
 import type { BenchEffort } from '../../harness/types.mts'
 import { otherHarness } from './harness-option.mts'
 import { grantedShell, shellNote } from './shell-option.mts'
+import { grantedRounds, roundsNote } from './rounds.mts'
 import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
@@ -45,6 +46,8 @@ export type Options = {
   shell?: string[]
   /** Set by `--effort` when not the default `medium`. */
   effort?: BenchEffort
+  /** Set by `--rounds` above 1: how many times the pillar agent ran per case. */
+  rounds?: number
 }
 
 const armLabel = (report: ReadonlyArray<{ arm: ArmSummary }>) =>
@@ -73,6 +76,7 @@ export function scoreAll(
     const harnesses: Array<string | null> = []
     const shells: Array<string[] | null> = []
     const efforts: Array<BenchEffort | null> = []
+    const roundCounts: Array<number | null> = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
       runUsages.push(result.usage)
@@ -82,6 +86,7 @@ export function scoreAll(
       if (!('error' in result) || result.error !== 'not run') {
         shells.push(result.shell)
         efforts.push(result.effort)
+        roundCounts.push(result.rounds)
       }
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
@@ -104,6 +109,8 @@ export function scoreAll(
     if (granted !== undefined) summary.shell = granted
     const level = savedEffort(options.effort, efforts)
     if (level !== undefined) summary.effort = level
+    const rounded = grantedRounds(options.rounds, roundCounts)
+    if (rounded !== undefined) summary.rounds = rounded
     if (control !== undefined)
       summary.baseline = compareBaseline(
         skillCases,
@@ -140,6 +147,7 @@ export function scoreAll(
   const ranOn = [...new Set(report.map((entry) => entry.summary.harness).filter(Boolean))]
   const shelled = report.find((entry) => entry.summary.shell !== undefined)?.summary.shell
   const levels = [...new Set(report.map((entry) => entry.summary.effort).filter(Boolean))]
+  const rounded = report.find((entry) => entry.summary.rounds !== undefined)?.summary.rounds
   const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
   const markdown = [
     ...(ranOn.length === 0
@@ -153,6 +161,7 @@ export function scoreAll(
       : [
           `Effort: pillar agent at ${levels.join(', ')}; not what a review uses, so these rows are not comparable with normal rows.`,
         ]),
+    ...(rounded === undefined ? [] : [roundsNote(rounded)]),
     `Matching: ${matching}.${armed ? ` Excerpts: ${armLabel(report)}.` : ''}`,
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',

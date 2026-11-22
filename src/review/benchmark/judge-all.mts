@@ -39,6 +39,11 @@ export type RawResult =
       shell?: string[]
       /** The `--effort` the pillar agent ran at; absent for the default. */
       effort?: BenchEffort
+      /** `bench --rounds`: rounds requested, run, and findings each added; absent for a normal run. */
+      rounds?: number
+      roundsRun?: number
+      roundFindings?: number[]
+      roundError?: string
     }
   | {
       error: string
@@ -47,6 +52,7 @@ export type RawResult =
       harness?: string
       shell?: string[]
       effort?: BenchEffort
+      rounds?: number
       plugins?: string[]
       selected?: string[]
       usage?: Usage
