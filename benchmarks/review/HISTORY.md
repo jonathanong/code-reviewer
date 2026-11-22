@@ -2,6 +2,43 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `correctness` on the mined cases: Sonnet with shell, and a judged re-score
+
+Follows the entry "Codex Sol, Codex Terra, Claude Sonnet" (same session, same cases).
+
+Sonnet with `--shell` for `git log`, `git show`, `git blame`, `git diff`, `git grep` and `rg`, three
+attempts, file and line matching, $7.28:
+
+| Arm                  | Expected locations matched | Findings in all | Negative runs with a finding | Turns per run |
+| -------------------- | -------------------------- | --------------- | ---------------------------- | ------------- |
+| Sonnet with shell    | 3 of 24                    | 13              | 8 of 36                      | about 6       |
+| Sonnet (entry below) | 4 of 24                    | 18              | 11 of 36                     | about 10      |
+
+The shell grant changed nothing: all three matches are `vouchington-tooling-154`, as before.
+Whether Sonnet ran any shell command is not recorded. So Codex's shell does not explain the gap.
+
+One attempt of each arm of the entry below, re-scored with `--score-only --judge opus` (claims
+read, not only locations):
+
+| Arm                   | Location matches | Judged matches |
+| --------------------- | ---------------- | -------------- |
+| Codex `gpt-6.2-sol`   | 5 of 8           | 3 of 8         |
+| Codex `gpt-6.1-terra` | 4 of 8           | 3 of 8         |
+| Claude Sonnet         | 1 of 8           | 1 of 8         |
+
+Some Codex location matches state a different problem (`vouchington-tooling-187` and
+`vouchington-3419` for Sol). Both Codex models still describe `vouchington-2936` correctly, which
+Sonnet does not report. One attempt per arm, so direction only. The Codex and Sonnet rows differ in
+harness as well as model.
+
+## 2026-11-21: `bench --shell` experiment flag (no run)
+
+Adds `--shell PREFIX` (repeatable), which grants the pillar agent on Claude extra read-only shell
+prefixes for one run, to test whether Codex's higher `correctness` recall on the mined cases comes
+from its shell rather than the model. No prompt, schema or case changed and no run was made. Rows
+from a run with the flag record the prefixes and are not comparable with any earlier row: the
+pillar has tools a review does not grant. Rows without the flag are unchanged.
+
 ## 2026-11-21: `correctness` on the mined cases: Codex Sol, Codex Terra, Claude Sonnet
 
 Three attempts per arm (separate one-attempt runs), same session, commit 8099ad8, `cases.json` (18

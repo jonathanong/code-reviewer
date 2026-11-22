@@ -57,6 +57,8 @@ export type PillarRun = {
   harness?: string
   /** Lets a non-Claude harness read outside the checkout, as its adapter requires. */
   readsOutsideCheckout?: boolean
+  /** Command prefixes `bench --shell` grants on top of the pillar's own; Claude only. */
+  shell?: readonly string[]
   /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
   settings?: object
 }
@@ -81,7 +83,7 @@ export async function runPillar(
       model: run.model,
       maxTurns: run.maxTurns,
       schema: PILLAR_OUTPUT_SCHEMA,
-      can: pillarCapabilities(run.pillar, run.skills !== false),
+      can: pillarCapabilities(run.pillar, run.skills !== false, [], run.shell),
       cwd: dir,
       effort: EFFORT.full,
       transcript: true,

@@ -10,7 +10,13 @@ import type { Usage } from './usage.mts'
 import { expectedSkillsFor, scoreSkills, type SkillCase } from './skills-score.mts'
 
 export type CaseResult =
-  | { error: string; usage: Usage | null; excerpts: ExcerptsMode | null; harness: string | null }
+  | {
+      error: string
+      usage: Usage | null
+      excerpts: ExcerptsMode | null
+      harness: string | null
+      shell: string[] | null
+    }
   | {
       score: CaseScore
       skillCase: SkillCase | null
@@ -22,6 +28,8 @@ export type CaseResult =
       skillLoads: number | null
       /** The harness recorded on the result; null for Claude and for results saved before it was recorded. */
       harness: string | null
+      /** The shell prefixes recorded on the result; null for a normal run. */
+      shell: string[] | null
     }
 
 /**
@@ -36,19 +44,21 @@ export function readCaseResult(
   deps: Pick<BenchDeps, 'exists' | 'readFile'>,
 ): CaseResult {
   const path = join(out, 'raw', pillar, `${item.id}.json`)
-  if (!deps.exists(path)) return { error: 'not run', usage: null, excerpts: null, harness: null }
+  if (!deps.exists(path))
+    return { error: 'not run', usage: null, excerpts: null, harness: null, shell: null }
   const raw = JSON.parse(deps.readFile(path)) as RawResult
   // Results saved before usage was recorded have none: missing, not zero.
   const usage = raw.usage ?? null
   const excerpts = raw.excerpts ?? null
   const harness = raw.harness ?? null
-  if ('error' in raw) return { error: raw.error, usage, excerpts, harness }
+  const shell = raw.shell ?? null
+  if ('error' in raw) return { error: raw.error, usage, excerpts, harness, shell }
   let assignment: ReturnType<typeof currentAssignment>
   if (judge !== undefined) {
     const expected = item.expected.filter((entry) => entry.pillar === pillar)
     assignment = currentAssignment(raw, expected, judge)
     // Unjudged cases stay out of judged metrics rather than falling back to locations.
-    if (assignment === undefined) return { error: 'not judged', usage, excerpts, harness }
+    if (assignment === undefined) return { error: 'not judged', usage, excerpts, harness, shell }
   }
   const score = scoreCase(item, pillar, raw.findings, assignment)
   const wanted = expectedSkillsFor(item, pillar)
@@ -63,5 +73,6 @@ export function readCaseResult(
     excerpts,
     skillLoads: raw.skills?.length ?? null,
     harness,
+    shell,
   }
 }

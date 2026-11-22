@@ -13,6 +13,7 @@ import { renderModelReports, summarizeByModel, type ModelReport } from './model-
 import { armOf, renderArms, summarizeLoads, type ArmSummary } from './excerpts-arm.mts'
 import { scoreLoads } from './loads-only.mts'
 import { otherHarness } from './harness-option.mts'
+import { grantedShell, shellNote } from './shell-option.mts'
 import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
@@ -38,6 +39,8 @@ export type Options = {
   harness?: string
   /** Set by `--reads-outside-checkout`. */
   readsOutsideCheckout?: boolean
+  /** Set by `--shell`: command prefixes granted to the pillar agent on top of its own. */
+  shell?: string[]
 }
 
 const armLabel = (report: ReadonlyArray<{ arm: ArmSummary }>) =>
@@ -64,11 +67,13 @@ export function scoreAll(
     const arms: Array<ExcerptsMode | null> = []
     const loads: Array<number | null> = []
     const harnesses: Array<string | null> = []
+    const shells: Array<string[] | null> = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
       runUsages.push(result.usage)
       arms.push(result.excerpts)
       harnesses.push(result.harness)
+      shells.push(result.shell)
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
@@ -86,6 +91,8 @@ export function scoreAll(
       otherHarness(options.harness) ??
       harnesses.map((name) => otherHarness(name ?? undefined)).find(Boolean)
     if (ranOn !== undefined) summary.harness = ranOn
+    const granted = grantedShell(options.shell, shells)
+    if (granted !== undefined) summary.shell = granted
     if (control !== undefined)
       summary.baseline = compareBaseline(
         skillCases,
@@ -120,6 +127,7 @@ export function scoreAll(
     report.map((entry) => ({ pillar: entry.summary.pillar, baseline: entry.summary.baseline })),
   )
   const ranOn = [...new Set(report.map((entry) => entry.summary.harness).filter(Boolean))]
+  const shelled = report.find((entry) => entry.summary.shell !== undefined)?.summary.shell
   const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
   const markdown = [
     ...(ranOn.length === 0
@@ -127,6 +135,7 @@ export function scoreAll(
       : [
           `Harness: pillar agent on ${ranOn.join(', ')}, model ${options.model}; the judge, selection and verifier stay on Claude. Cost and loaded skills are not reported, so these rows are not comparable with Claude rows.`,
         ]),
+    ...(shelled === undefined ? [] : [shellNote(shelled)]),
     `Matching: ${matching}.${armed ? ` Excerpts: ${armLabel(report)}.` : ''}`,
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',

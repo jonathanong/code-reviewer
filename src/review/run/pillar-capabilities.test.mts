@@ -80,4 +80,21 @@ describe('pillarCapabilities', () => {
       allowedTools: `${PILLAR_TOOLS_NO_SKILLS},Bash(git log:*),Bash(git show:*)`,
     })
   })
+
+  it('adds a bench shell grant to a pillar with no shell, as Bash prefixes', () => {
+    expect(toolFlags('correctness', true, [], ['git grep', 'rg'])).toEqual({
+      tools: `${PILLAR_TOOLS},Bash`,
+      allowedTools: `${PILLAR_TOOLS},Bash(git grep:*),Bash(rg:*)`,
+    })
+  })
+
+  it('adds a bench shell grant to the history prefixes without repeating one', () => {
+    expect(toolFlags('history', true, [], ['git log', 'git blame']).allowedTools).toBe(
+      `${PILLAR_TOOLS},Bash(git log:*),Bash(git show:*),Bash(git blame:*)`,
+    )
+  })
+
+  it('grants no shell by default', () => {
+    expect(pillarCapabilities('correctness').shell).toEqual([])
+  })
 })
