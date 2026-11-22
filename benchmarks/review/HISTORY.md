@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: correction to "unwanted selections, re-scored": 6 of 30 is a floor
+
+No model call. The entry below says selection is close to precise on the fixtures. The re-score
+does not show that: the labels are conservative, so 6 of 30 is the least over-selection there can
+be. From the same raw results, the ten labelled cases average 5.2 skills per attempt: 1.1 expected,
+0.2 labelled unwanted and 3.9 neither. The two TypeScript skills on TypeScript diffs are the largest
+share of the 3.9 (44 of the 117 selections); the other 73 are skills nobody has judged for these
+diffs. The 9.1 over all 22
+cases is higher because the mined pull requests select more, and those are not labelled.
+
 ## 2026-11-21: unwanted selections, re-scored from the control run of the wording attempt
 
 No model call: the control run of the entry "abandoned: stricter wording in the selection prompt"
