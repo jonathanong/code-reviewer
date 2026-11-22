@@ -8,7 +8,8 @@ Newest first. Every measured run and every change to what is measured gets an en
 verifier now settles every fact a finding or a reassurance rests on (a foreign key's delete action,
 whether runs of a job can overlap, who calls a function, whether a failed job runs again) by
 opening the file that states it. A pillar's "unverified", "assumed" or "likely" is confirmed,
-corrected or dropped, and a reassurance whose fact is false becomes a finding. A fact the tree
+corrected or dropped. When a fact behind a reassurance is false, the verifier works out the
+consequence and reports a finding only if the change is then wrong. A fact the tree
 cannot settle is a question, as before.
 
 Why: on the first real reviews, the misses sat under facts a reviewer had assumed. One "safe" call
