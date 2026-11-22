@@ -2,6 +2,52 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: lock rule moves to `jong-skills:postgres-locking`; `lock-scope-*` re-measured
+
+Run from the branch of this change (parent `b496a56`): reviewer Sonnet 5.5, selection Haiku, judge
+Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`), same
+session. Rule plugins: `jong-skills` a361cf367bd2 and `no-mistakes-rules` 0.109.113. Reviewer cost
+$1.66 (selection and judge calls not counted).
+
+| Case                          | With skills                | Without                    |
+| ----------------------------- | -------------------------- | -------------------------- |
+| `lock-scope-ancestor-locks`   | 3 of 3                     | 3 of 3                     |
+| `lock-scope-race-response`    | 3 of 3                     | 0 of 3                     |
+| `lock-scope-written-row-only` | 0 of 3 runs with a finding | 0 of 3 runs with a finding |
+
+What changed:
+
+- `jong-skills` moved its lock rules out of `postgres-schema-design` into a new skill,
+  `postgres-locking`, and changed them: a lock is now allowed for an exact quantity or a rare
+  legal or irreversible invariant. `pillars/correctness.md` and step 6 of `verifier.md` still named
+  the old skill and restated the old rule ("a transaction locks only the rows it writes"). Both now
+  name `jong-skills:postgres-locking` and state no rule of their own.
+- `lock-scope-ancestor-locks` and `lock-scope-race-response` gain `expectedSkills` and
+  `expectedRules` for `jong-skills:postgres-locking`, and their reasons and claims quote that skill
+  instead of the removed sentence. `vouchington-2936` expects `jong-skills:postgres-locking`
+  instead of `postgres-schema-design`. The cases that list `postgres-schema-design` as unwanted
+  list `postgres-locking` too.
+- `no-mistakes-rules:queue-rules` reworded two rules the cases quote. `rules-skills-sweep-until-empty`
+  now quotes "SHOULD NOT run a scheduled sweep over a growing source without a finite bound on
+  rows, batches, or time." and `rules-content-only-unordered-pick` quotes "SHOULD NOT select work
+  without a stable order when fairness or repeatability matters." The second rule went from MUST
+  NOT to SHOULD NOT; the case still expects `high` and was not re-measured.
+
+What the run showed: `lock-scope-race-response` is no longer a ceiling case. With the rule out of
+the prompt, every control run closes the race with `FOR SHARE` on the parent row, which the case
+rejects; with the skill, every run folds the check into the insert. `lock-scope-ancestor-locks`
+stays a ceiling case. All 9 with-skills runs loaded `jong-skills:postgres-locking`.
+
+Also run, no pillar model: `bench-context` on `synthetic.json` (12 tagged cases: 9 skills quoted in
+full, 1 in part, 3 not quoted; rule text 10 present, 3 cut, 0 missing; 5,933 of 6,000 characters
+from one skill; 5 of 5 history checks) and `bench-selection` on `synthetic.json` (Haiku, 12 cases,
+3 attempts, $0.07: expected skill named in 36 of 36; 3 of 30 attempts named an unwanted skill,
+`jong-skills:agent-workflow` each time). The three cut rules are in prose skills
+(`postgres-locking` twice, `bounded-iteration`), which the shared context never quotes.
+
+Not comparable with earlier entries: the two `lock-scope-*` positives, and any `correctness` or
+`bench-verifier` row on a case with a lock. The mined cases were not re-run.
+
 ## 2026-11-21: `correctness` on the mined cases: skills forced in, and an Opus pilot
 
 Same session and cases as the entries below, run from the branch that became commit `15c58c7`, with the

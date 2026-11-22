@@ -275,7 +275,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["jong-skills:postgres-schema-design"]
+    "expectedSkills": ["jong-skills:postgres-locking"]
   },
   {
     "id": "vouchington-4154",
