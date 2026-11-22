@@ -8,7 +8,7 @@ No scores change. New case file and one new case field.
 
 What changed:
 
-- `benchmarks/review/revisions.json`: 49 cases from 31 pull requests in `vouchington/vouchington`
+- `benchmarks/review/revisions.json`: 49 cases from 28 pull requests in `vouchington/vouchington`
   that went through several review rounds. 39 positives with 64 expected findings and 10
   negatives. One case per reviewed head. The expected findings are what a final review (an Opus
   audit, checked by hand before it was sent) reported at that head; a negative is a head that
@@ -16,6 +16,11 @@ What changed:
   when the head was reviewed; each case's `reason` gives its count.
 - A mined case may carry `"body"`, the description as it read at `headSha`. Without it the
   snapshot still fetches the current description. Every `revisions.json` case has one.
+  Each is the edit of the description that was current when the head was reviewed, taken from
+  the pull request's edit history. The pilots below ran with these cut at 4000 characters, as
+  `review` cuts a description; the stored ones are whole.
+- No case has `expectedSkills`: the expected findings are defects a review found, not rule
+  violations, and none was checked against the rule skills. `bench-selection` skips them.
 
 Why `body`: the first pilot on a concurrency subset (11 heads the review run had missed, 14
 expected findings, plus 4 clean heads; correctness pillar, Sonnet 5.5, judge Opus, `--select`, one
