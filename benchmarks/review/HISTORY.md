@@ -2,6 +2,53 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: `revisions.json` added; a mined case may record its description
+
+No scores change. New case file and one new case field.
+
+What changed:
+
+- `benchmarks/review/revisions.json`: 49 cases from 28 pull requests in `vouchington/vouchington`
+  that went through several review rounds. 39 positives with 64 expected findings and 10
+  negatives. One case per reviewed head. The expected findings are what a final review (an Opus
+  audit, checked by hand before it was sent) reported at that head; a negative is a head that
+  review approved with no defect. The full review run (Sonnet pillars) had reported 28 of the 64
+  when the head was reviewed; each case's `reason` gives its count.
+- A mined case may carry `"body"`, the description as it read at `headSha`. Without it the
+  snapshot still fetches the current description. Every `revisions.json` case has one.
+  Each is the edit of the description that was current when the head was reviewed, taken from
+  the pull request's edit history. The pilots below ran with these cut at 4000 characters, as
+  `review` cuts a description; the stored ones are whole.
+- No case has `expectedSkills`: the expected findings are defects a review found, not rule
+  violations, and none was checked against the rule skills. `bench-selection` skips them.
+
+Why `body`: the first pilot on a concurrency subset (11 heads the review run had missed, 14
+expected findings, plus 4 clean heads; correctness pillar, Sonnet 5.5, judge Opus, `--select`, one
+attempt) matched 8 of 14. The descriptions had been rewritten after review to describe the fix
+that a later head made, so the reviewer was reading the answer. With the description as it read at
+the head, the same run matched 1 of 14, which is what the review run had done. Mined cases in
+`cases.json` have the same exposure when a description was edited after the reviewed head; they
+were not re-checked.
+
+Pilots on that subset, all one attempt, none of them a measurement:
+
+| Description given      | Current prompt                     | Prompt narrowed to concurrency |
+| ---------------------- | ---------------------------------- | ------------------------------ |
+| As edited after review | 8 of 14                            | 7 of 14                        |
+| As it read at the head | 1 of 14                            | 1 of 14                        |
+| Withheld               | 2 of 14, 1 finding on a clean head | 2 of 14, 3 on clean heads      |
+
+A second pilot, 3 attempts per arm on three of the missed heads (4 expected findings) and one
+clean head, appended a hand-written list of the other statements that write the affected rows to
+each positive's description: current prompt 1 of 12, narrowed prompt 8 of 12, no finding on the
+clean head in either arm. The list also stated schema facts (a unique index, a trigger), and the
+clean head got no list, so this is an upper bound for a generated list, not a result for one. The
+narrowed prompt is not in the tree.
+
+What the pilots showed: these cases reproduce the review run's misses. Rewording the prompt alone
+and withholding the description alone do not find them. The pillar runs took 8 to 21 turns and
+one loaded no skill.
+
 ## 2026-11-22: lock rule moves to `jong-skills:postgres-locking`; `lock-scope-*` re-measured
 
 Run from the branch of this change (parent `b496a56`): reviewer Sonnet 5.5, selection Haiku, judge
