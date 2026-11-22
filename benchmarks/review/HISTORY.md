@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: verifier prompt gains a block for an unposted earlier review, no run
+
+No run. The review's verifier prompt adds one section, "Your earlier review of this pull request,
+never posted", only when `prepare` carried an unposted review of an earlier head forward (a
+light push re-review of a same-change rebase or base-merge push). No other prompt, schema,
+case or grader changes, and the section is absent from every other run.
+
+No benchmark row is non-comparable: the pillar and verifier benchmarks build their own prompts
+and never carry an earlier review, so none exercises the new section. It is not measured.
+
 ## 2026-11-22: raw results record reads and searches; cases may name `expectedReads`
 
 Each raw result gains `reads` (files the pillar agent opened, relative to the snapshot when inside it) and

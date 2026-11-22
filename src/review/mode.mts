@@ -36,6 +36,15 @@ export function activeAuthorReview(input: PlanInput): AuthorReview | undefined {
 const full = (effort: Effort): ModeChoice => ({ mode: 'full', effort, sinceSha: null })
 const light = (sinceSha: string | null): ModeChoice => ({ mode: 'light', effort: 'low', sinceSha })
 
+function pushLight(kind: LightPush, reasons: string[]): ModeChoice {
+  reasons.push(
+    kind === 'base-merges-only'
+      ? 'The push since the earlier review only merges the base: light review of the merge resolutions and of what came in.'
+      : "History was rewritten since the earlier review but the pull request's own change is the same: light review of the range-diff and of what came in.",
+  )
+  return { mode: 'light', effort: 'low', sinceSha: null, push: kind }
+}
+
 function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): ModeChoice {
   const { context, since } = input
   const escalate = (reason: string) => {
@@ -43,14 +52,7 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
     return full('high')
   }
   if (context.truncated) return escalate('The review conversation is longer than the digest reads:')
-  if (input.push !== undefined) {
-    reasons.push(
-      input.push.kind === 'base-merges-only'
-        ? 'The push since the earlier review only merges the base: light review of the merge resolutions and of what came in.'
-        : "History was rewritten since the earlier review but the pull request's own change is the same: light review of the range-diff and of what came in.",
-    )
-    return { mode: 'light', effort: 'low', sinceSha: null, push: input.push.kind }
-  }
+  if (input.push !== undefined) return pushLight(input.push.kind, reasons)
   if (since === undefined || since.status !== 'ahead') {
     return escalate('The reviewed SHA is not an ancestor of the head:')
   }
@@ -100,6 +102,8 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   }
   if (requested !== undefined && requested !== 'low') return full(requested)
   if (context.reviewedSha !== null) return followUp(input, context.reviewedSha, reasons)
+  // No posted review, but `prepare` measured the push against this machine's unposted one.
+  if (input.push !== undefined) return pushLight(input.push.kind, reasons)
   if (requested === 'low') {
     reasons.push('No earlier review: high effort.')
     return full('high')

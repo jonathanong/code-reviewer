@@ -9,17 +9,18 @@ page documents the rules so a human can audit or change them (change the code wi
 `plan.json` carries a `mode` (`skip`, `light`, `full`) and an `effort` (`low`, `medium`, `high`).
 Light is `low`; full is `high`, or the requested `medium`. The first rule that matches wins:
 
-| Order | Rule                                                                                                  | Mode            | Effort       |
-| ----- | ----------------------------------------------------------------------------------------------------- | --------------- | ------------ |
-| 1     | `--effort medium` or `--effort high` is given                                                         | full            | as requested |
-| 2     | Dependabot author and every changed file is a lockfile (and no `--effort`)                            | skip            | low          |
-| 3     | An earlier review exists and none of the escalations below applies                                    | light follow-up | low          |
-| 3a    | An earlier review exists and the push since it is `base-merges-only` or `rebase-same-change`          | light push      | low          |
-| 4     | An earlier review exists and an escalation applies, or `--effort low` is given with no earlier review | full            | high         |
-| 5     | First review by Dependabot (any files)                                                                | light           | low          |
-| 6     | First review that changes only docs and/or tests                                                      | light           | low          |
-| 7     | First review of at most 100 reviewable lines (`SMALL_PR_LINES`) with no security trigger path         | light           | low          |
-| 8     | Everything else                                                                                       | full            | high         |
+| Order | Rule                                                                                                                                 | Mode            | Effort       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------- | ------------ |
+| 1     | `--effort medium` or `--effort high` is given                                                                                        | full            | as requested |
+| 2     | Dependabot author and every changed file is a lockfile (and no `--effort`)                                                           | skip            | low          |
+| 3     | An earlier review exists and none of the escalations below applies                                                                   | light follow-up | low          |
+| 3a    | An earlier review exists and the push since it is `base-merges-only` or `rebase-same-change`                                         | light push      | low          |
+| 3b    | No posted review, but this machine finished one it never posted, and the push since it is `base-merges-only` or `rebase-same-change` | light push      | low          |
+| 4     | An earlier review exists and an escalation applies, or `--effort low` is given with no earlier review                                | full            | high         |
+| 5     | First review by Dependabot (any files)                                                                                               | light           | low          |
+| 6     | First review that changes only docs and/or tests                                                                                     | light           | low          |
+| 7     | First review of at most 100 reviewable lines (`SMALL_PR_LINES`) with no security trigger path                                        | light           | low          |
+| 8     | Everything else                                                                                                                      | full            | high         |
 
 - Dependabot is the author login `dependabot[bot]` or `app/dependabot`, or `dependabot` for a bot
   account. Lockfiles are matched by basename: `pnpm-lock.yaml`, `package-lock.json`,

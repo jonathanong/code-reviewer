@@ -31,6 +31,19 @@ skipped. A resolution that drops one side's change, keeps both when one replaced
 edits a generated file by hand is a finding. Anything git cannot answer is `substantive`, with the
 reason recorded in `problems`. `report.md` shows the kind and the merges checked.
 
+The same light review runs when this machine finished a review of an earlier head and never
+posted it (the head moved before the post, or a person held it), and the pull request has no
+posted review. The baseline is the newest tracker row in state `failed` or `reviewed` for the
+pull request whose run directory holds `complete.json` naming that head, a parsable `review.json`
+and `verifier.json`; a run that stopped partway, hit the cost ceiling or was interrupted never
+has `complete.json`. `prepare` classifies the push from that head with the same git inspection and
+adopts the baseline only for `base-merges-only` or `rebase-same-change`; `substantive`, or
+anything git cannot answer, is a full review. `earlier.json` then carries the earlier findings
+and questions: they follow the pillars' findings as verifier input, with the evidence that still
+holds, and the verifier re-places each against the new head, merges it or drops it with a
+reason. Nothing was posted, so the output is the whole review of the new head. No GitHub call is
+added, and a posted review always takes precedence.
+
 ## Dead bases and carried commits
 
 A stacked pull request often outlives its base: the parent merges, its branch is deleted, and the

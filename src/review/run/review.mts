@@ -22,6 +22,8 @@ import { webReferences } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
 import { runReviewVerifier } from './verify-run.mts'
 import { verifierContext } from './verifier-context.mts'
+import { withEarlier } from './earlier-run.mts'
+import { clearComplete, markComplete } from '../complete-file.mts'
 
 import {
   loadRulePlugins,
@@ -60,6 +62,7 @@ async function review(
   const web = webReferences(steps.references, steps.webReferences)
   const analysis = steps.analysis && (await buildAnalysis(await steps.analysis()))
   const prompts = pillarTexts(steps)
+  const harness = { tree, settings, models, exec: steps.exec }
   const extra = steps.pillars?.extra ?? []
   const extraPillars = extra.map((entry) => entry.name)
   const results = await runPillars({
@@ -82,7 +85,8 @@ async function review(
   throwIfStopped(models.watch)
   requireAnswer(results, out)
   const pillarSkips = [...plan.skipped, ...failedSkips(results)]
-  const findings = flattenFindings(results)
+  const at = { out, tree, headSha, exec: steps.exec }
+  const { findings, block } = await withEarlier({ ...at, findings: flattenFindings(results) })
   const output = await runReviewVerifier(
     {
       verifierPrompt: read(join(steps.references, 'verifier.md')),
@@ -92,10 +96,11 @@ async function review(
       skipped: pillarSkips,
       ...verifierContext(out),
       ...verifierContextFields(context),
+      ...(block === undefined ? {} : { earlier: block }),
       analysis,
       ...(web === undefined ? {} : { web }),
     },
-    { model: plan.verifierModel, extraPillars, mode, tree, settings, models, exec: steps.exec },
+    { model: plan.verifierModel, extraPillars, mode, ...harness },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
   const second = await applyApprovalCheck({
@@ -103,14 +108,11 @@ async function review(
     mode,
     model: plan.verifierModel,
     extraPillars,
-    tree,
-    settings,
-    models,
-    exec: steps.exec,
+    ...harness,
     input: approvalCheckInput(steps.references, run, output, results, findings, pillarSkips),
   })
   throwIfStopped(models.watch)
-  const { questions } = second
+  const { questions, skipped } = second
   const { evidence, findings: verified } = await applyEvidence({
     setup: () => steps.evidence(),
     readPrompt: () => read(join(steps.references, 'evidence.md')),
@@ -120,13 +122,9 @@ async function review(
     findings: second.findings,
     headSha,
     mode,
-    tree,
-    settings,
-    models,
-    exec: steps.exec,
+    ...harness,
   })
   throwIfStopped(models.watch)
-  const { skipped } = second
   const posted = second.summary === undefined ? output : { ...output, summary: second.summary }
   const dependencies = reviewDependencies(run, output.dependencies)
   const input = buildReviewInput({
@@ -139,6 +137,7 @@ async function review(
     dependencies,
   })
   writeJson(join(out, 'review.json'), input)
+  markComplete(out, headSha)
   const outcome = await steps.preview(input, headSha)
   writeFileSync(join(out, 'preview.md'), renderPreview(outcome))
   const data: ReportData = buildReport({
@@ -189,6 +188,7 @@ export async function runReview(steps: ReviewSteps, options: ReviewOptions): Pro
   try {
     // Inside the guard: a claim must be dropped when the output directory cannot be made.
     mkdirSync(options.out, { recursive: true })
+    clearComplete(options.out)
     return await review(steps, options, closed)
   } catch (error) {
     return { ok: false, summary: await failureSummary(error, closed.value ? undefined : steps) }

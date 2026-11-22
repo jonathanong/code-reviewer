@@ -431,6 +431,7 @@ describe('runLoopCommand', () => {
     })
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
+      earlier: expect.any(Function),
       pillars: { disabled: [], extra: [] },
       values: DEFAULT_PLAN_VALUES,
     })
@@ -449,6 +450,7 @@ describe('runLoopCommand', () => {
     await runLoopCommand('prepare', { out: '/o' }, target, deps)
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
+      earlier: expect.any(Function),
       pillars: { disabled: ['history'], extra: [] },
       values: DEFAULT_PLAN_VALUES,
     })
@@ -470,6 +472,7 @@ describe('runLoopCommand', () => {
     )
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
+      earlier: expect.any(Function),
       requested: 'high',
       tree: '/t',
       clones: '/c',
@@ -483,11 +486,8 @@ describe('runLoopCommand', () => {
 
   it('resolves threads for the target repository', async () => {
     const { deps, run, runner } = fakeDeps()
-    await expect(
-      runLoopCommand('resolve', { thread: ['T1', 'T2'] }, target, deps),
-    ).resolves.toEqual({
-      resolved: ['T1', 'T2'],
-    })
+    const resolved = runLoopCommand('resolve', { thread: ['T1', 'T2'] }, target, deps)
+    await expect(resolved).resolves.toEqual({ resolved: ['T1', 'T2'] })
     expect(runner).toHaveBeenCalledWith('acme', 'widgets')
     expect(resolveThreads).toHaveBeenLastCalledWith(run, ['T1', 'T2'])
     await runLoopCommand('resolve', {}, target, deps)

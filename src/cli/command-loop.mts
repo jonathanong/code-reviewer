@@ -20,6 +20,7 @@ import {
   type PullTarget,
 } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
+import { earlierFor } from './prepare-earlier.mts'
 import { modelTable } from '../review/models.mts'
 import { analysisSummary } from '../review/analysis-settings.mts'
 import { resolveModels } from '../review/models-settings.mts'
@@ -159,6 +160,7 @@ export async function prepareCommand(
   const requested = effort(values.effort)
   return prepareReview(deps.createPrepareIo(target()), {
     out: values.out,
+    earlier: earlierFor(deps, target, values.out),
     ...(await prepareSettingsFor(deps, target().repo)),
     ...(requested === undefined ? {} : { requested }),
     ...(values.tree === undefined ? {} : { tree: values.tree }),

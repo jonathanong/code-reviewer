@@ -22,7 +22,8 @@ import {
   type CarriedSummary,
   type PushSummary,
 } from './prepare-summary.mts'
-import { preparePush } from './push-prepare.mts'
+import { prepareEarlier } from './earlier-prepare.mts'
+import type { EarlierFile } from './earlier-file.mts'
 import { clearPrepared } from './prepare-clear.mts'
 import { prepareStack } from './stack-prepare.mts'
 import { writeDiffDir, type Write } from './write-diff.mts'
@@ -39,6 +40,8 @@ export type PrepareOptions = {
   pillars?: PillarSettings
   /** Configured paths, authors and size threshold. */
   values?: PlanValues
+  /** Finds this machine's whole, unposted review of an earlier head; used only when git proves the push light. */
+  earlier?: (headSha: string) => EarlierFile | undefined
 }
 
 export type PrepareSummary = {
@@ -108,13 +111,14 @@ export async function prepareReview(
       written.push(...writeDiff(options.out, 'since', sincePatch, write))
     }
   }
-  const push = await preparePush(io, options.out, write, {
+  const { push, earlier } = await prepareEarlier(io, options.out, write, {
     ...(options.tree === undefined ? {} : { tree: options.tree }),
-    reviewedSha: context.reviewedSha,
+    context,
     headSha,
-    baseSha: context.baseSha,
+    earlier: options.earlier,
   })
   if (push !== undefined) written.push(...pushFiles(push))
+  if (earlier !== undefined) written.push('earlier.json')
   const subjects =
     options.tree === undefined ? undefined : await io.history(options.tree, context.baseSha, paths)
   const history = subjects === undefined ? undefined : historyHits(subjects)
