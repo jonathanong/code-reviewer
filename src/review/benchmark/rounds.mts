@@ -38,18 +38,24 @@ export function roundsCount(values: { rounds?: string; 'loads-only'?: boolean })
   return Number(values.rounds)
 }
 
-/** The rounds to label a run with: the flag, else what the saved results record. */
+/**
+ * The rounds to label a run with, from what the saved results record. Results that differ from
+ * each other, or from the flag, are not one arm, so they are refused.
+ */
 export function grantedRounds(
   flag: number | undefined,
   saved: ReadonlyArray<number | null>,
 ): number | undefined {
-  if (flag !== undefined) return flag
   const counts = new Set(saved.map((rounds) => rounds ?? 1))
   if (counts.size > 1)
     throw new Error(
       'bench: the saved results were run with different --rounds, so they are not one arm. Score them in separate --out directories.',
     )
-  const found = saved[0] ?? 1
+  const found = saved[0] ?? flag ?? 1
+  if (flag !== undefined && saved.length > 0 && found !== flag)
+    throw new Error(
+      `bench --rounds ${flag}: the saved results were run with --rounds ${found}. Score them without the flag.`,
+    )
   return found > 1 ? found : undefined
 }
 

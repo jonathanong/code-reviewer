@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { runReviewBenchCli, type PillarBenchDeps } from './cli.mts'
-import { ROUNDS_BLOCK } from './rounds.mts'
+import { grantedRounds, ROUNDS_BLOCK } from './rounds.mts'
 
 const CASES = [
   {
@@ -126,6 +126,12 @@ describe('runReviewBenchCli --rounds', () => {
     await runReviewBenchCli([...PILLAR, '--rounds', '2'], h.deps)
     await runReviewBenchCli([...PILLAR, '--score-only'], h.deps)
     expect(h.files.get('out/summary.md')).toContain('Rounds: pillar agent run up to 2 times')
+    await expect(
+      runReviewBenchCli([...PILLAR, '--score-only', '--rounds', '3'], h.deps),
+    ).rejects.toThrow('the saved results were run with --rounds 2')
+    expect(grantedRounds(2, [])).toBe(2)
+    expect(grantedRounds(1, [null])).toBeUndefined()
+    expect(grantedRounds(undefined, [])).toBeUndefined()
     const two = h.raw()
     h.files.set('cases.json', JSON.stringify([CASES[0], { ...CASES[0], id: 'p2' }]))
     h.files.set('out/raw/correctness/p2.json', JSON.stringify({ ...two, rounds: undefined }))
