@@ -12,6 +12,21 @@ export const EXPLORER_AGENTS = {
 } as const
 
 /**
+ * Claude Code's own agent types. `Agent` offers them beside `explorer`, and they run on the
+ * user's default model, so a run that names a model could spend on another. A deny rule per type
+ * is the only way to confine `Agent` to `explorer`: an `Agent(explorer)` allow rule grants it
+ * without denying the rest. `fork` is denied too: it would hand a run's context to a second agent.
+ */
+export const BUILT_IN_AGENTS = [
+  'general-purpose',
+  'Explore',
+  'Plan',
+  'statusline-setup',
+  'claude-code-guide',
+  'fork',
+] as const
+
+/**
  * The `--tools` and `--allowedTools` of a run. `--tools` offers a tool; `--allowedTools` grants it,
  * and `dontAsk` denies everything not granted: Bash only for the listed prefixes, WebFetch only
  * for the listed hosts, each once. Claude Code always permits a few read-only commands (`echo`,
@@ -75,7 +90,14 @@ export function claudeArgs(request: HarnessRun): string[] {
     String(request.maxTurns),
     ...isolationArgs(request.settings, request.can.shell.length > 0 || request.can.web.length > 0),
     ...(request.effort === undefined ? [] : ['--effort', request.effort]),
-    ...(request.can.explorer ? ['--agents', JSON.stringify(EXPLORER_AGENTS)] : []),
+    ...(request.can.explorer
+      ? [
+          '--agents',
+          JSON.stringify(EXPLORER_AGENTS),
+          '--disallowedTools',
+          BUILT_IN_AGENTS.map((type) => `Agent(${type})`).join(','),
+        ]
+      : []),
     ...(addDirs.length === 0 ? [] : ['--add-dir', ...addDirs]),
   ]
 }

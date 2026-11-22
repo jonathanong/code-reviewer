@@ -159,7 +159,8 @@ Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medi
 `--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
 `jong-skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
 every plugin false. Pillars may use the `Agent` tool to dispatch an `explorer` subagent (Haiku,
-read-only tools). Verifier runs get the same isolation flags and settings; checker runs get the same,
+read-only tools), and only that one: `--disallowedTools` denies Claude Code's built-in agent types,
+which would run on the user's default model. Verifier runs get the same isolation flags and settings; checker runs get the same,
 and judge runs get them with every plugin false.
 The history pillar has a shell, so it passes `--setting-sources ''` and loads no settings file.
 
