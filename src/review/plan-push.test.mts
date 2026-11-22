@@ -106,4 +106,25 @@ describe('planReview for a push that only merges the base or rewrites history', 
     expect(result).toMatchObject({ mode: 'light', sinceSha: OLD })
     expect('push' in result).toBe(false)
   })
+
+  it('is light with no posted review at all when prepare measured the push against an unposted one', () => {
+    const result = plan({
+      push: { kind: 'rebase-same-change', resolvedPaths: [] },
+      context: context({ reviewedSha: null }),
+    })
+    expect(result).toMatchObject({ mode: 'light', sinceSha: null, push: 'rebase-same-change' })
+    expect(result.reasons[0]).toContain('History was rewritten')
+    const none = plan({ context: context({ reviewedSha: null }) })
+    expect(none.mode).toBe('full')
+    expect(none.push).toBeUndefined()
+  })
+
+  it('still honors --effort over an unposted review', () => {
+    const result = plan({
+      push: merges,
+      context: context({ reviewedSha: null }),
+      requested: 'high',
+    })
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
+  })
 })

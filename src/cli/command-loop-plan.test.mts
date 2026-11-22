@@ -35,6 +35,7 @@ describe('prepare plan values', () => {
     await runLoopCommand('prepare', { out: '/o' }, target, deps)
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
+      earlier: expect.any(Function),
       pillars: { disabled: [], extra: [] },
       values: {
         securityPaths: ['infra/**'],
