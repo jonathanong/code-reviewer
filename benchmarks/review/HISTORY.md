@@ -12,7 +12,7 @@ $1.57 (selection and judge calls not counted).
 | Case                          | With skills                | Without                    |
 | ----------------------------- | -------------------------- | -------------------------- |
 | `lock-scope-ancestor-locks`   | 3 of 3                     | 3 of 3                     |
-| `lock-scope-race-response`    | 3 of 3                     | 0 of 3                     |
+| `lock-scope-race-response`    | 3 of 3                     | 3 of 3                     |
 | `lock-scope-written-row-only` | 0 of 3 runs with a finding | 0 of 3 runs with a finding |
 
 What changed:
@@ -20,11 +20,14 @@ What changed:
 - `jong-skills` moved its lock rules out of `postgres-schema-design` into a new skill,
   `postgres-locking`, and changed them: a lock is now allowed for an exact quantity or a rare
   legal or irreversible invariant. `pillars/correctness.md` and step 6 of `verifier.md` still named
-  the old skill and restated the old rule ("a transaction locks only the rows it writes"). Both now
-  name `jong-skills:postgres-locking` and state no rule of their own.
+  the old skill and restated the old rule ("a transaction locks only the rows it writes"), and
+  `pillars/rules.md` restated it too. The first two now name `jong-skills:postgres-locking`, the
+  third points at the correctness pillar, and none states a rule of its own. "Never recommend a
+  wider lock" became "never recommend a lock it does not allow", because the skill allows some.
 - `lock-scope-ancestor-locks` and `lock-scope-race-response` gain `expectedSkills` and
   `expectedRules` for `jong-skills:postgres-locking`, and their reasons and claims quote that skill
-  instead of the removed sentence. `vouchington-2936` expects `jong-skills:postgres-locking`
+  instead of the removed sentence. The `lock-scope-race-response` claim no longer says a
+  conditional insert closes the race; at Read Committed it narrows it. `vouchington-2936` expects `jong-skills:postgres-locking`
   instead of `postgres-schema-design`. The cases that list `postgres-schema-design` as unwanted
   list `postgres-locking` too.
 - `no-mistakes-rules:queue-rules` reworded two rules the cases quote. `rules-skills-sweep-until-empty`
@@ -33,10 +36,23 @@ What changed:
   without a stable order when fairness or repeatability matters." The second rule went from MUST
   NOT to SHOULD NOT; the case still expects `high` and was not re-measured.
 
-What the run showed: `lock-scope-race-response` is no longer a ceiling case. With the rule out of
-the prompt, every control run closes the race with `FOR SHARE` on the parent row, which the case
-rejects; with the skill, every run folds the check into the insert. `lock-scope-ancestor-locks`
-stays a ceiling case. All 9 with-skills runs loaded `jong-skills:postgres-locking`.
+What the run showed: both positives are still ceiling cases. The control cannot load the skill,
+but the prompt's "never recommend a lock it does not allow" is enough for it to fold the check into
+the insert and name no lock. All 9 with-skills runs loaded `jong-skills:postgres-locking`.
+
+A first run of the same cases, made before the wording above was settled ($1.66, same models and
+attempts), is superseded: the prompt then said only "never recommend a wider lock", and every
+control run on `lock-scope-race-response` closed the race with `FOR SHARE` on the parent row
+(0 of 3; with skills 3 of 3). The claim wording also changed between the two runs.
+
+Abandoned in the same session, one attempt per arm, so a pilot and not a measurement ($0.5): a
+fixture pair for a removed lock. The positive folded away three pre-locks, one of which a
+transaction in an untouched file depended on; the negative removed only redundant ones. The
+control, the prompt of this change, and a prompt with an added procedure for removed locks (say
+what it serialized, search the tree for every other writer, check each) all caught the positive
+and stayed silent on the negative. The fixtures and the procedure were not kept: the control
+catches the case, so nothing shows the procedure helps. The real miss that prompted it was an
+implicit foreign-key lock inside a large change, which no installed skill states.
 
 Also run, no pillar model: `bench-context` on `synthetic.json` (12 tagged cases: 9 skills quoted in
 full, 1 in part, 3 not quoted; rule text 10 present, 3 cut, 0 missing; 5,933 of 6,000 characters

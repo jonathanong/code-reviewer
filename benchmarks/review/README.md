@@ -49,7 +49,7 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 | Rules positives (10 cases)                           | 30 of 30      | 3 of 30      |
 | `rules-repo-orchestration-package` (repository rule) | 3 of 3        | 3 of 3       |
 | `links-declared-api-payload` (correctness)           | 3 of 3        | 0 of 3       |
-| `lock-scope-*` positives (correctness, 2)            | 6 of 6        | 3 of 6       |
+| `lock-scope-*` positives (correctness, 2)            | 6 of 6        | 6 of 6       |
 | Expected skill selected and loaded (10 tagged cases) | 30 of 30 runs | n/a          |
 | Negatives with a high or blocking finding (7, rules) | 0 of 21 runs  | 0 of 21 runs |
 | Negatives with a high or blocking finding (7, corr.) | 0 of 21 runs  | 0 of 21 runs |
@@ -57,9 +57,8 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 - The control's three catches are one each on `rules-content-only-unordered-pick`,
   `rules-manifest-only-duplicate-utility` and `rules-test-only-per-item`.
 - The `lock-scope-*` row is from the 2026-11-22 run (`jong-skills` a361cf367bd2,
-  `no-mistakes-rules` 0.109.113), not the 2026-11-16 one. `lock-scope-ancestor-locks` is a ceiling
-  case (3 of 3 in both arms); the control misses `lock-scope-race-response` 3 of 3, closing the
-  race with a lock on the parent row.
+  `no-mistakes-rules` 0.109.113), not the 2026-11-16 one. Both positives are ceiling cases: the
+  correctness prompt tells the reviewer not to recommend a lock the locking skill does not allow.
 - `rules-repo-orchestration-package` puts its rule in the fixture repository's own `AGENTS.md`.
   `--no-rules` removes the shared skills, not that file, so its control is not a null hypothesis;
   the case checks that a repository rule is applied and cited.
