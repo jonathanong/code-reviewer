@@ -2,6 +2,29 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `correctness` on the mined cases: skills forced in, and an Opus pilot
+
+Same session and cases as the entries below, run from the branch that became commit `15c58c7`, with the
+pillar prompts of that commit (before the verifier entry above, which does not touch pillar runs). The control is the
+single-round Sonnet arm of the "two rounds" entry.
+
+| Arm                   | Attempts | Judge  | Judged matches | Location matches | Findings in all | Negative runs with a finding | Turns per run | Cost   |
+| --------------------- | -------- | ------ | -------------- | ---------------- | --------------- | ---------------------------- | ------------- | ------ |
+| Sonnet, skills forced | 3        | Opus   | 2 of 24        | 8 of 24          | 30              | 18 of 36                     | 31.5          | $12.95 |
+| Sonnet, normal        | 3        | Opus   | 3 of 24        | 4 of 24          | 18              | 11 of 36                     | 9.2           | $8.49  |
+| Opus, normal (pilot)  | 1        | Sonnet | 1 of 8         | 2 of 8           | 18              | 9 of 12                      | 17.9          | $11.67 |
+
+- Forced arm: `--select --select-all-pillars`, so every selected rule skill is loaded into the
+  pillar run instead of offered. Judged matches did not rise, turns tripled, and more negative
+  runs carry a finding. On `vouchington-3419` the loaded `typescript-rules` skill states the
+  exact defect and Sonnet did not report it in any attempt.
+- Opus arm: `--model opus`, one attempt, so it is a pilot and not a measurement. One of its 18
+  runs was answered by a different model (`claude-fable-5-2`), as the usage record shows. It found
+  no more expected problems than Sonnet at about four times the cost per run.
+- With the effort, shell and rounds entries below, none of more effort, more passes, loaded rules
+  or a stronger Claude model raised judged matches on these cases. What is left untested is the
+  pillar prompt itself.
+
 ## 2026-11-21: verifier prompt gains a "settle the facts" step (no run)
 
 `skills/review/references/verifier.md` has a new step 3, and the later steps move down by one. The
