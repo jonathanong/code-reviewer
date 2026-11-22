@@ -17,6 +17,13 @@
 - Do not run the whole of `cases.json` unless the owner asks: large cases cost dollars per run.
 - Give every positive case `expectedSkills` with full `plugin:skill` names when a shared rule
   skill states its rule. Do not write a case for a rule no skill states.
+- `unwantedSkills` (full `plugin:skill` names, scored only by `bench-selection`) lists skills the selection
+  should leave out. Label conservatively and only on fixture cases: list a skill only when nothing in the
+  changed files falls under what its installed description governs. Process skills (`agent-workflow`,
+  `pr-description`, `git-commit-checklist`, `planning`, `technical-writing`), `documentation` when no doc or
+  comment changes, and a domain skill for a technology absent from the diff (SQL, React, workflows, ...)
+  qualify. When in doubt leave it out, never list an expected skill, and note in `HISTORY.md` which plugin
+  versions the labels were read against. Re-read the descriptions when those plugins update.
 - A fixture case quotes the rule sentence from the installed skill in its `reason`. A mined case
   keeps its original claim and only names the skill: its tag is a judgment about which skill covers
   a real finding, so say in `HISTORY.md` when a tag is a loose fit.

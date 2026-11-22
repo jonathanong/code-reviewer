@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { ReviewError, SEVERITIES, type Severity } from '../finding.mts'
 import { PILLARS, type Pillar } from '../pillar-name.mts'
 import { parseExpectedRules, type ExpectedRule } from './expected-rules.mts'
+import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 
 export type ExpectedFinding = {
@@ -23,6 +24,8 @@ type CaseBase = {
   expectedSkills?: ExpectedSkill[]
   /** Rule lines the expected finding depends on; `bench-context` checks the excerpts hold them. */
   expectedRules?: ExpectedRule[]
+  /** Skills `bench-selection` should not select for this case; none of them is expected. */
+  unwantedSkills?: string[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -151,11 +154,13 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
     fail(where, 'a negative case has no expected findings')
   const expectedSkills = skillNames(raw.expectedSkills, where)
   const expectedRules = parseExpectedRules(raw.expectedRules, expectedSkills, where)
+  const unwantedSkills = parseUnwantedSkills(raw.unwantedSkills, expectedSkills, where)
   return {
     id: str(raw, 'id', where),
     ...origin,
     ...(expectedSkills === undefined ? {} : { expectedSkills }),
     ...(expectedRules === undefined ? {} : { expectedRules }),
+    ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',
