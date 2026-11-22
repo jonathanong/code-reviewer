@@ -19,13 +19,9 @@ const CASES = [
 ]
 const ARGS = ['--cases', 'cases.json', '--out', 'out', '--prompts', 'prompts']
 const PILLAR = [...ARGS, '--pillar', 'correctness']
-const found = (path: string, line: number, title = `T ${path}:${line}`) => ({
-  severity: 'high',
-  title,
-  body: 'B',
-  path,
-  line,
-})
+function found(path: string, line: number, title = `T ${path}:${line}`) {
+  return { severity: 'high', title, body: 'B', path, line }
+}
 
 /** `replies` is one entry per model call: findings to return, or an Error to throw. */
 function setup(replies: Array<Array<Record<string, unknown>> | Error>) {
@@ -59,7 +55,9 @@ function setup(replies: Array<Array<Record<string, unknown>> | Error>) {
     },
     stageRules: async () => 'digest',
   }
-  const raw = () => JSON.parse(files.get('out/raw/correctness/p1.json') as string)
+  function raw() {
+    return JSON.parse(files.get('out/raw/correctness/p1.json') as string)
+  }
   return { deps, files, calls, raw }
 }
 

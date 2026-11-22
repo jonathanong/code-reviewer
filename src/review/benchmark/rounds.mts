@@ -72,10 +72,10 @@ export function roundsPrompt(found: readonly Finding[]): string {
   return `${ROUNDS_BLOCK}\n\n\`\`\`json\n${data}\n\`\`\``
 }
 
-const spot = (finding: Finding) =>
-  finding.path === undefined || finding.line === undefined
-    ? undefined
-    : `${finding.path}:${finding.line}`
+function spot(finding: Finding): string | undefined {
+  if (finding.path === undefined || finding.line === undefined) return undefined
+  return `${finding.path}:${finding.line}`
+}
 
 /**
  * Runs the pillar up to `rounds` times, each later round told what the earlier ones reported.
