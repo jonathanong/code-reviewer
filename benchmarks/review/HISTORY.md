@@ -2,6 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: raw results record reads and searches; cases may name `expectedReads`
+
+Each raw result gains `reads` (files the pillar agent opened, relative to the snapshot when inside it) and
+`searches` (its Grep and Glob patterns), read from the Claude stream like `skills`; a case may declare
+`expectedReads`, and the summary reports how many were opened apart from recall. No prompt, case, grader or
+score changes and no run was made, so every earlier row stays comparable; results saved before this have
+no reads and report `n/a`.
+
 ## 2026-11-22: lock rule moves to `jong-skills:postgres-locking`; `lock-scope-*` re-measured
 
 Run from the branch of this change (parent `b496a56`): reviewer Sonnet 5.5, selection Haiku, judge

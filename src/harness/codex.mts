@@ -38,7 +38,7 @@ export const harness: Harness = {
       const usage = codexUsage(stdout, request.model)
       const answer = readCodexAnswer(stdout, last, request.label, usage)
       const structured = dropOptionalNulls(answer, request.schema)
-      return { structured, skills: [], usage, reportedUsage: usage }
+      return { structured, skills: [], reads: [], searches: [], usage, reportedUsage: usage }
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

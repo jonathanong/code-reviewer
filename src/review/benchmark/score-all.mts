@@ -7,6 +7,7 @@ import type { BenchDeps } from './cli.mts'
 import { assertBaseline, baselineNotes, compareBaseline, readBaseline } from './baseline.mts'
 import { readCaseResult } from './case-result.mts'
 import { renderSummaryTable, summarizePillar, type CaseScore } from './score.mts'
+import { readNotes, type ReadCase } from './reads-score.mts'
 import { skillNotes, type SkillCase } from './skills-score.mts'
 import type { Usage } from './usage.mts'
 import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
@@ -67,6 +68,7 @@ export function scoreAll(
   const report = pillars.map((pillar) => {
     const scores: CaseScore[] = []
     const skillCases: SkillCase[] = []
+    const readCases: ReadCase[] = []
     const errors: string[] = []
     const tools: boolean[] = []
     const usages: Usage[] = []
@@ -99,6 +101,7 @@ export function scoreAll(
       loads.push(result.skillLoads)
       tools.push(result.skillTool)
       if (result.skillCase !== null) skillCases.push(result.skillCase)
+      if (result.readCase !== null) readCases.push(result.readCase)
     }
     const available = tools.length === 0 ? null : tools.some(Boolean)
     const summary = summarizePillar(pillar, scores, skillCases, available, usages)
@@ -127,7 +130,7 @@ export function scoreAll(
       models.push(summarizeByModel(pillar, armName(true), controlUsages))
     }
     const arm: ArmSummary = { excerpts: armOf(arms), skillLoads: summarizeLoads(loads) }
-    return { summary, scores, skillCases, errors, models, arm }
+    return { summary, scores, skillCases, readCases, errors, models, arm }
   })
   // Only an `--excerpts` run records its arm, so a plain run's summary.json and table are unchanged.
   const armed = report.some((entry) => entry.arm.excerpts !== null)
@@ -142,6 +145,9 @@ export function scoreAll(
       skills: entry.summary.skills,
       skillCases: entry.skillCases,
     })),
+  )
+  const readLines = readNotes(
+    report.map((entry) => ({ pillar: entry.summary.pillar, readCases: entry.readCases })),
   )
   const controlNotes = baselineNotes(
     report.map((entry) => ({ pillar: entry.summary.pillar, baseline: entry.summary.baseline })),
@@ -173,6 +179,7 @@ export function scoreAll(
     renderModelReports(report.flatMap((entry) => entry.models)),
     // A harness that reports no loaded skills would list every expected skill as missing.
     ...(notes.length > 0 && ranOn.length === 0 ? ['Skills:', notes.join('\n')] : []),
+    ...(readLines.length > 0 ? ['Reads:', readLines.join('\n')] : []),
     ...(controlNotes.length > 0 ? ['Control:', controlNotes.join('\n')] : []),
     ...(errorLines.length > 0 ? ['Errors and skipped runs:', errorLines.join('\n')] : []),
   ].join('\n\n')
