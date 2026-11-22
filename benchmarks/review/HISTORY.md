@@ -2,6 +2,37 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `correctness` on the mined cases: Codex Sol, Codex Terra, Claude Sonnet
+
+Three attempts per arm (separate one-attempt runs), same session, commit 8099ad8, `cases.json` (18
+cases for this pillar: 6 positives expecting 8 findings, 12 negatives), no judge (file and line
+matching). The Sol and Claude first attempts are the pilot in the entry below. Codex arms use
+`--harness codex` and report no cost.
+
+| Arm                   | Expected findings matched | Findings in all | Negative runs with a finding | Input tokens per run | Cost  |
+| --------------------- | ------------------------- | --------------- | ---------------------------- | -------------------- | ----- |
+| Codex `gpt-6.2-sol`   | 15 of 24                  | 178             | 36 of 36                     | about 863,000        | -     |
+| Codex `gpt-6.1-terra` | 12 of 24                  | 67              | 23 of 35                     | about 194,000        | -     |
+| Claude Sonnet         | 4 of 24                   | 18              | 11 of 36                     | about 136,000        | $8.49 |
+
+Matched per positive case, of three attempts times the findings it expects:
+
+| Case                          | Sol    | Terra  | Sonnet |
+| ----------------------------- | ------ | ------ | ------ |
+| `vouchington-tooling-154` (2) | 6 of 6 | 3 of 6 | 3 of 6 |
+| `vouchington-tooling-187` (2) | 3 of 6 | 3 of 6 | 1 of 6 |
+| `vouchington-3419` (1)        | 3 of 3 | 3 of 3 | 0 of 3 |
+| `vouchington-2936` (1)        | 3 of 3 | 3 of 3 | 0 of 3 |
+| `vouchington-4154` (1)        | 0 of 3 | 0 of 3 | 0 of 3 |
+| `vouchington-clients-130` (1) | 0 of 3 | 0 of 3 | 0 of 3 |
+
+Both Codex models found two regressions in every attempt that Sonnet never found. Terra matched
+nearly as many as Sol with about a third of the findings and a quarter of the tokens. One Terra run
+failed (`vouchington-clients-103`, `max_output_tokens`), so it has 35 negative runs. A negative is
+a pull request that was not reverted, not one known to be clean, so the unmatched findings of every
+arm are unjudged. Sonnet loaded no skill in any run. Not measured: other pillars, and what the
+verifier keeps of each arm's findings.
+
 ## 2026-11-21: pilot, `correctness` on the mined cases, Codex against Claude
 
 One attempt per arm, so a pilot and not a measurement. Commit 8099ad8, `cases.json` (18 cases for
