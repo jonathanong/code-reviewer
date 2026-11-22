@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: a pillar dispatches only the `explorer` subagent
+
+No cases change. Pillar runs before this change could dispatch Claude Code's built-in subagents
+(`general-purpose` and the rest) through the `Agent` tool, and those run on the user's default
+model, not the one the run named. The xhigh pilot (`--model sonnet --effort xhigh`) showed it: 8 of
+15 pillar runs spent $1.1 to $2.1 each on another model, read from `usage.byModel`. Costs of
+earlier runs whose `byModel` names a model other than the one requested are not comparable with
+later runs; the cost is the figure this changes, and the findings may differ too. The run now
+passes `--disallowedTools` with `Agent(<type>)` for each built-in type.
+
 ## 2026-11-22: `revisions.json` added; a mined case may record its description
 
 No scores change. New case file and one new case field.
