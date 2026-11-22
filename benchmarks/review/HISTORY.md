@@ -60,8 +60,10 @@ reported in any run; each run completed (about 8.5 turns, 84,000 input tokens, 3
 tokens). Not run: the negatives, three attempts, any other free model. Rows from another harness
 are not comparable with Claude rows.
 
-What this shows: no free OpenCode model is usable for the `correctness` pillar on a whole pull
-request today. Not tested: a narrower job, such as one target per prompt.
+What this shows: `beam-free`, the only model that returned valid output reliably on the screen,
+found nothing on these six pull requests in one attempt. The other ten never ran on a mined pull
+request; they failed the screen, where throttling may explain the timeouts. Not tested: a
+narrower job, such as one target per prompt, and the screen at one job at a time.
 
 ## 2026-11-22: verifier prompt gains a block for an unposted earlier review, no run
 
