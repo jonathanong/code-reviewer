@@ -102,8 +102,11 @@ describe('runReview approval check', () => {
   it('merges what the check confirms and derives the verdict again', async () => {
     const high = { pillar: 'blast-radius', severity: 'high', title: 'Unread file', body: 'b' }
     const { outcome, json, report } = await run({
-      check: () => result({ summary: 'Found one.', findings: [high] }),
+      check: () =>
+        result({ summary: 'Found one.', reviewSummary: 'One high finding.', findings: [high] }),
     })
+    expect(json('review.json').summary).toBe('One high finding.')
+    expect(report()).toContain('One high finding.')
     expect(outcome.summary).toMatchObject({
       verdict: 'Comment',
       approvalCheck: 'changed',
@@ -111,6 +114,15 @@ describe('runReview approval check', () => {
     })
     expect(json('review.json').findings).toEqual([high])
     expect(report()).toContain('the verdict changed from Approve to Comment')
+  })
+
+  it('keeps the verifier summary when the check adds a finding but rewrites nothing', async () => {
+    const high = { pillar: 'blast-radius', severity: 'high', title: 'Unread file', body: 'b' }
+    const { json, report } = await run({
+      check: () => result({ summary: 'Found one.', findings: [high] }),
+    })
+    expect(json('review.json').summary).toBe('s')
+    expect(report()).toContain('### Verdict: Comment\n\ns\n')
   })
 
   it('completes as a Comment, with the check listed as skipped, when the pass fails', async () => {

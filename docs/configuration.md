@@ -178,7 +178,9 @@ A full review whose verdict would be Approve gets one more independent run first
 model, whose only job is to refute the approval: it looks for an unreviewed changed file, a risky
 area no pillar covered, a claim in the description nothing checked, or a finding the verifier
 dropped that is real. What it confirms is added to the findings and questions, and the verdict is
-derived again in code, so it can turn an Approve into a Comment or Request Changes but never the
+derived again in code. When it adds any, it also rewrites the review's summary so the summary is
+true with them, and that text is posted in place of the verifier's; a check that adds something
+but returns no rewritten summary leaves the verifier's. The verdict can turn from Approve into a Comment or Request Changes, never the
 reverse. It costs one more verifier-class run, only on reviews that would approve. It is skipped
 for light reviews and for any verdict other than Approve. If the run fails or returns something
 unreadable it is not retried: the review completes, `approval-check` is listed under `skipped`

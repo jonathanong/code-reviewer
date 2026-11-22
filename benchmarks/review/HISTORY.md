@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: approval-check prompt and schema gain `reviewSummary`
+
+No run made. `skills/review/references/refute.md` and `APPROVAL_CHECK_SCHEMA` changed: the check
+returns `reviewSummary`, the review's summary rewritten, whenever it adds a finding or question.
+
+No benchmark row is affected. No benchmark exercises the approval check: `bench` scores pillars
+and the verifier alone (`src/review/benchmark` does not call `applyApprovalCheck`), and
+`benchmarks/review/README.md` has no approval-check row.
+
 ## 2026-11-22: `revisions.json` added; a mined case may record its description
 
 No scores change. New case file and one new case field.
