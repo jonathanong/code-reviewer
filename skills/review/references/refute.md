@@ -49,6 +49,7 @@ verdict again from the result; do not choose a verdict.
 ```json
 {
   "summary": "One sentence: what you checked and why the approval stands, or what you found.",
+  "reviewSummary": "Only when you add a finding or question: the review's summary, true with them.",
   "findings": [
     {
       "pillar": "correctness",
@@ -71,3 +72,8 @@ verdict again from the result; do not choose a verdict.
 
 `pillar` is the pillar that owns the finding, as in the verifier's output. `questions` may be
 omitted. `summary` is a note for the report; it is not posted.
+
+When you add any finding or question, also return `reviewSummary`: the verifier's summary rewritten
+so it is true with your additions, in the voice and length the [verifier](verifier.md) sets for its
+`summary`. The caller posts it in place of the verifier's, which would otherwise describe a review
+without them. When you add nothing, omit `reviewSummary`.

@@ -13,13 +13,14 @@ import { stackLines } from './stack-prompt.mts'
 import type { PillarResult } from './types.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
 
-/** Output of the check: the verifier's finding shape without `sources`, plus a one-line note. */
+/** Output of the check: the verifier's finding shape without `sources`, plus a one-line note and, when it adds anything, the review's summary rewritten to match. */
 export const APPROVAL_CHECK_SCHEMA = {
   type: 'object',
   required: ['summary', 'findings'],
   additionalProperties: false,
   properties: {
     summary: { type: 'string' },
+    reviewSummary: { type: 'string' },
     questions: QUESTIONS_SCHEMA,
     findings: {
       type: 'array',
