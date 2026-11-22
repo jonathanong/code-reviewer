@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: verifier prompt gains a "settle the facts" step (no run)
+
+`skills/review/references/verifier.md` has a new step 3, and the later steps move down by one. The
+verifier now settles every fact a finding or a reassurance rests on (a foreign key's delete action,
+whether runs of a job can overlap, who calls a function, whether a failed job runs again) by
+opening the file that states it. A pillar's "unverified", "assumed" or "likely" is confirmed,
+corrected or dropped, and a reassurance whose fact is false becomes a finding. A fact the tree
+cannot settle is a question, as before.
+
+Why: on the first real reviews, the misses sat under facts a reviewer had assumed. One "safe" call
+relied on a cleanup job running one at a time, and its lane allowed four. Another relied on every
+foreign key on a purge path being restrictive, and 23 of 152 cascade.
+
+No run was made. Every `bench-verifier` row measured before this entry is not comparable with one
+measured after it. Expect more turns and tokens per verifier run.
+
 ## 2026-11-21: `correctness` on the mined cases with two rounds: no gain for Sonnet
 
 Same session and cases as the entries below. Sonnet at the default effort, `--rounds 2`, three
