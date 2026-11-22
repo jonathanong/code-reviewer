@@ -4,8 +4,12 @@ Newest first. Every measured run and every change to what is measured gets an en
 
 ## 2026-11-22: `vouchington-6174-b1a495fe` added to `revisions.json`
 
-Case added, not yet measured; no run, no score changes. It adds a row, so totals over
+Case added, not yet measured; no score changes. It adds a row, so totals over
 `revisions.json` are not comparable with earlier entries (50 cases, 29 pull requests).
+
+One pilot attempt checked the grader and the baseline: correctness pillar, Sonnet at medium effort,
+judge Opus, commit `a12d167`. It raised no finding in 6 turns for $0.16 (0 of 1). One attempt is
+not a rate.
 
 Source: `vouchington/vouchington` pull request 6174 (the soft-deleted-user purge), base
 `1dbac5c467f0d919bc0ab97d1e192e690d76d49d`, head `b1a495fe4a4280ade451df8d06760fc3287c5f50`. The
@@ -20,8 +24,8 @@ the removal is wrong for that reason (the purge can delete a user with a refund 
 when the review accepts the removal, is silent, or objects only to something else. The expected
 claim carries the pass and fail text for the judge; the reviewer never sees it.
 
-Unlike the other cases here, it was not cut from the Opus audit: it records a known miss of a
-human-led review. `body` is the description edit current when the head was pushed (edit of
+Unlike the other cases here, it was not cut from the Opus audit: it records a known miss of the
+review pilot, where the orchestrating session made the wrong claim itself. `body` is the description edit current when the head was pushed (edit of
 18:40 UTC, before the restoring commit at 19:10), and it carries the author's "removed as
 unreachable" claim, so the reviewer has to rebut it. The format has no `expectedReads`, so the
 file with the earlier statement is not listed.
