@@ -14,6 +14,7 @@ const CASES = [
     kind: 'positive',
     reason: '',
     expected: [{ pillar: 'rules', severity: 'high', path: 'a.ts', lines: null, claim: 'c' }],
+    expectedSkills: ['p:s'],
   },
 ]
 const BASE = ['--cases', 'cases.json', '--out', 'out', '--prompts', 'prompts']
@@ -71,6 +72,7 @@ describe('runReviewBenchCli --harness', () => {
     expect(markdown).toContain('| not reported | not reported |')
     expect(markdown).toContain('| 1 | - | - |')
     expect(markdown).not.toContain('$0')
+    expect(markdown).not.toContain('missing p:s')
     expect(String(stdout.mock.calls.at(-1)?.[0])).toContain('Harness: pillar agent on codex')
   })
 
@@ -88,6 +90,7 @@ describe('runReviewBenchCli --harness', () => {
     await runReviewBenchCli([...WITH_RULES, '--harness', 'claude'], h.deps)
     expect(h.calls[0]?.[0]).toBe('claude')
     expect(h.files.get('out/summary.md')).not.toContain('Harness:')
+    expect(h.files.get('out/summary.md')).toContain('missing p:s')
     const saved = JSON.parse(h.files.get('out/summary.json') as string)
     expect(saved[0].summary).not.toHaveProperty('harness')
     expect(h.files.get('out/raw/rules/p1.json')).not.toContain('harness')

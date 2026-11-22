@@ -134,7 +134,8 @@ export function scoreAll(
     ...renderArms(report.map((entry) => ({ pillar: entry.summary.pillar, arm: entry.arm }))),
     'Tokens by model (each figure is total / per run; Runs is using the model of covered of expected):',
     renderModelReports(report.flatMap((entry) => entry.models)),
-    ...(notes.length > 0 ? ['Skills:', notes.join('\n')] : []),
+    // A harness that reports no loaded skills would list every expected skill as missing.
+    ...(notes.length > 0 && ranOn.length === 0 ? ['Skills:', notes.join('\n')] : []),
     ...(controlNotes.length > 0 ? ['Control:', controlNotes.join('\n')] : []),
     ...(errorLines.length > 0 ? ['Errors and skipped runs:', errorLines.join('\n')] : []),
   ].join('\n\n')

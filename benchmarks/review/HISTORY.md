@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `correctness` and `blast-radius` on Codex, three attempts
+
+Commit 9aa3268 plus the `--harness` flag. Pillar agent `gpt-6.2-sol` on Codex (`codex-cli`
+0.171.0), `medium` effort, no judge (file and line matching), `synthetic.json`, three separate runs
+of one attempt. Codex reports no cost and no loaded skills, and has no Skill tool.
+
+| Pillar       | Positives found | False alarms on negatives | Input tokens per run (cached) |
+| ------------ | --------------- | ------------------------- | ----------------------------- |
+| correctness  | 9 of 9          | 0 of 21                   | about 165,000 (136,000)       |
+| blast-radius | 3 of 3          | 0 of 21                   | about 173,000 (147,000)       |
+
+Same result as Claude Sonnet on these cases today (12 of 12, no false alarms), so the cases are at
+the ceiling for both and do not rank the two. It shows the Codex adapter completes real pillar runs
+and returns findings the scorer accepts. `rules` was not run: it depends on loaded skills.
+
 ## 2026-11-21: `bench --harness` runs the pillar agent on another harness (no run)
 
 `bench` gained `--harness NAME` and `--reads-outside-checkout`, so a pillar can run on Codex. No
