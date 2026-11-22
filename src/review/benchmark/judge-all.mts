@@ -34,12 +34,15 @@ export type RawResult =
       excerpts?: ExcerptsMode
       /** The harness that ran the pillar agent; absent for Claude. */
       harness?: string
+      /** Shell prefixes `bench --shell` granted; absent for a normal run. */
+      shell?: string[]
     }
   | {
       error: string
       rules?: string
       excerpts?: ExcerptsMode
       harness?: string
+      shell?: string[]
       plugins?: string[]
       selected?: string[]
       usage?: Usage

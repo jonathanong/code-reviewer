@@ -8,6 +8,7 @@ import { parseEvalCases, type EvalCase } from './cases.mts'
 import { parseExcerpts } from './excerpts.mts'
 import { assertPillarHarness, otherHarness } from './harness-option.mts'
 import { judgeAll } from './judge-all.mts'
+import { shellPrefixes } from './shell-option.mts'
 import { runAll } from './run-all.mts'
 import { scoreAll, type Options } from './score-all.mts'
 import { stageCaseRules } from './rules.mts'
@@ -92,6 +93,7 @@ export async function runReviewBenchCli(
       model: { type: 'string' },
       harness: { type: 'string' },
       'reads-outside-checkout': { type: 'boolean' },
+      shell: { type: 'string', multiple: true },
       'max-turns': { type: 'string' },
       jobs: { type: 'string' },
       'score-only': { type: 'boolean' },
@@ -105,6 +107,7 @@ export async function runReviewBenchCli(
     },
   })
   if (values['loads-only'] === true) assertLoadsOnly(values)
+  const shell = shellPrefixes(values)
   if (values['select-all-pillars'] === true && values.select !== true)
     throw new Error('bench --select-all-pillars needs --select.')
   if (values.cases === undefined || values.out === undefined)
@@ -142,6 +145,7 @@ export async function runReviewBenchCli(
     ...(values['loads-only'] === true ? { loadsOnly: true } : {}),
     ...(otherHarness(values.harness) === undefined ? {} : { harness: values.harness }),
     ...(values['reads-outside-checkout'] === true ? { readsOutsideCheckout: true } : {}),
+    ...(shell.length === 0 ? {} : { shell }),
     ...excerpts,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }

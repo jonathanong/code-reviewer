@@ -33,6 +33,8 @@ export type PillarSummary = {
   usage: UsageSummary
   /** The harness that ran the pillar agent when it was not Claude: cost and loaded skills are then not reported. */
   harness?: string
+  /** Shell prefixes `bench --shell` granted to the pillar agent; such rows are an experiment. */
+  shell?: string[]
   /** Paired control comparison; present only with `--baseline`. */
   baseline?: BaselineSummary
 }

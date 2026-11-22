@@ -82,6 +82,7 @@ export async function runAll(
       ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
     }
     const ranOn = options.harness === undefined ? {} : { harness: options.harness }
+    const shelled = options.shell === undefined ? {} : { shell: options.shell }
     let result: RawResult
     try {
       const { model, maxTurns } = options
@@ -93,16 +94,31 @@ export async function runAll(
         skills: !options.noRules,
         ...(options.harness === undefined ? {} : { harness: options.harness }),
         ...(options.readsOutsideCheckout === true ? { readsOutsideCheckout: true } : {}),
+        ...(options.shell === undefined ? {} : { shell: options.shell }),
         ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
         ...(chosen === undefined ? {} : { selected: chosen }),
         ...(options.selectAllPillars === true ? { selectAllPillars: true } : {}),
         ...(settings === undefined ? {} : { settings }),
       }
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
-      result = { findings, skills, skillTool: !options.noRules, usage, ...seen, ...ranOn }
+      result = {
+        findings,
+        skills,
+        skillTool: !options.noRules,
+        usage,
+        ...seen,
+        ...ranOn,
+        ...shelled,
+      }
     } catch (error) {
       const { message, usage } = describeStepFailure(error)
-      result = { error: message, ...(usage === null ? {} : { usage }), ...seen, ...ranOn }
+      result = {
+        error: message,
+        ...(usage === null ? {} : { usage }),
+        ...seen,
+        ...ranOn,
+        ...shelled,
+      }
     }
     deps.writeFile(rawPath(pillar, item.id), `${JSON.stringify(result, null, 2)}\n`)
   })

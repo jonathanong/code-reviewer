@@ -2,6 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `bench --shell` experiment flag (no run)
+
+Adds `--shell PREFIX` (repeatable), which grants the pillar agent on Claude extra read-only shell
+prefixes for one run, to test whether Codex's higher `correctness` recall on the mined cases comes
+from its shell rather than the model. No prompt, schema or case changed and no run was made. Rows
+from a run with the flag record the prefixes and are not comparable with any earlier row: the
+pillar has tools a review does not grant. Rows without the flag are unchanged.
+
 ## 2026-11-21: `correctness` on the mined cases: Codex Sol, Codex Terra, Claude Sonnet
 
 Three attempts per arm (separate one-attempt runs), same session, commit 8099ad8, `cases.json` (18

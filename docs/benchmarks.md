@@ -263,6 +263,27 @@ show `-`, never `$0`, and its Skills loaded and Grounded recall cells read "not 
 from another harness are not comparable with Claude rows: the model, tools and cost accounting
 differ. `--score-only` reads the harness from the saved results.
 
+### Shell for the pillar agent
+
+`--shell PREFIX` (repeatable) is an experiment flag: it adds read-only command prefixes to the
+pillar agent on Claude, on top of what the pillar already has, so a run can test whether a pillar
+finds more when it can run `git` and `rg` itself, as the Codex sandbox lets it. A prefix is a
+command name and subcommand; `bench` grants whatever is named, with no allowlist of commands. It
+fails before any work, naming the flag, on an empty prefix, on one with shell syntax (`;`, `|`,
+`&`, `>`, `<`, a backtick, `$(` or a newline), and with a non-Claude `--harness`, because Codex
+refuses shell prefixes. `review` and `run` never grant it.
+
+```bash
+pnpm exec code-reviewer bench --cases benchmarks/review/cases.json \
+  --prompts skills/review/references/pillars --out "$TMPDIR/review-bench-shell" \
+  --pillar correctness --shell "git log" --shell "git show" --shell "git blame" \
+  --shell "git diff" --shell "git grep" --shell rg
+```
+
+Each raw result and each pillar of `summary.json` records `shell`, and `summary.md` opens with
+"Shell granted to the pillar agent: ...". Such rows are not comparable with normal rows: the pillar
+has tools a review does not grant. `--score-only` reads the prefixes from the saved results.
+
 Results are written to `<out>/raw/<pillar>/<case>.json`, then `summary.json` and `summary.md`. Use
 `--score-only` to re-score existing raw results, and `--case <id>` to run one case. Runs cost
 money and take minutes per case, so run only the pillars whose prompts changed.
