@@ -14,16 +14,22 @@ single-round Sonnet arm of the "two rounds" entry.
 | Sonnet, normal        | 3        | Opus   | 3 of 24        | 4 of 24          | 18              | 11 of 36                     | 9.2           | $8.49  |
 | Opus, normal (pilot)  | 1        | Sonnet | 1 of 8         | 2 of 8           | 18              | 9 of 12                      | 17.9          | $11.67 |
 
-- Forced arm: `--select --select-all-pillars`, so every selected rule skill is loaded into the
-  pillar run instead of offered. Judged matches did not rise, turns tripled, and more negative
-  runs carry a finding. On `vouchington-3419` the loaded `typescript-rules` skill states the
-  exact defect and Sonnet did not report it in any attempt.
-- Opus arm: `--model opus`, one attempt, so it is a pilot and not a measurement. One of its 18
-  runs was answered by a different model (`claude-fable-5-2`), as the usage record shows. It found
-  no more expected problems than Sonnet at about four times the cost per run.
-- With the effort, shell and rounds entries below, none of more effort, more passes, loaded rules
-  or a stronger Claude model raised judged matches on these cases. What is left untested is the
-  pillar prompt itself.
+- Forced arm: `--select --select-all-pillars`, so the rule skills the selector picks are loaded
+  into the pillar run instead of offered. Forcing covers only what the selector picks: on
+  `vouchington-2936` it did not pick the expected `postgres-schema-design` skill in any attempt,
+  so that case ran without it. Judged matches did not rise, turns tripled, and more negative runs
+  carry a finding. On `vouchington-3419` the loaded `typescript-rules` skill states the exact
+  defect and Sonnet did not report it in any attempt.
+- Opus arm: `--model opus`, one attempt, so it is a pilot and not a measurement. Its judge is
+  Sonnet, because the judge must differ from the agent, so its judged count is not like for like
+  with the Opus-judged Sonnet rows; the location count is. Its one judged match is
+  `vouchington-tooling-154`, the case Sonnet also catches. One negative run
+  (`vouchington-886`, $2.48 of the cost) was partly answered by `claude-fable-5-2`; it has no
+  expected finding, so it does not affect the match counts.
+- What this supports: on the Opus-judged, like-for-like arms (normal, `high` effort, two rounds,
+  skills forced), nothing raised Sonnet's judged matches. The Opus pilot and the shell run (scored
+  by location only) are weaker evidence in the same direction. The pillar prompt itself is
+  untested.
 
 ## 2026-11-21: verifier prompt gains a "settle the facts" step (no run)
 
