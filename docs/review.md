@@ -42,8 +42,13 @@ them and send it to the provider. Unlike Claude, Grok and OpenCode, which bound 
 checkout and `addDirs`, Codex refuses every step unless its candidate in `models` sets
 `readsOutsideCheckout: true`, which only machine config may do. It ignores `explorer`, `skills`,
 `settings`, `transcript` and `maxTurns`, and reports no cost. A usage-limit message is classified as
-a rate limit too long to wait out. **Codex has not yet been run against the real CLI**: the adapter
-is built from `codex-cli 0.171.0` help output, and the event shapes it reads are assumed.
+a rate limit too long to wait out. On `codex-cli 0.171.0` a small read-only step ran through the adapter: the arguments and the
+rewritten schema (`enum`, `minimum`, optional properties) were accepted, usage was read from
+`turn.completed`, and a planted `AGENTS.md` was followed only without `project_doc_max_bytes=0`.
+`codex exec` reads standard input to the end, so the runner closes it. No full review has run on
+Codex, and no real rate-limit or sign-in failure has been captured, so those classifications are
+assumed. `gpt-6-luna` at `low` effort answered without reading the file in 2 of 3 small runs; at
+`medium`, and `gpt-6.2-sol` at either effort, read it in 3 of 3.
 
 Config rejects what it can know from the step's key: the `pillar.history` and `evidence` steps need
 shell, so a list in which every candidate is Grok, OpenCode or Codex is a problem, and no free model

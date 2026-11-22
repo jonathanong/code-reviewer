@@ -12,6 +12,11 @@ describe('defaultExec', () => {
     expect(await defaultExec('node', ['-e', 'process.stdout.write("hi")'])).toBe('hi')
   })
 
+  it('closes the input of a child that reads it to the end', async () => {
+    const read = 'process.stdin.resume().on("end", () => process.stdout.write("closed"))'
+    expect(await defaultExec('node', ['-e', read], { timeoutMs: 20_000 })).toBe('closed')
+  })
+
   it('adds env to the child only', async () => {
     const read = ['-e', 'process.stdout.write(process.env.EVIDENCE_TEST_VAR ?? "unset")']
     expect(await defaultExec('node', read, { env: { EVIDENCE_TEST_VAR: 'set' } })).toBe('set')

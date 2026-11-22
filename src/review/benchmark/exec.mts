@@ -38,7 +38,7 @@ export class ExecError extends Error {
 /** Runs a binary; a failure reports the exit code and output tails, never the (long) arguments. */
 export const defaultExec: Exec = async (command, args, options = {}) => {
   try {
-    const { stdout } = await execFileAsync(command, args, {
+    const running = execFileAsync(command, args, {
       ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
       ...(options.timeoutMs === undefined ? {} : { timeout: options.timeoutMs }),
       ...(options.env === undefined ? {} : { env: { ...process.env, ...options.env } }),
@@ -46,6 +46,9 @@ export const defaultExec: Exec = async (command, args, options = {}) => {
       encoding: 'utf8',
       maxBuffer: 256 * 1024 * 1024,
     })
+    // No caller feeds a child input, and one that reads it (`codex exec`) waits while the pipe is open.
+    running.child.stdin?.end()
+    const { stdout } = await running
     return stdout
   } catch (error) {
     // execFile errors carry the captured output as strings (empty when the binary never ran).

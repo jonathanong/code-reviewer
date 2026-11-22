@@ -17,8 +17,8 @@ const AUTH = /\b(not logged in|unauthorized|401|invalid api key)\b/iu
  * Codex, run headless with `codex exec --json`. It runs read-only steps in its `read-only`
  * sandbox, with the user's config and rules not loaded and web search off. It refuses no-tools
  * steps and shell and web grants it cannot confine, and ignores `explorer`, `skills`,
- * `settings`, `transcript`, `addDirs` (the sandbox already reads them) and `maxTurns`. Built from
- * `codex-cli 0.171.0` help output; not yet run against the real CLI.
+ * `settings`, `transcript`, `addDirs` (the sandbox already reads them) and `maxTurns`. Run against
+ * `codex-cli 0.171.0` on a small read-only step; no real failure has been captured.
  */
 export const harness: Harness = {
   name: 'codex',
