@@ -31,7 +31,7 @@ function searchLabel(input: NonNullable<Part['input']>): string | undefined {
   return [pattern, ...where.filter(Boolean)].join(' ')
 }
 
-function useOf(part: Part): Use | undefined {
+function toolUseOf(part: Part): Use | undefined {
   const input = part.input ?? {}
   const value =
     part.name === 'Skill'
@@ -60,7 +60,7 @@ function toolUses(events: readonly Record<string, unknown>[]): Tools {
     if (!Array.isArray(content)) continue
     for (const part of content as Part[]) {
       if (event.type === 'assistant' && part?.type === 'tool_use') {
-        const use = useOf(part)
+        const use = toolUseOf(part)
         if (use !== undefined) requested.set(part.id, use)
       } else if (event.type === 'user' && part?.type === 'tool_result' && part.is_error !== true) {
         succeeded.add(part.tool_use_id)
