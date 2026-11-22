@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: pilot, `correctness` on the mined cases, Codex against Claude
+
+One attempt per arm, so a pilot and not a measurement. Commit 8099ad8, `cases.json` (18 cases for
+this pillar: 6 positives expecting 8 findings, 12 negatives), no judge (file and line matching),
+same session. Codex arm: `gpt-6.2-sol`, `--harness codex`. Claude arm: Sonnet, default flags.
+
+| Arm    | Expected findings matched | Findings in all | Negatives with a finding | Input tokens per run | Cost  |
+| ------ | ------------------------- | --------------- | ------------------------ | -------------------- | ----- |
+| Codex  | 5 of 8                    | 60              | 12 of 12                 | about 937,000        | -     |
+| Claude | 1 of 8                    | 5               | 4 of 12                  | about 142,000        | $2.98 |
+
+Codex found more of the known regressions and reported twelve times as many findings (17 high, 36
+medium, 7 low). A negative here is a pull request that was not reverted, not one known to be
+clean, so the 55 unmatched Codex findings are unjudged: this run cannot say how many are real.
+Claude loaded no skill in any run. Next: three attempts, and the verifier over each arm's findings
+to see what survives.
+
 ## 2026-11-21: `correctness` and `blast-radius` on Codex, three attempts
 
 Commit 9aa3268 plus the `--harness` flag. Pillar agent `gpt-6.2-sol` on Codex (`codex-cli`
