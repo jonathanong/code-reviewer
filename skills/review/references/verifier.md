@@ -30,8 +30,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    mistake, not just this instance; drop it otherwise, or add one by the contract's rule.
    Keep what the author must read in `body` and move exact steps, file lists, commands and
    reproduction into `fix`, which is posted collapsed.
-3. **Settle the facts.** A finding, and equally a statement that something is safe, rests on
-   facts: what a foreign key does on delete, how many runs of a job can overlap, who else calls a
+3. **Settle the facts.** A finding, and equally a statement in your summary that something is
+   safe, rests on facts: what a foreign key does on delete, how many runs of a job can overlap, who else calls a
    function, whether a failed job runs again. For each fact the review relies on, open the file
    that states it (schema or migration, queue or job config, every caller) and settle it before
    you write the review. A pillar's "unverified", "assumed", "likely" or "if X holds" is work for

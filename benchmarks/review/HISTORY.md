@@ -16,6 +16,13 @@ Why: on the first real reviews, the misses sat under facts a reviewer had assume
 relied on a cleanup job running one at a time, and its lane allowed four. Another relied on every
 foreign key on a purge path being restrictive, and 23 of 152 cascade.
 
+The step covers the findings the verifier receives and what its own summary says. A pillar that
+dismisses a risk without reporting anything still gives the verifier nothing to check: pillars
+return findings only.
+
+The block for other reviewers' unresolved threads now names the step it replaces ("the Other
+reviewers step") instead of its number, which the new step shifted.
+
 No run was made. Every `bench-verifier` row measured before this entry is not comparable with one
 measured after it. Expect more turns and tokens per verifier run.
 
