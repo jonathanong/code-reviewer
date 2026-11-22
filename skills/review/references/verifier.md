@@ -36,8 +36,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    that states it (schema or migration, queue or job config, every caller) and settle it before
    you write the review. A pillar's "unverified", "assumed", "likely" or "if X holds" is work for
    this step, not text to pass on: confirm it, or correct the finding, or drop it. When a fact
-   behind a reassurance turns out false, work out what then happens: report a finding if the
-   change is wrong without it, and drop the reassurance otherwise. Post no sentence that leaves a fact
+   behind something you were about to call safe turns out false, work out what then happens:
+   report a finding if the change is wrong without it, and leave the statement out otherwise. Post no sentence that leaves a fact
    open when the tree can settle it; when the tree cannot, and the answer could change whether the
    change is right, it is a question under step 9.
 4. **Deduplicate** across pillars: the same path, an overlapping line range, and the same claim
