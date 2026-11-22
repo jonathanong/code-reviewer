@@ -2,6 +2,24 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: abandoned: stricter wording in the selection prompt
+
+Commit 7a95490. `bench-selection`, Haiku, the 22 tagged cases of `synthetic.json` and `cases.json`,
+three attempts, control and variant in the same session. The variant added one sentence to the
+selection prompt: a skill matches only when the changed files contain what its rules govern, and a
+skill about how work is done is left out unless the change edits the files it governs.
+
+| Arm              | Expected skill named | Skills selected per attempt | Cost  |
+| ---------------- | -------------------- | --------------------------- | ----- |
+| Control          | 66 of 66             | 9.1                         | $0.17 |
+| Stricter wording | 65 of 66             | 8.8                         | $0.19 |
+
+The wording removed about a quarter of a skill per attempt and lost one expected skill, so it was
+not kept and the selection prompt is unchanged. In the control, `jong-skills:documentation` was
+selected in 41 of 66 attempts and `jong-skills:agent-workflow` in 14. The cases label only the
+skill a finding needs, not the skills that should be left out, so over-selection cannot be scored
+yet.
+
 ## 2026-11-21: selected skills are forced on the `rules` pillar only (three runs)
 
 The change: `review` tells only the `rules` pillar to load every skill the selection step chose;
