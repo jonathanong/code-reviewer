@@ -40,6 +40,8 @@ export type RawResult =
       harness?: string
       /** Shell prefixes `bench --shell` granted; absent for a normal run. */
       shell?: string[]
+      /** Paths `bench --only-path` limited the shown diff to; absent for a normal run. */
+      onlyPath?: string[]
       /** The `--effort` the pillar agent ran at; absent for the default. */
       effort?: BenchEffort
       /** `bench --rounds`: rounds requested, run, and findings each added; absent for a normal run. */
@@ -54,6 +56,7 @@ export type RawResult =
       excerpts?: ExcerptsMode
       harness?: string
       shell?: string[]
+      onlyPath?: string[]
       effort?: BenchEffort
       rounds?: number
       plugins?: string[]

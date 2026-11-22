@@ -5,6 +5,7 @@
   Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
 - Measure a pillar on another harness with `bench ... --harness codex --model <id> --reads-outside-checkout`; only the pillar agent moves, and its rows are not comparable with Claude rows.
 - `bench ... --shell "git grep"` (repeatable, Claude only) grants the pillar agent extra shell prefixes as an experiment; rows are labeled and not comparable with normal rows.
+- `bench ... --only-path src/a.ts` (repeatable) shows the pillar agent only the part of the diff that touches those paths, as an experiment; rows are labeled and not comparable with normal rows.
 - Test whether recall is an effort problem with `bench ... --effort high` (low, medium, high or xhigh; never `max`); its rows are not comparable with normal rows.
 - `bench ... --rounds 2` (1 to 3) runs the pillar agent again with its earlier findings as extra prompt text, as an experiment; rows are labeled and not comparable with normal rows.
 - Record which skills any pillar loads on a case with `bench ... --pillar <p> --case <id> --loads-only` (add `--select`

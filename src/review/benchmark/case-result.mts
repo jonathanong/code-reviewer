@@ -18,6 +18,7 @@ export type CaseResult =
       excerpts: ExcerptsMode | null
       harness: string | null
       shell: string[] | null
+      onlyPath: string[] | null
       effort: BenchEffort | null
       rounds: number | null
     }
@@ -36,6 +37,8 @@ export type CaseResult =
       harness: string | null
       /** The shell prefixes recorded on the result; null for a normal run. */
       shell: string[] | null
+      /** The `--only-path` paths recorded on the result; null for a normal run. */
+      onlyPath: string[] | null
       /** The `--effort` recorded on the result; null for the default and for older results. */
       effort: BenchEffort | null
       rounds: number | null
@@ -62,6 +65,7 @@ export function readCaseResult(
       excerpts: null,
       harness: null,
       shell: null,
+      onlyPath: null,
       effort: null,
       rounds: null,
     }
@@ -71,16 +75,18 @@ export function readCaseResult(
   const excerpts = raw.excerpts ?? null
   const harness = raw.harness ?? null
   const shell = raw.shell ?? null
+  const onlyPath = raw.onlyPath ?? null
   const effort = raw.effort ?? null
   const rounds = raw.rounds ?? null
-  if ('error' in raw) return { error: raw.error, usage, excerpts, harness, shell, effort, rounds }
+  if ('error' in raw)
+    return { error: raw.error, usage, excerpts, harness, shell, onlyPath, effort, rounds }
   let assignment: ReturnType<typeof currentAssignment>
   if (judge !== undefined) {
     const expected = item.expected.filter((entry) => entry.pillar === pillar)
     assignment = currentAssignment(raw, expected, judge)
     // Unjudged cases stay out of judged metrics rather than falling back to locations.
     if (assignment === undefined)
-      return { error: 'not judged', usage, excerpts, harness, shell, effort, rounds }
+      return { error: 'not judged', usage, excerpts, harness, shell, onlyPath, effort, rounds }
   }
   const score = scoreCase(item, pillar, raw.findings, assignment)
   const wanted = expectedSkillsFor(item, pillar)
@@ -98,6 +104,7 @@ export function readCaseResult(
     skillLoads: raw.skills?.length ?? null,
     harness,
     shell,
+    onlyPath,
     effort,
     rounds,
     roundError: raw.roundError ?? null,

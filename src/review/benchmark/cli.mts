@@ -9,6 +9,7 @@ import { parseExcerpts } from './excerpts.mts'
 import { otherEffort, parseBenchEffort } from './effort-option.mts'
 import { assertPillarHarness, otherHarness } from './harness-option.mts'
 import { judgeAll } from './judge-all.mts'
+import { onlyPaths } from './only-path-option.mts'
 import { roundsCount } from './rounds.mts'
 import { shellPrefixes } from './shell-option.mts'
 import { runAll } from './run-all.mts'
@@ -97,6 +98,7 @@ export async function runReviewBenchCli(
       effort: { type: 'string' },
       'reads-outside-checkout': { type: 'boolean' },
       shell: { type: 'string', multiple: true },
+      'only-path': { type: 'string', multiple: true },
       rounds: { type: 'string' },
       'max-turns': { type: 'string' },
       jobs: { type: 'string' },
@@ -112,6 +114,7 @@ export async function runReviewBenchCli(
   })
   if (values['loads-only'] === true) assertLoadsOnly(values)
   const shell = shellPrefixes(values)
+  const onlyPath = onlyPaths(values)
   const rounds = roundsCount(values)
   if (values['select-all-pillars'] === true && values.select !== true)
     throw new Error('bench --select-all-pillars needs --select.')
@@ -152,6 +155,7 @@ export async function runReviewBenchCli(
     ...(otherHarness(values.harness) === undefined ? {} : { harness: values.harness }),
     ...(values['reads-outside-checkout'] === true ? { readsOutsideCheckout: true } : {}),
     ...(shell.length === 0 ? {} : { shell }),
+    ...(onlyPath === undefined ? {} : { onlyPath }),
     ...(effort === undefined ? {} : { effort }),
     ...(rounds > 1 ? { rounds } : {}),
     ...excerpts,
