@@ -2,6 +2,69 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, Claude Code's `/code-review` in place of the `correctness` pillar
+
+One attempt, so a pilot and not a measurement. Commit 9573ff2, `cases.json` (18 cases for
+`correctness`: 6 positives expecting 8 findings, 12 negatives). Not run through `bench`: a scratch
+script built each case's snapshot with `prepareSnapshot`, ran `claude -p "/code-review medium"
+--model sonnet` in it (Claude Code 2.1.330; read-only tools and read-only git; `gh`, web and edits
+disallowed) and matched its findings by file and line with the same 10-line tolerance. No judge
+model. Every run used Sonnet only.
+
+| Arm                             | Location matches | Findings in all | Negatives with a finding | Cost  |
+| ------------------------------- | ---------------- | --------------- | ------------------------ | ----- |
+| `/code-review medium` on Sonnet | 7 of 8           | 98              | 12 of 12                 | $3.23 |
+
+The location count overstates it. Read by hand against the expected claims (by the orchestrating
+session, not the Opus judge), one of the seven states the expected problem: the missing codec
+option at `resume.mts` in `vouchington-tooling-154`, the same finding the pillar's judged matches
+come from. The other six sit near the expected lines and state a different problem
+(`vouchington-2936`, `vouchington-3419`, `vouchington-clients-130`, both of
+`vouchington-tooling-187`, and `update.mts` in `vouchington-tooling-154`). With five findings per
+pull request, a location match is close to chance on a small file.
+
+- What this supports: at this level and model it found no expected problem the pillar does not,
+  at about the pillar's cost per run ($0.18) and about twenty times its findings (the pillar's
+  pilot in "pilot, `correctness` on the mined cases, Codex against Claude": 5 findings, $2.98).
+- It also bears on the earlier no-judge rows: an arm with many findings (Codex Sol, 178) gains
+  location matches the same way, so only judged counts rank arms.
+- Not measured: three attempts, the Opus judge, other levels, and what the verifier keeps of the
+  98 findings. The recipe is not pinned and changes with Claude Code releases.
+
+## 2026-11-22: pilot, free OpenCode models on `correctness`
+
+Screen: `code-reviewer models --harness opencode --free --probes 2 --jobs 3` (OpenCode 1.19.6),
+six runs per model on the synthetic probes, 180-second limit, no judge.
+
+| Model                                  | Valid | Found | Seconds | Failure                               |
+| -------------------------------------- | ----- | ----- | ------- | ------------------------------------- |
+| `opencode/beam-free`                   | 0.83  | 0.50  | 74      | one run exited 1                      |
+| `opencode/nemotron-3.5-lightning-free` | 0.67  | 0.00  | 141     | timeouts, one reply off schema        |
+| `opencode/hy4-flash-free`              | 0.17  | 0.17  | 170     | timeouts                              |
+| `opencode/iceman-free`                 | 0.17  | 0.00  | 176     | timeouts                              |
+| `opencode/longcat-2.5-free`            | 0.00  | -     | 1       | server error on every run             |
+| `opencode/tidepool-alpha-free`         | 0.00  | -     | 153     | a permission rule refused a tool call |
+| `opencode/big-pickle`                  | 0.00  | -     | 180     | every run timed out                   |
+| `opencode/flint-40b-free`              | 0.00  | -     | 180     | every run timed out                   |
+| `opencode/nemotron-3.5-super-vl-free`  | 0.00  | -     | 180     | rate limited on 5 of 6                |
+| `opencode/mimo-v2.6-flash-free`        | 0.00  | -     | 180     | rate limited on 5 of 6                |
+| `opencode/deepseek-v4.1-flash-free`    | 0.00  | -     | 180     | rate limited on 5 of 6                |
+
+Three probes ran at once, so a timeout may be throttling of the free tier and not the model; the
+two were not separated.
+
+Pillar pilot, one attempt: `bench --pillar correctness --harness opencode --model
+opencode/beam-free --reads-outside-checkout --jobs 2` on the six positive cases of `cases.json`
+(8 expected findings), commit 9573ff2, file and line matching. 0 of 8 matched and no finding was
+reported in any run; each run completed (about 8.5 turns, 84,000 input tokens, 324 output
+tokens). Not run: the negatives, three attempts, any other free model. Rows from another harness
+are not comparable with Claude rows.
+
+What this shows: `beam-free`, the only model that returned valid output reliably on the screen,
+found nothing on these six pull requests in one attempt. The other ten never ran on a mined pull
+request; they failed the screen, where throttling may explain the timeouts. Not tested: a
+narrower job, such as one target per prompt, and the screen at one job at a time.
+
 ## 2026-11-22: verifier prompt gains a block for an unposted earlier review, no run
 
 No run. The review's verifier prompt adds one section, "Your earlier review of this pull request,
