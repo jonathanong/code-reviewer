@@ -121,7 +121,7 @@ export async function runReviewBenchCli(
     JSON.parse(deps.readFile(values.cases)) as unknown,
     dirname(values.cases),
   ).filter((item) => ids.size === 0 || ids.has(item.id))
-  const effort = otherEffort(parseBenchEffort(values.effort))
+  const effort = otherEffort(parseBenchEffort(values.effort, values['loads-only']))
   const pillars = pickPillars(values.pillar ?? [], cases)
   assertPillarHarness(values, pillars, values['no-rules'] !== true)
   const excerpts =

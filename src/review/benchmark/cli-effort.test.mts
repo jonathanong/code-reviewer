@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs'
+import { parseBenchEffort, savedEffort } from './effort-option.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { runReviewBenchCli, type PillarBenchDeps } from './cli.mts'
@@ -87,6 +88,25 @@ describe('runReviewBenchCli --effort', () => {
     await runReviewBenchCli([...WITH_RULES, '--effort', 'low'], h.deps)
     await runReviewBenchCli([...WITH_RULES, '--score-only'], h.deps)
     expect(h.files.get('out/summary.md')).toContain('Effort: pillar agent at low')
+  })
+
+  it('refuses saved results at different levels, and --loads-only at another level', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    expect(savedEffort(undefined, ['high', 'high'])).toBe('high')
+    expect(savedEffort('low', ['high'])).toBe('low')
+    expect(savedEffort(undefined, [null, 'medium'])).toBeUndefined()
+    expect(savedEffort(undefined, [])).toBeUndefined()
+    expect(() => savedEffort(undefined, ['high', null])).toThrow(
+      'different --effort levels (high, medium)',
+    )
+    expect(parseBenchEffort('medium', true)).toBe('medium')
+    const h = setup()
+    const error = await runReviewBenchCli(
+      [...WITH_RULES, '--effort', 'high', '--loads-only'],
+      h.deps,
+    ).catch((e) => e)
+    expect(error.message).toContain('--loads-only')
+    expect(h.calls).toEqual([])
   })
 
   it('writes the default output without the flag and for --effort medium', async () => {

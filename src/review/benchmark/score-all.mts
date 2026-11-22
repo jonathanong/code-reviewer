@@ -12,7 +12,7 @@ import type { Usage } from './usage.mts'
 import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
 import { armOf, renderArms, summarizeLoads, type ArmSummary } from './excerpts-arm.mts'
 import { scoreLoads } from './loads-only.mts'
-import { otherEffort } from './effort-option.mts'
+import { savedEffort } from './effort-option.mts'
 import type { BenchEffort } from '../../harness/types.mts'
 import { otherHarness } from './harness-option.mts'
 import { grantedShell, shellNote } from './shell-option.mts'
@@ -78,8 +78,11 @@ export function scoreAll(
       runUsages.push(result.usage)
       arms.push(result.excerpts)
       harnesses.push(result.harness)
-      shells.push(result.shell)
-      efforts.push(result.effort)
+      // A case that was never run records nothing, which is not a different arm.
+      if (!('error' in result) || result.error !== 'not run') {
+        shells.push(result.shell)
+        efforts.push(result.effort)
+      }
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
@@ -99,7 +102,7 @@ export function scoreAll(
     if (ranOn !== undefined) summary.harness = ranOn
     const granted = grantedShell(options.shell, shells)
     if (granted !== undefined) summary.shell = granted
-    const level = otherEffort(options.effort) ?? efforts.map(otherEffort).find(Boolean)
+    const level = savedEffort(options.effort, efforts)
     if (level !== undefined) summary.effort = level
     if (control !== undefined)
       summary.baseline = compareBaseline(
