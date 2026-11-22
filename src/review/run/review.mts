@@ -85,13 +85,8 @@ async function review(
   throwIfStopped(models.watch)
   requireAnswer(results, out)
   const pillarSkips = [...plan.skipped, ...failedSkips(results)]
-  const { findings, block } = await withEarlier({
-    out,
-    tree,
-    headSha,
-    findings: flattenFindings(results),
-    exec: steps.exec,
-  })
+  const at = { out, tree, headSha, exec: steps.exec }
+  const { findings, block } = await withEarlier({ ...at, findings: flattenFindings(results) })
   const output = await runReviewVerifier(
     {
       verifierPrompt: read(join(steps.references, 'verifier.md')),
