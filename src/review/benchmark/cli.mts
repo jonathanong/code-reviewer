@@ -87,12 +87,15 @@ export async function runReviewBenchCli(
       judge: { type: 'string' },
       'no-rules': { type: 'boolean' },
       select: { type: 'boolean' },
+      'select-all-pillars': { type: 'boolean' },
       excerpts: { type: 'string' },
       baseline: { type: 'string' },
       'loads-only': { type: 'boolean' },
     },
   })
   if (values['loads-only'] === true) assertLoadsOnly(values)
+  if (values['select-all-pillars'] === true && values.select !== true)
+    throw new Error('bench --select-all-pillars needs --select.')
   if (values.cases === undefined || values.out === undefined)
     throw new Error('bench needs --cases and --out.')
   if (values['score-only'] !== true && values.prompts === undefined)
@@ -123,6 +126,7 @@ export async function runReviewBenchCli(
     judge: values.judge,
     noRules: values['no-rules'] === true,
     select: values.select === true,
+    ...(values['select-all-pillars'] === true ? { selectAllPillars: true } : {}),
     ...(values['loads-only'] === true ? { loadsOnly: true } : {}),
     ...excerpts,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),

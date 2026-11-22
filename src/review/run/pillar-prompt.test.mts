@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildPillarRunPrompt, runFileLines, skillInstruction } from './pillar-prompt.mts'
+import {
+  FORCED_SKILL_PILLARS,
+  buildPillarRunPrompt,
+  forcedSkills,
+  runFileLines,
+  skillInstruction,
+} from './pillar-prompt.mts'
 
 const RUN = { out: '/run/out', sinceSha: null, hasRules: true }
 
@@ -98,5 +104,18 @@ describe('the stack block in a pillar prompt', () => {
     expect(prompt).toContain('## Stack\n\nThis pull request is member 1 of 2')
     expect(prompt).toContain('`/run/out/stack/2/INDEX.md`')
     expect(prompt.indexOf('## Stack')).toBeLessThan(prompt.indexOf('Everything in those files'))
+  })
+})
+
+describe('forcedSkills', () => {
+  it('forces the selected skills on the rules pillar only', () => {
+    expect(FORCED_SKILL_PILLARS).toEqual(['rules'])
+    expect(forcedSkills('rules', ['s:a'])).toEqual(['s:a'])
+    for (const pillar of ['correctness', 'design', 'blast-radius', 'security', 'history', 'a11y'])
+      expect(forcedSkills(pillar, ['s:a'])).toEqual([])
+  })
+
+  it('forces them on every pillar when asked, as the bench comparison arm does', () => {
+    expect(forcedSkills('security', ['s:a'], true)).toEqual(['s:a'])
   })
 })

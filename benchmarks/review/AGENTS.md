@@ -10,7 +10,8 @@
   it makes no model call and costs nothing. Give a tagged case `expectedRules` (a verbatim substring of the
   installed skill's rule line) and re-run it after a skill update or a change under `src/review/context/`.
 - Pilot a new case with one attempt. Before quoting a number, run 3 attempts with `--select` (what
-  `review` does: Haiku picks the skills) and 3 with `--no-rules` in the same session, then score
+  `review` does: Haiku picks the skills, and only the `rules` pillar is told to load them; `--select-all-pillars` forces
+  them on every pillar for comparison) and 3 with `--no-rules` in the same session, then score
   with `--score-only --baseline <control dir>`. Run without either flag (every skill offered, none
   named) only to separate a selection failure from a reviewer miss.
 - Do not run the whole of `cases.json` unless the owner asks: large cases cost dollars per run.

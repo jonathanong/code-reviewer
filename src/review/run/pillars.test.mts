@@ -84,6 +84,16 @@ describe('runPillars', () => {
     expect(args[args.indexOf('--allowedTools') + 1]).toBe('Read,Grep,Glob,Agent,Skill')
   })
 
+  it('tells only the rules pillar to load the selected skills', async () => {
+    const exec = vi.fn(async (_command: string, _args: string[]) => answer([]))
+    await runPillars(setup(exec).input)
+    const forced = (pillar: string) =>
+      forPillar(exec, pillar).some((call) => promptOf(call).includes('call the Skill tool once'))
+    expect(forced('rules')).toBe(true)
+    expect(forced('correctness')).toBe(false)
+    expect(forced('history')).toBe(false)
+  })
+
   it('lets only the history pillar read git history through the shell', async () => {
     const exec = vi.fn(async (_command: string, _args: string[]) => answer([]))
     await runPillars(setup(exec).input)

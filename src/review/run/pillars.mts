@@ -22,7 +22,7 @@ import type { Model } from '../plan.mts'
 import { WEB_PILLARS, pillarCapabilities } from './pillar-capabilities.mts'
 import type { ExtraPillarConfig } from '../rules/pillars-parse.mts'
 import { buildExtraPillarPrompt } from './extra-pillar-prompt.mts'
-import { buildPillarRunPrompt, type RunDir } from './pillar-prompt.mts'
+import { buildPillarRunPrompt, forcedSkills, type RunDir } from './pillar-prompt.mts'
 import { referenceDomains, referencesBlock, type WebReferences } from './references-prompt.mts'
 import { pool } from './pool.mts'
 import { parsePillarOutput } from './pillar-output.mts'
@@ -66,7 +66,6 @@ async function runOne(
   const common = {
     contract: input.contract,
     run: input.run,
-    skills: input.skills,
     contextFile: input.contextFile,
   }
   const configured = input.extra?.find((entry) => entry.name === pillar)
@@ -74,9 +73,10 @@ async function runOne(
     configured === undefined
       ? buildPillarRunPrompt({
           ...common,
+          skills: forcedSkills(pillar, input.skills),
           pillarText: [input.readPillar(pillar), ...referencesBlock(web)].join('\n\n'),
         })
-      : buildExtraPillarPrompt(configured, common)
+      : buildExtraPillarPrompt(configured, { ...common, skills: [] })
   const request: StepRequest = {
     prompt,
     label: 'Pillar run',

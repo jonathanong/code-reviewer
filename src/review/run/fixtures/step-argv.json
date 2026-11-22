@@ -5,7 +5,7 @@
       "claude",
       [
         "-p",
-        "sha256:5acd57c59f5f0e58a06809bf80b43550faa67ee1e116bfc4163dab78c2f0deb7",
+        "sha256:90162b1a5390f730dcf5c2c67962e7e761cedc12980f147abf72439535f79778",
         "--model",
         "sonnet",
         "--output-format",
@@ -45,7 +45,7 @@
       "claude",
       [
         "-p",
-        "sha256:67f18b088a74e61eca98d9627020936b30a0b23c7fac98fefe6ffc8ff2d8a2ad",
+        "sha256:57ca78e6de7c4c85fe07ca366dba991479578e7bd27e5556d3ecb9110acb73a8",
         "--model",
         "sonnet",
         "--output-format",
@@ -85,7 +85,7 @@
       "claude",
       [
         "-p",
-        "sha256:f69cec7272b469a263cb6df833c97f7c432202626ef7596cc562ff2b5c897613",
+        "sha256:b4f0ae6930eee18a3328d91f282f3b06eba55b4b107db30f116f5b96a318549a",
         "--model",
         "sonnet",
         "--output-format",
@@ -125,7 +125,7 @@
       "claude",
       [
         "-p",
-        "sha256:efe9eda9cb726f15f55991a7cb0cc4d7af4172a88846924635504ef7a8f2b2a7",
+        "sha256:0ecc26dca50ab8c22986687b6af547ff6f18d1104b45a08297169f19e27c65c2",
         "--model",
         "sonnet",
         "--output-format",
@@ -165,7 +165,7 @@
       "claude",
       [
         "-p",
-        "sha256:5acd57c59f5f0e58a06809bf80b43550faa67ee1e116bfc4163dab78c2f0deb7",
+        "sha256:90162b1a5390f730dcf5c2c67962e7e761cedc12980f147abf72439535f79778",
         "--model",
         "sonnet",
         "--output-format",
@@ -205,7 +205,7 @@
       "claude",
       [
         "-p",
-        "sha256:67f18b088a74e61eca98d9627020936b30a0b23c7fac98fefe6ffc8ff2d8a2ad",
+        "sha256:57ca78e6de7c4c85fe07ca366dba991479578e7bd27e5556d3ecb9110acb73a8",
         "--model",
         "sonnet",
         "--output-format",
@@ -245,7 +245,7 @@
       "claude",
       [
         "-p",
-        "sha256:f69cec7272b469a263cb6df833c97f7c432202626ef7596cc562ff2b5c897613",
+        "sha256:b4f0ae6930eee18a3328d91f282f3b06eba55b4b107db30f116f5b96a318549a",
         "--model",
         "sonnet",
         "--output-format",
@@ -285,7 +285,7 @@
       "claude",
       [
         "-p",
-        "sha256:efe9eda9cb726f15f55991a7cb0cc4d7af4172a88846924635504ef7a8f2b2a7",
+        "sha256:0ecc26dca50ab8c22986687b6af547ff6f18d1104b45a08297169f19e27c65c2",
         "--model",
         "sonnet",
         "--output-format",
@@ -325,7 +325,7 @@
       "claude",
       [
         "-p",
-        "sha256:2f1915915b485c2cd05301558b72dc1fb63eedaf9ab592b3afd4098e734dd92c",
+        "sha256:bb4f2b75d950611b1f340d41893898170e6683d6035f00b29592df51ba8b3993",
         "--model",
         "sonnet",
         "--output-format",
@@ -365,7 +365,7 @@
       "claude",
       [
         "-p",
-        "sha256:836f9c7020722d3ce87ae2284b4a8e3b9484b3570708669e654d429b60d6f805",
+        "sha256:f3e9f4d0a5aab101522e246b0d8e21e6b35ce11d5236578c3e6c3cbde11270d7",
         "--model",
         "sonnet",
         "--output-format",
@@ -405,7 +405,7 @@
       "claude",
       [
         "-p",
-        "sha256:5acd57c59f5f0e58a06809bf80b43550faa67ee1e116bfc4163dab78c2f0deb7",
+        "sha256:90162b1a5390f730dcf5c2c67962e7e761cedc12980f147abf72439535f79778",
         "--model",
         "opus",
         "--output-format",
@@ -443,7 +443,7 @@
       "claude",
       [
         "-p",
-        "sha256:aaddee5576aeedf53a3c9bf7a74876b4b11ff2fd5256bf5c162be6c86b585b5f",
+        "sha256:04d94944c60e4770be23cef1056a8a3a20c61b3634abee832672fa66ae7004c0",
         "--model",
         "opus",
         "--output-format",
@@ -483,7 +483,7 @@
       "claude",
       [
         "-p",
-        "sha256:aaddee5576aeedf53a3c9bf7a74876b4b11ff2fd5256bf5c162be6c86b585b5f",
+        "sha256:04d94944c60e4770be23cef1056a8a3a20c61b3634abee832672fa66ae7004c0",
         "--model",
         "opus",
         "--output-format",
@@ -1267,7 +1267,7 @@
       "claude",
       [
         "-p",
-        "sha256:4963992d663879485abfa2d018533b607f9972162534a161f51c67f2ed41c289",
+        "sha256:141fc8bb13eca47304913dbd605c38c88b8c02d07fb67013f2e9124d0f1ffa76",
         "--model",
         "opus",
         "--output-format",
@@ -1570,7 +1570,7 @@
       "claude",
       [
         "-p",
-        "sha256:0acd19354b94efc0828a6fbd34ac40f6cc0e0d3db7d2ed0489f7e5db7ae2033a",
+        "sha256:07702f4af18ae4edf3701b8a9b90607d606c4f43c87ea1e72347c32b686d4193",
         "--model",
         "opus",
         "--output-format",
