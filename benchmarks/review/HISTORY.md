@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: unwanted selections, re-scored from the control run of the wording attempt
+
+No model call: the control run of the entry "abandoned: stricter wording in the selection prompt"
+(Haiku, three attempts, commit 7a95490) re-scored with `--score-only` after the ten tagged cases of
+`synthetic.json` gained `unwantedSkills`. Over those ten cases, 6 of 30 attempts named an unwanted
+skill, 6 selections in all, and every one was `jong-skills:agent-workflow` (6 of 30). No other
+labelled skill was selected where it was unwanted. So selection is close to precise on the
+fixtures, and the 9.1 skills per attempt comes from the mined cases, which are not labelled.
+
 ## 2026-11-21: unwanted skills labeled for the selection eval (no run)
 
 A case may declare `unwantedSkills`, and `bench-selection` now reports how often those skills are
