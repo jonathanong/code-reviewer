@@ -42,10 +42,13 @@ Mined cases (8 real pull requests from `cases.json`):
   without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).
 - At 3 attempts a difference of one catch is noise.
 
-Review-round cases (`revisions.json`, 49 heads of 28 pull requests): not measured yet. Each is
+Review-round cases (`revisions.json`, 50 heads of 29 pull requests): not measured yet. Each is
 one reviewed head of a pull request that took several rounds, with the findings a final review
 reported at that head. The full review run had reported 28 of the 64 expected findings; pilots are
-in [HISTORY.md](HISTORY.md).
+in [HISTORY.md](HISTORY.md). `vouchington-6174-b1a495fe` is the one hand-added case: a head where a
+guard in the soft-deleted-user purge `DELETE` was removed as unreachable, though an earlier
+statement of the same transaction deletes the rows the remaining predicate reads; it passes when
+the review flags the removal.
 
 Fixture cases (`synthetic.json`, rules and correctness pillars):
 
