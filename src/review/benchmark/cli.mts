@@ -59,6 +59,13 @@ function pickPillars(requested: string[], cases: readonly EvalCase[]): Pillar[] 
   return PILLARS.filter((pillar) => used.has(pillar))
 }
 
+function assertLoadsOnly(values: { pillar?: string[]; [flag: string]: unknown }): void {
+  if (values.pillar === undefined) throw new Error('bench --loads-only needs --pillar.')
+  for (const flag of ['judge', 'baseline', 'no-rules'])
+    if (values[flag] !== undefined)
+      throw new Error(`bench --loads-only cannot be combined with --${flag}.`)
+}
+
 /** `code-reviewer bench`: run pillar prompts over labeled cases and score them. */
 export async function runReviewBenchCli(
   args: string[],
@@ -82,8 +89,10 @@ export async function runReviewBenchCli(
       select: { type: 'boolean' },
       excerpts: { type: 'string' },
       baseline: { type: 'string' },
+      'loads-only': { type: 'boolean' },
     },
   })
+  if (values['loads-only'] === true) assertLoadsOnly(values)
   if (values.cases === undefined || values.out === undefined)
     throw new Error('bench needs --cases and --out.')
   if (values['score-only'] !== true && values.prompts === undefined)
@@ -114,6 +123,7 @@ export async function runReviewBenchCli(
     judge: values.judge,
     noRules: values['no-rules'] === true,
     select: values.select === true,
+    ...(values['loads-only'] === true ? { loadsOnly: true } : {}),
     ...excerpts,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }

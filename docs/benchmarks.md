@@ -116,6 +116,17 @@ static text, so the arm can still be pulled both ways by the prompt. Each raw re
 names the arm, and an "Excerpts arm and Skill loads" table is printed beside the cost tables.
 `review` has no such option. Compare arms by input tokens per run and skills loaded per run.
 
+`--loads-only` (needs `--pillar`; not with `--judge`, `--baseline` or `--no-rules`) runs each named
+pillar on every selected case, whatever pillars the case expects, to record which skills it loads;
+without it `bench` runs a pillar only on its own positives and the negatives. It makes no judge
+call and scores no findings. Prompts and `claude` arguments are the same as without the flag, and
+works with and without `--select`. `summary.json` entries (`mode: "loads-only"`) hold per pillar
+`runs`, `skillsPerRun` (`total`, `mean`: distinct skills per run), `loads` (runs that loaded each
+skill), `expectations` (per case with `expectedSkills`, the groups not loaded; an any-of group is
+met by one member) and `usage`. `summary.md` and the printed output hold the same as tables, plus
+the cost and tokens-by-model tables; they have no recall, severity or false-alarm columns. Raw
+results use the same `<out>/raw/<pillar>/<case>.json` paths, so use a fresh `--out`.
+
 Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
 `--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
 `jong-skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets

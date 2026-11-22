@@ -130,6 +130,9 @@ pnpm exec code-reviewer bench \
 `bench --select --excerpts alongside|replace` compares loading every selected skill with skipping
 those already quoted in the shared context; see [the benchmarks reference](../../docs/benchmarks.md).
 
+`bench --loads-only --pillar <p> --case <id>` runs a pillar on a case it expects nothing from, with no judge,
+only to record the skills it loads.
+
 Other commands: `bench-selection`, `bench-verifier` and `bench-context` (no model); `--score-only` re-scores saved results
 without model calls. A run costs dollars and minutes per case, so run only the pillars
 whose prompts changed, and read [AGENTS.md](AGENTS.md) first. Raw results land in

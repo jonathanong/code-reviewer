@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { describeStepFailure } from '../../harness/runner.mts'
 import type { Pillar } from '../pillar-name.mts'
 import { caseSelector } from './case-selection.mts'
-import { casesForPillar, type EvalCase } from './cases.mts'
+import type { EvalCase } from './cases.mts'
+import { benchCases } from './loads-only.mts'
 import type { PillarBenchDeps } from './cli.mts'
 import { pool } from '../run/pool.mts'
 import { excerptWriter } from './excerpts.mts'
@@ -39,7 +40,9 @@ export async function runAll(
   const selected = new Map<string, string[]>()
   const writeExcerpts =
     options.excerpts === undefined ? undefined : await excerptWriter(options.excerpts, deps)
-  for (const item of new Set(pillars.flatMap((pillar) => casesForPillar(cases, pillar)))) {
+  for (const item of new Set(
+    pillars.flatMap((pillar) => benchCases(cases, pillar, options.loadsOnly)),
+  )) {
     deps.log(`snapshot ${item.id}`)
     const snapshot = await deps.prepare(
       item,
@@ -62,7 +65,11 @@ export async function runAll(
     const pillarPrompt = [contract, deps.readFile(join(options.prompts, `${pillar}.md`))]
       .filter((part) => part.length > 0)
       .join('\n\n')
-    return casesForPillar(cases, pillar).map((item) => ({ pillar, pillarPrompt, item }))
+    return benchCases(cases, pillar, options.loadsOnly).map((item) => ({
+      pillar,
+      pillarPrompt,
+      item,
+    }))
   })
   await pool(tasks, options.jobs, async ({ pillar, pillarPrompt, item }) => {
     deps.log(`run ${pillar} ${item.id}`)

@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `bench --loads-only` (no run)
+
+No model run. A new opt-in flag runs the named pillars on the named cases whatever pillars the
+cases expect, skips the judge, and reports the skills each pillar loaded, whether each case's
+`expectedSkills` were loaded, and cost, with no recall, severity or false-alarm figures. It is for
+comparing pointed (`bench`) and forced (`bench --select`) skill loads on pillars other than
+`rules`. Without the flag prompts, arguments and outputs are unchanged, so no earlier entry stops
+being comparable.
+
 ## 2026-11-21: skill loading, pointed against forced: `rules` pillar, three attempts on five synthetic cases
 
 Commit 0ba88c2. Reviewer Sonnet (`claude-sonnet-5-5`), judge Opus, `--pillar rules`, three runs per
