@@ -238,6 +238,31 @@ runs `claude -p` on Sonnet with the tools `review` gives that pillar (`pillarCap
 `history` pillar. There is no other shell, network, or `gh`, so the reviewer cannot look up the
 revert. Each pillar prompt is prefixed with the shared `_contract.md`.
 
+### Another harness for the pillar agent
+
+`--harness NAME` runs the pillar agent on another registered harness, such as `codex`, so a pillar
+can be measured there. Only the pillar agent moves: the judge (`--judge`), selection (`--select`)
+and the verifier stay on Claude. `--model` is then that harness's own model id and is required.
+It is still one candidate with no fallback and the default wait budget.
+
+`--reads-outside-checkout` sets `readsOutsideCheckout` on that candidate, which the Codex adapter
+requires; `--harness codex` does not imply it. `bench` checks every pillar's capabilities against
+the adapter before any snapshot or model call and stops naming the flag or the pillar: without the
+grant, or for `history` (it asks for `git log` and `git show`, which Codex refuses), the command
+fails at once. An unknown name lists the registered harnesses, and `--loads-only` needs Claude.
+
+```bash
+pnpm exec code-reviewer bench --cases benchmarks/review/synthetic.json \
+  --prompts skills/review/references/pillars --out "$TMPDIR/review-bench-codex" \
+  --pillar correctness --harness codex --model gpt-6.2-sol --reads-outside-checkout
+```
+
+Codex reports no cost and no loaded skills. Such a run records `harness` in each raw result and
+in each pillar of `summary.json`, and `summary.md` opens with a `Harness:` line. Its cost cells
+show `-`, never `$0`, and its Skills loaded and Grounded recall cells read "not reported". Rows
+from another harness are not comparable with Claude rows: the model, tools and cost accounting
+differ. `--score-only` reads the harness from the saved results.
+
 Results are written to `<out>/raw/<pillar>/<case>.json`, then `summary.json` and `summary.md`. Use
 `--score-only` to re-score existing raw results, and `--case <id>` to run one case. Runs cost
 money and take minutes per case, so run only the pillars whose prompts changed.

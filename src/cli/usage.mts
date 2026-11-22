@@ -22,7 +22,7 @@ code-reviewer outcomes digest [--day YYYY-MM-DD] [--out DIR]
 code-reviewer issues [--dry-run] [--since DAYS]
 code-reviewer doctor [--repo owner/name | --owner LOGIN] [--offline]
 code-reviewer models --harness opencode [--free] [--model ID]... [--probes N] [--jobs N] [--out DIR]
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select [--select-all-pillars]] [--baseline DIR]
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--harness NAME [--reads-outside-checkout]] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select [--select-all-pillars]] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
 code-reviewer bench-context [--cases cases.json]... [--history history.json]... --out DIR [--case ID]...
@@ -100,6 +100,9 @@ code-reviewer bench-context [--cases cases.json]... [--history history.json]... 
   --select-all-pillars tells every pillar (the earlier behaviour, for comparison; review has no such option). bench also records each
   run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens) and a
   Tokens by model table (runs, input, output, cost per pillar and model, plus an all row).
+  bench --harness NAME runs the pillar agent only on another registered harness (the judge, selection and verifier stay on Claude); --model is then that harness's model id and is required. --reads-outside-checkout
+  grants that harness the read access its adapter requires (codex refuses without it); it is never implied. The cost and loaded skills are not reported by such a harness: the tables show a dash and "not reported",
+  and the rows are not comparable with Claude rows. --loads-only needs Claude.
   bench-verifier records and prints the same by model for its verifier and checker runs. review
   shows cost and tokens by model for the whole review in report.json and report.md.
   bench-verifier runs only the verifier, one call per case

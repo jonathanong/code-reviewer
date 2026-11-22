@@ -12,6 +12,7 @@ import type { Usage } from './usage.mts'
 import { renderModelReports, summarizeByModel, type ModelReport } from './model-usage.mts'
 import { armOf, renderArms, summarizeLoads, type ArmSummary } from './excerpts-arm.mts'
 import { scoreLoads } from './loads-only.mts'
+import { otherHarness } from './harness-option.mts'
 import { renderCostTable } from './usage-summary.mts'
 
 export type Options = {
@@ -33,6 +34,10 @@ export type Options = {
   baseline?: string | undefined
   /** Run each pillar on every selected case and report only the skills it loaded; no judge. */
   loadsOnly?: boolean
+  /** The harness that ran the pillar agent; omitted for Claude. */
+  harness?: string
+  /** Set by `--reads-outside-checkout`. */
+  readsOutsideCheckout?: boolean
 }
 
 const armLabel = (report: ReadonlyArray<{ arm: ArmSummary }>) =>
@@ -58,10 +63,12 @@ export function scoreAll(
     const runUsages: Array<Usage | null> = []
     const arms: Array<ExcerptsMode | null> = []
     const loads: Array<number | null> = []
+    const harnesses: Array<string | null> = []
     for (const item of casesForPillar(cases, pillar)) {
       const result = readCaseResult(item, pillar, out, judge, deps)
       runUsages.push(result.usage)
       arms.push(result.excerpts)
+      harnesses.push(result.harness)
       if (result.usage !== null) usages.push(result.usage)
       if ('error' in result) {
         errors.push(`${item.id}: ${result.error}`)
@@ -74,12 +81,18 @@ export function scoreAll(
     }
     const available = tools.length === 0 ? null : tools.some(Boolean)
     const summary = summarizePillar(pillar, scores, skillCases, available, usages)
+    // The flag, else what the saved results record, so a `--score-only` still labels a Codex row.
+    const ranOn =
+      otherHarness(options.harness) ??
+      harnesses.map((name) => otherHarness(name ?? undefined)).find(Boolean)
+    if (ranOn !== undefined) summary.harness = ranOn
     if (control !== undefined)
       summary.baseline = compareBaseline(
         skillCases,
         readBaseline(cases, pillar, control, judge, deps),
       )
     const models: ModelReport[] = [summarizeByModel(pillar, armName(options.noRules), runUsages)]
+    if (ranOn !== undefined) models[0] = { ...(models[0] as ModelReport), harness: ranOn }
     if (control !== undefined) {
       const controlUsages = casesForPillar(cases, pillar).map(
         (item) => readCaseResult(item, pillar, control, judge, deps).usage,
@@ -106,8 +119,14 @@ export function scoreAll(
   const controlNotes = baselineNotes(
     report.map((entry) => ({ pillar: entry.summary.pillar, baseline: entry.summary.baseline })),
   )
+  const ranOn = [...new Set(report.map((entry) => entry.summary.harness).filter(Boolean))]
   const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
   const markdown = [
+    ...(ranOn.length === 0
+      ? []
+      : [
+          `Harness: pillar agent on ${ranOn.join(', ')}, model ${options.model}; the judge, selection and verifier stay on Claude. Cost and loaded skills are not reported, so these rows are not comparable with Claude rows.`,
+        ]),
     `Matching: ${matching}.${armed ? ` Excerpts: ${armLabel(report)}.` : ''}`,
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',

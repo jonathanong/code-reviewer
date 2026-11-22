@@ -153,8 +153,15 @@ export async function runStep(
   throw new Error('A step needs at least one model candidate.')
 }
 
-/** A benchmark call: the request's own model on Claude, with the default wait budget, so scores stay comparable. */
-export function runFixedModel(request: HarnessRun, exec: Exec): Promise<HarnessResult> {
+/**
+ * A benchmark call: the request's own model on one harness (Claude unless `on` names another),
+ * with the default wait budget and no fallback, so scores stay comparable.
+ */
+export function runFixedModel(
+  request: HarnessRun,
+  exec: Exec,
+  on: { harness: string; readsOutsideCheckout?: true } = { harness: claude.name },
+): Promise<HarnessResult> {
   const { model, ...rest } = request
-  return runStep(rest, [{ harness: claude.name, model }], exec)
+  return runStep(rest, [{ ...on, model }], exec)
 }

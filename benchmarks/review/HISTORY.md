@@ -2,6 +2,13 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `bench --harness` runs the pillar agent on another harness (no run)
+
+`bench` gained `--harness NAME` and `--reads-outside-checkout`, so a pillar can run on Codex. No
+prompt, schema, case or grader changed, and Claude runs are unchanged. A row from another harness
+has no cost and no loaded skills and uses another model and toolset, so it is not comparable with
+any earlier entry; its summary says which harness ran it.
+
 ## 2026-11-21: correction to "unwanted selections, re-scored": 6 of 30 is a floor
 
 No model call. The entry below says selection is close to precise on the fixtures. The re-score

@@ -31,6 +31,8 @@ export type PillarSummary = {
   meanFindings: number | null
   skills: SkillsSummary
   usage: UsageSummary
+  /** The harness that ran the pillar agent when it was not Claude: cost and loaded skills are then not reported. */
+  harness?: string
   /** Paired control comparison; present only with `--baseline`. */
   baseline?: BaselineSummary
 }
@@ -152,7 +154,11 @@ export function renderSummaryTable(summaries: readonly PillarSummary[]): string 
     const extra = paired
       ? ` ${pct(base?.controlRecall ?? null)} | ${pct(base?.lift ?? null)} |`
       : ''
-    return `| ${s.pillar} | ${s.cases} | ${pct(s.recall)} | ${pct(s.severityAgreement)} | ${pct(s.falseAlarmRate)} (${s.negativeCases}) | ${s.meanFindings === null ? 'n/a' : s.meanFindings.toFixed(1)} | ${pct(s.skills.loaded)} | ${pct(s.skills.groundedRecall)} |${extra}`
+    const skills =
+      s.harness === undefined
+        ? `${pct(s.skills.loaded)} | ${pct(s.skills.groundedRecall)}`
+        : 'not reported | not reported'
+    return `| ${s.pillar} | ${s.cases} | ${pct(s.recall)} | ${pct(s.severityAgreement)} | ${pct(s.falseAlarmRate)} (${s.negativeCases}) | ${s.meanFindings === null ? 'n/a' : s.meanFindings.toFixed(1)} | ${skills} |${extra}`
   })
   const head = paired ? ' Control recall | Lift |' : ''
   return [
