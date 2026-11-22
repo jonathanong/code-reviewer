@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EXPLORER_AGENTS, claudeArgs, isolationArgs } from './claude-args.mts'
+import { BUILT_IN_AGENTS, EXPLORER_AGENTS, claudeArgs, isolationArgs } from './claude-args.mts'
 import { READ_ONLY, type Capabilities, type HarnessRun } from './types.mts'
 
 const value = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
@@ -55,7 +55,15 @@ describe('claudeArgs', () => {
     expect(EXPLORER_AGENTS.explorer.tools).toEqual(['Read', 'Grep', 'Glob'])
     const without = claudeArgs(run({ can: READ_ONLY }))
     expect(without).not.toContain('--agents')
+    expect(without).not.toContain('--disallowedTools')
     expect(value(without, '--tools')).toBe('Read,Grep,Glob')
+  })
+
+  it('denies every built-in agent type so Agent reaches only the explorer', () => {
+    const denied = (value(args, '--disallowedTools') as string).split(',')
+    expect(denied).toEqual(BUILT_IN_AGENTS.map((type) => `Agent(${type})`))
+    expect(denied).toContain('Agent(general-purpose)')
+    expect(denied).not.toContain('Agent(explorer)')
   })
 
   it('takes effort, plugin settings, and extra directories from the caller', () => {
