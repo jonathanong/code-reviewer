@@ -15,12 +15,12 @@ reviewer which removed lock to judge; a correctness prompt narrowed to concurren
 as it read at the head. Correctness pillar, `--select`, judge Opus 5.5, 3 attempts per arm, same
 day, commit 955bfa7 (before the subagent change below).
 
-| Arm | Caught | Cost per site | Finding on #6087 |
-| --- | --- | --- | --- |
-| Sonnet 5.5, medium (the review's effort) | 4 of 12 | $0.23 | 1 of 3 |
-| Sonnet 5.5, high | 8 of 12 | $0.42 | 2 of 3 |
-| Sonnet 5.5, xhigh | 11 of 12 | $1.00 on Sonnet, $1.82 billed | 0 of 3 |
-| Opus 5.5, medium | 11 of 12 | $0.80 | 3 of 3 |
+| Arm                                      | Caught   | Cost per site                 | Finding on #6087 |
+| ---------------------------------------- | -------- | ----------------------------- | ---------------- |
+| Sonnet 5.5, medium (the review's effort) | 4 of 12  | $0.23                         | 1 of 3           |
+| Sonnet 5.5, high                         | 8 of 12  | $0.42                         | 2 of 3           |
+| Sonnet 5.5, xhigh                        | 11 of 12 | $1.00 on Sonnet, $1.82 billed | 0 of 3           |
+| Opus 5.5, medium                         | 11 of 12 | $0.80                         | 3 of 3           |
 
 - Medium caught only the two #6059 sites. High added #6076 flags (2 of 3). No Sonnet arm below
   xhigh caught #6055 finalize (0 of 6).
