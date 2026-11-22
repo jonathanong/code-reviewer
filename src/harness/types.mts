@@ -19,6 +19,10 @@ export type Capabilities = {
 /** The depth of reasoning a step asks for. */
 export type RunEffort = 'low' | 'medium'
 
+/** Every level a benchmark may request of the pillar agent (`max` is not allowed); a review uses only `RunEffort`. */
+export const BENCH_EFFORTS = ['low', 'medium', 'high', 'xhigh'] as const
+export type BenchEffort = (typeof BENCH_EFFORTS)[number]
+
 /** The effort for a plan's mode. The plan's own `effort` is separate. */
 export const EFFORT: Record<Exclude<Mode, 'skip'>, RunEffort> = {
   light: 'low',
@@ -39,7 +43,7 @@ export type HarnessRun = {
   timeoutMs?: number
   /** Added to this process's environment for the step only. */
   env?: Record<string, string>
-  effort?: RunEffort
+  effort?: BenchEffort
   /** Directories outside `cwd` the step may read. */
   addDirs?: readonly string[]
   /** The `pluginSettings` object limiting the step to the rule plugins; opaque to callers. */

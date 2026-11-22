@@ -1,3 +1,4 @@
+import type { BenchEffort } from '../../harness/types.mts'
 import type { ExcerptsMode } from '../context/types.mts'
 import { describeStepFailure } from '../../harness/runner.mts'
 import { createHash } from 'node:crypto'
@@ -36,6 +37,8 @@ export type RawResult =
       harness?: string
       /** Shell prefixes `bench --shell` granted; absent for a normal run. */
       shell?: string[]
+      /** The `--effort` the pillar agent ran at; absent for the default. */
+      effort?: BenchEffort
     }
   | {
       error: string
@@ -43,6 +46,7 @@ export type RawResult =
       excerpts?: ExcerptsMode
       harness?: string
       shell?: string[]
+      effort?: BenchEffort
       plugins?: string[]
       selected?: string[]
       usage?: Usage

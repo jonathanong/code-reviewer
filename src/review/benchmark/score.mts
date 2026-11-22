@@ -1,3 +1,4 @@
+import type { BenchEffort } from '../../harness/types.mts'
 import type { Finding, Severity } from '../finding.mts'
 import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
@@ -35,6 +36,8 @@ export type PillarSummary = {
   harness?: string
   /** Shell prefixes `bench --shell` granted to the pillar agent; such rows are an experiment. */
   shell?: string[]
+  /** The `--effort` the pillar agent ran at when it was not the default: a review does not use it. */
+  effort?: BenchEffort
   /** Paired control comparison; present only with `--baseline`. */
   baseline?: BaselineSummary
 }

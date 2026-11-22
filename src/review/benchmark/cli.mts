@@ -6,6 +6,7 @@ import { PILLARS, type Pillar } from '../pillar-name.mts'
 import { defaultSelectStep, type SelectStep } from './case-selection.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
 import { parseExcerpts } from './excerpts.mts'
+import { otherEffort, parseBenchEffort } from './effort-option.mts'
 import { assertPillarHarness, otherHarness } from './harness-option.mts'
 import { judgeAll } from './judge-all.mts'
 import { shellPrefixes } from './shell-option.mts'
@@ -92,6 +93,7 @@ export async function runReviewBenchCli(
       case: { type: 'string', multiple: true },
       model: { type: 'string' },
       harness: { type: 'string' },
+      effort: { type: 'string' },
       'reads-outside-checkout': { type: 'boolean' },
       shell: { type: 'string', multiple: true },
       'max-turns': { type: 'string' },
@@ -119,6 +121,7 @@ export async function runReviewBenchCli(
     JSON.parse(deps.readFile(values.cases)) as unknown,
     dirname(values.cases),
   ).filter((item) => ids.size === 0 || ids.has(item.id))
+  const effort = otherEffort(parseBenchEffort(values.effort))
   const pillars = pickPillars(values.pillar ?? [], cases)
   assertPillarHarness(values, pillars, values['no-rules'] !== true)
   const excerpts =
@@ -146,6 +149,7 @@ export async function runReviewBenchCli(
     ...(otherHarness(values.harness) === undefined ? {} : { harness: values.harness }),
     ...(values['reads-outside-checkout'] === true ? { readsOutsideCheckout: true } : {}),
     ...(shell.length === 0 ? {} : { shell }),
+    ...(effort === undefined ? {} : { effort }),
     ...excerpts,
     ...(values.baseline === undefined ? {} : { baseline: values.baseline }),
   }
