@@ -341,9 +341,27 @@ skills whose descriptions fail to trigger), and tokens by model. `--score-only` 
 attempts, `--case <id>` limits the run, and `--cache <dir>` reuses the clone cache of an earlier
 `bench` run.
 
+A case may also declare `"unwantedSkills": ["jong-skills:agent-workflow"]`: full `plugin:skill`
+names the call should leave out because nothing in the changed files falls under what the skill
+governs. The loader rejects an empty array, a bare name, a repeat, and a name that is also in
+`expectedSkills` (an any-of member counts). The names are only scored here; `bench` ignores them.
+When any case declares them, the run also reports over-selection, and cases without the field are
+unaffected:
+
+- **Unwanted selections**: the attempts, of the cases that declare the field, that named at least
+  one unwanted skill, as "N of M attempts", plus the number of unwanted selections in all.
+- **Per skill**: for each unwanted skill, the attempts of the cases that list it that selected it.
+- **Per case**: attempts with any unwanted skill, and the count per skill.
+
+They appear in `summary.md`, in `summary.json` (`summary.unwanted`, and `unwanted` on each case
+and attempt that declares it) and as an `unwanted` object in the final JSON line. A hit does not
+depend on them.
+
 It does not show that the reviewer then loads or applies a selected skill, that a selected skill
-helps, or that the other skills offered did no harm: it counts only the names returned. Selecting
-extra skills is not penalized; the mean number selected is reported beside the hit rate.
+helps, or that the other skills offered did no harm: it counts only the names returned. Without
+`unwantedSkills`, selecting extra skills is not penalized; the mean number selected is reported
+beside the hit rate. A label is a judgment about what the changed files need, so a selection of an
+unlabeled skill is not a claim that it was right.
 
 The score for this eval is in the benchmark README.
 

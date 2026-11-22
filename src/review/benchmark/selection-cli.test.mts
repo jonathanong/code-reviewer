@@ -194,6 +194,30 @@ describe('runReviewSelectionBenchCli', () => {
     expect(summary.summary).toMatchObject({ hits: 1, notRun: 2 })
   })
 
+  it('reports unwanted selections in the files and the final line only when a case has them', async () => {
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const h = harness(() => choice(['jong-skills:one', 'jong-skills:two']))
+    h.store.set(
+      'cases.json',
+      JSON.stringify([
+        { ...caseJson('s1', ['jong-skills:one']), unwantedSkills: ['jong-skills:two'] },
+        caseJson('s4', ['jong-skills:one']),
+      ]),
+    )
+    await runReviewSelectionBenchCli([...BASE, '--attempts', '2'], h.deps)
+    const line = JSON.parse(String(out.mock.calls[0]?.[0])) as Record<string, unknown>
+    expect(line.unwanted).toMatchObject({ cases: 1, attempts: 2, attemptsWithUnwanted: 2 })
+    expect(h.store.get('o/summary.md')).toContain('| jong-skills:two | 2 of 2 | 100% |')
+    expect(JSON.parse(h.store.get('o/summary.json') as string)).toMatchObject({
+      summary: { unwanted: { selections: 2 } },
+      scores: [{ unwanted: ['jong-skills:two'] }, {}],
+    })
+    out.mockClear()
+    const plain = harness(() => choice(['jong-skills:one']))
+    await runReviewSelectionBenchCli([...BASE, '--case', 's1', '--attempts', '1'], plain.deps)
+    expect(JSON.parse(String(out.mock.calls[0]?.[0]))).not.toHaveProperty('unwanted')
+  })
+
   it('reuses the cache directory from --cache', async () => {
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness(() => choice(['jong-skills:one']))

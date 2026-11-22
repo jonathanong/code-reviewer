@@ -92,7 +92,7 @@ function scoreAll(cases: Selectable[], options: Options, deps: BenchDeps): strin
       runs.push(choice?.usage ?? null)
       if (choice?.usage) usages.push(choice.usage)
     }
-    scores.push(scoreSelectionCase(item.id, item.expectedSkills, choices))
+    scores.push(scoreSelectionCase(item.id, item.expectedSkills, choices, item.unwantedSkills))
   }
   const summary = summarizeSelection(scores)
   const usage = summarizeUsage(usages)
@@ -111,6 +111,7 @@ function scoreAll(cases: Selectable[], options: Options, deps: BenchDeps): strin
     meanSelected,
     errors,
     notRun,
+    ...(summary.unwanted === null ? {} : { unwanted: summary.unwanted }),
     costUsd: usage.totalCostUsd,
   })
 }

@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: unwanted skills labeled for the selection eval (no run)
+
+A case may declare `unwantedSkills`, and `bench-selection` now reports how often those skills are
+selected, overall, per skill and per case. The 10 tagged cases of `synthetic.json` are labeled,
+against `jong-skills` 3507dd4aca6f and `no-mistakes-rules` 0.109.109 as installed on the labeling
+date: process skills, `documentation` where the diff changes no doc or comment, and skills for
+technology absent from the diff (SQL, React, workflows, test code, `package.json` and so on). The
+mined cases of `cases.json` are not labeled. No model was called and no score is re-measured: the
+hit rate and mean selected of the entries below are unchanged and comparable, and there is no
+earlier unwanted-selection number to compare with.
+
 ## 2026-11-21: abandoned: stricter wording in the selection prompt
 
 Commit 7a95490. `bench-selection`, Haiku, the 22 tagged cases of `synthetic.json` and `cases.json`,
