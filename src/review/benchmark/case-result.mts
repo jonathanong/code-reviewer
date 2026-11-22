@@ -8,6 +8,7 @@ import type { BenchDeps } from './cli.mts'
 import { currentAssignment, type RawResult } from './judge-all.mts'
 import { scoreCase, type CaseScore } from './score.mts'
 import type { Usage } from './usage.mts'
+import { expectedReadsFor, scoreReads, type ReadCase } from './reads-score.mts'
 import { expectedSkillsFor, scoreSkills, type SkillCase } from './skills-score.mts'
 
 export type CaseResult =
@@ -23,6 +24,8 @@ export type CaseResult =
   | {
       score: CaseScore
       skillCase: SkillCase | null
+      /** Expected reads opened; separate from the finding score. Null when the case expects none. */
+      readCase: ReadCase | null
       skillTool: boolean
       usage: Usage | null
       /** The `--excerpts` arm of the run; null when the flag was not given. */
@@ -84,9 +87,11 @@ export function readCaseResult(
   const caught = score.expected > 0 && score.matched === score.expected
   // Results saved before skills were recorded count as nothing loaded.
   const skillCase = wanted.length > 0 ? scoreSkills(item, wanted, raw.skills ?? [], caught) : null
+  const readList = expectedReadsFor(item, pillar)
   return {
     score,
     skillCase,
+    readCase: readList.length > 0 ? scoreReads(item, readList, raw) : null,
     skillTool: raw.skillTool !== false,
     usage,
     excerpts,

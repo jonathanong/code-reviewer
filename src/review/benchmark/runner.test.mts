@@ -78,6 +78,8 @@ describe('runPillar', () => {
     expect(findings).toEqual({
       findings: [{ pillar: 'design', severity: 'low', title: 'T', body: 'B' }],
       skills: [],
+      reads: [],
+      searches: [],
       usage: NO_USAGE,
     })
     const [command, args, options] = exec.mock.calls[0] as unknown as [

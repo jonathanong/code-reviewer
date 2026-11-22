@@ -114,6 +114,8 @@ export async function runRounds(
       record.roundsRun += 1
       record.roundFindings.push(added.length)
       record.skills = [...new Set([...record.skills, ...next.skills])]
+      record.reads = [...new Set([...record.reads, ...next.reads])]
+      record.searches = [...new Set([...record.searches, ...next.searches])]
       record.usage = addUsage(record.usage, next.usage) as PillarOutput['usage']
     } catch (error) {
       const { message, usage } = describeStepFailure(error)

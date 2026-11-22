@@ -81,7 +81,7 @@ export function readOpencodeResult(stdout: string, request: HarnessRun): Harness
     throw new ReviewError(`${request.label} did not reply with the JSON its schema requires.`)
   }
   const usage = sumUsage(events, request.model)
-  return { structured, skills: [], usage, reportedUsage: usage }
+  return { structured, skills: [], reads: [], searches: [], usage, reportedUsage: usage }
 }
 
 /** The message to record for a failed run; a non-zero exit keeps the error event OpenCode printed. */

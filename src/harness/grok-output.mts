@@ -66,7 +66,14 @@ export function readGrokResult(stdout: string, what: string): HarnessResult {
   const message = errorMessage(parsed)
   if (message !== undefined) throw new ReviewError(`${what} failed: ${message}`)
   const usage = parseGrokUsage(parsed)
-  return { structured: parsed.structuredOutput, skills: [], usage, reportedUsage: usage }
+  return {
+    structured: parsed.structuredOutput,
+    skills: [],
+    reads: [],
+    searches: [],
+    usage,
+    reportedUsage: usage,
+  }
 }
 
 /** The message to record for a failed run; a non-zero exit keeps the error object Grok printed. */
