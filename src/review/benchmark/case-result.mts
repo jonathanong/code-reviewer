@@ -18,6 +18,7 @@ export type CaseResult =
       harness: string | null
       shell: string[] | null
       effort: BenchEffort | null
+      rounds: number | null
     }
   | {
       score: CaseScore
@@ -34,6 +35,9 @@ export type CaseResult =
       shell: string[] | null
       /** The `--effort` recorded on the result; null for the default and for older results. */
       effort: BenchEffort | null
+      rounds: number | null
+      /** A later round's failure; the earlier rounds' findings are still scored. */
+      roundError: string | null
     }
 
 /**
@@ -56,6 +60,7 @@ export function readCaseResult(
       harness: null,
       shell: null,
       effort: null,
+      rounds: null,
     }
   const raw = JSON.parse(deps.readFile(path)) as RawResult
   // Results saved before usage was recorded have none: missing, not zero.
@@ -64,14 +69,15 @@ export function readCaseResult(
   const harness = raw.harness ?? null
   const shell = raw.shell ?? null
   const effort = raw.effort ?? null
-  if ('error' in raw) return { error: raw.error, usage, excerpts, harness, shell, effort }
+  const rounds = raw.rounds ?? null
+  if ('error' in raw) return { error: raw.error, usage, excerpts, harness, shell, effort, rounds }
   let assignment: ReturnType<typeof currentAssignment>
   if (judge !== undefined) {
     const expected = item.expected.filter((entry) => entry.pillar === pillar)
     assignment = currentAssignment(raw, expected, judge)
     // Unjudged cases stay out of judged metrics rather than falling back to locations.
     if (assignment === undefined)
-      return { error: 'not judged', usage, excerpts, harness, shell, effort }
+      return { error: 'not judged', usage, excerpts, harness, shell, effort, rounds }
   }
   const score = scoreCase(item, pillar, raw.findings, assignment)
   const wanted = expectedSkillsFor(item, pillar)
@@ -88,5 +94,7 @@ export function readCaseResult(
     harness,
     shell,
     effort,
+    rounds,
+    roundError: raw.roundError ?? null,
   }
 }

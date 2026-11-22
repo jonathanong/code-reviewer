@@ -10,6 +10,7 @@ import { pool } from '../run/pool.mts'
 import { excerptWriter } from './excerpts.mts'
 import type { RawResult } from './judge-all.mts'
 import { benchPlugins } from './plugin-settings.mts'
+import { runRounds, type RoundsRecord } from './rounds.mts'
 import { runPillar } from './runner.mts'
 import type { Options } from './score-all.mts'
 import { NO_RULES } from './rules.mts'
@@ -80,6 +81,7 @@ export async function runAll(
       plugins,
       ...(chosen === undefined ? {} : { selected: chosen }),
       ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
+      ...(options.rounds === undefined ? {} : { rounds: options.rounds }),
     }
     const ranOn = {
       ...(options.harness === undefined ? {} : { harness: options.harness }),
@@ -104,12 +106,16 @@ export async function runAll(
         ...(options.selectAllPillars === true ? { selectAllPillars: true } : {}),
         ...(settings === undefined ? {} : { settings }),
       }
-      const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)
+      const { findings, skills, usage, ...rounded } =
+        options.rounds === undefined
+          ? await runPillar(item, dir, run, deps.exec)
+          : await runRounds(item, dir, run, options.rounds, deps.exec)
       result = {
         findings,
         skills,
         skillTool: !options.noRules,
         usage,
+        ...(rounded as Partial<RoundsRecord>),
         ...seen,
         ...ranOn,
         ...shelled,

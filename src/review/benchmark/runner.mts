@@ -61,6 +61,8 @@ export type PillarRun = {
   readsOutsideCheckout?: boolean
   /** Command prefixes `bench --shell` grants on top of the pillar's own; Claude only. */
   shell?: readonly string[]
+  /** Text appended to the prompt by the benchmark only, such as `--rounds`' list of earlier findings. */
+  after?: string
   /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
   settings?: object
 }
@@ -77,6 +79,7 @@ export async function runPillar(
     ...(run.excerpts === undefined ? [] : contextLines(EXCERPTS_FILE, run.excerpts)),
     ...skillInstruction(forcedSkills(run.pillar, run.selected ?? [], run.selectAllPillars)),
     ...excerptsLines(run.excerpts, EXCERPTS_FILE),
+    ...(run.after === undefined ? [] : [run.after]),
   ].join('\n\n')
   const result = await runFixedModel(
     {
