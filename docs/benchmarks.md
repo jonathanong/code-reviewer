@@ -106,6 +106,20 @@ non-empty array of full names, meaning any one of them satisfies it:
   listed as `caught without <skill>`. `summary.json` holds the four counts (`grounded`,
   `ungrounded`, `loadedMissed`, `missed`) and `skillsAvailable`. Recall is unchanged.
 
+### Reads and searches
+
+The same pass over the stream records `reads`, the distinct files the pillar agent opened with `Read`,
+and `searches`, the distinct `Grep` and `Glob` patterns it ran (with `in <path>` or `glob <glob>` when
+given), each in first-use order and only when the tool result came back without an error. Calls made
+by a subagent count. A read inside the snapshot tree is saved relative to it, so it compares with a
+case path; any other path is saved as the model gave it. They tell a missed finding that was never
+looked at apart from one that was looked at and misjudged. A case may declare
+`"expectedReads": ["src/queue.ts"]` (repo-relative files a good review opens; a non-empty array of
+non-empty strings). It applies to the same pillars as `expectedSkills`, is counted separately and never
+part of the finding match: `summary.json` holds a `readCases` list (`opened`, `missing`) per pillar and
+`summary.md` a `Reads:` section with a line per case. A result from another harness, or saved before
+reads were recorded, reports `n/a` rather than zero.
+
 ### Run flags
 
 `--select` runs the same Haiku skill-selection step `review` runs, once per case, and ends the

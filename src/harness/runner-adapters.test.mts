@@ -6,7 +6,14 @@ import type { FailureClass, Harness, HarnessRun } from './types.mts'
 import { HarnessRefusal } from './refusal.mts'
 import { READ_ONLY } from './types.mts'
 
-const RESULT = { structured: 1, skills: [], usage: {} as never, reportedUsage: null }
+const RESULT = {
+  structured: 1,
+  skills: [],
+  reads: [],
+  searches: [],
+  usage: {} as never,
+  reportedUsage: null,
+}
 
 /** Two adapters that fail as told: the first with a named retry-after, the second never. */
 const calls: string[] = []

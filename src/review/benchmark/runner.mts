@@ -1,3 +1,5 @@
+import { isAbsolute, relative } from 'node:path'
+
 import { runFixedModel } from '../../harness/runner.mts'
 import { EFFORT, type BenchEffort } from '../../harness/types.mts'
 import type { Pillar } from '../pillar-name.mts'
@@ -12,6 +14,14 @@ import { PILLAR_OUTPUT_SCHEMA } from '../run/pillar-schema.mts'
 import type { EvalCase } from './cases.mts'
 import { describeCase } from './fixture.mts'
 import { CONTEXT_DIR, hasContextNotes, hasRulesIndex, type Exec } from './snapshot.mts'
+
+/** A path inside the snapshot tree as a path relative to it; any other path unchanged. */
+function insideTree(dir: string, path: string): string {
+  const relation = relative(dir, path)
+  return isAbsolute(path) && relation !== '' && !relation.startsWith('..') && !isAbsolute(relation)
+    ? relation
+    : path
+}
 
 /** Wraps a pillar prompt with the case's untrusted pull request context. */
 export function buildPillarPrompt(
@@ -104,5 +114,6 @@ export async function runPillar(
           },
         ]),
   )
-  return parsePillarOutput(result, run.pillar)
+  const output = parsePillarOutput(result, run.pillar)
+  return { ...output, reads: output.reads.map((path) => insideTree(dir, path)) }
 }

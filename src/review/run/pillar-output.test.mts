@@ -38,11 +38,15 @@ describe('parsePillarOutput', () => {
         },
       ],
       skills: [],
+      reads: [],
+      searches: [],
       usage: NO_USAGE,
     })
     expect(parse(output([]), 'design')).toEqual({
       findings: [],
       skills: [],
+      reads: [],
+      searches: [],
       usage: NO_USAGE,
     })
   })
@@ -93,6 +97,8 @@ describe('parsePillarOutput', () => {
     expect(parse(stream, 'rules')).toEqual({
       findings: [],
       skills: ['no-mistakes-rules:testing-rules', 'skills:bounded-iteration'],
+      reads: ['a'],
+      searches: [],
       usage: NO_USAGE,
     })
   })
@@ -186,6 +192,12 @@ describe('a run with a subagent', () => {
 
   it('returns undefined structured output when no event has any', () => {
     const stream = readStream(JSON.stringify({ type: 'assistant', message: {} }), 'Run')
-    expect(stream).toEqual({ structured: undefined, skills: [], usage: NO_USAGE })
+    expect(stream).toEqual({
+      structured: undefined,
+      skills: [],
+      reads: [],
+      searches: [],
+      usage: NO_USAGE,
+    })
   })
 })
