@@ -36,7 +36,12 @@ describe('shellPrefixes', () => {
 describe('grantedShell', () => {
   it('prefers the flag, then the first saved result, else nothing', () => {
     expect(grantedShell(['rg'], [['git log']])).toEqual(['rg'])
-    expect(grantedShell(undefined, [null, ['git log']])).toEqual(['git log'])
+    expect(grantedShell(undefined, [['git log'], ['git log']])).toEqual(['git log'])
+    expect(grantedShell(undefined, [])).toBeUndefined()
+    expect(grantedShell([], [['rg']])).toBeUndefined()
+    expect(() => grantedShell(undefined, [null, ['git log']])).toThrow('different --shell grants')
+    expect(() => grantedShell(undefined, [['rg'], ['git log']])).toThrow('not one arm')
+    expect(() => shellPrefixes({ shell: ['rg'], 'loads-only': true })).toThrow('--loads-only')
     expect(grantedShell(undefined, [null])).toBeUndefined()
     expect(grantedShell(undefined, [[]])).toBeUndefined()
   })

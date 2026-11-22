@@ -8,9 +8,17 @@ const SHELL_SYNTAX = /[;|&<>`\n]|\$\(/
  * The experiment is Claude only: Codex refuses shell prefixes, so a non-Claude `--harness` is
  * rejected here, naming the flag.
  */
-export function shellPrefixes(values: { shell?: string[]; harness?: string }): string[] {
+export function shellPrefixes(values: {
+  shell?: string[]
+  harness?: string
+  'loads-only'?: boolean
+}): string[] {
   const given = values.shell
   if (given === undefined) return []
+  if (values['loads-only'] === true)
+    throw new Error(
+      'bench --shell cannot be used with --loads-only: its report has no shell label.',
+    )
   const harness = otherHarness(values.harness)
   if (harness !== undefined)
     throw new Error(
@@ -27,13 +35,23 @@ export function shellPrefixes(values: { shell?: string[]; harness?: string }): s
   return [...new Set(prefixes)]
 }
 
-/** The prefixes to label a run with: the flag, else what the saved results record, for `--score-only`. */
+/**
+ * The prefixes to label a run with: the flag, else what the saved results record, for
+ * `--score-only`. Saved results that do not all record the same grant are not one arm, so they
+ * are refused.
+ */
 export function grantedShell(
   flag: readonly string[] | undefined,
   saved: ReadonlyArray<readonly string[] | null>,
 ): string[] | undefined {
-  const found = flag ?? saved.find((prefixes) => prefixes !== null)
-  return found === undefined || found.length === 0 ? undefined : [...found]
+  if (flag !== undefined) return flag.length === 0 ? undefined : [...flag]
+  const grants = new Set(saved.map((prefixes) => (prefixes ?? []).join('\n')))
+  if (grants.size > 1)
+    throw new Error(
+      'bench: the saved results were run with different --shell grants, so they are not one arm. Score them in separate --out directories.',
+    )
+  const found = saved[0] ?? []
+  return found.length === 0 ? undefined : [...found]
 }
 
 /** The summary.md line that stops an experiment row passing for a normal one. */
