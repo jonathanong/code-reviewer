@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import type { FixtureCase } from './cases.mts'
 import { ExecError, type Exec } from './exec.mts'
+import { onlyPathDiff } from './only-path.mts'
 import { CONTEXT_DIR, writeContext, type Snapshot } from './snapshot-context.mts'
 
 /**
@@ -26,6 +27,7 @@ export async function prepareFixtureSnapshot(
   item: FixtureCase,
   workRoot: string,
   exec: Exec,
+  onlyPath?: readonly string[],
 ): Promise<Snapshot> {
   const caseRoot = join(workRoot, item.id)
   const dir = join(caseRoot, 'tree')
@@ -42,7 +44,7 @@ export async function prepareFixtureSnapshot(
     if (!(error instanceof ExecError) || error.code !== 1) throw error
     raw = error.stdout
   }
-  const diff = normalizeFixtureDiff(raw)
+  const diff = onlyPathDiff(item.id, normalizeFixtureDiff(raw), onlyPath)
   const pr = readFileSync(join(item.fixtureDir, 'pr.md'), 'utf8')
   const [titleLine = '', ...rest] = pr.split('\n')
   const body = rest.join('\n')

@@ -2,6 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: `bench --only-path` shows the pillar agent part of the diff (no run)
+
+`bench` gains `--only-path PATH` (repeatable): the pillar agent is shown only the part of the pull
+request diff that touches those paths, while the checkout tree stays whole. No prompt, schema, case
+or grader changed, and no run was made. Rows made with the flag carry an `onlyPath` label in
+`summary.json` and `summary.md` and are not comparable with any other row; rows made without it are
+unchanged.
+
 ## 2026-11-22: pilot, Claude Code's `/code-review` in place of the `correctness` pillar
 
 One attempt, so a pilot and not a measurement. Commit 9573ff2, `cases.json` (18 cases for

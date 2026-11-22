@@ -41,17 +41,23 @@ export async function runAll(
   const selected = new Map<string, string[]>()
   const writeExcerpts =
     options.excerpts === undefined ? undefined : await excerptWriter(options.excerpts, deps)
-  for (const item of new Set(
-    pillars.flatMap((pillar) => benchCases(cases, pillar, options.loadsOnly)),
-  )) {
+  const items = new Set(pillars.flatMap((pillar) => benchCases(cases, pillar, options.loadsOnly)))
+  // Every snapshot is prepared before any model call, so a case `--only-path` cannot serve stops the run first.
+  for (const item of items) {
     deps.log(`snapshot ${item.id}`)
-    const snapshot = await deps.prepare(
-      item,
-      join(options.out, 'cache'),
-      join(options.out, 'work'),
-      deps.exec,
+    snapshots.set(
+      item.id,
+      await deps.prepare(
+        item,
+        join(options.out, 'cache'),
+        join(options.out, 'work'),
+        deps.exec,
+        options.onlyPath,
+      ),
     )
-    snapshots.set(item.id, snapshot)
+  }
+  for (const item of items) {
+    const snapshot = snapshots.get(item.id) as Snapshot
     // The digest keys a saved raw result to the rules it saw; control runs record `none`.
     digests.set(item.id, options.noRules ? NO_RULES : await deps.stageRules(item, snapshot))
     if (select !== undefined) {
@@ -87,7 +93,10 @@ export async function runAll(
       ...(options.harness === undefined ? {} : { harness: options.harness }),
       ...(options.effort === undefined ? {} : { effort: options.effort }),
     }
-    const shelled = options.shell === undefined ? {} : { shell: options.shell }
+    const shelled = {
+      ...(options.shell === undefined ? {} : { shell: options.shell }),
+      ...(options.onlyPath === undefined ? {} : { onlyPath: options.onlyPath }),
+    }
     let result: RawResult
     try {
       const { model, maxTurns } = options

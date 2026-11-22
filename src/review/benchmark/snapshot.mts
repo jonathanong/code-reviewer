@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { isFixtureCase, type EvalCase, type RepoCase } from './cases.mts'
 import { defaultExec, type Exec } from './exec.mts'
 import { cacheDirOf, ensureCache, fetchCommits } from './snapshot-cache.mts'
+import { onlyPathDiff } from './only-path.mts'
 import { writeContext, type Snapshot } from './snapshot-context.mts'
 import { prepareFixtureSnapshot } from './snapshot-fixture.mts'
 import { buildTree } from './snapshot-tree.mts'
@@ -31,6 +32,7 @@ async function prepareRepoSnapshot(
   cacheRoot: string,
   workRoot: string,
   exec: Exec = defaultExec,
+  onlyPath?: readonly string[],
 ): Promise<Snapshot> {
   const repoDir = cacheDirOf(cacheRoot, item.repo)
   mkdirSync(cacheRoot, { recursive: true })
@@ -50,13 +52,14 @@ async function prepareRepoSnapshot(
   // A description edited after the head was pushed can state the fix a later head made.
   const body = item.body ?? current
   await buildTree(dir, repoDir, { baseBranch, baseSha: item.baseSha, headSha: item.headSha }, exec)
-  const diff = await exec('git', [
+  const full = await exec('git', [
     '-C',
     repoDir,
     'diff',
     '--no-color',
     `${item.baseSha}...${item.headSha}`,
   ])
+  const diff = onlyPathDiff(item.id, full, onlyPath)
   writeContext(dir, item.title, diff, body)
   return { dir, diff, body }
 }
@@ -67,7 +70,8 @@ export async function prepareSnapshot(
   cacheRoot: string,
   workRoot: string,
   exec: Exec = defaultExec,
+  onlyPath?: readonly string[],
 ): Promise<Snapshot> {
-  if (isFixtureCase(item)) return prepareFixtureSnapshot(item, workRoot, exec)
-  return prepareRepoSnapshot(item, cacheRoot, workRoot, exec)
+  if (isFixtureCase(item)) return prepareFixtureSnapshot(item, workRoot, exec, onlyPath)
+  return prepareRepoSnapshot(item, cacheRoot, workRoot, exec, onlyPath)
 }

@@ -36,6 +36,8 @@ export type PillarSummary = {
   harness?: string
   /** Shell prefixes `bench --shell` granted to the pillar agent; such rows are an experiment. */
   shell?: string[]
+  /** Paths `bench --only-path` limited the shown diff to; such rows are an experiment. */
+  onlyPath?: string[]
   /** The `--effort` the pillar agent ran at when it was not the default: a review does not use it. */
   effort?: BenchEffort
   /** Requested `bench --rounds` limit for the pillar agent per case; such rows are an experiment. */

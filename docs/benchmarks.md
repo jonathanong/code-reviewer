@@ -354,6 +354,26 @@ findings and records `roundError`. `summary.json` records `rounds`, and `summary
 rows. `--score-only` reads the rounds from the saved results and refuses a directory whose results
 differ.
 
+### Diff narrowed to paths for the pillar agent
+
+`--only-path PATH` (repeatable) is an experiment flag: the pillar agent is shown only the part of
+the pull request diff that touches those repo-relative paths, to test whether a pillar finds more
+when it is aimed at a narrow target. The checkout tree stays whole; only `.review/diff.patch`, the
+per-file patches, `files.md` and the diff the prompt is built from are cut. A path matches exactly,
+after a leading `./` or `/` is dropped, and a renamed file matches on its old or its new path.
+Mined and fixture cases both honor it. A case whose diff touches none of the paths fails the run
+before any rules or model call, naming the case and the paths, as do an empty path and `--loads-only`.
+
+```bash
+pnpm exec code-reviewer bench --cases benchmarks/review/cases.json \
+  --prompts skills/review/references/pillars --out "$TMPDIR/review-bench-only-path" \
+  --pillar correctness --only-path src/a.ts --only-path src/b.ts
+```
+
+The raw result records `onlyPath`, `summary.json` records it, and `summary.md` opens with "Diff
+shown to the pillar agent: only ...". Such rows are not comparable with normal rows. `--score-only`
+reads the paths from the saved results and refuses a directory whose results differ.
+
 Results are written to `<out>/raw/<pillar>/<case>.json`, then `summary.json` and `summary.md`. Use
 `--score-only` to re-score existing raw results, and `--case <id>` to run one case. Runs cost
 money and take minutes per case, so run only the pillars whose prompts changed.
