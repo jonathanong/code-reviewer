@@ -67,7 +67,9 @@ export function roundsNote(rounds: number): string {
 /** The block for the next round: the fixed instruction and the findings so far, as data. */
 export function roundsPrompt(found: readonly Finding[]): string {
   const listed = found.map(({ path, line, title, body }) => ({ path, line, title, body }))
-  return `${ROUNDS_BLOCK}\n\n\`\`\`json\n${JSON.stringify(listed, null, 2)}\n\`\`\``
+  // A backtick in a finding is escaped so its text cannot close the data fence.
+  const data = JSON.stringify(listed, null, 2).replaceAll('`', '\\u0060')
+  return `${ROUNDS_BLOCK}\n\n\`\`\`json\n${data}\n\`\`\``
 }
 
 const spot = (finding: Finding) =>

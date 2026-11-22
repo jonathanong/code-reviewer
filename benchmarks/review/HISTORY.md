@@ -17,8 +17,9 @@ two attempts were judged for this entry.
 - A second round found no expected problem. All judged matches in both arms are
   `vouchington-tooling-154`. Round two added 15 findings to round one's 19, at about twice the
   cost, and more negative runs carry a finding.
-- With "Sonnet with shell" and "`high` effort" below, three explanations for Sonnet's recall on
-  these cases are now ruled out: missing tools, effort, and stopping after one pass.
+- With the `high` effort entry below, neither more effort nor a second pass raised Sonnet's judged
+  matches. The shell run below is weaker evidence about missing tools: it did not record whether
+  Sonnet used the commands it was granted.
 - Abandoned attempt, not to be repeated: the first `--rounds 2` run stopped after round one when
   round one found nothing, so only 18 of 54 runs had a second round and the missed cases were
   never looked at again (judged 3 of 24, location 4 of 24, $10.79). The flag now always runs a

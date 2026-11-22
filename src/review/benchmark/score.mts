@@ -38,7 +38,7 @@ export type PillarSummary = {
   shell?: string[]
   /** The `--effort` the pillar agent ran at when it was not the default: a review does not use it. */
   effort?: BenchEffort
-  /** Rounds `bench --rounds` ran the pillar agent per case; such rows are an experiment. */
+  /** Requested `bench --rounds` limit for the pillar agent per case; such rows are an experiment. */
   rounds?: number
   /** Paired control comparison; present only with `--baseline`. */
   baseline?: BaselineSummary

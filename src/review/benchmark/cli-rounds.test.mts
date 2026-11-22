@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { runReviewBenchCli, type PillarBenchDeps } from './cli.mts'
-import { grantedRounds, ROUNDS_BLOCK } from './rounds.mts'
+import type { Finding } from '../finding.mts'
+import { grantedRounds, ROUNDS_BLOCK, roundsPrompt } from './rounds.mts'
 
 const CASES = [
   {
@@ -106,6 +107,12 @@ describe('runReviewBenchCli --rounds', () => {
     expect(raw).toMatchObject({ rounds: 2, roundsRun: 1, roundFindings: [1] })
     expect(raw.roundError).toContain('boom')
     expect(raw.error).toBeUndefined()
+    expect(h.files.get('out/summary.md')).toContain(
+      'p1: a later round failed, earlier findings kept',
+    )
+    expect(
+      roundsPrompt([{ ...found('a.ts', 1), pillar: 'correctness', body: 'x ``` y' } as Finding]),
+    ).not.toContain('x ```')
   })
 
   it('keeps a finding without a line, and records rounds on a failed case', async () => {

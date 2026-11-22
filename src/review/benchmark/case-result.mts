@@ -36,6 +36,8 @@ export type CaseResult =
       /** The `--effort` recorded on the result; null for the default and for older results. */
       effort: BenchEffort | null
       rounds: number | null
+      /** A later round's failure; the earlier rounds' findings are still scored. */
+      roundError: string | null
     }
 
 /**
@@ -93,5 +95,6 @@ export function readCaseResult(
     shell,
     effort,
     rounds,
+    roundError: raw.roundError ?? null,
   }
 }

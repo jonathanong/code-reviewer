@@ -93,6 +93,8 @@ export function scoreAll(
         errors.push(`${item.id}: ${result.error}`)
         continue
       }
+      if (result.roundError !== null)
+        errors.push(`${item.id}: a later round failed, earlier findings kept: ${result.roundError}`)
       scores.push(result.score)
       loads.push(result.skillLoads)
       tools.push(result.skillTool)
@@ -147,7 +149,7 @@ export function scoreAll(
   const ranOn = [...new Set(report.map((entry) => entry.summary.harness).filter(Boolean))]
   const shelled = report.find((entry) => entry.summary.shell !== undefined)?.summary.shell
   const levels = [...new Set(report.map((entry) => entry.summary.effort).filter(Boolean))]
-  const rounded = report.find((entry) => entry.summary.rounds !== undefined)?.summary.rounds
+  const rounded = [...new Set(report.flatMap((entry) => entry.summary.rounds ?? []))]
   const matching = judge === undefined ? 'file and line' : `claims judged by ${judge}`
   const markdown = [
     ...(ranOn.length === 0
@@ -161,7 +163,7 @@ export function scoreAll(
       : [
           `Effort: pillar agent at ${levels.join(', ')}; not what a review uses, so these rows are not comparable with normal rows.`,
         ]),
-    ...(rounded === undefined ? [] : [roundsNote(rounded)]),
+    ...rounded.map(roundsNote),
     `Matching: ${matching}.${armed ? ` Excerpts: ${armLabel(report)}.` : ''}`,
     renderSummaryTable(report.map((entry) => entry.summary)),
     'Cost (runs with recorded usage):',
