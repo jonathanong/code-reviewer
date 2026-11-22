@@ -10,6 +10,15 @@ Each raw result gains `reads` (files the pillar agent opened, relative to the sn
 score changes and no run was made, so every earlier row stays comparable; results saved before this have
 no reads and report `n/a`.
 
+## 2026-11-22: approval-check prompt and schema gain `reviewSummary`
+
+No run made. `skills/review/references/refute.md` and `APPROVAL_CHECK_SCHEMA` changed: the check
+returns `reviewSummary`, the review's summary rewritten, whenever it adds a finding or question.
+
+No benchmark row is affected. No benchmark exercises the approval check: `bench` scores pillars
+and the verifier alone (`src/review/benchmark` does not call `applyApprovalCheck`), and
+`benchmarks/review/README.md` has no approval-check row.
+
 ## 2026-11-22: `vouchington-6174-b1a495fe` added to `revisions.json`
 
 Case added, not yet measured; no score changes. It adds a row, so totals over

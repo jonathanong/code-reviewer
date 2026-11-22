@@ -35,11 +35,23 @@ export type ApprovalCheck = {
   ran?: StepRan
 }
 
-type Run = { findings: Finding[]; questions: Question[]; note: string; usage: Usage }
+type Run = {
+  findings: Finding[]
+  questions: Question[]
+  note: string
+  /** The review's summary rewritten for the additions; absent when the check gave none. */
+  reviewSummary?: string
+  usage: Usage
+}
 
 /** Reads the check's answer; malformed findings or questions fail the check, not the review. */
 export function parseApprovalCheck({ structured, usage }: HarnessResult): Run {
-  const raw = structured as { summary?: unknown; findings?: unknown; questions?: unknown } | null
+  const raw = structured as {
+    summary?: unknown
+    reviewSummary?: unknown
+    findings?: unknown
+    questions?: unknown
+  } | null
   if (raw === null || raw === undefined || !Array.isArray(raw.findings)) {
     throw new ReviewError('Approval check run returned no structured findings.')
   }
@@ -48,7 +60,14 @@ export function parseApprovalCheck({ structured, usage }: HarnessResult): Run {
     findings: raw.findings,
     questions: raw.questions,
   })
-  return { findings: review.findings, questions: review.questions, note: review.summary, usage }
+  const rewritten = typeof raw.reviewSummary === 'string' ? raw.reviewSummary.trim() : ''
+  return {
+    findings: review.findings,
+    questions: review.questions,
+    note: review.summary,
+    ...(rewritten === '' ? {} : { reviewSummary: rewritten }),
+    usage,
+  }
 }
 
 export type ApprovalCheckStep = {
@@ -72,6 +91,8 @@ export type ApprovalCheckResult = {
   findings: Finding[]
   questions: Question[]
   skipped: SkippedPillar[]
+  /** The review's summary to post instead of the verifier's: set only when the check added something and rewrote it. */
+  summary?: string
 }
 
 const firstLine = (text: string) => text.split('\n')[0] as string
@@ -129,7 +150,15 @@ export async function applyApprovalCheck(step: ApprovalCheckStep): Promise<Appro
       questions: run.questions,
       usage: run.usage,
     }
-    return { check, findings, questions, skipped: base.skipped }
+    const added = run.findings.length + run.questions.length > 0
+    const summary = added ? run.reviewSummary : undefined
+    return {
+      check,
+      findings,
+      questions,
+      skipped: base.skipped,
+      ...(summary === undefined ? {} : { summary }),
+    }
   } catch (error) {
     const { message, usage, ran: failedRun } = describeStepFailure(error)
     ran = failedRun ?? ran
