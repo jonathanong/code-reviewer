@@ -20,6 +20,7 @@
   named) only to separate a selection failure from a reviewer miss.
 - Do not run the whole of `cases.json` or `revisions.json` unless the owner asks: large cases cost dollars per run.
 - Give a mined case `body` (the description as it read at `headSha`) whenever the description was edited after that head; a later edit can state the fix.
+- Name in `expectedReads` (repo-relative paths) a file a good review must open; the raw result's `reads` and `searches` show what the run opened and searched for, and the count is reported apart from recall.
 - Give every positive case `expectedSkills` with full `plugin:skill` names when a shared rule
   skill states its rule. Do not write a case for a rule no skill states.
 - `unwantedSkills` (full `plugin:skill` names, scored only by `bench-selection`) lists skills the selection

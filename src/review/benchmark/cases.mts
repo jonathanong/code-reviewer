@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { ReviewError, SEVERITIES, type Severity } from '../finding.mts'
 import { PILLARS, type Pillar } from '../pillar-name.mts'
 import { parseExpectedRules, type ExpectedRule } from './expected-rules.mts'
+import { parseExpectedReads } from './reads-score.mts'
 import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 
@@ -22,6 +23,8 @@ type CaseBase = {
   expected: ExpectedFinding[]
   /** Rule skills a run should load by full `plugin:skill` name; an array entry is any-of. */
   expectedSkills?: ExpectedSkill[]
+  /** Repo-relative files a good review opens; counted against the run's recorded reads, never part of the finding match. */
+  expectedReads?: string[]
   /** Rule lines the expected finding depends on; `bench-context` checks the excerpts hold them. */
   expectedRules?: ExpectedRule[]
   /** Skills `bench-selection` should not select for this case; none of them is expected. */
@@ -156,12 +159,14 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
   if (raw.kind === 'negative' && parsed.length > 0)
     fail(where, 'a negative case has no expected findings')
   const expectedSkills = skillNames(raw.expectedSkills, where)
+  const expectedReads = parseExpectedReads(raw.expectedReads, where)
   const expectedRules = parseExpectedRules(raw.expectedRules, expectedSkills, where)
   const unwantedSkills = parseUnwantedSkills(raw.unwantedSkills, expectedSkills, where)
   return {
     id: str(raw, 'id', where),
     ...origin,
     ...(expectedSkills === undefined ? {} : { expectedSkills }),
+    ...(expectedReads === undefined ? {} : { expectedReads }),
     ...(expectedRules === undefined ? {} : { expectedRules }),
     ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
     title: str(raw, 'title', where),

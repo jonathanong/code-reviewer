@@ -106,13 +106,15 @@ export async function runAll(
         ...(options.selectAllPillars === true ? { selectAllPillars: true } : {}),
         ...(settings === undefined ? {} : { settings }),
       }
-      const { findings, skills, usage, ...rounded } =
+      const { findings, skills, reads, searches, usage, ...rounded } =
         options.rounds === undefined
           ? await runPillar(item, dir, run, deps.exec)
           : await runRounds(item, dir, run, options.rounds, deps.exec)
       result = {
         findings,
         skills,
+        reads,
+        searches,
         skillTool: !options.noRules,
         usage,
         ...(rounded as Partial<RoundsRecord>),

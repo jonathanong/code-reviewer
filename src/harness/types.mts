@@ -59,6 +59,10 @@ export type HarnessResult = {
   structured: unknown
   /** Distinct skills the step loaded; always empty without `transcript`. */
   skills: string[]
+  /** Distinct files the step read, as the model named them; always empty without `transcript`. */
+  reads: string[]
+  /** Distinct Grep and Glob patterns the step ran; always empty without `transcript`. */
+  searches: string[]
   usage: Usage
   /** The usage the step itself reported at its end; null when it reported none. A step that rejects the answer records this. */
   reportedUsage: Usage | null

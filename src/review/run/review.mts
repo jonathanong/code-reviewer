@@ -130,10 +130,11 @@ async function review(
     ...harness,
   })
   throwIfStopped(models.watch)
+  const posted = second.summary === undefined ? output : { ...output, summary: second.summary }
   const dependencies = reviewDependencies(run, output.dependencies)
   const input = buildReviewInput({
     effort: plan.effort,
-    output,
+    output: posted,
     skipped,
     findings: verified,
     questions,
@@ -155,7 +156,7 @@ async function review(
     pillars: results,
     verifier: {
       model: output.ran.model,
-      output: { ...output, findings: verified, questions },
+      output: { ...posted, findings: verified, questions },
     },
     evidence,
     approvalCheck: second.check,

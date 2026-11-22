@@ -25,6 +25,9 @@ export type RawResult =
       plugins?: string[]
       /** Distinct skills the run loaded through the Skill tool; absent in older results. */
       skills?: string[]
+      /** Distinct files the run read, relative to the snapshot when inside it, and its Grep and Glob searches; absent in older results and from a harness that reports none. */
+      reads?: string[]
+      searches?: string[]
       /** False for a control run with no Skill tool; absent in older results. */
       skillTool?: boolean
       /** Skills `--select` told the run to load; absent without it. */

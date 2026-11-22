@@ -12,6 +12,51 @@ case or grader changes, and the section is absent from every other run.
 No benchmark row is non-comparable: the pillar and verifier benchmarks build their own prompts
 and never carry an earlier review, so none exercises the new section. It is not measured.
 
+## 2026-11-22: raw results record reads and searches; cases may name `expectedReads`
+
+Each raw result gains `reads` (files the pillar agent opened, relative to the snapshot when inside it) and
+`searches` (its Grep and Glob patterns), read from the Claude stream like `skills`; a case may declare
+`expectedReads`, and the summary reports how many were opened apart from recall. No prompt, case, grader or
+score changes and no run was made, so every earlier row stays comparable; results saved before this have
+no reads and report `n/a`.
+
+## 2026-11-22: approval-check prompt and schema gain `reviewSummary`
+
+No run made. `skills/review/references/refute.md` and `APPROVAL_CHECK_SCHEMA` changed: the check
+returns `reviewSummary`, the review's summary rewritten, whenever it adds a finding or question.
+
+No benchmark row is affected. No benchmark exercises the approval check: `bench` scores pillars
+and the verifier alone (`src/review/benchmark` does not call `applyApprovalCheck`), and
+`benchmarks/review/README.md` has no approval-check row.
+
+## 2026-11-22: `vouchington-6174-b1a495fe` added to `revisions.json`
+
+Case added, not yet measured; no score changes. It adds a row, so totals over
+`revisions.json` are not comparable with earlier entries (50 cases, 29 pull requests).
+
+One pilot attempt checked the grader and the baseline: correctness pillar, Sonnet at medium effort,
+judge Opus, commit `a12d167`. It raised no finding in 6 turns for $0.16 (0 of 1). One attempt is
+not a rate.
+
+Source: `vouchington/vouchington` pull request 6174 (the soft-deleted-user purge), base
+`1dbac5c467f0d919bc0ab97d1e192e690d76d49d`, head `b1a495fe4a4280ade451df8d06760fc3287c5f50`. The
+guard is removed in `258c64ad7` and is still removed at the head; `6ddb9f6596ca382a44dbab5a9d29cfbc333f6849`
+restores it, keyed on `membership_lineage_bindings.user_id`.
+
+What it checks: a review told the author the refund guard in the purge `DELETE` was unreachable
+because `NOT EXISTS memberships` implied it. An earlier stage of the same transaction
+(`cleanup-user-preserved-rows.mts`, "remove membership projections") has already deleted the
+memberships rows, so the guard was live. The case passes when a correctness-pillar finding says
+the removal is wrong for that reason (the purge can delete a user with a refund pending). It fails
+when the review accepts the removal, is silent, or objects only to something else. The expected
+claim carries the pass and fail text for the judge; the reviewer never sees it.
+
+Unlike the other cases here, it was not cut from the Opus audit: it records a known miss of the
+review pilot, where the orchestrating session made the wrong claim itself. `body` is the description edit current when the head was pushed (edit of
+18:40 UTC, before the restoring commit at 19:10), and it carries the author's "removed as
+unreachable" claim, so the reviewer has to rebut it. The format has no `expectedReads`, so the
+file with the earlier statement is not listed.
+
 ## 2026-11-22: pilot, one removed lock per reviewer, by model and effort
 
 Pilot only. No case file, prompt or score in the tree changes; nothing here is a README row.
