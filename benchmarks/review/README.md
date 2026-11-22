@@ -56,7 +56,9 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 
 - The control's three catches are one each on `rules-content-only-unordered-pick`,
   `rules-manifest-only-duplicate-utility` and `rules-test-only-per-item`.
-- The two `lock-scope-*` positives are ceiling cases: the correctness prompt states their rule.
+- The `lock-scope-*` row is from the 2026-11-22 run (`jong-skills` a361cf367bd2,
+  `no-mistakes-rules` 0.109.113), not the 2026-11-16 one. Both positives are ceiling cases: the
+  correctness prompt tells the reviewer not to recommend a lock the locking skill does not allow.
 - `rules-repo-orchestration-package` puts its rule in the fixture repository's own `AGENTS.md`.
   `--no-rules` removes the shared skills, not that file, so its control is not a null hypothesis;
   the case checks that a repository rule is applied and cited.
@@ -81,18 +83,19 @@ judged by Sonnet, $25.14):
   show whether it would refute a wrong one.
 - It costs about $0.24 a fixture case and $0.43 a mined case, more than a pillar run.
 
-Shared context alone (`bench-context`, no model, 10 tagged synthetic cases and 3 history cases;
-2026-11-21): is what a case depends on in the context a review builds?
+Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3 history cases;
+2026-11-22): is what a case depends on in the context a review builds?
 
 | Check                                           | Result                                        |
 | ----------------------------------------------- | --------------------------------------------- |
-| Expected skills quoted in full / in part / none | 9 / 1 / 1                                     |
-| Expected rule text in the excerpt               | 10 present, 1 cut, 0 missing, 0 not installed |
-| Most quoted from one skill                      | 4,857 of 6,000 characters                     |
+| Expected skills quoted in full / in part / none | 9 / 1 / 3                                     |
+| Expected rule text in the excerpt               | 10 present, 3 cut, 0 missing, 0 not installed |
+| Most quoted from one skill                      | 5,933 of 6,000 characters                     |
 | History and linked-regression checks            | 5 of 5 found                                  |
 
-- The rule that was cut is in a prose skill (`bounded-iteration`) that is never quoted; its case
-  also names `queue-rules`, which holds the sibling rule in full.
+- The rules that were cut are in prose skills (`postgres-locking` twice, `bounded-iteration`),
+  which are never quoted; the `bounded-iteration` case also names `queue-rules`, which holds the
+  sibling rule in full.
 - It does not measure whether a pillar uses the excerpt, only that the text is there to use.
   Rule text is checked against the plugin versions installed when it ran.
 
@@ -101,7 +104,8 @@ Shared context alone (`bench-context`, no model, 10 tagged synthetic cases and 3
 - Every rate is out of 3 attempts per arm. A difference of one catch is noise.
 - The result is the gap between "with skills" and "without". A row where both arms score the
   same is a ceiling case: it shows the skills do no harm, not that they help.
-- The `vouchington-2936` note is from a later run than the table; it says so.
+- The `vouchington-2936` note and the `lock-scope-*` row are from later runs than the table; each
+  says so.
 
 ### What the suite does not measure
 

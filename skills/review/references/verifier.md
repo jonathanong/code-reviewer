@@ -51,10 +51,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    pillar did not already cover against the code at the head, and keep it only if it is real and
    still present, under the pillar it belongs to, naming the reviewer in a few words only when the
    note is not yet an open thread; if it is, link that thread in one line instead. Drop the
-   rest; never repeat a note only because another reviewer made it. Do not endorse a note that
-   asks for wider locks (parents, ancestors, roots, or other rows the transaction only reads):
-   a transaction locks only the rows it writes, so drop it and prefer a constraint or conditional
-   write.
+   rest; never repeat a note only because another reviewer made it. When a note asks for a lock
+   or a wider one (parents, ancestors, roots, or other rows the transaction only reads), load
+   `jong-skills:postgres-locking`: unless that skill allows the lock, drop the note and prefer
+   what the skill recommends.
 7. **Stacks.** When the run has a Stack block, do this last, for every finding you are about to
    keep, including those kept in steps 5 and 6: check it against the later members' diffs (each
    has an index, `stack/<number>/INDEX.md`, of its changed files with one numbered patch per file

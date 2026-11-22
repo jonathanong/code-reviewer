@@ -32,9 +32,10 @@ vulnerabilities (security), and whether the description matches the code (congru
 
 This repository's `AGENTS.md` overrides its skills, which override shared skills. A dependency's
 rules govern how the change uses that dependency. When this repository's instructions explicitly
-allow what a shared rule forbids, the repository wins: do not report it. The correctness pillar's
-lock-scope rule (lock only the rows a transaction writes) is stricter than the parent-row mutex
-allowance in no-mistakes `postgresql-rules`; never cite that allowance to approve a wider lock.
+allow what a shared rule forbids, the repository wins: do not report it. For a lock, the
+locking skill the correctness pillar names is stricter than the parent-row mutex allowance in
+no-mistakes `postgresql-rules`; never cite that allowance to approve a lock that skill does not
+allow.
 
 ## Blocking bar
 

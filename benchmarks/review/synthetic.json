@@ -4,14 +4,21 @@
     "fixture": "fixtures/lock-scope-ancestor-locks",
     "title": "fix: serialize reply creation with concurrent edits to the thread",
     "kind": "positive",
-    "reason": "A reply insert locks the recursive ancestor chain and the parent row, which the transaction only reads; the foreign key to the parent already protects the insert.",
+    "reason": "A reply insert locks the recursive ancestor chain and the parent row, which the transaction only reads; the foreign key to the parent already protects the insert. jong-skills:postgres-locking: \"Anywhere else, never lock a read set or a parent row to serialize writers, and never close a race with a wider lock.\"",
     "expected": [
       {
         "pillar": "correctness",
         "severity": "medium",
         "path": "replies.mts",
         "lines": null,
-        "claim": "The transaction locks entities it only reads (the recursive ancestor chain and the parent row) before inserting the reply. That violates the lock-scope rule: a transaction locks only the rows it writes. Every write in a thread now serializes on shared ancestors and the lock count grows with depth. The foreign key to the parent already protects the insert; if more is needed, use a conditional check on the written row, not wider locks."
+        "claim": "The transaction locks entities it only reads (the recursive ancestor chain and the parent row) before inserting the reply. A reply is not an exact quantity or a legal or irreversible invariant, so nothing allows locking a read set or a parent row to serialize writers. Every write in a thread now serializes on shared ancestors and the lock count grows with depth. The foreign key to the parent already protects the insert; if more is needed, use a conditional check on the written row, not wider locks."
+      }
+    ],
+    "expectedSkills": ["jong-skills:postgres-locking"],
+    "expectedRules": [
+      {
+        "skill": "jong-skills:postgres-locking",
+        "text": "never lock a read set or a parent row to serialize writers"
       }
     ]
   },
@@ -20,14 +27,21 @@
     "fixture": "fixtures/lock-scope-race-response",
     "title": "feat: reject replies to archived comments",
     "kind": "positive",
-    "reason": "Check-then-write race: the parent can be archived between the read and the insert. Another reviewer asks for parent and ancestor locks, which the lock-scope rule declines.",
+    "reason": "Check-then-write race: the parent can be archived between the read and the insert. Another reviewer asks for parent and ancestor locks. jong-skills:postgres-locking: \"A reviewer's \"race condition\" finding, from a person or a bot, never by itself justifies a lock, a wider lock, or a coordination column.\"",
     "expected": [
       {
         "pillar": "correctness",
         "severity": "medium",
         "path": "replies.mts",
         "lines": null,
-        "claim": "The archived check and the insert race: the parent can be archived between them, so a reply can land under an archived comment. Close the race with a constraint or a conditional write on the written row (for example INSERT ... SELECT ... WHERE the parent is not archived), or accept it and resolve at read time. It must not recommend locking the parent, its ancestors, or the thread, even though another reviewer asked for it: a transaction locks only the rows it writes."
+        "claim": "The archived check and the insert race: the parent can be archived between them, so a reply can land under an archived comment. Handle the race without a lock: a constraint, a conditional write on the written row (for example INSERT ... SELECT ... WHERE the parent is not archived) that narrows it, or accepting it and resolving at read time. It must not recommend locking the parent, its ancestors, or the thread, even though another reviewer asked for it: a race finding does not justify a lock or a wider lock."
+      }
+    ],
+    "expectedSkills": ["jong-skills:postgres-locking"],
+    "expectedRules": [
+      {
+        "skill": "jong-skills:postgres-locking",
+        "text": "never by itself justifies a"
       }
     ]
   },
@@ -67,6 +81,7 @@
       "no-mistakes-rules:dependency-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq",
@@ -120,7 +135,7 @@
       },
       {
         "skill": "no-mistakes-rules:queue-rules",
-        "text": "MUST NOT loop until empty or default a cap to infinity; cap rows, batches, or time per run."
+        "text": "SHOULD NOT run a scheduled sweep over a growing source without a finite bound on rows, batches, or time."
       }
     ],
     "title": "feat: purge expired sessions every 15 minutes",
@@ -156,6 +171,7 @@
       "no-mistakes-rules:dependency-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq",
@@ -203,6 +219,7 @@
       "no-mistakes-rules:typescript-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq",
@@ -249,6 +266,7 @@
       "no-mistakes-rules:typescript-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq",
@@ -297,6 +315,7 @@
       "no-mistakes-rules:testing-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq",
@@ -387,19 +406,19 @@
     "expectedRules": [
       {
         "skill": "no-mistakes-rules:queue-rules",
-        "text": "MUST NOT leave a non-terminal state without a timeout exit, or pick work without an `ORDER BY`."
+        "text": "SHOULD NOT select work without a stable order when fairness or repeatability matters."
       }
     ],
     "title": "feat: claim due reminders in batches",
     "kind": "positive",
-    "reason": "The changed file's path gives no hint of the topic. claimDue locks a batch of due reminders with LIMIT and FOR UPDATE SKIP LOCKED but no ORDER BY, so which reminders a run takes is arbitrary and an old one can wait indefinitely. Only the shared no-mistakes queue-rules state this (\"MUST NOT leave a non-terminal state without a timeout exit, or pick work without an `ORDER BY`\").",
+    "reason": "The changed file's path gives no hint of the topic. claimDue locks a batch of due reminders with LIMIT and FOR UPDATE SKIP LOCKED but no ORDER BY, so which reminders a run takes is arbitrary and an old one can wait indefinitely. Only the shared no-mistakes queue-rules state this (\"SHOULD NOT select work without a stable order when fairness or repeatability matters.\").",
     "expected": [
       {
         "pillar": "rules",
         "severity": "high",
         "path": "src/members/reminders.ts",
         "lines": null,
-        "claim": "Citing the shared no-mistakes queue-rules skill (MUST NOT pick work without an ORDER BY), claimDue selects due reminders with LIMIT and FOR UPDATE SKIP LOCKED and no ORDER BY, so the batch a run picks is arbitrary and the oldest due reminders can be passed over. A finding that does not tie this to that shared rule does not match."
+        "claim": "Citing the shared no-mistakes queue-rules skill (SHOULD NOT select work without a stable order when fairness or repeatability matters), claimDue selects due reminders with LIMIT and FOR UPDATE SKIP LOCKED and no ORDER BY, so the batch a run picks is arbitrary and the oldest due reminders can be passed over. A finding that does not tie this to that shared rule does not match."
       }
     ]
   },
@@ -425,6 +444,7 @@
       "no-mistakes-rules:testing-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq"
@@ -518,6 +538,7 @@
       "no-mistakes-rules:testing-rules",
       "jong-skills:postgres-node-performance-tuning",
       "jong-skills:postgres-schema-design",
+      "jong-skills:postgres-locking",
       "jong-skills:postgres-partitioning-uuid-v7",
       "no-mistakes-rules:postgresql-rules",
       "jong-skills:glide-mq",
