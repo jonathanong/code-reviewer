@@ -2,6 +2,43 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, one removed lock per reviewer, by model and effort
+
+Pilot only. No case file, prompt or score in the tree changes; nothing here is a README row.
+
+Question: the review run misses most lock-removal defects in `revisions.json`. Does giving one
+reviewer one removed lock, instead of the whole diff, find them, and at what model and effort?
+
+Setup, none of it in the tree: 4 single-site cases cut from heads where an audit found a defect
+behind a removed lock (#6055 finalize, #6059 aliases, #6059 link, #6076 flags), each telling the
+reviewer which removed lock to judge; a correctness prompt narrowed to concurrency; description
+as it read at the head. Correctness pillar, `--select`, judge Opus 5.5, 3 attempts per arm, same
+day, commit 955bfa7 (before the subagent change below).
+
+| Arm                                      | Caught   | Cost per site                 | Finding on #6087 |
+| ---------------------------------------- | -------- | ----------------------------- | ---------------- |
+| Sonnet 5.5, medium (the review's effort) | 4 of 12  | $0.23                         | 1 of 3           |
+| Sonnet 5.5, high                         | 8 of 12  | $0.42                         | 2 of 3           |
+| Sonnet 5.5, xhigh                        | 11 of 12 | $1.00 on Sonnet, $1.82 billed | 0 of 3           |
+| Opus 5.5, medium                         | 11 of 12 | $0.80                         | 3 of 3           |
+
+- Medium caught only the two #6059 sites. High added #6076 flags (2 of 3). No Sonnet arm below
+  xhigh caught #6055 finalize (0 of 6).
+- The xhigh arm is confounded: 8 of its 15 runs dispatched a built-in subagent on another model
+  (entry below). On the 7 positive runs that used only Sonnet it caught 6.
+- #6087 was labelled clean but is an accepted outcome change, so a finding there is not a false
+  alarm; the column is not a false-positive rate. The medium arm also ran 3 other clean sites, 9
+  runs, with no finding. The other arms did not run them.
+- Two earlier arms on whole heads, same day: a hand-written list of the other writers of each
+  locked row took the focused prompt from 1 of 12 to 8 of 12, but a script-generated list of the
+  same kind gave 1 of 12 and findings on clean heads in 2 of 9 runs. A mechanical writers list is
+  not worth building.
+
+What it shows: narrowing to one site helps at every setting, and the rest of the gap is reasoning
+depth. Sonnet at xhigh matches Opus at medium and costs more. This is pillar recall; the verifier
+was not run on these findings. Sample: 12 attempts per arm cannot resolve a difference of one or
+two catches.
+
 ## 2026-11-22: a pillar dispatches only the `explorer` subagent
 
 No cases change. Pillar runs before this change could dispatch Claude Code's built-in subagents
