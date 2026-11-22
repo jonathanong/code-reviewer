@@ -180,12 +180,12 @@ describe('runReviewBenchCli runs', () => {
     expect(h.staged).toEqual(['p1', 'n1'])
   })
 
-  it('with --select tells each pillar which skills to load and records them', async () => {
+  it('with --select records the selected skills; only the rules pillar is told to load them', async () => {
     stdoutSpy()
     const files = { 'cases.json': JSON.stringify(CASES), 'prompts/security.md': 'P' }
     const h = harness({ ...files, '/snap/p1/.review/pr.md': '# T', '/snap/n1/.review/pr.md': '' })
     await runReviewBenchCli([...BASE, '--select'], h.deps)
-    expect(h.execCalls[0]?.args[1]).toContain('call the Skill tool once for each of these skills')
+    expect(h.execCalls[0]?.args[1]).not.toContain('call the Skill tool once')
     expect(JSON.parse(h.files.get('out/raw/security/p1.json') as string).selected).toEqual([
       'skills:one',
     ])

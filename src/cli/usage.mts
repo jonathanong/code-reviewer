@@ -22,7 +22,7 @@ code-reviewer outcomes digest [--day YYYY-MM-DD] [--out DIR]
 code-reviewer issues [--dry-run] [--since DAYS]
 code-reviewer doctor [--repo owner/name | --owner LOGIN] [--offline]
 code-reviewer models --harness opencode [--free] [--model ID]... [--probes N] [--jobs N] [--out DIR]
-code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select] [--baseline DIR]
+code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]... [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--no-rules] [--select [--select-all-pillars]] [--baseline DIR]
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
 code-reviewer bench-context [--cases cases.json]... [--history history.json]... --out DIR [--case ID]...
@@ -96,7 +96,8 @@ code-reviewer bench-context [--cases cases.json]... [--history history.json]... 
   grounded recall (catches that loaded the skill). --baseline DIR is the --out of an earlier
   --no-rules run of the same cases: the summary adds control recall and lift (grounded minus control
   recall over positives both runs scored) and lists cases the control caught. --select runs review's
-  skill-selection step for each case first and tells each pillar which skills to load. bench also records each
+  skill-selection step for each case first and, as review does, tells the rules pillar to load them;
+  --select-all-pillars tells every pillar (the earlier behaviour, for comparison; review has no such option). bench also records each
   run's cost, turns, and tokens and prints a Cost table (total, per run, turns, input tokens) and a
   Tokens by model table (runs, input, output, cost per pillar and model, plus an all row).
   bench-verifier records and prints the same by model for its verifier and checker runs. review

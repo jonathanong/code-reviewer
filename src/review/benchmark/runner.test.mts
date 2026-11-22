@@ -121,7 +121,7 @@ describe('runPillar', () => {
         item,
         '/snap',
         {
-          pillar: 'design',
+          pillar: 'rules',
           pillarPrompt: 'P',
           model: 'opus',
           maxTurns: 5,

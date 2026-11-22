@@ -51,6 +51,22 @@ export function runFileLines(run: RunDir): string[] {
   ]
 }
 
+/**
+ * The pillars told to load every skill the selection step chose. Every other pillar, including a
+ * configured one, gets no such list and follows the contract's "load every matching skill" line.
+ * Forcing paid off only in `rules` (benchmarks/review/HISTORY.md, 2026-11-21).
+ */
+export const FORCED_SKILL_PILLARS: readonly string[] = ['rules']
+
+/** The selected skills a pillar is told to load: all of them for a forced pillar, none otherwise. */
+export function forcedSkills(
+  pillar: string,
+  skills: readonly string[],
+  allPillars = false,
+): readonly string[] {
+  return allPillars || FORCED_SKILL_PILLARS.includes(pillar) ? skills : []
+}
+
 /** The instruction that makes the model load the selected skills; it goes last in the prompt. */
 export function skillInstruction(skills: readonly string[]): string[] {
   return skills.length === 0

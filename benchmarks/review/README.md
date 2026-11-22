@@ -127,7 +127,7 @@ pnpm exec code-reviewer bench \
   --pillar design --jobs 3
 ```
 
-`bench --select --excerpts alongside|replace` compares loading every selected skill with skipping
+`bench --select --excerpts alongside|replace` compares loading every selected skill (the `rules` pillar) with skipping
 those already quoted in the shared context; see [the benchmarks reference](../../docs/benchmarks.md).
 
 `bench --loads-only --pillar <p> --case <id>` runs a pillar on a case it expects nothing from, with no judge,

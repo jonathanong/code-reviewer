@@ -33,8 +33,8 @@ the switch ([benchmark history](../benchmarks/review/HISTORY.md), 2026-11-21 pil
 claim was still found and the pillar took fewer turns, but cost did not fall, and the instruction
 was followed imprecisely: one run loaded no skill at all, including skills that were not quoted, and
 others still loaded a quoted one. A skill written as prose is never quoted in full, so skipping its
-load loses rules. The pillar contract tells the pillar to load every matching skill, and `replace`
-can only override that later in the same prompt; a pillar that reads two opposed instructions is
+load loses rules. The pillar contract tells every pillar to load every matching skill, the `rules` pillar is also
+told to load every selected one, and `replace` can only override that later in the same prompt; a pillar that reads two opposed instructions is
 what the pilot measured.
 
 The pillars get `rule-excerpts` (for the selected skills only), `changed-line-history` and

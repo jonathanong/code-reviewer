@@ -27,6 +27,8 @@ export type Options = {
   noRules: boolean
   /** Run review's skill-selection step per case and tell each pillar which skills to load. */
   select: boolean
+  /** With `--select`, tell every pillar to load the selected skills, not only `rules`. */
+  selectAllPillars?: boolean
   /** `--out` of an earlier `--no-rules` run of the same cases, for the paired control. */
   baseline?: string | undefined
   /** Run each pillar on every selected case and report only the skills it loaded; no judge. */

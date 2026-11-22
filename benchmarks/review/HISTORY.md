@@ -2,6 +2,61 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: selected skills are forced on the `rules` pillar only (three runs)
+
+The change: `review` tells only the `rules` pillar to load every skill the selection step chose;
+every other pillar, including a configured one, gets no such list and follows the contract's line to
+load the skills whose description matches. `bench --select` does the same, and
+`bench --select --select-all-pillars` reproduces the earlier behaviour. Three runs decided it. All
+used reviewer Sonnet (`claude-sonnet-5-5`), judge Opus, synthetic cases, the same session, on
+2026-11-21. "Pointed" is `bench` without `--select`; "forced" is `bench --select` as it was before
+this change.
+
+1. `rules` pillar, three attempts per arm, the other five tagged cases
+   (`rules-skills-sweep-until-empty`, `rules-manifest-only-duplicate-utility`,
+   `rules-content-only-metrics-on-tx-client`, `rules-content-only-unordered-pick`,
+   `rules-near-miss-renamed-log-field-monitor-updated`), commit 0ba88c2.
+
+   | Arm     | Recall   | Distinct skills per run | Turns per run | Cost per run  |
+   | ------- | -------- | ----------------------- | ------------- | ------------- |
+   | Pointed | 9 of 12  | 1.6                     | 11.3          | $0.12 ($1.82) |
+   | Forced  | 12 of 12 | 6.3                     | 21.1          | $0.15 ($2.28) |
+
+   No false alarm on the negative case in either arm. Pointed missed
+   `rules-content-only-unordered-pick` in all three attempts: it loaded `postgresql-rules` and never
+   `queue-rules`, which the selection step had picked. With the earlier five-case entry this is 24
+   of 27 pointed against 27 of 27 forced.
+
+2. `--loads-only`, pillars `correctness`, `security` and `design`, one attempt per arm, four cases
+   (`rules-test-only-global-call-count`, `rules-content-only-argv-entry-check`,
+   `rules-content-only-renamed-log-field`, `rules-skills-sweep-until-empty`), the commit that added
+   `--loads-only`. No judge, so no recall.
+
+   | Arm     | Skills per run (`correctness` / `security` / `design`) | Turns per run      | Cost per run          |
+   | ------- | ------------------------------------------------------ | ------------------ | --------------------- |
+   | Pointed | 0.3 / 0.0 / 0.0                                        | 7.8 / 5.0 / 7.0    | $0.11 / $0.08 / $0.09 |
+   | Forced  | 6.3 in each                                            | 19.0 / 17.8 / 18.5 | $0.15 / $0.13 / $0.14 |
+
+3. `correctness` and `blast-radius` on their own cases, three attempts per arm, seven cases
+   (`lock-scope-ancestor-locks`, `lock-scope-race-response`, `links-declared-api-payload`,
+   `links-consumer-field-rename`, and negatives `lock-scope-written-row-only`,
+   `options-forwarded-to-helper`, `links-consumer-additive-field`), main after `--loads-only`
+   merged. Both arms: recall 9 of 9 (`correctness`) and 3 of 3 (`blast-radius`), no false alarm in 9
+   negative runs per pillar. Pointed: 0.2 skills per run, $3.23 for 30 runs. Forced: 6.1 skills per
+   run, $4.55 for 30 runs.
+
+What it showed: forcing earns its place only in `rules`, where the pointed pillar missed a skill the
+selection step had picked. Elsewhere it costs about 40% more per run and roughly 2.5 times the
+turns for the same findings.
+
+Limits: recall is at the ceiling in run 3, so it cannot show a small loss. The cases are synthetic.
+`security`, `design`, `congruence` and `history` have no recall measurement. Whether a non-`rules`
+pillar finds more on real cases with a rule skill loaded is unmeasured.
+
+Comparability: this change makes every earlier `--select` row for a non-`rules` pillar
+non-comparable with later ones, because those pillars no longer get the instruction. The change
+itself was not re-run after it was implemented.
+
 ## 2026-11-21: `bench --loads-only` (no run)
 
 No model run. A new opt-in flag runs the named pillars on the named cases whatever pillars the

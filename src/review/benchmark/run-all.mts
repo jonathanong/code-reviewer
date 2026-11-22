@@ -92,6 +92,7 @@ export async function runAll(
         skills: !options.noRules,
         ...(options.excerpts === undefined ? {} : { excerpts: options.excerpts }),
         ...(chosen === undefined ? {} : { selected: chosen }),
+        ...(options.selectAllPillars === true ? { selectAllPillars: true } : {}),
         ...(settings === undefined ? {} : { settings }),
       }
       const { findings, skills, usage } = await runPillar(item, dir, run, deps.exec)

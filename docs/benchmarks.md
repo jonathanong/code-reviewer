@@ -96,21 +96,23 @@ non-empty array of full names, meaning any one of them satisfies it:
 
 ### Run flags
 
-`--select` runs the same Haiku skill-selection step `review` runs, once per case, and ends each
-pillar prompt with the instruction to load the skills it named, so the bench measures the prompt
-`review` really sends. The choice is saved as `<out>/selection/<case>.json` (reused when the run
-resumes) and as `selected` in each raw result. `--no-rules` ignores it. Without `--select` the
-pillar gets only the contract's general instruction to load matching skills.
+`--select` runs the same Haiku skill-selection step `review` runs, once per case, and ends the
+`rules` pillar's prompt with the instruction to load the skills it named, so the bench measures the
+prompt `review` really sends. Every other pillar gets no such instruction and follows the
+contract's line to load the skills whose description matches. `--select-all-pillars` (needs
+`--select`) gives every pillar the instruction, the earlier behaviour, to compare the two; The choice is saved as `<out>/selection/<case>.json` (reused when the run
+resumes) and as `selected` in each raw result. `--no-rules` ignores it. Without `--select` no
+pillar gets more than the contract's general instruction to load matching skills.
 
 `--excerpts alongside|replace` (needs `--select`, not with `--no-rules`) also builds review's
 `rule-excerpts` section for the selected skills and writes it to `.review/review-context.md` in
 each snapshot, with the line `review` gives the pillar about that file; a plain `bench` has neither.
-The two values differ only in the instruction. `alongside` is what a review sends: excerpts, and
-load every selected skill. `replace` marks each skill in the excerpts as "quoted in full", "quoted
+The two values differ only in the instruction. `alongside` is what a review sends: excerpts, and,
+for the `rules` pillar, load every selected skill. `replace` marks each skill in the excerpts as "quoted in full", "quoted
 in part (sections dropped: ...)" or "not quoted", and ends the prompt with a block telling the
 pillar not to load a skill quoted in full and to load only the others. That block overrides, for
-fully quoted skills, the contract's and the selection step's "load every skill" lines, which are
-static text, so the arm can still be pulled both ways by the prompt. Each raw result records
+fully quoted skills, the contract's "load every matching skill" line and, in the `rules` pillar,
+the selected-skills list, which are static text, so the arm can still be pulled both ways by the prompt. Each raw result records
 `excerpts`, and with the flag `summary.json` entries gain `excerpts` and `skillLoads` (`runs`,
 `total`, `mean`: distinct skills loaded through the `Skill` tool, not calls), the table header
 names the arm, and an "Excerpts arm and Skill loads" table is printed beside the cost tables.
