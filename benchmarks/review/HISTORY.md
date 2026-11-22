@@ -26,7 +26,9 @@ Matched per positive case, of three attempts times the findings it expects:
 | `vouchington-4154` (1)        | 0 of 3 | 0 of 3 | 0 of 3 |
 | `vouchington-clients-130` (1) | 0 of 3 | 0 of 3 | 0 of 3 |
 
-Both Codex models found two regressions in every attempt that Sonnet never found. Terra matched
+The Codex rows are not comparable with the Sonnet row as a model comparison: the harness, its
+tools and the absence of a Skill tool change along with the model. Sol and Terra share a harness,
+so those two rows compare. Both Codex models found two regressions in every attempt that Sonnet never found. Terra matched
 nearly as many as Sol with about a third of the findings and a quarter of the tokens. One Terra run
 failed (`vouchington-clients-103`, `max_output_tokens`), so it has 35 negative runs. A negative is
 a pull request that was not reverted, not one known to be clean, so the unmatched findings of every
