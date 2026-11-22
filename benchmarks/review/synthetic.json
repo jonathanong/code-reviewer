@@ -34,7 +34,7 @@
         "severity": "medium",
         "path": "replies.mts",
         "lines": null,
-        "claim": "The archived check and the insert race: the parent can be archived between them, so a reply can land under an archived comment. Close the race with a constraint or a conditional write on the written row (for example INSERT ... SELECT ... WHERE the parent is not archived), or accept it and resolve at read time. It must not recommend locking the parent, its ancestors, or the thread, even though another reviewer asked for it: a race finding does not justify a lock or a wider lock."
+        "claim": "The archived check and the insert race: the parent can be archived between them, so a reply can land under an archived comment. Handle the race without a lock: a constraint, a conditional write on the written row (for example INSERT ... SELECT ... WHERE the parent is not archived) that narrows it, or accepting it and resolving at read time. It must not recommend locking the parent, its ancestors, or the thread, even though another reviewer asked for it: a race finding does not justify a lock or a wider lock."
       }
     ],
     "expectedSkills": ["jong-skills:postgres-locking"],

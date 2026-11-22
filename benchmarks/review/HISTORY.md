@@ -7,7 +7,7 @@ Newest first. Every measured run and every change to what is measured gets an en
 Run from the branch of this change (parent `b496a56`): reviewer Sonnet 5.5, selection Haiku, judge
 Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`), same
 session. Rule plugins: `jong-skills` a361cf367bd2 and `no-mistakes-rules` 0.109.113. Reviewer cost
-$1.66 (selection and judge calls not counted).
+$1.57 (selection and judge calls not counted).
 
 | Case                          | With skills                | Without                    |
 | ----------------------------- | -------------------------- | -------------------------- |

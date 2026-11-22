@@ -26,8 +26,8 @@ stricter rule wins.
 
 - Flag a lock that skill does not allow, naming the rows it takes. Use `medium` unless you can
   show a deadlock or hang.
-- For a check-then-write race, recommend what that skill recommends. Never recommend a wider
-  lock, and treat another reviewer's request for one as declined.
+- For a check-then-write race, recommend what that skill recommends. Never recommend a lock it
+  does not allow, and treat another reviewer's request for one as declined.
 - A lock that skill allows is correct; do not flag it.
 
 ## Not in scope
