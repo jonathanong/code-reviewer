@@ -2,11 +2,33 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-21: `correctness` on the mined cases with two rounds: no gain for Sonnet
+
+Same session and cases as the entries below. Sonnet at the default effort, `--rounds 2`, three
+attempts, every attempt scored by location and then with `--score-only --judge opus`. The control
+is the single-round Sonnet arm of the entry "Codex Sol, Codex Terra, Claude Sonnet", whose other
+two attempts were judged for this entry.
+
+| Arm                | Judged matches | Location matches | Findings in all | Negative runs with a finding | Turns per run | Cost   |
+| ------------------ | -------------- | ---------------- | --------------- | ---------------------------- | ------------- | ------ |
+| Sonnet, two rounds | 3 of 24        | 7 of 24          | 34              | 16 of 36                     | 17.7          | $16.11 |
+| Sonnet, one round  | 3 of 24        | 4 of 24          | 18              | 11 of 36                     | 9.2           | $8.49  |
+
+- A second round found no expected problem. All judged matches in both arms are
+  `vouchington-tooling-154`. Round two added 15 findings to round one's 19, at about twice the
+  cost, and more negative runs carry a finding.
+- With "Sonnet with shell" and "`high` effort" below, three explanations for Sonnet's recall on
+  these cases are now ruled out: missing tools, effort, and stopping after one pass.
+- Abandoned attempt, not to be repeated: the first `--rounds 2` run stopped after round one when
+  round one found nothing, so only 18 of 54 runs had a second round and the missed cases were
+  never looked at again (judged 3 of 24, location 4 of 24, $10.79). The flag now always runs a
+  second round, and its block says the list may be empty.
+
 ## 2026-11-21: `bench --rounds` added (no run)
 
 Adds `bench --rounds N` (1 to 3), a benchmark-only experiment. Round two and three append one block
-to the pillar prompt ("Earlier rounds ... the findings below ... Look for problems that are NOT in
-that list. Return only new findings, and return none if there are none.", then the findings so far
+to the pillar prompt ("Earlier rounds ... the findings below ... the list may be empty. Review the change again and
+look for problems that are NOT in that list. Return only new findings, and return none if there are none.", then the findings so far
 as JSON). The block is a benchmark-only prompt addition: a review never builds it, and the pillar
 prompt, schemas and review argv are unchanged. Rows run with `--rounds` above 1 are not comparable
 with any earlier row. No run was made; no score changed, and the default (1) is unchanged.
