@@ -18,14 +18,27 @@ Matches per case over three attempts, `high` (Sonnet / Terra): `vouchington-tool
 3 of 4, `vouchington-tooling-187` 1 of 6 / 3 of 6, `vouchington-3419` 2 of 3 / 3 of 3,
 `vouchington-2936` 2 of 3 / 2 of 2, `vouchington-4154` 0 / 0, `vouchington-clients-130` 0 / 0.
 
-- Sonnet at `high` matched twice as many expected locations and for the first time matched
-  `vouchington-3419` and `vouchington-2936`. It also reported in 20 of 36 negative runs against 11,
+All three attempts of both `high` arms were then re-scored with `--score-only --judge opus`, which
+reads the claims:
+
+| Arm                           | Location matches | Judged matches |
+| ----------------------------- | ---------------- | -------------- |
+| Sonnet, `high`                | 8 of 24          | 3 of 24        |
+| Codex `gpt-6.1-terra`, `high` | 11 of 21         | 7 of 21        |
+
+- Higher effort did not help Sonnet. All three judged matches are `vouchington-tooling-154`, the
+  case it already matched at `medium`. Its location matches on `vouchington-3419` and
+  `vouchington-2936` state a different problem. It reported in 20 of 36 negative runs against 11,
   and cost about twice as much.
-- Terra at `high` did not improve, and two runs failed with `max_output_tokens`
-  (`vouchington-2936`, `vouchington-tooling-154`), so its denominator is 21.
-- These are location matches; no judge read the claims, and the findings on negative cases were
-  not checked by the verifier. Rows at `high` are not comparable with rows at the default effort
-  except as this experiment, and the Codex and Sonnet rows differ in harness as well as model.
+- Terra's judged matches are `vouchington-tooling-154` (3), `vouchington-3419` (2) and
+  `vouchington-2936` (2). Two of its runs failed with `max_output_tokens` (`vouchington-2936`,
+  `vouchington-tooling-154`), so its denominator is 21. It did not improve on `medium` by location.
+- Neither model, at either effort, has a judged match on `vouchington-tooling-187`,
+  `vouchington-4154` or `vouchington-clients-130`.
+- The `medium` rows have a judge score for one attempt only (entry below), and the findings on
+  negative cases were not checked by the verifier. Rows at `high` are not comparable with rows at
+  the default effort except as this experiment, and the Codex and Sonnet rows differ in harness as
+  well as model.
 
 ## 2026-11-21: `bench --effort` (no run)
 
