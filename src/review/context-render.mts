@@ -68,6 +68,11 @@ export function renderFollowUpContext(
     }
   }
   lines.push('', `## Other reviewers and comments (${context.others.length})`, '')
-  for (const note of context.others) lines.push(`- **${note.author}** ${note.where}: ${note.text}`)
+  if (context.othersDropped > 0) lines.push(`- [${context.othersDropped} more not shown]`)
+  for (const note of context.others) {
+    const label = note.bot ? `bot, ${note.kind}` : note.kind
+    const where = note.where === '' ? '' : ` ${note.where}`
+    lines.push(`- **${note.author}** [${label}]${where}: ${note.text}`)
+  }
   return `${lines.join('\n')}\n`
 }

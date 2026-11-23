@@ -2,6 +2,7 @@ import type { PrConversation, ReviewThread } from './context-query.mts'
 import { parseBodyFindings } from './body-findings.mts'
 import { answerableThreads, type Answerable } from './context/answerable.mts'
 import { restatableThreads, type Restatable } from './context/restatable.mts'
+import { othersFrom, type OtherNote } from './context/others.mts'
 import { latestInstance } from './last-review.mts'
 import { MARKER_RE, PART_MARKER_RE } from './markers.mts'
 import { parseQuestions, type Question } from './question.mts'
@@ -17,8 +18,6 @@ export type PriorFinding = {
   line: number | null
   outdated: boolean
 }
-
-export type OtherNote = { author: string; where: string; text: string }
 
 export type FollowUpContext = {
   title: string
@@ -40,6 +39,8 @@ export type FollowUpContext = {
   /** Questions the last review asked, so a follow-up does not ask an answered one again. */
   priorQuestions: Question[]
   others: OtherNote[]
+  /** Older notes of other reviewers cut by the cap, so the verifier knows the list is partial. */
+  othersDropped: number
   /** Open blocking or high threads of other reviewers, which the verifier may restate. */
   restatable: Restatable[]
   /** Open threads of other reviewers this one has not spoken in; the verifier may answer them. */
@@ -47,39 +48,12 @@ export type FollowUpContext = {
 }
 
 const FINDING_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* (.+)\n\n<sub>([a-z-]+)<\/sub>/u
-const NOTE_CHARS = 360
 const BODY_CHARS = 24_000
 const ISSUE_BODY_CHARS = 1500
 
 function clip(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`
 }
-/** Bots whose comments never carry review content. */
-const NOISE_AUTHORS = new Set(['codecov', 'github-actions', 'dependabot', 'vercel', 'netlify'])
-/** Service failure notices only: a reviewer saying an endpoint lacks a rate limit is feedback. */
-const NOISE_TEXT_RE =
-  /hit your usage limits?|usage limits? (?:reached|exceeded)|rate[- ]limit(?:ed| (?:exceeded|reached|hit))\b|review limit reached|review (?:summary|failed)[^.]*failed|review paused/iu
-
-function isNoise(note: OtherNote): boolean {
-  return NOISE_AUTHORS.has(note.author.replace(/\[bot\]$/u, '')) || NOISE_TEXT_RE.test(note.text)
-}
-const MAX_OTHER_NOTES = 40
-
-/** Collapses a third-party comment to plain text: no HTML comments, collapsed details, bounded. */
-export function squash(body: string, max = NOTE_CHARS): string {
-  const text = body
-    .replace(/<!--[\s\S]*?-->/gu, ' ')
-    .replace(/<details>\s*<summary>([\s\S]*?)<\/summary>[\s\S]*?<\/details>/gu, ' [$1] ')
-    .replace(/<[^>]+>/gu, ' ')
-    .replace(/\s+/gu, ' ')
-    .trim()
-  return text.length <= max ? text : `${text.slice(0, max - 1)}…`
-}
-
-function login(author: { login: string } | null): string {
-  return author?.login ?? 'ghost'
-}
-
 function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefined {
   const match = FINDING_RE.exec(body)
   if (match === null) return undefined
@@ -92,48 +66,6 @@ function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefi
     line: thread.line,
     outdated: thread.isOutdated,
   }
-}
-
-type Dated = OtherNote & { at: string }
-
-function othersFrom(pull: PrConversation, markedIds: Set<string>): OtherNote[] {
-  const threads = pull.reviewThreads.nodes.flatMap((thread): Dated[] => {
-    const first = thread.comments.nodes[0]
-    if (thread.isResolved || first === undefined) return []
-    if (markedIds.has(first.pullRequestReview?.id ?? '')) return []
-    const where = `${thread.path}:${thread.line ?? 'file'}${thread.isOutdated ? ' (outdated)' : ''}`
-    return [{ author: login(first.author), where, text: squash(first.body), at: first.createdAt }]
-  })
-  const reviews = pull.reviews.nodes.flatMap((review): Dated[] => {
-    if (markedIds.has(review.id) || review.body.trim().length === 0) return []
-    const where = `review ${review.state.toLowerCase()} @${review.commit?.oid.slice(0, 7) ?? '?'}`
-    return [
-      {
-        author: login(review.author),
-        where,
-        text: squash(review.body),
-        at: review.submittedAt ?? '',
-      },
-    ]
-  })
-  const comments = pull.comments.nodes.flatMap((comment): Dated[] =>
-    comment.body.trim().length === 0
-      ? []
-      : [
-          {
-            author: login(comment.author),
-            where: 'comment',
-            text: squash(comment.body),
-            at: comment.createdAt,
-          },
-        ],
-  )
-  // Oldest first, so the cap keeps the newest notes whichever source they came from.
-  return [...threads, ...reviews, ...comments]
-    .filter((note) => !isNoise(note))
-    .sort((a, b) => a.at.localeCompare(b.at))
-    .slice(-MAX_OTHER_NOTES)
-    .map(({ author, where, text }) => ({ author, where, text }))
 }
 
 /** Distills a pull request's review conversation into what a follow-up review needs. */
@@ -161,6 +93,7 @@ export function buildFollowUpContext(
     if (!markedIds.has(first.pullRequestReview?.id ?? '')) return []
     return priorFinding(thread, first.body) ?? []
   })
+  const others = othersFrom(pull, markedIds, trusted)
   const lastReviews = latestInstance(own, latest?.[1])
   const bodyFindings = lastReviews.flatMap((review) => parseBodyFindings(review.body))
   return {
@@ -189,7 +122,8 @@ export function buildFollowUpContext(
       pull.reviewThreads.pageInfo?.hasPreviousPage === true,
     unresolved: [...unresolved, ...bodyFindings],
     priorQuestions: lastReviews.flatMap((review) => parseQuestions(review.body)),
-    others: othersFrom(pull, markedIds),
+    others: others.notes,
+    othersDropped: others.dropped,
     restatable: restatableThreads(pull, trusted),
     answerable: answerableThreads(pull, trusted),
   }

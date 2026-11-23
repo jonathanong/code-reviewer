@@ -22,6 +22,7 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     unresolved: [],
     priorQuestions: [],
     others: [],
+    othersDropped: 0,
     restatable: [],
     answerable: [],
     ...overrides,
@@ -52,6 +53,33 @@ describe('renderFollowUpContext', () => {
       'Referenced issue acme/lib#2 (open, untrusted): Add retries\n> Line one\n> Line two',
     )
     expect(out.indexOf('Referenced issue')).toBeLessThan(out.indexOf('## Unresolved'))
+  })
+
+  it('ends the verifier text at the empty heading when there are no notes', () => {
+    expect(
+      renderFollowUpContext(context()).endsWith('## Other reviewers and comments (0)\n\n'),
+    ).toBe(true)
+  })
+
+  it('labels each note by kind and bot, and says when older notes were cut', () => {
+    const out = renderFollowUpContext(
+      context({
+        othersDropped: 3,
+        others: [
+          {
+            author: 'robo',
+            kind: 'review summary',
+            bot: true,
+            where: 'commented @abc1234',
+            text: 'a',
+          },
+          { author: 'dan', kind: 'thread', bot: false, where: 'a.ts:3', text: 'b' },
+        ],
+      }),
+    )
+    expect(out).toContain(
+      '(2)\n\n- [3 more not shown]\n- **robo** [bot, review summary] commented @abc1234: a\n- **dan** [thread] a.ts:3: b\n',
+    )
   })
 
   it('lists commits since the earlier review', () => {
@@ -126,7 +154,7 @@ describe('renderFollowUpContext', () => {
           },
         ],
         intent: { body: 'Line1\nLine2', issues: [{ number: 3, title: 'Bug', body: 'it breaks' }] },
-        others: [{ author: 'bob', where: 'comment', text: 'hello' }],
+        others: [{ author: 'bob', kind: 'issue comment', bot: false, where: '', text: 'hello' }],
       }),
     )
     expect(out).toContain('- [high] Bug (correctness; a.ts:4; thread `T1`)')
@@ -137,6 +165,6 @@ describe('renderFollowUpContext', () => {
     expect(out).toContain('> Line1\n> Line2')
     expect(out).toContain('Closing issue #3: Bug\n> it breaks')
     expect(out).toContain('## Other reviewers and comments (1)')
-    expect(out).toContain('- **bob** comment: hello')
+    expect(out).toContain('- **bob** [issue comment]: hello')
   })
 })
