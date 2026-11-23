@@ -1,4 +1,5 @@
 import { DEPENDENCY_KINDS, DEPENDENCY_STATES, type Dependency } from './dependency.mts'
+import { readImpact, type Impact } from './impact.mts'
 import { isRecord, oneOf, ReviewError, text, type Finding } from './finding.mts'
 
 type Json = Record<string, unknown>
@@ -45,14 +46,25 @@ export function parseSplitProposal(raw: unknown): { splitProposal?: string } {
   return text === '' ? {} : { splitProposal: text }
 }
 
+/** The optional impact of a hand-written input: a kind of change, with a one-line basis. */
+export function parseImpact(raw: unknown): { impact?: Impact } {
+  if (raw === undefined) return {}
+  const impact = readImpact(raw)
+  if (impact === undefined)
+    throw new ReviewError('impact must be { kind, basis? } with a known kind.')
+  return { impact }
+}
+
 /** The review-level advice the verifier may add; each part is optional and never part of the verdict. */
 export function parseAdvice(raw: Record<string, unknown>): {
   regressionPrevent?: string
   splitProposal?: string
+  impact?: Impact
 } {
   return {
     ...parseRegressionPrevent(raw.regressionPrevent),
     ...parseSplitProposal(raw.splitProposal),
+    ...parseImpact(raw.impact),
   }
 }
 

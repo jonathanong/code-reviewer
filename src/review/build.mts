@@ -84,16 +84,18 @@ function partHeader(headSha: string, part: number, total: number): string {
 
 /**
  * Builds one or more COMMENT reviews for GitHub. Placeable findings become inline comments, the
- * rest go in the body, and anything over the limits continues in additional review parts.
+ * rest go in the body, and anything over the limits continues in additional review parts. `paths`
+ * are the files of the whole pull request, for the class line.
  */
 export function buildReviews(
   input: ReviewInput,
   headSha: string,
   index: CommentableIndex,
   limits: BuildLimits = DEFAULT_LIMITS,
+  paths: readonly string[] = [],
 ): SanitizedReview[] {
   const { comments, offDiff } = placeFindings(input.findings, index)
-  const header = renderHeader(input, headSha)
+  const header = renderHeader(input, headSha, paths)
   const blocks = offDiff.length === 0 ? [] : [OFF_DIFF_HEADING, ...offDiff.map(renderBodyFinding)]
   const bodyMax = limits.maxBodyChars - 200
   const bodies = packBodies(header, blocks, bodyMax)

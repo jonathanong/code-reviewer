@@ -105,6 +105,9 @@ export function renderReport(data: ReportData): string {
           .join('\n\n'),
     ...renderRegression(data.regression),
     ...(data.splitProposal === undefined ? [] : [`### Proposed split\n\n${data.splitProposal}`]),
+    ...(data.impact === undefined
+      ? []
+      : [`### Impact: ${data.impact.kind}\n\n${data.impact.basis ?? ''}`.trimEnd()]),
     ...renderQuestions(data.questions ?? []),
     ...renderApprovalCheck(data.approvalCheck),
     ...renderPostWarnings(data.postWarnings ?? []),

@@ -13,6 +13,7 @@ import {
   parseReviewVerifier,
   type VerifierInput,
 } from './verify.mts'
+import { withImpact } from './impact-prompt.mts'
 import { runReviewVerifier } from './verify-run.mts'
 
 const FINDINGS: Finding[] = [
@@ -209,7 +210,9 @@ describe('runReviewVerifier', () => {
     expect(value('--effort')).toBe('medium')
     expect(args).not.toContain('--agents')
     expect(args.slice(args.indexOf('--add-dir'))).toEqual(['--add-dir', '/run', '/refs'])
-    expect(JSON.parse(value('--json-schema') as string)).toEqual(REVIEW_VERIFIER_SCHEMA)
+    expect(JSON.parse(value('--json-schema') as string)).toEqual(
+      withImpact(REVIEW_VERIFIER_SCHEMA, true),
+    )
     expect(REVIEW_VERIFIER_SCHEMA.required).toEqual(['summary', 'findings', 'pullRequestSummary'])
   })
 

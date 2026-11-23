@@ -3,6 +3,7 @@ import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
+import type { Impact } from './impact.mts'
 import {
   parseAdvice,
   parseDependency,
@@ -53,6 +54,8 @@ export type ReviewInput = {
   regressionPrevent?: string
   /** For a large change with a mechanical part: what to move into its own pull request. Never part of the verdict. */
   splitProposal?: string
+  /** The verifier's judgment of the change's kind; shown in the class line, never part of the verdict. */
+  impact?: Impact
 }
 
 export class ReviewError extends Error {

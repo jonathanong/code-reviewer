@@ -9,10 +9,8 @@ import { chooseEvent, withEvent, type Downgrade } from './event.mts'
 import { dismissRequests, staleRequests } from './dismiss.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
-import { MARKER_RE } from './markers.mts'
 import { findingPlacements, type Placement } from './placements.mts'
 import { postReviews } from './submit.mts'
-import { isTrustedAuthor } from './trust.mts'
 import { deriveVerdict, type Verdict } from './render.mts'
 
 export type PostOutcome = {
@@ -77,12 +75,19 @@ export async function postFinalReview(
       `Pull request head is ${current}, not the reviewed ${headSha}; re-review the new head.`,
     )
   }
-  const index = indexReviewFiles(await io.listFiles())
+  const files = await io.listFiles()
+  const index = indexReviewFiles(files)
   const placements = findingPlacements(input.findings, index)
   const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
   const choice = await chooseEvent(io, verdict, options.author)
   const reviews = withEvent(
-    buildReviews(input, headSha, index, options.limits ?? DEFAULT_LIMITS),
+    buildReviews(
+      input,
+      headSha,
+      index,
+      options.limits ?? DEFAULT_LIMITS,
+      files.map((file) => file.filename),
+    ),
     choice.event,
   )
   const { warnings, tooLong } = checkPostedText(
@@ -155,45 +160,4 @@ export async function postFinalReview(
   }
   const removed = await revokeFinalApproval(io)
   return { ...common, urls, label: removed ? 'removed' : 'unchanged', ...sent }
-}
-
-export type ReviewStatus = {
-  headSha: string
-  reviewedSha: string | null
-  verdict: string | null
-  effort: string | null
-  current: boolean
-  labeled: boolean
-  /** True only when the newest review approved the current head and the label is on. */
-  approved: boolean
-  /** True when the newest review is a skip notice for the current head: nothing left to review. */
-  skipped: boolean
-}
-
-/** Reports whether the latest review covers the current head, for merging agents. */
-export async function reviewStatus(io: ReviewIo): Promise<ReviewStatus> {
-  const [headSha, reviews, labeled, trusted] = await Promise.all([
-    io.headSha(),
-    io.listReviews(),
-    io.hasApprovalLabel(),
-    io.trustedAuthors(),
-  ])
-  const latest = reviews
-    .filter((review) => isTrustedAuthor(review.author, trusted))
-    .map((review) => MARKER_RE.exec(review.body))
-    .filter((match): match is RegExpExecArray => match !== null)
-    .at(-1)
-  const reviewedSha = latest?.[1] ?? null
-  const verdict = latest?.[2] ?? null
-  const current = reviewedSha === headSha
-  return {
-    headSha,
-    reviewedSha,
-    verdict,
-    effort: latest?.[3] ?? null,
-    current,
-    labeled,
-    approved: current && labeled && verdict === 'Approve',
-    skipped: current && verdict === 'Skipped',
-  }
 }
