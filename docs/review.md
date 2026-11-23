@@ -166,14 +166,24 @@ When the setting is on and the list is not empty, the verifier prompt gets one m
 block (`verifier.md` is not changed) and its output schema allows `answers`. A valid note is handled
 as above, a fixed or low-value one is left alone, and an invalid one may get
 `{ thread, body, rule?, at? }`: one to three sentences saying why, with either a `rule` (the
-`<plugin>:<skill>` name and a sentence quoted from it) or a location `at`. The answer is the
+`<plugin>:<skill>` name, and optionally a sentence quoted from it; the body may paraphrase the
+rule) or a location `at`. The answer is the
 verifier's, so it is not parallel to the pillars and cannot bias them; the notes steer only what the
 verifier keeps as findings.
 
 Code checks every answer and drops a failing one with a warning that `report.md` shows under
 "Answers to other reviewers": the thread must be a listed one, at most one answer per thread, at
 most 5 per run, a length cap, no `@mention`, a `rule` or an `at`, and a `rule` must name a selected
-or loaded rule skill and quote one whole sentence or list item of it verbatim (whitespace aside). The answers are written to
+or loaded rule skill (an unlisted one drops the answer). A `quote` that is given but is not one
+whole sentence or list item of that skill verbatim (whitespace aside), or is too short, is removed:
+the answer is kept with its skill and the warning says so. The skill's link is built by code, never taken from the model, from the marketplace the plugin was
+installed from (`known_marketplaces.json`, and the plugin's entry in that marketplace's
+`marketplace.json`): `<repository>/blob/<ref>/<plugin directory>/skills/<skill>/SKILL.md`. A string
+`source` such as `./` or `./plugins/x` is a directory of the marketplace's own GitHub repository; an
+object `source` (`git-subdir`, `url`, `github`) names its own repository and, for a subdirectory, a
+`path`. The ref is the source's `ref`, else `HEAD`. When any of that is missing, not on GitHub, or
+not certain (no marketplace record, a `pluginRoot`, a path leaving the repository, a skill directory that is not a plain path segment), the skill has no
+link and is named plainly. The answers are written to
 `review.json` and posted by `post` ([Posting](posting.md#replies-to-other-reviewers)). With the
 setting off, or an empty list, the prompt and schema are unchanged.
 

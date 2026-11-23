@@ -80,8 +80,9 @@ reads and confirms nothing.
 When `review.json` has `answers` and the `answers` setting is on ([configuration](configuration.md#answers)),
 `post` replies in each thread once the review is confirmed as posted (otherwise every answer is
 reported as skipped), with the same identity as the review.
-The reply is the body, then either the location or `Rule: <plugin>:<skill>: "<quote>"` (the skill
-name is not linked). It re-reads the threads first and skips one that is gone, resolved, longer
+The reply is the body, then either the location or `Rule: [<plugin>:<skill>](<link>)`, followed by
+`: "<quote>"` only when a verified quote exists and by the location in backticks when given. A skill
+with no known link is named plainly. It re-reads the threads first and skips one that is gone, resolved, longer
 than what was read, already answered by this reviewer, or whose final text mentions someone. It
 never resolves a thread. A failed reply does not fail the post. The `post` output has
 `answers: { replied, skipped, failed }`, or `{ off: true }` when the setting is off. A dry run

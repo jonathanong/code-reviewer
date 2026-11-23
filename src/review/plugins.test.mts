@@ -104,11 +104,13 @@ describe('parsePluginInstalls', () => {
       { id: 'off@m', scope: 'user', enabled: false, installPath: '/cache/off' },
       { id: 'proj@m', scope: 'project', enabled: true, installPath: '/cache/proj' },
       { id: 'bare@m', scope: 'user', enabled: true },
+      { id: 'local', scope: 'user', enabled: true, installPath: '/cache/local' },
       { scope: 'user', enabled: true, installPath: '/x' },
       null,
     ])
     expect(parsePluginInstalls(listed)).toEqual([
-      { name: 'jong-skills', installPath: '/cache/skills' },
+      { name: 'jong-skills', installPath: '/cache/skills', marketplace: 'm' },
+      { name: 'local', installPath: '/cache/local' },
     ])
   })
 

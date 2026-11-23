@@ -255,7 +255,7 @@ describe('createDefaultDeps', () => {
     const deps = createDefaultDeps(fakeAuth().getAuth)
     await expect(deps.pluginInfo()).resolves.toEqual({
       enabled: [{ id: 'skills@m', version: '1.0.0' }],
-      installs: [{ name: 'skills', installPath: '/p/skills' }],
+      installs: [{ name: 'skills', installPath: '/p/skills', marketplace: 'm' }],
     })
     expect(defaultExec).toHaveBeenCalledTimes(1)
   })

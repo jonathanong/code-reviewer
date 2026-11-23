@@ -24,6 +24,7 @@ const INPUT: VerifierInput = {
   threads: [],
 }
 
+const NOT_IN_SKILL = 'it is not a whole sentence of the skill, or is too short'
 const SENTENCE = 'Never lock a parent row the transaction only reads.'
 const RULES: AnswerRules = {
   texts: new Map([
@@ -86,19 +87,48 @@ describe('checkedAnswers', () => {
     ['an answer without a basis', { thread: 'T1', body: 'No.' }, 'no rule and no location'],
     ['a mention', given('T1', { body: 'cc @bob' }), 'mentions'],
     [
-      'a quote the skill does not hold',
-      given('T1', { rule: { skill: 'jong-skills:locks', quote: 'Always lock the whole table.' } }),
-      'quote is not in the skill',
-    ],
-    [
       'a skill that is not installed',
       given('T1', { rule: { skill: 'jong-skills:none', quote: SENTENCE } }),
+      'not a loaded rule skill',
+    ],
+    [
+      'a skill that is installed but neither selected nor loaded',
+      given('T1', { rule: { skill: 'jong-skills:other' } }),
       'not a loaded rule skill',
     ],
   ])('drops %s and warns', (_name, entry, reason) => {
     const { answers, warnings } = check([entry])
     expect(answers).toEqual([])
     expect(warnings).toEqual([expect.stringContaining(reason)])
+  })
+
+  it('keeps an answer that names a skill without a quote', () => {
+    const rule = { skill: 'jong-skills:locks' }
+    expect(check([given('T1', { rule, at: undefined })])).toEqual({
+      answers: [{ thread: 'T1', body: 'No lock here.', rule }],
+      warnings: [],
+    })
+  })
+
+  it.each([
+    ['a quote the skill does not hold', 'Always lock the whole table.'],
+    ['a quote that is too short', 'lock'],
+  ])('removes %s, keeps the answer with its skill, and warns', (_name, quote) => {
+    const rule = { skill: 'jong-skills:locks', quote }
+    expect(check([given('T1', { rule })])).toEqual({
+      answers: [given('T1', { rule: { skill: 'jong-skills:locks' } })],
+      warnings: ['answers[0] kept without its quote: ' + NOT_IN_SKILL],
+    })
+  })
+
+  it("carries the skill's link from the rules, and not one the model wrote", () => {
+    const url = 'https://github.com/jonathanong/no-mistakes/blob/HEAD/skills/locks/SKILL.md'
+    const rules = { ...RULES, links: new Map([['jong-skills:locks', url]]) }
+    const rule = { skill: 'jong-skills:locks', quote: SENTENCE, url: 'https://evil.example/x' }
+    const one = (links: AnswerRules) =>
+      checkedAnswers([given('T1', { rule })], [item('T1')], links, []).answers[0]?.rule
+    expect(one(rules)).toEqual({ skill: 'jong-skills:locks', quote: SENTENCE, url })
+    expect(one(RULES)).toEqual({ skill: 'jong-skills:locks', quote: SENTENCE })
   })
 
   it('keeps a whole sentence or list item and drops the tail of one', () => {
@@ -111,7 +141,9 @@ describe('checkedAnswers', () => {
       given('T1', { rule: { skill: 'jong-skills:locks', quote: text } }),
     ]
     const kept = (text: string) =>
-      checkedAnswers(quote(text), [item('T1')], rules, []).answers.length
+      checkedAnswers(quote(text), [item('T1')], rules, []).answers[0]?.rule?.quote === undefined
+        ? 0
+        : 1
     expect(kept('Never lock a parent row the transaction only reads.')).toBe(1)
     expect(kept('Prefer short transactions.')).toBe(1)
     expect(kept('Keep every transaction small and short.')).toBe(1)
@@ -140,7 +172,9 @@ describe('checkedAnswers', () => {
         [item('T1')],
         rules,
         [],
-      ).answers.length
+      ).answers[0]?.rule?.quote === undefined
+        ? 0
+        : 1
     expect(kept('Never lock a parent row the transaction only reads.')).toBe(1)
     expect(kept('lock a parent row the transaction only reads.')).toBe(0)
     expect(kept('Prefer short transactions that hold few locks at once.')).toBe(1)

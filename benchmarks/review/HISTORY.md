@@ -2,6 +2,20 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): an answer's rule quote is optional and the skill is linked
+
+Not measured; no model was called.
+
+- **What changed.** The verifier's answers block and its output schema now take
+  `rule: { skill, quote? }`: the quote is optional, and the prompt says the body may paraphrase the
+  rule and that a quote, when given, must be copied exactly. A quote that is not in the skill, or is
+  too short, no longer drops the answer: it is removed and the answer is kept with its skill. An
+  unlisted skill still drops it. The posted reply links the skill. `bench-verifier` still grades on
+  the cited skill.
+- **Comparability.** The `answers.json` rows recorded earlier on 2026-11-23 (three attempts per
+  arm, Sonnet as the verifier) used the old prompt and schema, which required a quote and dropped an
+  answer whose quote failed. They are not comparable with runs after this change.
+
 ## 2026-11-23: the answer cases, three attempts per arm with Sonnet as the verifier
 
 Commit 3effb46. Verifier `claude-sonnet-5-5`, judge Sonnet, checker Opus, three attempts per

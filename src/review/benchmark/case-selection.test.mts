@@ -39,7 +39,7 @@ describe('caseSelector', () => {
     const pick = await make()
     expect(await pick(ITEM, SNAPSHOT)).toEqual(['skills:one'])
     expect(skills).toHaveBeenCalledWith(
-      [{ name: 'skills', installPath: '/p/skills' }],
+      [{ name: 'skills', installPath: '/p/skills', marketplace: 'm' }],
       DEFAULT_RULE_PLUGINS,
     )
     expect(select.mock.calls[0]?.[0]).toMatchObject({

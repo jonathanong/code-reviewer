@@ -444,7 +444,8 @@ renders them (`thread`, `login`, `url`, `where`, `text`, `replies`, and `omitted
 with `expect: "answer"` and `skill` (the `plugin:skill` the reply must cite) or `expect: "leave"`.
 The bench prompt and schema then carry the same answers block as a review, and the run's transcript
 lists the skills it loaded. The raw `answers` pass through the review's own checks (a listed thread,
-one answer per thread, a loaded skill, a quote that is a whole unit of the installed skill) against
+one answer per thread, a loaded skill; a quote that is not a whole unit of the installed skill is
+removed, not graded) against
 the installed rule skills of the default rule plugins. Grading is code, per thread: an `answer`
 note passes when a checked answer for it cites the expected skill, a `leave` note when none
 survives. The result is `answers` in the raw file and a line in `summary.md`. A case with `answerable`
