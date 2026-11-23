@@ -57,7 +57,9 @@ describe('readImpact, checkedImpact and parseReviewVerifier', () => {
       `${'word '.repeat(31).trimEnd()}…`,
     )
     const fits = `${'a'.repeat(BASIS_MAX - 1)} tail`
-    expect(readImpact({ kind: 'breaking', basis: fits })?.basis).toBe(`${'a'.repeat(BASIS_MAX - 1)}…`)
+    expect(readImpact({ kind: 'breaking', basis: fits })?.basis).toBe(
+      `${'a'.repeat(BASIS_MAX - 1)}…`,
+    )
     expect(long?.basis?.endsWith('…')).toBe(true)
   })
 
