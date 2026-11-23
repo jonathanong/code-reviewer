@@ -2,6 +2,55 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, `correctness` shown one file of the diff instead of the whole diff
+
+Question: does the pillar catch more when one copy of it is aimed at the file that holds the defect?
+The file was chosen by hand from the case (an oracle), so this is the most a split by file could
+catch, not what a real split would catch.
+
+One attempt per arm, commit 05f7912, Sonnet, judge Opus, `--select`. Three cases, four expected
+findings. Left out: `vouchington-2936` (1 file, 16 diff lines) and `vouchington-clients-130` (2
+files, 50 lines), whose diffs are already the size of a target, so 2 of the 8 expected `correctness`
+findings cannot change with a split; and `vouchington-3419` (3 files, 217 lines).
+
+Judged matches per expected finding (target file's share of the diff in lines):
+
+| Expected finding                       | Whole diff, `medium` | One file, `medium` | One file, `high` |
+| -------------------------------------- | -------------------- | ------------------ | ---------------- |
+| `tooling-154` `resume.mts` (47 of 783) | 1                    | 1                  | 1                |
+| `tooling-154` `update.mts` (62 of 783) | 0                    | 1                  | 0                |
+| `tooling-187` `action.yml`, first      | 0                    | 0                  | 0                |
+| `tooling-187` `action.yml`, second     | 0                    | 0                  | 0                |
+| `4154` migration (1 of 54 files)       | 0                    | 0                  | 0                |
+
+`action.yml` is 323 of 1,281 diff lines. A fourth arm on `4154` showed two files together, the
+migration and `merge-aliases-page.mts`, which holds the paged query the index serves: no judged
+match at `medium` (no finding) or `high` (two findings on other things).
+
+Cost per run: $0.13 to $0.24 whole, $0.14 to $0.15 one file at `medium`, $0.15 to $0.23 at `high`,
+$0.14 and $0.33 for the pair. Total for the 13 pillar runs, judge not included: $2.33. The tree at
+05f7912 is the tree the runs used (efc351c, before the squash).
+
+What this shows:
+
+- Showing one file did not produce a judged match on `vouchington-tooling-187` or
+  `vouchington-4154` at either effort. All three arms returned no finding at all on them.
+- The one gain, `update.mts` at `medium`, is the same defect as `resume.mts`. The whole-diff run's
+  single finding names both helpers ("Resume/update helpers pin codec defaults"), and one finding
+  satisfies one expectation. It did not repeat at `high`.
+- `4154` is a missed connection, not a missing file. The whole-diff run opened both the migration's
+  part of the diff and the paged query's, and the pair arm was shown only those two; neither
+  connected the `ORDER BY id` to the index.
+- `187` turns on what the runner does after the job (post-job hooks that resolve the action's
+  checkout), which is in no file of the repository. The runs opened `action.yml` and the cleanup
+  scripts.
+
+So on these cases showing less of the diff, by file or by related pair, is not what the pillar
+lacks. The one earlier pilot where narrowing helped (one removed lock per reviewer, below) also
+told the reviewer which lock to judge and used a prompt narrowed to concurrency, so no run yet
+shows a gain from a narrow target with the pillar's own prompt. Not tested: three attempts, a diff
+larger than 54 files, or a target that carries a question.
+
 ## 2026-11-22: `bench --only-path` shows the pillar agent part of the diff (no run)
 
 `bench` gains `--only-path PATH` (repeatable): the pillar agent is shown only the part of the pull
