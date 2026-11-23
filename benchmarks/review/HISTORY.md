@@ -68,13 +68,33 @@ What this shows, on one attempt per arm, which is not a rate:
   run per target. The hand-written questions of the entry below matched both in arm D. The two
   runs on `aliases.mts` and `link-topic-alias.mts` here each raised only the low wrong-409 finding
   that arm D also raised beside its match. So arm D's matches did not repeat with a second wording
-  of the same change, and one attempt cannot tell wording from chance.
+  of the same change.
+- The two runs that matched in arm D each opened `backend/services/topics/update.mts`, the other
+  writer of the topic row that the expected finding names. Neither planner-worded run opened it.
+  The two wordings of the `link-topic-alias.mts` change say nearly the same thing (below), so the
+  wording does not obviously explain that, and one attempt cannot tell it from chance.
 - `high` effort alone did not find them either (whole diff, no question, no finding).
 - The planner filled or nearly filled its cap on every head, the clean ones included, so one run per
   target cost $2.82 and $2.35 a pull request against $0.22 for the single run of the entry below.
 - The extra findings were few: 6 over 15 runs, 2 of them medium (the accepted duplicate send on
   `6087`, and a missing test on `merge-reference-conflict-pages.mts`).
 - The planner named neither site that is not a removed lock (`4154-index`, `6050-seed`).
+
+The planner's `change` text for the two `6059` sites, to read beside the hand-written text of the
+entry below:
+
+- `backend/services/topics/aliases.mts:38`: "inserts alias rows from the live, unmerged destination
+  topic and returns each row's prior topic_id as previous_topic_id, with no FOR UPDATE on the topic
+  or existing alias rows taken beforehand"
+- `backend/services/topics/link-topic-alias.mts:23`: "reads the destination topic and the alias row
+  without FOR UPDATE, and the later UPDATE carries the destination-is-live-and-unmerged check"
+
+Of the 15 targets on these two heads, 7 of the 8 on `6059` and 1 of the 7 on `6087` describe a
+removed lock. The planner named every removed-lock site of the entry below and neither other site,
+so on these heads it behaves as a lock reviewer.
+
+For scale, the 2026-11-22 lock pilot further down measured Opus at `medium` at $0.80 a run, so one
+Sonnet `high` run per target costs more than three Opus runs on these pull requests.
 
 Not built. No planner, target or question exists in the review.
 
