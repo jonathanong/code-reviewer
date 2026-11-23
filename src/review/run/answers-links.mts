@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { basename, dirname, join, sep } from 'node:path'
 
 import type { PluginInstall } from '../plugins.mts'
-import { DIR_RE, OWNER_REPO_RE, REF_RE, REPO_RE } from '../skill-url.mts'
+import { DIR_RE, isSkillUrl, OWNER_REPO_RE, REF_RE, REPO_RE } from '../skill-url.mts'
 
 /** Where a plugin lives on GitHub: the repository, the ref its files are read at, and its directory in it. */
 export type PluginLocation = { repository: string; ref: string; dir: string }
@@ -78,10 +78,11 @@ export function pluginLocation(install: PluginInstall): PluginLocation | undefin
 
 /**
  * The link of a skill whose SKILL.md is `file`, in a plugin at `location`; undefined without a
- * location, so no link is ever guessed.
+ * location, or when the skill directory is not a plain path segment, so no link is ever guessed.
  */
 export function skillUrl(location: PluginLocation | undefined, file: string): string | undefined {
   if (location === undefined) return undefined
   const base = location.dir === '' ? '' : `${location.dir}/`
-  return `${location.repository}/blob/${location.ref}/${base}skills/${basename(dirname(file))}/SKILL.md`
+  const url = `${location.repository}/blob/${location.ref}/${base}skills/${basename(dirname(file))}/SKILL.md`
+  return isSkillUrl(url) ? url : undefined
 }

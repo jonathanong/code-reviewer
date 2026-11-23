@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { pluginLocation, skillUrl } from './answers-links.mts'
 import { pluginHome, type HomeOptions } from './plugin-home-fake-io.mts'
+import { isSkillUrl } from '../skill-url.mts'
 
 const GITHUB = { source: 'github', repo: 'acme/market' }
 const where = (options: HomeOptions) => pluginLocation(pluginHome(options))
@@ -104,6 +105,14 @@ describe('skillUrl', () => {
     expect(skillUrl({ ...root, dir: 'plugins/rules', ref: 'main' }, file)).toBe(
       'https://github.com/o/r/blob/main/plugins/rules/skills/locks/SKILL.md',
     )
+  })
+
+  it('gives a link that the reader accepts, and none for a directory that is not a plain segment', () => {
+    const location = { repository: 'https://github.com/o/r', ref: 'main', dir: 'plugins/rules' }
+    expect(isSkillUrl(skillUrl(location, file) as string)).toBe(true)
+    expect(skillUrl(location, '/cache/rules/1/skills/locks#v2/SKILL.md')).toBeUndefined()
+    expect(skillUrl(location, '/cache/rules/1/skills/lo cks/SKILL.md')).toBeUndefined()
+    expect(skillUrl(location, '/cache/rules/1/skills/../SKILL.md')).toBeUndefined()
   })
 
   it('invents nothing without a location', () => {

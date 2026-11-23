@@ -182,7 +182,7 @@ installed from (`known_marketplaces.json`, and the plugin's entry in that market
 `source` such as `./` or `./plugins/x` is a directory of the marketplace's own GitHub repository; an
 object `source` (`git-subdir`, `url`, `github`) names its own repository and, for a subdirectory, a
 `path`. The ref is the source's `ref`, else `HEAD`. When any of that is missing, not on GitHub, or
-not certain (no marketplace record, a `pluginRoot`, a path leaving the repository), the skill has no
+not certain (no marketplace record, a `pluginRoot`, a path leaving the repository, a skill directory that is not a plain path segment), the skill has no
 link and is named plainly. The answers are written to
 `review.json` and posted by `post` ([Posting](posting.md#replies-to-other-reviewers)). With the
 setting off, or an empty list, the prompt and schema are unchanged.

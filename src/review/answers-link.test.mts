@@ -24,6 +24,7 @@ describe('a skill link through review.json', () => {
       JSON.stringify([{ thread: 'T', body: 'No.', rule: { skill: 'a:typescript-rules', url } }]),
     )
     const [answer] = parseAnswers(saved).answers ?? []
+    expect(isSkillUrl(url)).toBe(true)
     expect(answer?.rule?.url).toBe(url)
     expect(renderAnswer(answer as never)).toBe(`No.\n\nRule: [a:typescript-rules](${url})`)
   })

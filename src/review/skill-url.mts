@@ -6,8 +6,11 @@ export const REF_RE = /^[\w][\w./-]*$/u
 /** A plugin directory inside its repository, never leaving it. */
 export const DIR_RE = /^[\w.-]+(?:\/[\w.-]+)*$/u
 
+/** A skill directory name: one plain path segment. */
+export const SKILL_DIR_RE = /^[\w.-]+$/u
+
 const SKILL_URL_RE = new RegExp(
-  `^(https://github\\.com/[\\w.-]+/[\\w.-]+)/blob/(${REF_RE.source.slice(1, -1)})/(?:(${DIR_RE.source.slice(1, -1)})/)?skills/[\\w.-]+/SKILL\\.md$`,
+  `^(https://github\\.com/[\\w.-]+/[\\w.-]+)/blob/(${REF_RE.source.slice(1, -1)})/(?:(${DIR_RE.source.slice(1, -1)})/)?skills/${SKILL_DIR_RE.source.slice(1, -1)}/SKILL\\.md$`,
   'u',
 )
 
