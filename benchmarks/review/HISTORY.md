@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, `vouchington-6050-02ad62d4` with only its test files shown
+
+One attempt per arm, commit 428700a (the tree merged as #139), correctness pillar, Sonnet, judge
+Opus, `--select`, `--only-path` on the test helper and the test file (2 of the 38 changed files).
+
+| Arm                       | Judged match | Findings | Turns | Cost  | Skills loaded                     |
+| ------------------------- | ------------ | -------- | ----- | ----- | --------------------------------- |
+| Whole diff, `medium`      | 0 of 1       | 0        | 12    | $0.22 | none                              |
+| Test files only, `medium` | 0 of 1       | 0        | 10    | $0.20 | none                              |
+| Test files only, `high`   | 0 of 1       | 0        | 36    | $0.40 | `test-authoring`, `testing-rules` |
+
+The whole-diff row is the pilot in the entry below. The `high` run loaded both testing skills and
+opened `vitest.config.mts` and the production job that calls the sweep, and still raised nothing.
+So this miss is not explained by the size of the diff, by the skill not being loaded, or by the
+config not being read. It agrees with the one-file pilot below. One attempt per arm is not a rate.
+
 ## 2026-11-22: `vouchington-6050-02ad62d4` added to `revisions.json`
 
 Case added, not yet measured; no score changes. It adds a row, so totals over `revisions.json` are
