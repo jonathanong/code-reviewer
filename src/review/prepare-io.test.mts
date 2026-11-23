@@ -160,6 +160,26 @@ describe('createGhPrepareIo', () => {
     expect(await io.history('/tree', 'base', ['a.ts'])).toBeUndefined()
   })
 
+  it('runs a documentation search in the tree and returns its output', async () => {
+    const { io, git } = setup()
+    git.mockResolvedValue('docs/a.md\0 3\0text\n')
+    expect(await io.docGrep('/tree', ['grep', '-e', 'x'])).toBe('docs/a.md\0 3\0text\n')
+    expect(git).toHaveBeenCalledWith(['-C', '/tree', 'grep', '-e', 'x'])
+  })
+
+  it('reads a search that matched nothing (exit 1) as no output', async () => {
+    const { io, git } = setup()
+    git.mockRejectedValue(Object.assign(new Error('exit 1'), { code: 1 }))
+    expect(await io.docGrep('/tree', ['grep'])).toBe('')
+  })
+
+  it('rethrows any other failure of the documentation search', async () => {
+    const { io, git } = setup()
+    const failure = Object.assign(new Error('not a repository'), { code: 128 })
+    git.mockRejectedValue(failure)
+    await expect(io.docGrep('/tree', ['grep'])).rejects.toBe(failure)
+  })
+
   it('marks a compare at the 300 file cap as truncated', async () => {
     const files = Array.from({ length: 300 }, (_, i) => ({ filename: `f${i}`, additions: 1 }))
     const run = vi.fn(async (_args: readonly string[]) =>

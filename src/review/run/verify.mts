@@ -14,8 +14,10 @@ import { referencesBlock, type WebReferences } from './references-prompt.mts'
 import { runFileLines, type RunDir } from './pillar-prompt.mts'
 import { carriedLines } from './carried-prompt.mts'
 import { dependenciesLines } from './dependencies-prompt.mts'
+import { docsLines } from './docs-prompt.mts'
 import { issuesLines } from './issues-prompt.mts'
-import { impliedDependencies, IMPLIED_KINDS, type Dependency } from '../dependency.mts'
+import { impliedDependencies, type Dependency } from '../dependency.mts'
+import { IMPLIED_DEPENDENCIES_SCHEMA } from './verify-schema.mts'
 import { mergeLines } from './merge-prompt.mts'
 import { rulePluginLines } from './rule-plugins-prompt.mts'
 import { stackLines } from './stack-prompt.mts'
@@ -39,19 +41,7 @@ export const REVIEW_VERIFIER_SCHEMA = {
     ...VERIFIER_OUTPUT_SCHEMA.properties,
     pullRequestSummary: { type: 'string' },
     fixedThreadIds: { type: 'array', items: { type: 'string' } },
-    dependencies: {
-      type: 'array',
-      items: {
-        type: 'object',
-        required: ['on', 'kind', 'why'],
-        additionalProperties: false,
-        properties: {
-          on: { type: 'string' },
-          kind: { type: 'string', enum: [...IMPLIED_KINDS] },
-          why: { type: 'string' },
-        },
-      },
-    },
+    dependencies: IMPLIED_DEPENDENCIES_SCHEMA,
     dropped: {
       type: 'array',
       items: {
@@ -119,6 +109,7 @@ export function buildVerifierRunPrompt(input: VerifierInput): string {
     ...carriedLines(input.run.carried, input.run.out),
     ...dependenciesLines(input.run.dependencies, input.run.out),
     ...issuesLines(input.run.issues, input.run.out),
+    ...docsLines(input.run.docs),
     ...restateLines(input.restate),
     ...regressionLines(input.regression),
     ...splitLines(input.split),

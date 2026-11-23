@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
 import { planAuthor } from './author-commits.mts'
-import { ReviewError, type Effort } from './finding.mts'
+import type { Effort } from './finding.mts'
 import { numberDiff } from './numbered-diff.mts'
 import type { PillarSettings } from './pillars-settings.mts'
 import { DEFAULT_PLAN_VALUES, type PlanValues } from './plan-settings.mts'
@@ -13,6 +13,8 @@ import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
 import { prepareIssues } from './links-issues.mts'
+import { prepareDocs } from './docs-prepare.mts'
+import { checkTreeHead } from './prepare-tree.mts'
 import { prepareLinks } from './links-prepare.mts'
 import { prepareCarried } from './carried-prepare.mts'
 import {
@@ -88,14 +90,7 @@ export async function prepareReview(
     io.trusted(),
   ])
   const paths = files.map((file) => file.path)
-  if (options.tree !== undefined) {
-    const treeHead = await io.treeHead(options.tree)
-    if (treeHead !== headSha) {
-      throw new ReviewError(
-        `--tree ${options.tree} is at ${treeHead}, not the pull request head ${headSha}; check out the head and run prepare again.`,
-      )
-    }
-  }
+  if (options.tree !== undefined) await checkTreeHead(io, options.tree, headSha)
   const context = buildFollowUpContext(conversation, trusted)
   const values = options.values ?? DEFAULT_PLAN_VALUES
   const written = writeDiff(options.out, 'diff', patch, write)
@@ -111,6 +106,8 @@ export async function prepareReview(
       written.push(...writeDiff(options.out, 'since', sincePatch, write))
     }
   }
+  const docs = await prepareDocs(io, options.out, write, options.tree, paths)
+  written.push(...docs.written)
   const { push, earlier } = await prepareEarlier(io, options.out, write, {
     ...(options.tree === undefined ? {} : { tree: options.tree }),
     context,
@@ -165,6 +162,7 @@ export async function prepareReview(
     ...carried.problems,
     ...links.problems,
     ...linkedIssues.problems,
+    ...docs.problems,
   ]
   const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)

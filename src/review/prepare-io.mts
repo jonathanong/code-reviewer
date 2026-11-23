@@ -11,6 +11,7 @@ import type { Ref } from './links-refs.mts'
 import { inspectPush, type PushShas } from './push-inspect.mts'
 import type { PushInspection } from './push-types.mts'
 import { fetchPullCommits, type PullCommits } from './pull-commits.mts'
+import { commitSubjects, docGrep } from './prepare-git.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
@@ -57,6 +58,8 @@ export type PrepareIo = {
   ruleSources(args: { clones?: string; tree?: string; baseSha: string }): Promise<Sources>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
   history(tree: string, base: string, paths: readonly string[]): Promise<string[] | undefined>
+  /** Runs `git` with `args` in `tree`; resolves `''` when the search matched nothing (exit 1). */
+  docGrep(tree: string, args: string[]): Promise<string>
 }
 
 type CompareJson = {
@@ -64,7 +67,6 @@ type CompareJson = {
   files?: { filename: string; additions?: number; deletions?: number }[]
 }
 
-const MAX_HISTORY_PATHS = 50
 const MAX_COMPARE_FILES = 300
 
 const changedFile = (file: { filename: string; additions?: number; deletions?: number }) => ({
@@ -178,23 +180,7 @@ export function createGhPrepareIo(
             ? apiFileReader(run, target.repo)
             : gitFileReader(tree, git, apiFileReader(run, target.repo)),
       }),
-    async history(tree, base, paths) {
-      try {
-        const out = await git([
-          '-C',
-          tree,
-          'log',
-          '--since=12.months',
-          '--format=%s',
-          base,
-          '--',
-          ...paths.slice(0, MAX_HISTORY_PATHS),
-        ])
-        return out.split('\n').filter((line) => line.trim().length > 0)
-      } catch {
-        // The base commit is not in the checkout: history is unknown, not a failure.
-        return undefined
-      }
-    },
+    history: (tree, base, paths) => commitSubjects(git, tree, base, paths),
+    docGrep: (tree, args) => docGrep(git, tree, args),
   }
 }
