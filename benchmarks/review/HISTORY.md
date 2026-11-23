@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: the impact block reads linked definitions and ignores ones the change edits (no run)
+
+No run; nothing measured. The Impact block of a full review's verifier prompt now tells the
+verifier to read the root `AGENTS.md` and any document it points to for the words breaking,
+architectural and maintenance, and not to count a definition the pull request itself adds or
+changes. Before, it named only an `AGENTS.md` "present in the review context". The schema is
+unchanged.
+
+- **Not comparable:** the same stored `bench-verifier` rows as the entry below; no new rows.
+
 ## 2026-11-22: the verifier judges the change's impact (no run)
 
 No run; nothing measured. A full review's verifier prompt gets an Impact block, its output schema
