@@ -2,6 +2,27 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (pilot): the answer cases without rules, and with Sonnet as the verifier
+
+Commit 2de09da. Judge Sonnet, checker Opus, one attempt per case, one case per run. A pilot; one
+attempt is not a score.
+
+| Case                       | Verifier            | Rules | Thread handled as expected | Cost  |
+| -------------------------- | ------------------- | ----- | -------------------------- | ----- |
+| `answers-like-row-lock`    | `claude-opus-5-5`   | none  | 0 of 1                     | $0.25 |
+| `answers-like-row-lock`    | `claude-sonnet-5-5` | yes   | 1 of 1 (answered)          | $0.14 |
+| `answers-floating-promise` | `claude-sonnet-5-5` | yes   | 1 of 1 (left alone)        | $0.11 |
+
+- **Without rules the verifier still judged the lock note invalid.** Its summary says no lock is
+  needed, and it returned an answer; the production check dropped the answer because no rule skill
+  was loaded to quote. The control fails on the citation, not on the judgment, so the case shows
+  that a reply needs a quotable rule, not that the skill changes what the model concludes.
+- **Sonnet handled both threads** at about half the Opus cost of the earlier pilot ($0.32 and
+  $0.28). Its lock answer quoted a whole sentence of `jong-skills:postgres-locking` and passed the
+  production checks with no warning; on the second case it left the thread alone and raised the
+  defect as its own correctness finding at the expected severity.
+- Not run: three attempts per arm, and the no-rules control for `answers-floating-promise`.
+
 ## 2026-11-23 (no run): the posted finding head carries the pillar
 
 Not measured; no model was called.

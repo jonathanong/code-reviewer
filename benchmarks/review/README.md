@@ -120,7 +120,7 @@ Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3
 - It does not measure whether a pillar uses the excerpt, only that the text is there to use.
   Rule text is checked against the plugin versions installed when it ran.
 
-Answer cases (`answers.json`, `bench-verifier` only): piloted once each on 2026-11-23, both handled as expected ([history](HISTORY.md)); not measured against a control. Each lists another
+Answer cases (`answers.json`, `bench-verifier` only): piloted once each on 2026-11-23 with Opus and with Sonnet as the verifier, both handled as expected by each; the one no-rules control failed only for lack of a rule to quote ([history](HISTORY.md)). One attempt each, so not a score. Each lists another
 reviewer's open note, as the verifier prompt renders it, and the outcome expected for that note,
 graded by code and reported per thread. The pillar benches do not run this file.
 
