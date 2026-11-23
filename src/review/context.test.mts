@@ -277,11 +277,11 @@ describe('buildFollowUpContext', () => {
   it('truncates the description and closing issue bodies', () => {
     const ctx = build(
       pull({
-        body: 'x'.repeat(5000),
+        body: 'x'.repeat(25_000),
         closingIssuesReferences: { nodes: [{ number: 4, title: 'I', body: 'y'.repeat(2000) }] },
       }),
     )
-    expect(ctx.intent.body).toHaveLength(4000)
+    expect(ctx.intent.body).toHaveLength(24_000)
     expect(ctx.intent.issues).toEqual([{ number: 4, title: 'I', body: `${'y'.repeat(1499)}…` }])
   })
 

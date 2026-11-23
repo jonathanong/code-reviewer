@@ -45,7 +45,7 @@ export type FollowUpContext = {
 
 const FINDING_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* (.+)\n\n<sub>([a-z-]+)<\/sub>/u
 const NOTE_CHARS = 360
-const BODY_CHARS = 4000
+const BODY_CHARS = 24_000
 const ISSUE_BODY_CHARS = 1500
 
 function clip(text: string, max: number): string {

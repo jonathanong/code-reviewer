@@ -2,6 +2,18 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: a review reads the description up to 24,000 characters, not 4,000
+
+No run. `review` cut the pull request description at 4,000 characters before writing `context.md`.
+`bench` never cut it: a case `body` goes to `.review/pr.md` whole. So the benchmark rows were
+measured on descriptions a real review did not fully see. 34 of the 51 heads in `revisions.json`
+have a description over 4,000 characters; the longest is 20,174. The part a cut removes is the
+end, where these descriptions put their evidence and what they could not prove.
+
+The cut is now 24,000 characters (`BODY_CHARS` in `src/review/context.mts`). No benchmark row
+changes, since `bench` does not use it. A review of a pull request whose description was over
+4,000 characters now reads more than it did.
+
 ## 2026-11-22: pilot, a Haiku planning step that writes the questions
 
 One attempt per arm, commit b530360, nothing in the tree changed. It follows the entry below, where
