@@ -14,8 +14,9 @@ not re-measured under the new name). Reviewer and selection cost
 $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
-**Every row below is stale.** The pillar contract, the pillar and verifier output schemas, the verifier prompt and the mined-case
-snapshots have all changed since this run, so no row is comparable with a run made now. The
+**Every row below is stale.** The pillar contract, the pillar and verifier output schemas, the
+verifier prompt, the congruence pillar the verifier performs and the mined-case snapshots have
+all changed since this run, so no row is comparable with a run made now. The
 "(no run)" entries in [HISTORY.md](HISTORY.md) list each change and the rows it affects.
 
 Mined cases (8 real pull requests from `cases.json`):
