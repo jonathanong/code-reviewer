@@ -52,6 +52,12 @@ describe('readImpact, checkedImpact and parseReviewVerifier', () => {
     expect(readImpact({ kind: 'unsure', basis: 4 })).toEqual({ kind: 'unsure' })
     const long = readImpact({ kind: 'breaking', basis: 'x'.repeat(500) })
     expect(long?.basis).toHaveLength(BASIS_MAX)
+    const words = `${'word '.repeat(31)}checkouts without one`
+    expect(readImpact({ kind: 'breaking', basis: words })?.basis).toBe(
+      `${'word '.repeat(31).trimEnd()}…`,
+    )
+    const fits = `${'a'.repeat(BASIS_MAX - 1)} tail`
+    expect(readImpact({ kind: 'breaking', basis: fits })?.basis).toBe(`${'a'.repeat(BASIS_MAX - 1)}…`)
     expect(long?.basis?.endsWith('…')).toBe(true)
   })
 
