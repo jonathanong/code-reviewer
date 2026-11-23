@@ -24,7 +24,7 @@ A group that is working proposes nothing.
 | a pillar (the reviewer's prompt) | `pillar:<name>:review`         | `code-reviewer` |
 | a harness failure kind           | `harness:<harness>:<kind>`     | `harness`       |
 
-A harness is the headless CLI a step ran through (`claude`, `grok`, `opencode`, `codex`). A step that fails
+A harness is the headless CLI a step ran through (`claude`, `grok`, `opencode`, `codex`, `agy`). A step that fails
 for a reason that is the harness's is recorded in the tracker's `harness-failures.jsonl` with a
 kind: `timeout`, `rate_limited` or `overloaded` (the wait budget ran out), `unsupported_flag` (the
 CLI rejected an argument), `crash` (a non-zero exit with no result) or `unparseable` (no JSON

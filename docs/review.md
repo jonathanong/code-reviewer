@@ -9,7 +9,7 @@ Every model call is one headless step run through a harness adapter in `src/harn
 asks for capabilities (read-only file tools, skills, an explorer subagent, shell limited to command
 prefixes, web fetch limited to hosts, or no tools), and the adapter turns them into the CLI's flags
 and reads its output. Each step's harness and model come from [`models`](configuration.md#models)
-and `--model`, which may name `claude`, `grok`, `opencode` or `codex`. Selecting Grok, OpenCode or Codex sends the
+and `--model`, which may name `claude`, `grok`, `opencode`, `codex` or `agy`. Selecting Grok, OpenCode, Codex or Antigravity sends the
 pull request's diff and files to that provider, so name them only where that is acceptable.
 
 Grok (`src/harness/grok.mts`) is a second adapter, run as `grok -p`. It runs read-only steps: file
@@ -50,8 +50,20 @@ Codex, and no real rate-limit or sign-in failure has been captured, so those cla
 assumed. `gpt-6-luna` at `low` effort answered without reading the file in 2 of 3 small runs; at
 `medium`, and `gpt-6.2-sol` at either effort, read it in 3 of 3.
 
+agy (`src/harness/agy.mts`), Google's Antigravity CLI, is a fifth, run as `agy -p --output-format json`
+with `--mode plan`, `--sandbox`, `--disable-slash-commands` and the schema in `--json-schema`. Plan is
+the most restrictive of agy's modes (`accept-edits` and `auto` edit or run unprompted), and neither
+`--mode auto` nor `--dangerously-skip-permissions` is ever passed. The step's effort goes to `--effort`
+(never `max`) and `addDirs` to `--add-dir`. agy has no flag that names its tools or bounds its reads,
+so, like Codex, it refuses every step unless its candidate sets `readsOutsideCheckout: true`, and it
+refuses no-tools steps and shell and web grants, before starting anything. It ignores `explorer`,
+`skills`, `settings`, `transcript` and `maxTurns`. The answer is the result object's structured output,
+else the JSON in its reply text, and usage is read when the object has it. Its sign-in message is
+classified as an auth failure, so the step moves to its next candidate. No run has been made through
+the adapter, so agy's output shape and the read access of plan mode are assumed.
+
 Config rejects what it can know from the step's key: the `pillar.history` and `evidence` steps need
-shell, so a list in which every candidate is Grok, OpenCode or Codex is a problem, and no free model
+shell, so a list in which every candidate is Grok, OpenCode, Codex or agy is a problem, and no free model
 (`isFreeModel`, a naming heuristic) may run `verifier`, `verifier.light` or `approvalCheck`. The web
 hosts the correctness and security pillars and the verifier get depend on `references`, so those are
 checked at run time: when an adapter refuses a step, the runner moves to the next candidate, and

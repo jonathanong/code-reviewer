@@ -1,0 +1,7 @@
+{
+  "synthetic": true,
+  "result": "```json\n{\"answer\":4}\n```",
+  "usage": { "input_tokens": 10, "output_tokens": 2 },
+  "total_cost_usd": 0.5,
+  "num_turns": 3
+}

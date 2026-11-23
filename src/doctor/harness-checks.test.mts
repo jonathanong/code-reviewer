@@ -10,12 +10,14 @@ describe('harness binaries', () => {
         'claude --version': '2.1.0 (Claude Code)\n',
         'grok --version': 'grok 0.4\n',
         'codex --version': 'codex-cli 0.171.0\n',
+        'agy --version': '1.5.15\n',
       },
     })
     expect(await harnessChecks(io)).toEqual([
       { name: 'harness:claude', status: 'ok', detail: '2.1.0 (Claude Code)' },
       { name: 'harness:grok', status: 'ok', detail: 'grok 0.4' },
       { name: 'harness:codex', status: 'ok', detail: 'codex-cli 0.171.0' },
+      { name: 'harness:agy', status: 'ok', detail: '1.5.15' },
     ])
   })
 
