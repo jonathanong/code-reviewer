@@ -435,6 +435,10 @@ A case with a `congruence` expectation needs no pillar result: no pillar raises 
 the verifier gets an empty list of findings and is graded on what it raises itself. Any other
 case without a pillar result is skipped.
 
+Every snapshot is searched for [documentation that mentions what
+changed](pull-request-context.md#documentation-the-change-may-leave-stale), as a review run is.
+Matching lines are written to `.review/docs.md` and added to the verifier prompt.
+
 The verifier may add findings of its own, with an empty `sources` array. A correct addition is a
 win, so findings are graded on whether they are right rather than counted:
 

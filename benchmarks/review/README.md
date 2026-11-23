@@ -15,7 +15,7 @@ $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
 **Every row below is stale.** The pillar contract, the pillar and verifier output schemas, the
-verifier prompt, the congruence pillar the verifier performs and the mined-case snapshots have
+verifier prompt (which since 2026-11-23 may carry a list of document lines), the congruence pillar the verifier performs and the mined-case snapshots have
 all changed since this run, so no row is comparable with a run made now. The
 "(no run)" entries in [HISTORY.md](HISTORY.md) list each change and the rows it affects.
 
@@ -98,6 +98,11 @@ judged by Sonnet, $25.14):
   check a title and description that say test-only against the changed files. They were added
   on 2026-11-22 and only piloted (1 attempt); the positive is a ceiling case, caught with and
   without the scope bullet it was written for.
+- Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
+  line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
+  alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of
+  document lines in the prompt as shipped, against Sonnet 0 of 3 in the same session with the
+  list in a file only.
 
 Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3 history cases;
 2026-11-22): is what a case depends on in the context a review builds?

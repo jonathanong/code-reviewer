@@ -12,6 +12,7 @@ import { carriedNotes } from '../carried-note.mts'
 import { readCarriedFile } from '../carried-file.mts'
 import { mergeDependencies, readDependencies, type Dependency } from '../dependency.mts'
 import { readIssues } from '../issues.mts'
+import { readDocs } from '../related-docs-file.mts'
 import { readPushFile } from '../push-file.mts'
 import { readStackFile } from '../stack-file.mts'
 import {
@@ -98,6 +99,7 @@ export function runDir(
     carried: readCarriedFile(out),
     dependencies: readDependencies(out),
     issues: readIssues(out),
+    docs: readDocs(out),
   }
 }
 

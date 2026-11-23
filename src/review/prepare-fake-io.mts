@@ -124,5 +124,6 @@ export function fakeIo({
       complete: true,
     })),
     commitMessages: vi.fn<PrepareIo['commitMessages']>().mockResolvedValue([]),
+    docGrep: vi.fn<PrepareIo['docGrep']>().mockResolvedValue(''),
   } satisfies PrepareIo
 }

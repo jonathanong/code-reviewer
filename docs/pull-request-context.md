@@ -83,3 +83,19 @@ pillar and is told to hold the change to what each issue asks. A pull request, a
 be read, and an issue in a private repository named from a public one are left out, the last two
 with a note in `problems`. Issue text is untrusted data. A pull request that links no issue gets
 no extra context or prompt text.
+
+## Documentation the change may leave stale
+
+With a `--tree` checkout, `prepare` searches the checkout's Markdown files for the names of the
+changed source files and writes the matching lines to `docs.md`. The verifier gets them as a
+prompt section and, in the congruence pillar, compares each line that states behavior with the
+patches: a line the change makes false is a finding on the document.
+
+The search is one `git grep` with no model call. A name is the stem of a changed source file
+with two or more words (`follow-context`); tests, stories, data files and generated files give no
+name. It matches the words joined by a hyphen, an underscore or a space, in any case. Files the
+change edits, ignored files and anything under a `generated` directory are left out, and the
+list is capped per name. It is a text search, so a listed line may be unrelated and a document
+that describes the behavior without naming the file is not found. A search that fails is
+recorded in `problems` and the review goes on. Without a checkout, or with no match, there is no
+file and no list in the prompt.

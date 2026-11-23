@@ -28,6 +28,8 @@ export type RunDir = {
   dependencies?: Dependency[] | undefined
   /** The issues the description refers to, from `issues.json`. */
   issues?: IssueText[] | undefined
+  /** Document lines that mention what changed, from `docs.md`; only the verifier is given them. */
+  docs?: string | undefined
   /** The configured rule plugins; absent in a benchmark, which always uses the default list. */
   rulePlugins?: readonly string[] | undefined
 }
