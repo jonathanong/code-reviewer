@@ -2,6 +2,33 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: `vouchington-6050-02ad62d4` added to `revisions.json`
+
+Case added, not yet measured; no score changes. It adds a row, so totals over `revisions.json` are
+not comparable with earlier entries (51 cases, 29 pull requests, 66 expected findings).
+
+One pilot attempt checked the grader and the baseline: correctness pillar, Sonnet at medium effort,
+`--select`, judge Opus, commit e133433. It raised no finding in 12 turns for $0.22 (0 of 1). It
+opened neither the test helper, the test file nor `vitest.config.mts`, and loaded no skill, though
+the selection named `no-mistakes-rules:testing-rules` and the pillar prompt says to load it when a
+change adds a test. One attempt is not a rate.
+
+Source: `vouchington/vouchington` pull request 6050, merge base
+`1dbac5c467f0d919bc0ab97d1e192e690d76d49d`, head `02ad62d4f90b37d43b2c556b05f47ec63ca8610c`. The
+full review run at this head did not report the problem; a person reading the tests did. The author
+fixed it in `6559acff1c5c8bb9c22da77a34ff21f953310dd4`, so the label is `"confidence": "high"`.
+
+What it checks: `seedTestBallotSweepCursor` replaces the singleton sweep cursor with a `DELETE` and
+then an `INSERT`, on a database every test file shares, while files run in parallel. Another file's
+sweep between the two statements fails the seed, and one after the seed breaks the exact cursor
+assertions. The case passes when a correctness-pillar finding says the new tests can break or be
+broken by other test files through that row. The head's second review item, unrelated lockfile
+changes, is not an expected finding.
+
+`expectedSkills` names `no-mistakes-rules:testing-rules` ("MUST NOT use fixed identities in a shared
+store, or reset shared state broadly"), read against version 0.109.115. It is the first
+`revisions.json` case with a skill tag.
+
 ## 2026-11-22: pilot, `correctness` shown one file of the diff instead of the whole diff
 
 Question: does the pillar catch more when one copy of it is aimed at the file that holds the defect?
