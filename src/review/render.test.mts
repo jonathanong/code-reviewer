@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ReviewInput, Finding } from './finding.mts'
 import {
   deriveVerdict,
+  findingTag,
   locationText,
   renderBodyFinding,
   renderFindingBody,
@@ -34,6 +35,7 @@ describe('verdict and tags', () => {
     expect(deriveVerdict([f({ severity: 'low' })], ask)).toBe('Comment')
     expect(deriveVerdict([f({ severity: 'blocking' })], ask)).toBe('Request Changes')
     expect(severityTag('high')).toBe('[high]')
+    expect(findingTag(f({ severity: 'medium', pillar: 'design' }))).toBe('[medium · design]')
   })
 
   it('makes an approval whose second check did not complete a Comment, never softening worse verdicts', () => {
@@ -68,10 +70,10 @@ describe('locationText', () => {
 
 describe('finding bodies', () => {
   it('keeps short bodies inline', () => {
-    expect(renderFindingBody(f())).toBe('**[low]** Title\n\n<sub>rules</sub>\n\nBody')
+    expect(renderFindingBody(f())).toBe('**[low · rules]** Title\n\nBody')
     const prevent = 'an oxlint rule banning x'
     expect(renderFindingBody(f({ prevent }))).toBe(
-      `**[low]** Title\n\n<sub>rules</sub>\n\nBody\n\n<details><summary>For the fix</summary>\n\n**Prevent:** ${prevent}\n\n</details>`,
+      `**[low · rules]** Title\n\nBody\n\n<details><summary>For the fix</summary>\n\n**Prevent:** ${prevent}\n\n</details>`,
     )
     expect(renderBodyFinding(f({ prevent }))).toContain(
       `Body\n\n<details><summary>For the fix</summary>\n\n**Prevent:** ${prevent}\n\n</details>\n\n</details>`,
@@ -89,10 +91,10 @@ describe('finding bodies', () => {
 
   it('renders body findings with and without a location', () => {
     expect(renderBodyFinding(f())).toBe(
-      '<details><summary>[low] Title</summary>\n\n<sub>rules</sub>\n\nBody\n\n</details>',
+      '<details><summary>[low · rules] Title</summary>\n\nBody\n\n</details>',
     )
     expect(renderBodyFinding(f({ path: 'a.ts', line: 3 }))).toContain(
-      '<summary>[low] Title (a.ts:3)</summary>',
+      '<summary>[low · rules] Title (a.ts:3)</summary>',
     )
   })
 })

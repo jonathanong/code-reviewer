@@ -81,7 +81,7 @@ describe('reactions', () => {
   })
 
   it('a thumbs-down on the review body rejects every finding of the review, body findings too', async () => {
-    const body = `<details><summary>[low] Naming (\`src/b.ts:3\`)</summary>\n\n<sub>design</sub>\n\nx</details>`
+    const body = `<details><summary>[low · design] Naming (\`src/b.ts:3\`)</summary>\n\nx</details>`
     const reviews = [
       review(100, {
         body,
@@ -122,13 +122,19 @@ describe('what a row carries', () => {
     })
   })
 
+  it('reads a comment posted in the earlier form, with the pillar in a sub line', async () => {
+    const body = '**[high]** Missing check\n\n<sub>rules</sub>\n\nDetail'
+    const [found] = await outcomeOf({ threads: [thread({ id: 1, body })] })
+    expect(found).toMatchObject({ severity: 'high', pillar: 'rules', title: 'Missing check' })
+  })
+
   it('keeps a comment it cannot parse, with no pillar, severity or rule', async () => {
     const [found] = await outcomeOf({ threads: [thread({ id: 1, body: 'plain words\nmore' })] })
     expect(found).toMatchObject({ pillar: null, severity: null, rule: null, title: 'plain words' })
   })
 
   it('records body-only findings with review-level signals: open, then ignored once merged', async () => {
-    const body = `<details><summary>[medium] Docs drift</summary>\n\n<sub>congruence</sub>\n\nx</details>`
+    const body = `<details><summary>[medium · congruence] Docs drift</summary>\n\nx</details>`
     const reviews = [review(100, { body })]
     const [open] = await outcomeOf({ reviews })
     expect(open).toMatchObject({

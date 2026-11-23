@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): the posted finding head carries the pillar
+
+Not measured; no model was called.
+
+- **What changed.** A posted finding is headed `**[medium · design]** Title`, where it was
+  `**[medium]** Title` then a `<sub>design</sub>` line; a finding in the review body is the same in
+  its `<summary>`. Readers of earlier posted comments accept both forms.
+- **Comparable.** Every earlier row. The benchmarks never read or write the posted head: no
+  prompt, schema or fixture contains it, so no row is made non-comparable.
+
 ## 2026-11-23 (pilot): the two answer cases, one attempt each
 
 Commit dd3cf0c. Verifier `claude-opus-5-5` with skills, judge Sonnet, checker Opus, one attempt per

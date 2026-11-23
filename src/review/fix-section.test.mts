@@ -15,7 +15,7 @@ describe('the fixer-only section', () => {
     const out = renderFindingBody({ ...base, fix: FIX, prevent: 'a lint rule', raisedBy })
     expect(out).toBe(
       [
-        '**[high]** Title\n\n<sub>rules</sub>\n\nWhy it matters.',
+        '**[high · rules]** Title\n\nWhy it matters.',
         `<details><summary>For the fix</summary>\n\n${FIX}\n\n**Prevent:** a lint rule\n\n</details>`,
         'Also raised by [octo](https://example.test/t/1)',
       ].join('\n\n'),
@@ -24,7 +24,7 @@ describe('the fixer-only section', () => {
   })
 
   it('renders a finding without fix or prevent exactly as before', () => {
-    expect(renderFindingBody(base)).toBe('**[high]** Title\n\n<sub>rules</sub>\n\nWhy it matters.')
+    expect(renderFindingBody(base)).toBe('**[high · rules]** Title\n\nWhy it matters.')
     expect(renderFindingBody({ ...base, raisedBy })).not.toContain('<details>')
   })
 
@@ -37,7 +37,7 @@ describe('the fixer-only section', () => {
 
   it('is still read back by the comment and body-finding parsers', () => {
     const inline = renderFindingBody({ ...base, fix: 'see `a:b`', prevent: 'x' })
-    expect(inline).toMatch(/^\*\*\[high\]\*\* Title\n\n<sub>rules<\/sub>/u)
+    expect(inline).toMatch(/^\*\*\[high · rules\]\*\* Title/u)
     const body = renderBodyFinding({ ...base, path: 'a.ts', line: 3, fix: FIX })
     expect(parseBodyFindings(body)).toEqual([
       expect.objectContaining({
@@ -53,7 +53,7 @@ describe('the fixer-only section', () => {
 
   it('does not count toward the visible length of an inline comment', () => {
     const long = renderFindingBody({ ...base, fix: 'x'.repeat(5000), prevent: 'p' })
-    expect(visibleComment(long)).toBe('**[high]** Title\n\n<sub>rules</sub>\n\nWhy it matters.')
+    expect(visibleComment(long)).toBe('**[high · rules]** Title\n\nWhy it matters.')
     expect(visibleComment('plain')).toBe('plain')
     const input = { effort: 'low' as const, summary: '', skipped: [], findings: [], questions: [] }
     const review = {

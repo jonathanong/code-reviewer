@@ -81,7 +81,7 @@ function pull(overrides: Partial<PrConversation> = {}): PrConversation {
   }
 }
 
-const FINDING = '**[high]** Title here\n\n<sub>correctness</sub>\n\nbody'
+const FINDING = '**[high · correctness]** Title here\n\nbody'
 
 describe('buildFollowUpContext', () => {
   it('records no author for a deleted account', () => {
@@ -191,6 +191,22 @@ describe('buildFollowUpContext', () => {
         where: 'a.ts:3',
         text: expect.stringContaining('Title here'),
       },
+    ])
+  })
+
+  it('carries an unresolved finding posted in the earlier form, with the pillar in a sub line', () => {
+    const markedReview = review({ id: 'F', body: reviewMarker(A, 'Comment', 'low') })
+    const old = '**[high]** Title here\n\n<sub>correctness</sub>\n\nbody'
+    const ctx = build(
+      pull({
+        reviews: { nodes: [markedReview] },
+        reviewThreads: {
+          nodes: [thread(comment({ body: old, pullRequestReview: { id: 'F' } }), { id: 'T1' })],
+        },
+      }),
+    )
+    expect(ctx.unresolved).toMatchObject([
+      { threadId: 'T1', severity: 'high', pillar: 'correctness', title: 'Title here' },
     ])
   })
 

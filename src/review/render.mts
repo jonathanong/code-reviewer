@@ -34,6 +34,11 @@ export function severityTag(severity: Severity): string {
   return `[${severity}]`
 }
 
+/** The tag that heads a finding in the posted text: its severity and its pillar. */
+export function findingTag(finding: Finding): string {
+  return `[${finding.severity} · ${finding.pillar}]`
+}
+
 export function locationText(finding: Finding): string {
   if (finding.path === undefined) return ''
   if (finding.line === undefined) return `\`${finding.path}\``
@@ -63,7 +68,7 @@ function fixSection(finding: Finding): string {
 
 /** Renders a finding: tag and title up front, short bodies inline, long bodies collapsed. */
 export function renderFindingBody(finding: Finding): string {
-  const head = `**${severityTag(finding.severity)}** ${finding.title}\n\n<sub>${finding.pillar}</sub>`
+  const head = `**${findingTag(finding)}** ${finding.title}`
   const body = isShort(finding.body) ? finding.body : detail('Details', finding.body)
   return `${head}\n\n${body}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`
 }
@@ -71,10 +76,10 @@ export function renderFindingBody(finding: Finding): string {
 /** Renders a finding that has no commentable diff line, for the review body. */
 export function renderBodyFinding(finding: Finding): string {
   const where = locationText(finding)
-  const summary = `${severityTag(finding.severity)} ${finding.title}${where ? ` (${where})` : ''}`
+  const summary = `${findingTag(finding)} ${finding.title}${where ? ` (${where})` : ''}`
   return detail(
     summary.replace(/`/gu, ''),
-    `<sub>${finding.pillar}</sub>\n\n${finding.body}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`,
+    `${finding.body}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`,
   )
 }
 
