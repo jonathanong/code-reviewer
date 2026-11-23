@@ -89,8 +89,8 @@ entry below:
 - `backend/services/topics/link-topic-alias.mts:23`: "reads the destination topic and the alias row
   without FOR UPDATE, and the later UPDATE carries the destination-is-live-and-unmerged check"
 
-Of the 15 targets on these two heads, 7 of the 8 on `6059` and 1 of the 7 on `6087` describe a
-removed lock. The planner named every removed-lock site of the entry below and neither other site,
+Of the 15 targets on these two heads, 7 of the 8 on `6059` and 2 of the 7 on `6087` describe a
+removed lock or its removed key helper. The planner named every removed-lock site of the entry below and neither other site,
 so on these heads it behaves as a lock reviewer.
 
 For scale, the 2026-11-22 lock pilot further down measured Opus at `medium` at $0.80 a run, so one
