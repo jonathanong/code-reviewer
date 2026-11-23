@@ -48,11 +48,13 @@ Judged match on the six expected findings, and findings raised on the three clea
 
 What this shows, on one attempt per arm, which is not a rate:
 
-- The question is what helped. The one-file pilot below showed the same files with no question and
-  matched none of these. Arm D matched three, and one of the three is not a lock.
-- With the question, seeing less did not help at `medium` (C, 0 of 6, against B, 2 of 6). The
-  gain in D comes with `high` effort; one file with the question at `medium` was the worst
-  question arm. No arm ran the whole diff with the question at `high`.
+- B against A is the only like-for-like comparison: the same diff and effort, with and without the
+  question, 2 of 6 against 0 of 6. One of B's two matches is not a lock.
+- D differs from A in three ways at once (the question, one file, `high`), so its 3 of 6 does not
+  say which of them helped. The four lock sites have no run without a question on one file or at
+  `high`. `4154-index` and `6050-seed` do, in the two entries below, and neither matched there.
+- With the question, seeing less did not help at `medium` (C, 0 of 6, against B, 2 of 6). No arm
+  ran the whole diff with the question at `high`.
 - `4154-index` and `6055-finalize` were matched by no arm. `6076-flags` drew a finding in B, C and
   D, each about the unlocked cursor read, not the expected deadlock on the flag rows.
 - The question also produces findings where the final review had none. B and D both reported that
