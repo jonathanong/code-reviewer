@@ -2,6 +2,34 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23: correction to the entry below; a verifier model comparison that had no input
+
+On `4c1a34f`, no change to cases, prompts or graders.
+
+- **Correction.** The entry below says each attempt with the added bullet took "the same" turns
+  and output as without it, "so the verifier did not search", and that the raw results do not
+  record which files an attempt read. None of that was checked. The turn count of the attempts
+  without the bullet was not read, and the raw results were deleted without looking for a list
+  of reads. What was recorded: without the bullet, 500 to 760 output tokens and 32k to 63k
+  cached tokens per Sonnet attempt; with it, about 530 and 32k, in 4 turns. The 0 of 3 stands.
+  Why the verifier misses the finding is not known.
+- **Scope of that result.** It covers one mined case and one kind of work: raising a congruence
+  finding with no pillar findings to verify. It says nothing about whether a Sonnet verifier can
+  verify, merge and rate real pillar findings.
+- **Abandoned run: Sonnet against Opus on that main work.** `bench-verifier` needs pillar
+  findings as input. Sonnet pillar runs to produce them, 1 attempt each with `--select`, judged
+  by Opus, returned no findings on either mined case tried:
+
+  | Case                        | Pillar       | Expected for the pillar | Findings | Cost  |
+  | --------------------------- | ------------ | ----------------------- | -------- | ----- |
+  | `vouchington-6166-f684113f` | blast-radius | 1                       | 0        | $0.12 |
+  | `vouchington-6166-f684113f` | design       | 1                       | 0        | $0.12 |
+  | `vouchington-6076-4072f2f4` | correctness  | 5                       | 0        | $0.24 |
+
+  No verifier ran. To compare verifier models, give both arms the same fixed input that holds
+  real and wrong findings, for example the saved with-skills findings of a full run, instead of
+  a fresh pillar run on one case.
+
 ## 2026-11-22: verifier model on a mined congruence case; two miss fixtures piloted and not kept
 
 On `e5b54e7`, no change to cases, prompts or graders. Runs were made one at a time in one session.
