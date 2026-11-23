@@ -59,7 +59,7 @@ What this shows, on one attempt per arm, which is not a rate:
   D, each about the unlocked cursor read, not the expected deadlock on the flag rows.
 - The question also produces findings where the final review had none. B and D both reported that
   two identical concurrent sends now reach followers twice at `6087-advisory`, a race the pull
-  request accepts. B also reported a stale comment at `6055-expire`. D raised a missing-test
+  request accepts, so it is an accepted outcome change and not a false alarm. B also reported a stale comment at `6055-expire`. D raised a missing-test
   finding at `6087-advisory` and at `6076-flags`.
 - D loaded `jong-skills:postgres-locking` in two of nine runs; no other arm loaded a skill.
 
