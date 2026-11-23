@@ -2,6 +2,68 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, `correctness` given one question about one change
+
+One attempt per arm, commit b48cebe, correctness pillar with its own prompt, Sonnet, judge Opus,
+`--select`. 33 pillar runs, $8.47 without the judge. Nothing in the tree changed. The question was
+appended to the pull request description of a scratch copy of each case, which is not committed.
+
+The question is one fixed template. Only the change statement varies. It was written by hand from
+the diff and holds no rule text, so the run is an upper bound on what a planning step could write:
+
+> ## Your assignment (from the review tooling, not the author)
+>
+> Review one change in this pull request. At `<path>:<line>` it `<change>`. Other reviewers take
+> the other changes; do not report on them. Find every other place in the tree that reads, writes,
+> runs against or depends on what this change touches. For each, say whether it still behaves
+> correctly together with this change at the head.
+
+Sites with an expected finding. Each scratch case kept the one expectation at that path:
+
+| Site            | Case                        | `<path>:<line>` (path shortened)        | `<change>`                                                                                                                                                                |
+| --------------- | --------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `6055-finalize` | `vouchington-6055-2b300006` | `process-verification-finalize.mts:87`  | reads the existing provider lineage row without the `FOR UPDATE` it had, and re-reads the row when the bind `UPDATE` changes no row                                       |
+| `6059-aliases`  | `vouchington-6059-99da41a9` | `topics/aliases.mts:27`                 | creates aliases without first locking the topic row or the existing alias rows: the `FOR UPDATE` reads and the `lockExistingTopicAliasPublicationScopes` call are removed |
+| `6059-link`     | `vouchington-6059-99da41a9` | `link-topic-alias.mts:22`               | reads the topic row and the alias row without the `FOR UPDATE` each had, and moves the previous-topic read and a destination check into the `UPDATE`                      |
+| `6076-flags`    | `vouchington-6076-578223cb` | `cleanup-vote-integrity-details.mts:72` | clears flag details by id list directly: the `FOR UPDATE SKIP LOCKED` selection of the flags and the `FOR UPDATE` on the cleanup cursor are removed                       |
+| `4154-index`    | `vouchington-4154`          | `0060-00-00-topics-taxonomy.sql:832`    | adds a partial index on `topic_aliases (unlink_topic_id)` where `unlink_topic_id IS NOT NULL`                                                                             |
+| `6050-seed`     | `vouchington-6050-02ad62d4` | `deleted-user-ballots.mts:94`           | adds `seedTestBallotSweepCursor`, a test helper that deletes and then re-inserts the singleton row of `deleted_user_ballot_cleanup_cursors`                               |
+
+Sites where no final review reported a defect, run with the question only:
+
+| Site               | Case                        | `<path>:<line>` (path shortened)       | `<change>`                                                                                                          |
+| ------------------ | --------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `6087-advisory`    | `vouchington-6087-fa05c982` | `follower-distributions/create.mts:73` | removes the `pg_advisory_xact_lock` taken before the quota and audience re-read, and adds a sender rate-limit check |
+| `6076e-identities` | `vouchington-6076-e7b25fb9` | `cleanup-retained-identities.mts:51`   | reads the cleanup cursor row without the `FOR UPDATE` it had                                                        |
+| `6055-expire`      | `vouchington-6055-2b300006` | `expire-elapsed-page.mts:19`           | updates the elapsed membership directly: the `candidates` CTE that selected one row `FOR UPDATE` is removed         |
+
+Judged match on the six expected findings, and findings raised on the three clean sites:
+
+| Arm                                  | `6055-finalize` | `6059-aliases` | `6059-link` | `6076-flags` | `4154-index` | `6050-seed` | Matched | Clean sites with a finding | Cost per run |
+| ------------------------------------ | --------------- | -------------- | ----------- | ------------ | ------------ | ----------- | ------- | -------------------------- | ------------ |
+| A: whole diff, no question, `medium` | no              | no             | no          | no           | no           | no          | 0 of 6  | not run                    | $0.22        |
+| B: whole diff, question, `medium`    | no              | no             | yes         | no           | no           | yes         | 2 of 6  | 2 of 3                     | $0.25        |
+| C: one file, question, `medium`      | no              | no             | no          | no           | no           | no          | 0 of 6  | 0 of 3                     | $0.21        |
+| D: one file, question, `high`        | no              | yes            | yes         | no           | no           | yes         | 3 of 6  | 1 of 3                     | $0.34        |
+
+What this shows, on one attempt per arm, which is not a rate:
+
+- The question is what helped. The one-file pilot below showed the same files with no question and
+  matched none of these. Arm D matched three, and one of the three is not a lock.
+- With the question, seeing less did not help at `medium` (C, 0 of 6, against B, 2 of 6). The
+  gain in D comes with `high` effort; one file with the question at `medium` was the worst
+  question arm. No arm ran the whole diff with the question at `high`.
+- `4154-index` and `6055-finalize` were matched by no arm. `6076-flags` drew a finding in B, C and
+  D, each about the unlocked cursor read, not the expected deadlock on the flag rows.
+- The question also produces findings where the final review had none. B and D both reported that
+  two identical concurrent sends now reach followers twice at `6087-advisory`, a race the pull
+  request accepts. B also reported a stale comment at `6055-expire`. D raised a missing-test
+  finding at `6087-advisory` and at `6076-flags`.
+- D loaded `jong-skills:postgres-locking` in two of nine runs; no other arm loaded a skill.
+
+The rule written before the run was: a question arm goes on to a planning step if it beats A by two
+or more of six without findings on most clean sites. D meets it. B meets the first half only.
+
 ## 2026-11-22: pilot, `vouchington-6050-02ad62d4` with only its test files shown
 
 One attempt per arm, commit 428700a (the tree merged as #139), correctness pillar, Sonnet, judge
