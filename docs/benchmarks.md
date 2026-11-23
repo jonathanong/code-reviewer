@@ -439,6 +439,19 @@ Every snapshot is searched for [documentation that mentions what
 changed](pull-request-context.md#documentation-the-change-may-leave-stale), as a review run is.
 Matching lines are written to `.review/docs.md` and added to the verifier prompt.
 
+A case may list `answerable` notes: other reviewers' open threads as the production prompt
+renders them (`thread`, `login`, `url`, `where`, `text`, `replies`, and `omitted` when present), each
+with `expect: "answer"` and `skill` (the `plugin:skill` the reply must cite) or `expect: "leave"`.
+The bench prompt and schema then carry the same answers block as a review, and the run's transcript
+lists the skills it loaded. The raw `answers` pass through the review's own checks (a listed thread,
+one answer per thread, a loaded skill, a quote that is a whole unit of the installed skill) against
+the installed rule skills of the default rule plugins. Grading is code, per thread: an `answer`
+note passes when a checked answer for it cites the expected skill, a `leave` note when none
+survives. The result is `answers` in the raw file and a line in `summary.md`. A case with `answerable`
+and no pillar result is verified alone, like a `congruence` case. A thread that already holds a
+reply from the reviewer never reaches the prompt (`answerableThreads`), and a case file lists
+notes after that filter, so a unit test covers it, not a case.
+
 The verifier may add findings of its own, with an empty `sources` array. A correct addition is a
 win, so findings are graded on whether they are right rather than counted:
 

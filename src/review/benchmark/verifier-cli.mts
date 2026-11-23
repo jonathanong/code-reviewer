@@ -17,6 +17,8 @@ import {
   type VerifierBenchDeps,
 } from './verifier-snapshot.mts'
 import { runVerifier, verifierRunInputs, type VerifierRun } from './verifier-run.mts'
+import { DEFAULT_RULE_PLUGINS } from '../plugins.mts'
+import { answerRules } from '../run/answers-rules.mts'
 
 type Options = {
   findingsFrom: string
@@ -48,8 +50,11 @@ function verifierPrompt(prompts: string, deps: BenchDeps): string {
 }
 
 async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDeps): Promise<void> {
-  const { settings } = await benchPlugins(deps.exec, process.cwd(), !options.noRules, (line) =>
-    deps.log(line),
+  const { settings, installs } = await benchPlugins(
+    deps.exec,
+    process.cwd(),
+    !options.noRules,
+    (line) => deps.log(line),
   )
   const run: VerifierRun = {
     verifierPrompt: verifierPrompt(options.prompts, deps),
@@ -57,6 +62,9 @@ async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDe
     maxTurns: options.maxTurns,
     ...(settings === undefined ? {} : { settings }),
   }
+  const citable = cases.some((item) => item.answerable !== undefined)
+    ? answerRules(installs, DEFAULT_RULE_PLUGINS, [])
+    : undefined
   const tasks = cases.flatMap((item) => {
     let input: VerifierInput | null
     try {
@@ -82,8 +90,9 @@ async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDe
       const saved = readRaw(join(options.out, 'raw', `${item.id}.json`), deps)
       if (saved !== undefined && 'output' in saved && saved.inputs === inputs) return
       deps.log(`verify ${item.id}`)
-      const { output, usage } = await runVerifier(item, dir, input.findings, run, deps.exec)
-      raw = { input, inputs, output, usage }
+      const done = await runVerifier(item, dir, input.findings, run, deps.exec, citable)
+      const { output, usage, answers } = done
+      raw = { input, inputs, output, usage, ...(answers === undefined ? {} : { answers }) }
     } catch (error) {
       raw = { input, error: errorMessage(error) }
     }
