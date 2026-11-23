@@ -28,6 +28,7 @@ export { skipPullRequest } from './skip.mts'
 export {
   DEFAULT_LABELS,
   repoSettings,
+  resolveAnswers,
   resolveApprovalCheck,
   resolveRun,
   reviewSettings,

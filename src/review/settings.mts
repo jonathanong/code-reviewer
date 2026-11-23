@@ -117,6 +117,15 @@ export function resolveApprovalCheck(configs: RepoConfigs, scope: string): Appro
   return { enabled: value ?? true, from }
 }
 
+/** Whether the verifier may answer other reviewers' open threads: off unless a machine layer enables it. */
+export function resolveAnswers(
+  configs: RepoConfigs,
+  scope: string,
+): { enabled: boolean; from: MachineLayer } {
+  const { value, from } = machineSetting(configs, scope, 'answers')
+  return { enabled: value?.enabled ?? false, from }
+}
+
 /**
  * The `run` settings for `owner/name`: the highest machine layer that sets the key, over the
  * defaults. The reviewed repository's own file is never consulted, so it cannot switch off a rule.

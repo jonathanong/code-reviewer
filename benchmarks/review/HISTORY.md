@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): the verifier may answer other reviewers' open notes
+
+Not measured; no model was called.
+
+- **What changed.** With the machine-only `answers` setting on and a non-empty `answerable` list in
+  `context.json`, the verifier prompt gets one more block and its output schema an optional
+  `answers` field; code checks and `post` posts the replies. `verifier.md` is unchanged.
+  `context.md`'s "Other reviewers" section now shows later comments of a thread.
+- **With the setting off or an empty list** the verifier prompt and schema are byte-identical to
+  before. `bench-verifier` and `bench` build prompts without the block, so their rows are
+  comparable with the entry below. A real review with the setting on and a listed note is not
+  comparable with earlier ones.
+- **Not covered.** `bench-verifier` cannot grade an `answers` entry yet.
+- `bench-context` rows that render the "Other reviewers" section change only for a thread with
+  more than one comment.
+
 ## 2026-11-23: the verifier is given document lines that mention what changed
 
 Commit of this entry. Verifier alone on `vouchington-6166-f684113f` (`bench-verifier`, empty

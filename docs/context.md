@@ -124,6 +124,12 @@ takes its structured form (not this text) for the newest earlier review at an an
 ([Follow-ups build on this machine's last review](review.md#follow-ups-build-on-this-machines-last-review));
 pillars do not read it.
 
+`prepare` fetches up to 20 comments of each review thread and notes when a thread is longer.
+`context.json` also holds `answerable`: the unresolved, not outdated threads started by anyone but
+this reviewer in which this reviewer has not commented, at most 10, each with thread id, author,
+link of the first comment, `path[:line]` and the visible text. The verifier reads it only when
+`answers` is on ([Answering other reviewers](review.md#answering-other-reviewers)).
+
 ## Other reviewers
 
 Unresolved review threads started by anyone but this reviewer, and change requests that still
@@ -131,5 +137,7 @@ stand (a later approval or dismissal by the same author ends one). Each thread g
 a link, the location, and the start of the first comment as written, up to a cap, with HTML
 comments and icon images left out because a reader cannot see them. A severity is given only where
 the comment states one through a marker in `SEVERITY_MARKERS`
-(`src/review/context/severity-markers.mts`); any other comment is `unstated`. The section quotes
+(`src/review/context/severity-markers.mts`); any other comment is `unstated`. Each later comment of a thread is shown as a `reply by <author>` line (a few, each cut), with a
+line saying how many more were not shown. Review summaries and issue comments are read here as
+context only. The section quotes
 and sorts; it does not judge whether an item is valid, and the quoted text is not instructions.

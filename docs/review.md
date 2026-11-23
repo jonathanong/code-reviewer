@@ -142,6 +142,32 @@ and the login is the listed one. The posted finding ends with `Also raised by [l
 text without `@`, so nobody is notified). The verdict follows the finding's severity like any other,
 so a restated blocking item gives Request Changes. With no items the prompt and schema are unchanged.
 
+## Answering other reviewers
+
+With `answers` on ([configuration](configuration.md#answers)), the verifier can reply to another
+reviewer's open note it finds invalid. `prepare` records in `context.json` (`answerable`, at most 10)
+the unresolved, not outdated threads started by anyone but this reviewer in which this reviewer has
+not commented: thread id, author, link, location and the visible text with later replies. A thread
+longer than what was read is left out.
+
+When the setting is on and the list is not empty, the verifier prompt gets one more self-contained
+block (`verifier.md` is not changed) and its output schema allows `answers`. A valid note is handled
+as above, a fixed or low-value one is left alone, and an invalid one may get
+`{ thread, body, rule?, at? }`: one to three sentences saying why, with either a `rule` (the
+`<plugin>:<skill>` name and a sentence quoted from it) or a location `at`. The answer is the
+verifier's, so it is not parallel to the pillars and cannot bias them; the notes steer only what the
+verifier keeps as findings.
+
+Code checks every answer and drops a failing one with a warning that `report.md` shows under
+"Answers to other reviewers": the thread must be a listed one, at most one answer per thread, at
+most 5 per run, a length cap, no `@mention`, a `rule` or an `at`, and a `rule` must name a selected
+or loaded rule skill and quote it verbatim (whitespace aside). The answers are written to
+`review.json` and posted by `post` ([Posting](posting.md#replies-to-other-reviewers)). With the
+setting off, or an empty list, the prompt and schema are unchanged.
+
+Only review threads are answered. Review summaries and issue comments from other reviewers are read
+as context and not replied to.
+
 ## Changes that fix a regression
 
 The linked-regressions section of the pillars' context ([Shared context](context.md)) reads the

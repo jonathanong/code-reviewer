@@ -104,6 +104,7 @@ describe('buildFollowUpContext', () => {
       priorQuestions: [],
       others: [],
       restatable: [],
+      answerable: [],
     })
   })
 

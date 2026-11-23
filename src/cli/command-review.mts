@@ -12,6 +12,7 @@ import { requirePillars } from '../review/pillars-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
 import { recordReview, recordStoppedReview } from '../tracker/record.mts'
 import {
+  resolveAnswers,
   resolveApprovalCheck,
   resolveEvidence,
   resolveReferences,
@@ -87,6 +88,8 @@ export async function reviewCommand(
       webReferences: resolveReferences(deps.configs(), target.repo, own).sources,
       // Machine config only: a repository must not switch off the check on its own approvals.
       approvalCheck: resolveApprovalCheck(deps.configs(), target.repo).enabled,
+      // Machine config only, and off until set: it replies in other reviewers' threads.
+      answers: resolveAnswers(deps.configs(), target.repo).enabled,
       // Trusted-only: an enabled plugin loads its hooks too; it must already be installed.
       rulePlugins: resolveRulePlugins(deps.configs(), target.repo, own).names,
       // Machine or repository config; a repository may switch off or add pillars of its own.

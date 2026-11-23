@@ -9,6 +9,7 @@ import {
 import { savePostedFindings } from '../tracker/posted-file.mts'
 import { recordPosted } from '../tracker/record.mts'
 import type { ReviewDeps } from './deps.mts'
+import { answersFor } from './post-answers.mts'
 import { requireValidConfig } from './config-check.mts'
 import { postOptions, type PostValues } from './post-options.mts'
 import { checkRunFor, labelsFor } from './review-settings.mts'
@@ -40,7 +41,8 @@ export async function postCommand(
   const input = parseReviewInput(JSON.parse(deps.readFile(values.input)) as unknown)
   await requireValidConfig(deps, pull.repo)
   const dryRun = values['dry-run'] === true
-  const outcome = await postFinalReview(deps.createIo(pull), input, headSha, {
+  const io = deps.createIo(pull)
+  const outcome = await postFinalReview(io, input, headSha, {
     dryRun,
     ...postOptions(values, (path) => deps.readFile(path), values.input, headSha),
   })
@@ -61,11 +63,13 @@ export async function postCommand(
     input.findings,
     outcome.placements,
   )
+  const answered = await answersFor(deps, pull, input, () => io.trustedAuthors())
   const problems = [saved.trackerProblem, tracked.trackerProblem].filter((p) => p !== undefined)
   const printed = {
     ...withoutPlacements(outcome),
     reviews: outcome.reviews.length,
     lifecycle,
+    ...answered,
     checkRun,
     ...(problems.length === 0 ? {} : { trackerProblem: problems.join('; ') }),
   }

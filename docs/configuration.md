@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `plan`, `models`, `limits`, `issues`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `plan`, `models`, `limits`, `issues`, `answers`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -172,6 +172,20 @@ other pillars are unchanged. These runs, like runs with a shell, pass `--setting
 no user setting can widen the allow-list. With no references every prompt and flag is unchanged.
 `bench` does not use references. `code-reviewer settings` lists the configured names and domains.
 
+## `answers`
+
+Lets the verifier reply, in the thread, to another reviewer's open note it finds invalid, quoting the
+rule it relies on ([Answering other reviewers](review.md#answering-other-reviewers)).
+
+```yaml
+answers:
+  enabled: true
+```
+
+It is off until configured and machine-only: a repository's own file cannot turn it on. A value that
+is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
+the file and key. `code-reviewer settings` prints the resolved value and its layer.
+
 ## `approvalCheck`
 
 A full review whose verdict would be Approve gets one more independent run first, on the verifier's
@@ -209,7 +223,7 @@ With it off, nothing changes: a repository's own file setting `evidence`, `refer
 `rulePlugins` is ignored with a problem. With it on for a repository, its own file may set those
 three keys, validated exactly as in a machine file. It also unlocks `plan.generatedPaths` and
 `plan.smallChangeLines` (see [`plan`](#plan)). Nothing else: `run`,
-`models`, `limits`, `issues` and `approvalCheck` stay machine-only.
+`models`, `limits`, `issues`, `answers` and `approvalCheck` stay machine-only.
 
 **Turning it on means anyone who can push to that repository's default branch chooses the
 commands the evidence step runs on this machine, with the credentials in the source's `env`, and

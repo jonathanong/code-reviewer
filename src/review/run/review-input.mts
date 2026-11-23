@@ -29,5 +29,8 @@ export function buildReviewInput(parts: {
       : { regressionPrevent: output.regressionPrevent }),
     ...(output.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
     ...(output.impact === undefined ? {} : { impact: output.impact }),
+    ...(output.answers === undefined || output.answers.length === 0
+      ? {}
+      : { answers: output.answers }),
   }
 }

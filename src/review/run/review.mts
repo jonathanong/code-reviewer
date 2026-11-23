@@ -22,6 +22,7 @@ import { webReferences } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
 import { runReviewVerifier } from './verify-run.mts'
 import { verifierContext } from './verifier-context.mts'
+import { answerOptions } from './answers-rules.mts'
 import { withEarlier } from './earlier-run.mts'
 import { clearComplete, markComplete } from '../complete-file.mts'
 
@@ -94,13 +95,19 @@ async function review(
       run,
       findings,
       skipped: pillarSkips,
-      ...verifierContext(out),
+      ...verifierContext(out, steps.answers === true),
       ...verifierContextFields(context),
       ...(block === undefined ? {} : { earlier: block }),
       analysis,
       ...(web === undefined ? {} : { web }),
     },
-    { model: plan.verifierModel, extraPillars, mode, ...harness },
+    {
+      model: plan.verifierModel,
+      extraPillars,
+      mode,
+      ...harness,
+      ...answerOptions(steps, installs, skillChoice.selected),
+    },
   )
   writeJson(join(out, 'verifier.json'), { ...output, dropped: [...output.dropped] })
   const second = await applyApprovalCheck({
@@ -176,11 +183,7 @@ async function review(
   }
 }
 
-/**
- * Runs a whole review headlessly and stops before posting: claim, prepare, select skills, run the
- * pillars, verify, and write the review, its preview, and the report. Labels stay at processing.
- * After a failure the claim is dropped without a requeue, unless `skip` already closed it.
- */
+/** Runs a whole review headlessly, up to the review, preview and report files; nothing is posted and the labels stay at processing. A failure drops the claim without a requeue unless `skip` closed it. */
 export async function runReview(steps: ReviewSteps, options: ReviewOptions): Promise<ReviewResult> {
   const claim = await steps.claim()
   if (!claim.claimed) return { ok: true, summary: { ...claim } }

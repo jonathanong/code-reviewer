@@ -21,6 +21,7 @@ const context = (reviewedSha: string | null = null): FollowUpContext => ({
   priorQuestions: [],
   others: [],
   restatable: [],
+  answerable: [],
 })
 
 const values = (authors: AuthorRule[]): PlanValues => ({ ...DEFAULT_PLAN_VALUES, authors })

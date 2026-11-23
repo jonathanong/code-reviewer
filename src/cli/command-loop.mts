@@ -9,6 +9,7 @@ import {
   prepareReview,
   resolveEvidence,
   resolveReferences,
+  resolveAnswers,
   resolveApprovalCheck,
   resolveRulePlugins,
   resolveThreads,
@@ -46,10 +47,7 @@ export type LoopValues = {
   thread?: string[] | undefined
 }
 
-/**
- * The resolved labels and check run for one repository or owner, the layer each came from, and
- * problems in the files that fed them.
- */
+/** The resolved settings of one repository or owner, the layer each came from, and the problems. */
 async function settings(values: LoopValues, deps: ReviewDeps) {
   const repo = values.repo?.[0]
   if ((repo === undefined) === (values.owner === undefined)) {
@@ -76,6 +74,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       from: references.from,
     },
     approvalCheck: resolveApprovalCheck(configs, scope),
+    answers: resolveAnswers(configs, scope),
     rulePlugins: resolveRulePlugins(configs, scope, target?.config),
     pillars: describePillars(resolvePillars(configs, scope, target?.config)),
     plan: planSummary(resolvePlanValues(configs, scope, target?.config)),

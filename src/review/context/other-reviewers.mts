@@ -30,6 +30,22 @@ function quote(raw: string, indent: string): string {
   return lines.join('\n')
 }
 
+const MAX_SHOWN_REPLIES = 5
+const REPLY_CHARS = 200
+
+/** The later comments of a thread, in order, each cut short; says so when comments were left out. */
+function replyLines(thread: PrConversation['reviewThreads']['nodes'][number]): string[] {
+  const { nodes, totalCount } = thread.comments
+  const shown = nodes.slice(1, 1 + MAX_SHOWN_REPLIES).map((comment) => {
+    const { text, cut } = visibleStart(comment.body)
+    const flat = text.replaceAll(/\s+/gu, ' ')
+    const clipped = flat.length > REPLY_CHARS || cut ? `${flat.slice(0, REPLY_CHARS)} [cut]` : flat
+    return `  - reply by ${comment.author?.login ?? 'unknown author'}: ${clipped}`
+  })
+  const left = (totalCount ?? nodes.length) - 1 - shown.length
+  return left > 0 ? [...shown, `  - [${left} more comments not shown]`] : shown
+}
+
 function threadItems(pull: PrConversation, own: TrustedAuthors): Item[] {
   return pull.reviewThreads.nodes.flatMap((thread, order): Item[] => {
     const first = thread.comments.nodes[0]
@@ -42,6 +58,7 @@ function threadItems(pull: PrConversation, own: TrustedAuthors): Item[] {
       `- ${first.author?.login ?? 'unknown author'}, \`${place}\`, ${first.url ?? 'no link'}`,
       `  severity: ${severityText(severity)}${thread.isOutdated ? '; outdated' : ''}`,
       quote(first.body, '  '),
+      ...replyLines(thread),
     ].join('\n')
     return [{ rank: tierRank(severity), order, text }]
   })

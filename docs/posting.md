@@ -75,6 +75,17 @@ cleared with no new review (the output then warns that it was not dismissed). A 
 review was submitted but could not be confirmed, `confirmed` is false), not a failure. A dry run
 reads and confirms nothing.
 
+## Replies to other reviewers
+
+When `review.json` has `answers` and the `answers` setting is on ([configuration](configuration.md#answers)),
+`post` replies in each thread after the review is confirmed, with the same identity as the review.
+The reply is the body, then either the location or `Rule: <plugin>:<skill>: "<quote>"` (the skill
+name is not linked). It re-reads the threads first and skips one that is gone, resolved, longer
+than what was read, already answered by this reviewer, or whose final text mentions someone. It
+never resolves a thread. A failed reply does not fail the post. The `post` output has
+`answers: { replied, skipped, failed }`, or `{ off: true }` when the setting is off. A dry run
+replies to nothing.
+
 ## Posted text length
 
 Posted text should be short. A review body targets 1,200 characters (the hidden marker and collapsed

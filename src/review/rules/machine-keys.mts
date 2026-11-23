@@ -1,4 +1,5 @@
 import { parseIssues } from '../../issues/config-parse.mts'
+import { parseAnswers } from './answers-parse.mts'
 import { parseAnalysis } from './analysis-parse.mts'
 import { parseEvidence } from './evidence-parse.mts'
 import { parseLimits } from './limits-parse.mts'
@@ -24,6 +25,7 @@ type MachineKeys = Pick<
   | 'models'
   | 'limits'
   | 'issues'
+  | 'answers'
 >
 
 /**
@@ -87,6 +89,10 @@ export function parseMachineKeys(
     what: 'issues is',
     parse: parseIssues,
   })
+  const answers = machineOnly(scope, raw.answers, file, 'answers', problems, {
+    what: 'answers is',
+    parse: parseAnswers,
+  })
   return {
     ...(trustRepoConfig === undefined ? {} : { trustRepoConfig }),
     ...(evidence === undefined ? {} : { evidence }),
@@ -98,5 +104,6 @@ export function parseMachineKeys(
     ...(models === undefined ? {} : { models }),
     ...(limits === undefined ? {} : { limits }),
     ...(issues === undefined ? {} : { issues }),
+    ...(answers === undefined ? {} : { answers }),
   }
 }

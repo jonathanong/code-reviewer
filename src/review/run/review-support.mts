@@ -52,6 +52,8 @@ export type ReviewSteps = {
   webReferences?: readonly ReferenceSource[]
   /** False when the settings switch off the second check on an approval. */
   approvalCheck: boolean
+  /** True when the settings let the verifier answer other reviewers' threads; off when absent. */
+  answers?: boolean
   /** Built-in pillars to skip and extra pillars to run; the built-ins alone when absent. */
   pillars?: PillarSettings
   /** The harness and model of each step; the default tiers when absent. */
@@ -103,11 +105,7 @@ export function runDir(
   }
 }
 
-/**
- * The `--settings` for every headless run and the skills offered for selection. A configured rule
- * plugin that is not enabled at user scope, or that holds no skills, fails the review: it would
- * otherwise contribute nothing without a word.
- */
+/** The `--settings` and skills offered for selection; a rule plugin that is not loadable or holds none fails the review. */
 export async function loadRulePlugins(
   steps: ReviewSteps,
 ): Promise<{ settings: object; skills: RuleSkill[]; installs: PluginInstall[] }> {

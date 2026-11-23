@@ -27,8 +27,11 @@ export type ReviewThread = {
   isOutdated: boolean
   path: string
   line: number | null
-  comments: { nodes: ThreadComment[] }
+  /** `totalCount` is the thread's real size; `nodes` holds at most `THREAD_COMMENTS` of them. */
+  comments: { totalCount?: number; nodes: ThreadComment[] }
 }
+
+export const THREAD_COMMENTS = 20
 
 export type PageInfo = { hasPreviousPage: boolean }
 
@@ -69,7 +72,8 @@ const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
         pageInfo { hasPreviousPage }
         nodes {
           id isResolved isOutdated path line
-          comments(first: 4) {
+          comments(first: ${THREAD_COMMENTS}) {
+            totalCount
             nodes { url body createdAt author { login } pullRequestReview { id } }
           }
         }
