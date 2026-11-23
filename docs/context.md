@@ -152,8 +152,9 @@ and gets three kinds of note, each labelled with its kind (`thread`, `review sum
 - the body of each review that has one,
 - the pull request's issue comments (the newest 30 are fetched).
 
-It leaves out this reviewer's own notes (any note from the posting identity), reviews carrying this
-reviewer's markers, minimized notes, notes from `codecov`, `github-actions`, `dependabot`, `vercel`
+It leaves out notes from this reviewer's own GitHub App (an author GitHub reports as a bot that is
+the posting identity), reviews carrying this reviewer's markers (the only own-note filter when it
+posts as a person's `gh` login, whose other notes are kept), minimized notes, notes from `codecov`, `github-actions`, `dependabot`, `vercel`
 and `netlify`, and service failure notices such as a usage or rate limit. Each note is cut to 360
 characters with HTML comments and collapsed details removed. The newest 40 are kept, and a line
 `[N more not shown]` says how many older ones were cut. Pillars do not read this list.

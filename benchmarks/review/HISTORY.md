@@ -8,7 +8,8 @@ Not measured; no model was called.
 
 - **What changed.** The "Other reviewers and comments" list in the verifier's `context.md` now
   labels each note by kind (`thread`, `review summary`, `issue comment`) and `bot`, leaves out
-  notes from this reviewer's own identity and minimized notes, and adds a `[N more not shown]` line
+  notes from this reviewer's own GitHub App (a bot author that is the posting identity; under a
+  person's `gh` login only the marker check applies) and minimized notes, and adds a `[N more not shown]` line
   when the 40-note cap cut older ones. The line format changed from
   `- **author** where: text` to `- **author** [kind] where: text`. With no notes the prompt is
   byte-identical to before. `verifier.md` is unchanged.

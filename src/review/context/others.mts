@@ -39,8 +39,10 @@ export function othersFrom(
   markedIds: Set<string>,
   trusted: ReadonlySet<string>,
 ): OtherNotes {
-  // This reviewer's own notes, whatever their marker, are not another reviewer's.
-  const mine = (author: Author): boolean => isTrustedAuthor(author?.login, trusted)
+  // Notes of this reviewer's App are not another reviewer's, whatever their marker. In login mode
+  // the identity is a person, whose hand-written notes stay; only the marker check hides reviews.
+  const mine = (author: Author): boolean =>
+    author?.__typename === 'Bot' && isTrustedAuthor(author.login, trusted)
   const threads = pull.reviewThreads.nodes.flatMap((thread): Dated[] => {
     const first = thread.comments.nodes[0]
     if (thread.isResolved || first === undefined || first.isMinimized === true) return []

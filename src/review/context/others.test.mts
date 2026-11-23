@@ -51,6 +51,16 @@ describe('othersFrom', () => {
     expect(result).toEqual({ notes: [], dropped: 0 })
   })
 
+  it('keeps notes of a human who shares the posting login', () => {
+    const person = { login: 'reviewer-app', __typename: 'User' }
+    const result = othersFrom(
+      pull({ comments: { nodes: [{ ...note('x', 'my own comment'), author: person }] } }),
+      new Set(),
+      TRUSTED,
+    )
+    expect(result.notes).toMatchObject([{ author: 'reviewer-app', text: 'my own comment' }])
+  })
+
   it('drops minimized notes of every kind', () => {
     const result = othersFrom(
       pull({
