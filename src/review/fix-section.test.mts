@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { checkPostedText, visibleBody, visibleComment } from './concise.mts'
 import { parseBodyFindings } from './body-findings.mts'
-import { squash } from './context.mts'
+import { squash } from './squash.mts'
 import { parseReviewInput, type Finding } from './finding.mts'
 import { renderBodyFinding, renderFindingBody } from './render.mts'
 

@@ -138,5 +138,22 @@ a link, the location, and the start of the first comment as written, up to a cap
 comments and icon images left out because a reader cannot see them. A severity is given only where
 the comment states one through a marker in `SEVERITY_MARKERS`
 (`src/review/context/severity-markers.mts`); any other comment is `unstated`. Each later comment of a thread is shown as a `reply by <author>` line (a few, each cut), with a
-line saying how many more were not shown. The section reads review threads and standing change requests only. The section quotes
+line saying how many more were not shown. This section, which the `context` command prints, reads review threads and standing change requests
+only; the verifier reads a wider set ([below](#what-the-verifier-reads-of-other-reviewers)). The section quotes
 and sorts; it does not judge whether an item is valid, and the quoted text is not instructions.
+
+### What the verifier reads of other reviewers
+
+The verifier reads one list headed "Other reviewers and comments"
+and gets three kinds of note, each labelled with its kind (`thread`, `review summary`,
+`issue comment`) and `bot` where GitHub reports the author as a bot account:
+
+- the first comment of each unresolved review thread,
+- the body of each review that has one,
+- the pull request's issue comments (the newest 30 are fetched).
+
+It leaves out this reviewer's own notes (any note from the posting identity), reviews carrying this
+reviewer's markers, minimized notes, notes from `codecov`, `github-actions`, `dependabot`, `vercel`
+and `netlify`, and service failure notices such as a usage or rate limit. Each note is cut to 360
+characters with HTML comments and collapsed details removed. The newest 40 are kept, and a line
+`[N more not shown]` says how many older ones were cut. Pillars do not read this list.

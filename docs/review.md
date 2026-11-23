@@ -165,8 +165,9 @@ or loaded rule skill and quote one whole sentence or list item of it verbatim (w
 `review.json` and posted by `post` ([Posting](posting.md#replies-to-other-reviewers)). With the
 setting off, or an empty list, the prompt and schema are unchanged.
 
-Only review threads are read and answered. Review summaries and issue comments from other
-reviewers are neither.
+The verifier reads review summaries and issue comments as well as threads
+([Shared context](context.md#what-the-verifier-reads-of-other-reviewers)), but only inline review
+threads can be answered: a review summary or an issue comment has no thread to reply in.
 
 ## Changes that fix a regression
 

@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): the verifier reads every kind of note from other reviewers
+
+Not measured; no model was called.
+
+- **What changed.** The "Other reviewers and comments" list in the verifier's `context.md` now
+  labels each note by kind (`thread`, `review summary`, `issue comment`) and `bot`, leaves out
+  notes from this reviewer's own identity and minimized notes, and adds a `[N more not shown]` line
+  when the 40-note cap cut older ones. The line format changed from
+  `- **author** where: text` to `- **author** [kind] where: text`. With no notes the prompt is
+  byte-identical to before. `verifier.md` is unchanged.
+- **Comparability.** Only `lock-scope-race-response` carries a `context.md`, and fixtures are
+  copied verbatim rather than rendered, so no existing row changes; that file still uses the old
+  line format and is deliberately not rewritten, so as to keep its rows comparable. A real review
+  of a pull request with other reviewers' notes is not comparable with earlier ones.
+
 ## 2026-11-23 (no run): the verifier may answer other reviewers' open notes
 
 Not measured; no model was called.

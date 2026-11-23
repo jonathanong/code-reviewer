@@ -1,11 +1,14 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 
-export type Author = { login: string } | null
+/** `__typename` is the GraphQL actor type (`User`, `Bot`, ...). */
+export type Author = { login: string; __typename?: string } | null
 
 export type PrReview = {
   id: string
   url?: string
+  /** Hidden by a moderator or the author; the verifier does not read it. */
+  isMinimized?: boolean
   author: Author
   state: string
   body: string
@@ -15,6 +18,7 @@ export type PrReview = {
 
 export type ThreadComment = {
   url?: string
+  isMinimized?: boolean
   author: Author
   body: string
   createdAt: string
@@ -54,7 +58,9 @@ export type PrConversation = {
   deletions: number
   reviews: { nodes: PrReview[]; pageInfo?: PageInfo }
   reviewThreads: { nodes: ReviewThread[]; pageInfo?: PageInfo }
-  comments: { nodes: { author: Author; body: string; createdAt: string }[] }
+  comments: {
+    nodes: { author: Author; body: string; createdAt: string; isMinimized?: boolean }[]
+  }
   commits: { nodes: { commit: { oid: string; messageHeadline: string } }[] }
 }
 
@@ -66,7 +72,11 @@ const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
       closingIssuesReferences(first: 20) { nodes { number title body } }
       reviews(last: 60) {
         pageInfo { hasPreviousPage }
-        nodes { id url state body submittedAt author { login } commit { oid } }
+        nodes {
+          id url state body submittedAt isMinimized
+          author { login __typename }
+          commit { oid }
+        }
       }
       reviewThreads(last: 100) {
         pageInfo { hasPreviousPage }
@@ -74,11 +84,15 @@ const QUERY = `query($owner: String!, $name: String!, $pr: Int!) {
           id isResolved isOutdated path line
           comments(first: ${THREAD_COMMENTS}) {
             totalCount
-            nodes { url body createdAt author { login } pullRequestReview { id } }
+            nodes {
+              url body createdAt isMinimized
+              author { login __typename }
+              pullRequestReview { id }
+            }
           }
         }
       }
-      comments(last: 30) { nodes { body createdAt author { login } } }
+      comments(last: 30) { nodes { body createdAt isMinimized author { login __typename } } }
       commits(last: 100) { nodes { commit { oid messageHeadline } } }
     }
   }
