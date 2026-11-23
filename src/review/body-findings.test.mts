@@ -50,4 +50,20 @@ describe('parseBodyFindings', () => {
       },
     ])
   })
+
+  it('reads a body finding posted in the earlier form, with the pillar in a sub line', () => {
+    const body =
+      '<details><summary>[low] Naming (src/b.ts:3)</summary>\n\n<sub>design</sub>\n\nx</details>'
+    expect(parseBodyFindings(body)).toEqual([
+      {
+        threadId: null,
+        severity: 'low',
+        pillar: 'design',
+        title: 'Naming',
+        path: 'src/b.ts',
+        line: 3,
+        outdated: false,
+      },
+    ])
+  })
 })

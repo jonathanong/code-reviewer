@@ -172,7 +172,8 @@ requests changes; otherwise a high finding or any open question comments; otherw
   (trusted identity and marker only; the only dismissal the tool performs) and prints `dismissed`.
   A failed or impossible dismissal is a warning naming the review left standing, not an error.
 - Open questions follow the finding index under a "Questions" heading.
-- Findings are tagged `[blocking]`, `[high]`, `[medium]`, or `[low]`: inline where the diff allows,
+- Findings are tagged `[severity · pillar]` with severity `blocking`, `high`, `medium`, or `low`, as in
+  `[medium · design]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.
 - A hidden marker records the reviewed SHA, the verdict, and the effort.
 - On Approve the `final approval` label is added; otherwise it is removed. Then the completed

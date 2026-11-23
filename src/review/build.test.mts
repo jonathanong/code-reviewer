@@ -37,7 +37,7 @@ describe('placeFindings', () => {
       'src/a.ts:LEFT:1',
     ])
     expect(comments[1]).toMatchObject({ start_line: 2, start_side: 'RIGHT' })
-    expect(comments[0]?.body).toContain('**[high]** ok')
+    expect(comments[0]?.body).toContain('**[high · rules]** ok')
   })
 })
 
@@ -70,7 +70,7 @@ describe('buildReviews', () => {
     expect(reviews[0]).toMatchObject({ event: 'COMMENT', commit_id: SHA })
     expect(reviews[0]?.comments).toHaveLength(1)
     expect(reviews[0]?.body).toContain('### Not on a diff line')
-    expect(reviews[0]?.body).toContain('[low] off')
+    expect(reviews[0]?.body).toContain('[low · rules] off')
   })
 
   it('omits the off-diff section when everything is placed', () => {

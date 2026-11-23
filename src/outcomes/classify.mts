@@ -1,4 +1,5 @@
 import { parseBodyFindings } from '../review/body-findings.mts'
+import { parseInlineHead } from '../review/finding-head.mts'
 import { changedSince } from './changed.mts'
 import { noReactions } from './reactions.mts'
 import type {
@@ -11,8 +12,6 @@ import type {
   ThreadData,
 } from './types.mts'
 
-/** The head of a posted inline comment: `**[severity]** title`, then `<sub>pillar</sub>`. */
-const HEAD_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* ([^\n]+)\n\n<sub>([a-z-]+)<\/sub>/u
 const RULE_RE = /`([a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9-]*)`/u
 
 type Facts = {
@@ -79,12 +78,12 @@ async function changed(ctx: Context, thread: ThreadData, first: CommentData): Pr
 }
 
 async function inline(ctx: Context, review: ReviewData, thread: ThreadData, first: CommentData) {
-  const found = HEAD_RE.exec(first.body)
+  const found = parseInlineHead(first.body)
   const parts: Parts = {
     key: `${ctx.repo}#${ctx.pr}/${review.id}/${first.id}`,
-    severity: found?.[1] ?? null,
-    title: found?.[2] ?? (first.body.split('\n')[0] as string),
-    pillar: found?.[3] ?? null,
+    severity: found?.severity ?? null,
+    title: found?.title ?? (first.body.split('\n')[0] as string),
+    pillar: found?.pillar ?? null,
     rule: RULE_RE.exec(first.body)?.[1] ?? null,
     path: first.path,
     url: first.url,

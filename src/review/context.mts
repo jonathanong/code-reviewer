@@ -1,5 +1,6 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
 import { parseBodyFindings } from './body-findings.mts'
+import { parseInlineHead } from './finding-head.mts'
 import { answerableThreads, type Answerable } from './context/answerable.mts'
 import { restatableThreads, type Restatable } from './context/restatable.mts'
 import { latestInstance } from './last-review.mts'
@@ -46,7 +47,6 @@ export type FollowUpContext = {
   answerable: Answerable[]
 }
 
-const FINDING_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* (.+)\n\n<sub>([a-z-]+)<\/sub>/u
 const NOTE_CHARS = 360
 const BODY_CHARS = 24_000
 const ISSUE_BODY_CHARS = 1500
@@ -81,13 +81,11 @@ function login(author: { login: string } | null): string {
 }
 
 function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefined {
-  const match = FINDING_RE.exec(body)
-  if (match === null) return undefined
+  const head = parseInlineHead(body)
+  if (head === undefined) return undefined
   return {
     threadId: thread.id,
-    severity: match[1] as string,
-    title: match[2] as string,
-    pillar: match[3] as string,
+    ...head,
     path: thread.path,
     line: thread.line,
     outdated: thread.isOutdated,

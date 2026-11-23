@@ -21,7 +21,7 @@ const groups = (up = 0, down = 0, other: Record<string, number> = {}) => [
 ]
 
 export const BODY = (rule?: string) =>
-  `**[high]** Missing check\n\n<sub>rules</sub>\n\nDetail${rule === undefined ? '' : ` per \`${rule}\``}`
+  `**[high · rules]** Missing check\n\nDetail${rule === undefined ? '' : ` per \`${rule}\``}`
 
 export function review(id: number, over: Json = {}): Json {
   return {
