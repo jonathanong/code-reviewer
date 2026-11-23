@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { PrConversation, PrReview, ReviewThread, ThreadComment } from './context-query.mts'
-import { buildFollowUpContext, squash } from './context.mts'
+import { buildFollowUpContext } from './context.mts'
+import { squash } from './squash.mts'
 import { renderQuestions } from './question.mts'
 import { renderBodyFinding, reviewMarker } from './render.mts'
 
@@ -103,6 +104,7 @@ describe('buildFollowUpContext', () => {
       unresolved: [],
       priorQuestions: [],
       others: [],
+      othersDropped: 0,
       restatable: [],
       answerable: [],
     })
@@ -182,7 +184,13 @@ describe('buildFollowUpContext', () => {
       },
     ])
     expect(ctx.others).toEqual([
-      { author: 'alice', where: 'a.ts:3', text: expect.stringContaining('Title here') },
+      {
+        author: 'alice',
+        kind: 'thread',
+        bot: false,
+        where: 'a.ts:3',
+        text: expect.stringContaining('Title here'),
+      },
     ])
   })
 
@@ -309,13 +317,20 @@ describe('buildFollowUpContext', () => {
           nodes: [
             review({
               id: 'X',
+              author: { login: 'robo', __typename: 'Bot' },
               state: 'CHANGES_REQUESTED',
               body: ' fix it ',
               commit: null,
               submittedAt: '2',
             }),
             review({ id: 'Y', body: '   ', author: null }),
-            review({ id: 'Z', body: 'lgtm', commit: { oid: A }, submittedAt: '3' }),
+            review({
+              id: 'Z',
+              author: { login: 'robo' },
+              body: 'lgtm',
+              commit: { oid: A },
+              submittedAt: '3',
+            }),
           ],
         },
         reviewThreads: {
@@ -336,10 +351,28 @@ describe('buildFollowUpContext', () => {
       }),
     )
     expect(ctx.others).toEqual([
-      { author: 'ghost', where: 'a.ts:file (outdated)', text: 'thread note' },
-      { author: 'bot', where: 'review changes_requested @?', text: 'fix it' },
-      { author: 'bot', where: `review commented @${A.slice(0, 7)}`, text: 'lgtm' },
-      { author: 'ghost', where: 'comment', text: 'issue comment' },
+      {
+        author: 'ghost',
+        kind: 'thread',
+        bot: false,
+        where: 'a.ts:file (outdated)',
+        text: 'thread note',
+      },
+      {
+        author: 'robo',
+        kind: 'review summary',
+        bot: true,
+        where: 'changes_requested @?',
+        text: 'fix it',
+      },
+      {
+        author: 'robo',
+        kind: 'review summary',
+        bot: false,
+        where: `commented @${A.slice(0, 7)}`,
+        text: 'lgtm',
+      },
+      { author: 'ghost', kind: 'issue comment', bot: false, where: '', text: 'issue comment' },
     ])
   })
 
@@ -359,8 +392,14 @@ describe('buildFollowUpContext', () => {
       }),
     )
     expect(ctx.others).toEqual([
-      { author: 'dan', where: 'comment', text: 'real feedback' },
-      { author: 'eve', where: 'comment', text: 'Reset has no rate limit' },
+      { author: 'dan', kind: 'issue comment', bot: false, where: '', text: 'real feedback' },
+      {
+        author: 'eve',
+        kind: 'issue comment',
+        bot: false,
+        where: '',
+        text: 'Reset has no rate limit',
+      },
     ])
   })
 
@@ -372,6 +411,7 @@ describe('buildFollowUpContext', () => {
     }))
     const ctx = build(pull({ comments: { nodes } }))
     expect(ctx.others).toHaveLength(40)
+    expect(ctx.othersDropped).toBe(5)
     expect(ctx.others[0]?.text).toBe('n5')
     expect(ctx.others.at(-1)?.text).toBe('n44')
   })
@@ -382,7 +422,12 @@ describe('buildFollowUpContext', () => {
       body: `c${i}`,
       createdAt: `2025-01-${String(i + 10).padStart(2, '0')}`,
     }))
-    const late = review({ id: 'L', body: 'late review', submittedAt: '2025-03-01' })
+    const late = review({
+      id: 'L',
+      author: { login: 'carol' },
+      body: 'late review',
+      submittedAt: '2025-03-01',
+    })
     const ctx = build(pull({ comments: { nodes }, reviews: { nodes: [late] } }))
     expect(ctx.others).toHaveLength(40)
     expect(ctx.others[0]?.text).toBe('c2')
@@ -423,7 +468,9 @@ describe('buildFollowUpContext', () => {
     expect(ctx.others).toEqual([
       {
         author: 'old-app[bot]',
-        where: `review approved @${A.slice(0, 7)}`,
+        kind: 'review summary',
+        bot: false,
+        where: `approved @${A.slice(0, 7)}`,
         text: 'Looks fine, one nit on retries.',
       },
     ])

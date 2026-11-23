@@ -20,6 +20,7 @@ const context = (reviewedSha: string | null = null): FollowUpContext => ({
   unresolved: [],
   priorQuestions: [],
   others: [],
+  othersDropped: 0,
   restatable: [],
   answerable: [],
 })

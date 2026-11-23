@@ -12,6 +12,40 @@ Not measured; no model was called.
 - **Comparable.** Every earlier row. The benchmarks never read or write the posted head: no
   prompt, schema or fixture contains it, so no row is made non-comparable.
 
+## 2026-11-23 (pilot): the two answer cases, one attempt each
+
+Commit dd3cf0c. Verifier `claude-opus-5-5` with skills, judge Sonnet, checker Opus, one attempt per
+case, one case per run. Cost $0.32 and $0.28. A pilot checks the graders; it is not a score.
+
+| Case                       | Thread handled as expected | Verifier's own finding  |
+| -------------------------- | -------------------------- | ----------------------- |
+| `answers-like-row-lock`    | 1 of 1 (answered)          | none expected, none     |
+| `answers-floating-promise` | 1 of 1 (left alone)        | 1 of 1, severity agrees |
+
+- `answers-like-row-lock`: the answer cited `jong-skills:postgres-locking`, quoted a whole sentence
+  of the skill, and passed the production checks with no warning. Read by hand: the reply names the
+  alternative (the latest row per voter wins) and does not restate the note.
+- `answers-floating-promise`: no answer was returned, and the defect came back as the verifier's
+  own correctness finding.
+- Not run: the no-rules control, a cheaper verifier model, and three attempts per arm. Until the
+  control runs, neither case is known to need the rule skill.
+
+## 2026-11-23 (no run): the verifier reads every kind of note from other reviewers
+
+Not measured; no model was called.
+
+- **What changed.** The "Other reviewers and comments" list in the verifier's `context.md` now
+  labels each note by kind (`thread`, `review summary`, `issue comment`) and `bot`, leaves out
+  notes from this reviewer's own GitHub App (a bot author that is the posting identity; under a
+  person's `gh` login only the marker check applies) and minimized notes, and adds a `[N more not shown]` line
+  when the 40-note cap cut older ones. The line format changed from
+  `- **author** where: text` to `- **author** [kind] where: text`. With no notes the prompt is
+  byte-identical to before. `verifier.md` is unchanged.
+- **Comparability.** Only `lock-scope-race-response` carries a `context.md`, and fixtures are
+  copied verbatim rather than rendered, so no existing row changes; that file still uses the old
+  line format and is deliberately not rewritten, so as to keep its rows comparable. A real review
+  of a pull request with other reviewers' notes is not comparable with earlier ones.
+
 ## 2026-11-23 (no run): `bench-verifier` grades the verifier's answers
 
 Not measured; no model was called.
