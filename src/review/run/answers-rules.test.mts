@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { answerOptions, answerRules } from './answers-rules.mts'
+import { pluginHome } from './plugin-home-fake-io.mts'
 
 const installs = [
   {
@@ -20,11 +21,19 @@ describe('answerRules', () => {
     )
   })
 
-  it('links each skill to its file in the repository the plugin records', () => {
-    const { links } = answerRules(installs, ['answer-rules'], [])
-    expect(links?.get('answer-rules:locks')).toBe(
-      'https://github.com/example/answer-rules/blob/HEAD/skills/locks/SKILL.md',
+  it('links each skill to its file below the plugin directory in its repository', () => {
+    const install = pluginHome({
+      source: { source: 'github', repo: 'acme/market' },
+      entry: './plugins/rules',
+    })
+    expect(answerRules([install], ['rules'], []).links?.get('rules:locks')).toBe(
+      'https://github.com/acme/market/blob/HEAD/plugins/rules/skills/locks/SKILL.md',
     )
+  })
+
+  it('links no skill of a plugin whose directory in its repository is not certain', () => {
+    expect(answerRules(installs, ['answer-rules'], []).links?.size).toBe(0)
+    expect(answerRules([pluginHome()], ['rules'], []).links?.size).toBe(0)
   })
 
   it('reads nothing of a plugin that is not configured', () => {

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 
 import type { PluginInstall } from '../plugins.mts'
 import type { AnswerRules } from './answers-prompt.mts'
-import { pluginRepository, skillUrl } from './answers-links.mts'
+import { pluginLocation, skillUrl } from './answers-links.mts'
 import { normalizeLines } from './answers-quote.mts'
 import { listRuleSkillFiles } from './select-skills.mts'
 
@@ -18,16 +18,16 @@ export function answerRules(
 ): AnswerRules {
   const texts = new Map<string, string>()
   const links = new Map<string, string>()
-  const repositories = new Map<string, string | undefined>()
+  const locations = new Map<string, ReturnType<typeof pluginLocation>>()
   for (const skill of listRuleSkillFiles(installs, rulePlugins, [])) {
     try {
       texts.set(skill.name, normalizeLines(readFileSync(skill.file, 'utf8')))
       const plugin = skill.name.split(':')[0] as string
-      if (!repositories.has(plugin)) {
+      if (!locations.has(plugin)) {
         const install = installs.find((candidate) => candidate.name === plugin) as PluginInstall
-        repositories.set(plugin, pluginRepository(install.installPath))
+        locations.set(plugin, pluginLocation(install))
       }
-      const url = skillUrl(repositories.get(plugin), skill.file)
+      const url = skillUrl(locations.get(plugin), skill.file)
       if (url !== undefined) links.set(skill.name, url)
     } catch {
       // A skill that cannot be read cannot be quoted.

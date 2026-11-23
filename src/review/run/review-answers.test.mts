@@ -104,15 +104,11 @@ describe('runReview with another reviewer note to answer', () => {
       {
         thread: 'PRT_1',
         body: 'No lock is needed; the row is only read.',
-        rule: {
-          skill: 'answer-rules:locks',
-          quote: SENTENCE,
-          url: 'https://github.com/example/answer-rules/blob/HEAD/skills/locks/SKILL.md',
-        },
+        rule: { skill: 'answer-rules:locks', quote: SENTENCE },
       },
     ])
     expect(report).toContain('### Answers to other reviewers (1)')
-    expect(report).toContain('Rule: [answer-rules:locks](https://github.com/example/answer-rules/')
+    expect(report).toContain('Rule: answer-rules:locks: "')
     expect(report).toContain('Not posted: answers[1] dropped: its thread was not listed')
   })
 

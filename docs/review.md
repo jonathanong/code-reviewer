@@ -176,9 +176,14 @@ Code checks every answer and drops a failing one with a warning that `report.md`
 most 5 per run, a length cap, no `@mention`, a `rule` or an `at`, and a `rule` must name a selected
 or loaded rule skill (an unlisted one drops the answer). A `quote` that is given but is not one
 whole sentence or list item of that skill verbatim (whitespace aside), or is too short, is removed:
-the answer is kept with its skill and the warning says so. The skill's link comes from the plugin's
-own `repository` in `.claude-plugin/plugin.json` when it is a GitHub repository
-(`<repository>/blob/HEAD/skills/<skill>/SKILL.md`), never from the model. The answers are written to
+the answer is kept with its skill and the warning says so. The skill's link is built by code, never taken from the model, from the marketplace the plugin was
+installed from (`known_marketplaces.json`, and the plugin's entry in that marketplace's
+`marketplace.json`): `<repository>/blob/<ref>/<plugin directory>/skills/<skill>/SKILL.md`. A string
+`source` such as `./` or `./plugins/x` is a directory of the marketplace's own GitHub repository; an
+object `source` (`git-subdir`, `url`, `github`) names its own repository and, for a subdirectory, a
+`path`. The ref is the source's `ref`, else `HEAD`. When any of that is missing, not on GitHub, or
+not certain (no marketplace record, a `pluginRoot`, a path leaving the repository), the skill has no
+link and is named plainly. The answers are written to
 `review.json` and posted by `post` ([Posting](posting.md#replies-to-other-reviewers)). With the
 setting off, or an empty list, the prompt and schema are unchanged.
 

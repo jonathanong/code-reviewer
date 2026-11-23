@@ -62,7 +62,7 @@ export function pluginSettings(
 }
 
 /** An enabled user-scope plugin and where Claude Code installed it. */
-export type PluginInstall = { name: string; installPath: string }
+export type PluginInstall = { name: string; installPath: string; marketplace?: string }
 
 /** What a review needs from one `claude plugin list --json`: what is enabled and where it lives. */
 export type PluginInfo = { enabled: Plugin[]; installs: PluginInstall[] }
@@ -80,7 +80,12 @@ export function parsePluginInstalls(stdout: string): PluginInstall[] {
   for (const entry of listed as Array<Installed | null>) {
     if (typeof entry?.id !== 'string' || entry.enabled !== true || entry.scope !== 'user') continue
     if (typeof entry.installPath !== 'string') continue
-    found.push({ name: entry.id.split('@')[0] as string, installPath: entry.installPath })
+    const [name = '', marketplace] = entry.id.split('@')
+    found.push({
+      name,
+      installPath: entry.installPath,
+      ...(marketplace === undefined || marketplace === '' ? {} : { marketplace }),
+    })
   }
   return found
 }

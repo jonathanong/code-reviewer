@@ -19,7 +19,9 @@ describe('benchPlugins', () => {
       { id: 'jong-skills@m', enabled: true, scope: 'user', installPath: '/p/jong' },
     ])
     const result = await benchPlugins(async () => stdout, '/cwd', true, vi.fn())
-    expect(result.installs).toEqual([{ name: 'jong-skills', installPath: '/p/jong' }])
+    expect(result.installs).toEqual([
+      { name: 'jong-skills', installPath: '/p/jong', marketplace: 'm' },
+    ])
   })
 
   it('records none and switches everything off for a control run', async () => {
