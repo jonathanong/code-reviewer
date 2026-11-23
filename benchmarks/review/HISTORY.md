@@ -2,6 +2,41 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: verifier model on a mined congruence case; two miss fixtures piloted and not kept
+
+On `e5b54e7`, no change to cases, prompts or graders. Runs were made one at a time in one session.
+
+- **Verifier model on `vouchington-6166-f684113f`.** `bench-verifier` with an empty
+  `--findings-from`, so the verifier is graded only on the `congruence` expectation (a requirements
+  document, not in the diff, that the change contradicts). 3 attempts per arm, labels judged by
+  Haiku for both arms.
+
+  | Verifier   | Raised the expected finding | Findings raised | Cost per attempt    |
+  | ---------- | --------------------------- | --------------- | ------------------- |
+  | Opus 5.5   | 0 of 3                      | 0, 0, 0         | $0.37, $0.46, $0.43 |
+  | Sonnet 5.5 | 0 of 3                      | 0, 0, 0         | $0.11, $0.12, $0.11 |
+
+  Neither model raised anything, so the judge had nothing to label. The run does not separate
+  the models. The miss is not a model-size problem: `congruence.md` compares the description with
+  the code and does not ask for documents elsewhere in the repository that describe the changed
+  behavior. Opus read about four times as much (142k to 193k cached tokens against 32k to 63k)
+  and reached the same answer.
+
+- **Two fixtures for misses of a full pipeline run, piloted and not kept.** A full run on a private
+  pull request (16 files) raised 1 of the 4 findings a hand read raised. Two of the misses were
+  rebuilt as small synthetic fixtures, 1 attempt each, Sonnet, judged by Opus:
+
+  | Fixture (not committed)                                                      | Pillar       | Result | Cost  |
+  | ---------------------------------------------------------------------------- | ------------ | ------ | ----- |
+  | A dry run probes the version of a tool whose install it only printed         | correctness  | caught | $0.13 |
+  | An install policy that can refuse a release, and a launcher with no fallback | blast-radius | caught | $0.12 |
+
+  Both were caught on the first attempt, with a lower severity than labeled. The rule for fixtures
+  is to keep one only if the reviewer misses it, so neither was added. What this shows: the
+  pillars can find both defects when the change is two or three files, and missed them inside a
+  16-file change. That agrees with the one-file-of-the-diff pilot below. A fixture that
+  reproduces the miss has to reproduce the size, not only the defect.
+
 ## 2026-11-22: two congruence cases for a test-only claim; pilot shows a ceiling
 
 Pilot, 1 attempt per arm, so no rate is quoted. On `801dc86` plus this change. `bench-verifier` on
