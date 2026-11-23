@@ -2,6 +2,44 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, blast radius looks for neighbors in the repository; nothing kept
+
+One attempt per arm, commit 5967b5a, nothing in the tree changed. Six sites the review missed
+(#6055 finalize, #6059 aliases and link, #6076 flags, #4154 index, #6050 seed) and three clean
+sites, each as a whole-diff blast-radius case. Every stop rule was written before its run. $4.05
+without the judge.
+
+**Arm 1: one Scope bullet.** Blast-radius pillar, Sonnet, `--select`, Opus judge. The added bullet
+asked for code the change does not touch that runs against the same thing (other writers of the
+same rows, other callers, tests sharing a row, queries an index serves).
+
+| Arm             | Judged of 6 | Clean sites with a finding | Cost  |
+| --------------- | ----------- | -------------------------- | ----- |
+| Prompts on main | 0           | 0 of 3                     | $1.33 |
+| With the bullet | 0           | 0 of 3                     | $1.54 |
+
+The bullet raised reads on most cases and matched nothing. No further wording was tried.
+
+**Arm 2: one agent per table.** A script listed, for each table named in the patch of a changed
+source file, the unchanged non-test files that write or row-lock it (`git grep` at the head), at
+most 8 tables per pull request and 12 files per table, nearest path first. One agent per table got
+the changed files, that list, and a request to show a broken interleaving with both statements.
+36 tables over five pull requests; #6087 had none.
+
+- **What the list held:** the known counterpart file for 2 of the 6 sites (#6076 flags, #6055
+  finalize). The 12-file cap dropped it for both #6059 sites (`topics` has 44 other writers). The
+  counterpart of #4154 is a reader and of #6050 a test, which the script does not list.
+- **Haiku, 36 agents, $0.85:** neither of the 2 sites with the counterpart listed was found. 10
+  findings matched no expected finding. Two of them were on the #6059 lines with the expected fix
+  (restore the topic lock) and another consequence, and one of those named its neighbor in the
+  wrong directory. The other eight were not verified.
+- **Sonnet, the 2 agents with the counterpart listed, $0.24:** no finding from either.
+
+What it showed: handing a cheap agent the right two files did not produce these findings, so the
+list is not what is missing. `no-mistakes` 0.109.85 has no query from a table to the statements
+that write it; its caller queries were not tried, since none of the six misses is a caller. I
+judged arm 2 by reading, without a judge model. One attempt, so these are not rates.
+
 ## 2026-11-22: a review reads the description up to 24,000 characters, not 4,000
 
 No run. `review` cut the pull request description at 4,000 characters before writing `context.md`.
