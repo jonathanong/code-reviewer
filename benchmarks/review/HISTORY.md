@@ -17,10 +17,10 @@ On `e5b54e7`, no change to cases, prompts or graders. Runs were made one at a ti
   | Sonnet 5.5 | 0 of 3                      | 0, 0, 0         | $0.11, $0.12, $0.11 |
 
   Neither model raised anything, so the judge had nothing to label. The run does not separate
-  the models. The miss is not a model-size problem: `congruence.md` compares the description with
-  the code and does not ask for documents elsewhere in the repository that describe the changed
-  behavior. Opus read about four times as much (142k to 193k cached tokens against 32k to 63k)
-  and reached the same answer.
+  the models. Opus read about four times as much (142k to 193k cached tokens against 32k to 63k)
+  and reached the same answer. A likely cause, not confirmed: `congruence.md` compares the
+  description with the code and does not ask for documents elsewhere in the repository that
+  describe the changed behavior. The raw results do not record which files an attempt read.
 
 - **Two fixtures for misses of a full pipeline run, piloted and not kept.** A full run on a private
   pull request (16 files) raised 1 of the 4 findings a hand read raised. Two of the misses were
