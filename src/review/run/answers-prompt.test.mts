@@ -119,6 +119,37 @@ describe('checkedAnswers', () => {
     expect(kept('Never lock a parent row')).toBe(0)
   })
 
+  it('does not take a wrapped line as the start or the end of a unit', () => {
+    const skill = [
+      '- Never',
+      '  lock a parent row the transaction only reads.',
+      '',
+      'Prefer short transactions that',
+      'hold few locks at once.',
+      '## Notes',
+      'Release locks early.',
+      '',
+    ].join('\n')
+    const rules: AnswerRules = {
+      texts: new Map([['jong-skills:locks', normalizeLines(skill)]]),
+      selected: ['jong-skills:locks'],
+    }
+    const kept = (text: string) =>
+      checkedAnswers(
+        [given('T1', { rule: { skill: 'jong-skills:locks', quote: text } })],
+        [item('T1')],
+        rules,
+        [],
+      ).answers.length
+    expect(kept('Never lock a parent row the transaction only reads.')).toBe(1)
+    expect(kept('lock a parent row the transaction only reads.')).toBe(0)
+    expect(kept('Prefer short transactions that hold few locks at once.')).toBe(1)
+    expect(kept('Prefer short transactions that')).toBe(0)
+    expect(kept('hold few locks at once.')).toBe(0)
+    expect(kept('Release locks early.')).toBe(1)
+    expect(kept('Never lock')).toBe(0)
+  })
+
   it('drops a second answer on a thread and everything past the cap', () => {
     expect(check([given('T1'), given('T1')]).warnings).toEqual([
       expect.stringContaining('a second answer'),
