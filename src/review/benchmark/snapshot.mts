@@ -5,12 +5,18 @@ import { isFixtureCase, type EvalCase, type RepoCase } from './cases.mts'
 import { defaultExec, type Exec } from './exec.mts'
 import { cacheDirOf, ensureCache, fetchCommits } from './snapshot-cache.mts'
 import { onlyPathDiff } from './only-path.mts'
-import { writeContext, type Snapshot } from './snapshot-context.mts'
+import { writeContext, writeRelatedDocs, type Snapshot } from './snapshot-context.mts'
 import { prepareFixtureSnapshot } from './snapshot-fixture.mts'
 import { buildTree } from './snapshot-tree.mts'
 
 export { defaultExec, ExecError, type Exec } from './exec.mts'
-export { CONTEXT_DIR, hasContextNotes, hasRulesIndex, type Snapshot } from './snapshot-context.mts'
+export {
+  CONTEXT_DIR,
+  hasContextNotes,
+  hasRulesIndex,
+  relatedDocs,
+  type Snapshot,
+} from './snapshot-context.mts'
 export { normalizeFixtureDiff } from './snapshot-fixture.mts'
 
 /** What `gh pr view` reports about a pull request that the snapshot needs. */
@@ -61,6 +67,7 @@ async function prepareRepoSnapshot(
   ])
   const diff = onlyPathDiff(item.id, full, onlyPath)
   writeContext(dir, item.title, diff, body)
+  await writeRelatedDocs(dir, diff, exec)
   return { dir, diff, body }
 }
 

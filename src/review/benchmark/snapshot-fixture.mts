@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { FixtureCase } from './cases.mts'
 import { ExecError, type Exec } from './exec.mts'
 import { onlyPathDiff } from './only-path.mts'
-import { CONTEXT_DIR, writeContext, type Snapshot } from './snapshot-context.mts'
+import { CONTEXT_DIR, writeContext, writeRelatedDocs, type Snapshot } from './snapshot-context.mts'
 
 /**
  * Drops the `base/` and `head/` tree names from a `git diff --no-index` so paths read `a/x` `b/x`.
@@ -49,6 +49,7 @@ export async function prepareFixtureSnapshot(
   const [titleLine = '', ...rest] = pr.split('\n')
   const body = rest.join('\n')
   writeContext(dir, titleLine.replace(/^#\s*/u, '') || item.title, diff, body)
+  await writeRelatedDocs(dir, diff, exec)
   const notes = join(item.fixtureDir, 'context.md')
   if (existsSync(notes)) cpSync(notes, join(dir, CONTEXT_DIR, 'context.md'))
   return { dir, diff, body }

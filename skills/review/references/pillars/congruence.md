@@ -16,6 +16,8 @@ Does the code match what the pull request says?
   no behavior change): the changed files and the diff bear it out. A change called test-only that
   edits production code, or called a refactor that changes behavior, is a finding that names the
   file and line.
+- Documentation the change leaves stale: a document this change does not edit that states
+  behavior the change alters. The run lists candidate lines when a search finds any.
 - Referenced and closing issues (`Fixes #N`): the change actually resolves each one, or the
   reference should not close it. Hold the change to what each issue asks, in this repository or
   another: a requirement the issue states and the change leaves out, or behavior the change adds
