@@ -12,9 +12,9 @@ Commit of this entry. Verifier alone on `vouchington-6166-f684113f` (`bench-veri
   lines to `docs.md`. The verifier prompt gets them as a section, grouped by name with the
   changed files each name came from. `congruence.md` gains one scope bullet for documentation
   the change leaves stale.
-- **Not comparable.** Every `bench-verifier` row of a case whose snapshot has a matching document
-  line: the verifier prompt is longer and asks for one more check. A case with no match has the
-  same prompt as before. Pillar rows are unaffected; pillars do not get the section.
+- **Not comparable.** Every `bench-verifier` row: the verifier reads `congruence.md`, which has a
+  new bullet, and a case whose snapshot has a matching document line also gets the list. Pillar
+  rows are unaffected; pillars get neither.
 - **Scores,** the expected finding being `DYNAMIC-RENDERING.md:77`, which the change makes false.
   The control is the entry of 2026-11-22 below (0 of 3 for each model, old prompt, a day
   earlier), so the gain is from the bullet and the list together, not measured apart.
@@ -33,11 +33,15 @@ Commit of this entry. Verifier alone on `vouchington-6166-f684113f` (`bench-veri
   still held, in 4 to 7 turns, without opening a patch. The shipped arm also dropped names taken
   from data and generated files (10 of the 16 lines were links to one JSON file) and from tests.
   No attempt in any arm raised a finding on another listed line.
+  "Caught" is read from the findings, not graded: the grader scores pillar findings and
+  recorded nothing for these. Each counted finding names `DYNAMIC-RENDERING.md` and the false
+  statement. One Opus attempt of the shipped arm anchored it on the changed component
+  (`topic-follow-context.tsx:17`) instead of the document line.
 
 - **False alarms.** Sonnet, shipped prompt, 1 attempt each on three clean mined cases, with an
   empty pillar result: `vouchington-6166-1984d2d9` (the later head of the same pull request,
   where line 77 is fixed and four other lines are listed), `vouchington-6087-fa05c982` (eight
-  lines, all from generated schema pages) and `vouchington-6110-a9458830` (no line found, so the prompt was unchanged). No findings in any;
+  lines, all from generated schema pages) and `vouchington-6110-a9458830` (no line found, so only the new bullet differed). No findings in any;
   $0.13 to $0.17 each. Pages under a `generated` directory were excluded after this run and not
   re-measured.
 - **Not measured.** A full pipeline run; a case where the stale document does not name a changed

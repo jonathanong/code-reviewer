@@ -98,4 +98,4 @@ change edits, ignored files and anything under a `generated` directory are left 
 list is capped per name. It is a text search, so a listed line may be unrelated and a document
 that describes the behavior without naming the file is not found. A search that fails is
 recorded in `problems` and the review goes on. Without a checkout, or with no match, there is no
-file and no extra prompt text.
+file and no list in the prompt.

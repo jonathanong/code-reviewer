@@ -100,8 +100,9 @@ judged by Sonnet, $25.14):
   without the scope bullet it was written for.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
-  alone: Sonnet 3 of 3 and Opus 2 of 2 with the list of document lines in the
-  prompt, against 0 of 3 for each model without it the day before.
+  alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of
+  document lines in the prompt as shipped, against Sonnet 0 of 3 in the same session with the
+  list in a file only.
 
 Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3 history cases;
 2026-11-22): is what a case depends on in the context a review builds?
