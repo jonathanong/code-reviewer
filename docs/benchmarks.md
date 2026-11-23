@@ -431,6 +431,10 @@ sources as `bench` (`--no-rules` has the same meaning), and the
 verifier prompt points at `rules/INDEX.md`; the verifier and the checker read them but get no
 `Skill` tool.
 
+A case with a `congruence` expectation needs no pillar result: no pillar raises that finding, so
+the verifier gets an empty list of findings and is graded on what it raises itself. Any other
+case without a pillar result is skipped.
+
 The verifier may add findings of its own, with an empty `sources` array. A correct addition is a
 win, so findings are graded on whether they are right rather than counted:
 

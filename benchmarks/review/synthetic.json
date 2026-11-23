@@ -605,5 +605,29 @@
         "claim": "requestRefund posts { amount: amountCents / 100 }, but the API's refund route (acme/api src/routes/refunds.ts) accepts only a strict body with amount_cents as a positive integer and answers 400 otherwise, so every refund request fails. The finding must rely on the API's route code; a finding that only questions dividing by 100 without the API's contract does not match."
       }
     ]
+  },
+  {
+    "id": "congruence-test-only-edits-source",
+    "fixture": "fixtures/congruence-test-only-edits-source",
+    "title": "test: cover the backoff delay bounds and the retry sleeps",
+    "kind": "positive",
+    "reason": "The title and description call the change test-only with no production code changes, but one line of src/backoff.mts changes: the exponent becomes attempt - 1, so every retry waits half as long as before. The new tests pass only with that edit. The congruence pillar (performed by the verifier) says a change called test-only that edits production code is a finding that names the file and line.",
+    "expected": [
+      {
+        "pillar": "congruence",
+        "severity": "medium",
+        "path": "src/backoff.mts",
+        "lines": null,
+        "claim": "The title and description say the change is test-only with no production code changes, but src/backoff.mts changes backoffDelay: the exponent becomes attempt - 1, so each retry delay is half what it was (the first retry waits 200 ms, not 400). The finding must say that the production file contradicts the test-only claim; a finding that only questions the new delay values without the description does not match."
+      }
+    ]
+  },
+  {
+    "id": "congruence-test-only-with-helper",
+    "fixture": "fixtures/congruence-test-only-with-helper",
+    "title": "test: cover the backoff delay bounds and the retry sleeps",
+    "kind": "negative",
+    "reason": "The same title and tests, but the source already has the behavior the tests assert. The only file outside a test file is test-helpers/fake-sleep.mts, which only tests import and which the description names. The test-only claim holds; nothing should be flagged.",
+    "expected": []
   }
 ]

@@ -111,6 +111,15 @@ describe('collectVerifierInput', () => {
       collectVerifierInput(ITEM, 'f', 'sonnet', files({ 'f/raw/design/p1.json': { error: 'x' } })),
     ).toBeNull()
   })
+
+  it('gives a case that expects a congruence finding an empty input', () => {
+    const item = { ...ITEM, expected: [expected({ pillar: 'congruence' })] }
+    expect(collectVerifierInput(item, 'f', 'sonnet', files({}))).toEqual({
+      findings: [],
+      real: [],
+      planted: [],
+    })
+  })
 })
 
 describe('verifier run', () => {
