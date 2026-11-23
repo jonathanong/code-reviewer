@@ -14,7 +14,8 @@ const MAX_TERMS = 12
 const MAX_PER_TERM = 8
 const MAX_PATHS = 8
 const MAX_TEXT = 240
-const DOCS = ['*.md', '*.mdx']
+/** Generated reference pages restate the code and change with it, never by hand. */
+const DOCS = ['*.md', '*.mdx', ':(exclude,glob)**/generated/**']
 /** Source files name what they do; a data or generated file's name is only ever linked to. */
 const CODE = /\.(?:[cm]?[jt]sx?|rs|go|py|rb|swift|kt|cs|java|sql|sh|tf)$/iu
 

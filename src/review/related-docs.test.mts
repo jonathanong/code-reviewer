@@ -96,6 +96,7 @@ describe('findRelatedDocs', () => {
         '--',
         '*.md',
         '*.mdx',
+        ':(exclude,glob)**/generated/**',
       ],
     ])
   })

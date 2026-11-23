@@ -2,6 +2,48 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23: the verifier is given document lines that mention what changed
+
+Commit of this entry. Verifier alone on `vouchington-6166-f684113f` (`bench-verifier`, empty
+`--findings-from`, labels judged by Haiku), one run at a time in one session. About $3.2 in all.
+
+- **What changed.** `prepare` and the benchmark snapshot now search the tree's Markdown files for
+  the names of the changed source files (one `git grep`, no model call) and write the matching
+  lines to `docs.md`. The verifier prompt gets them as a section, grouped by name with the
+  changed files each name came from. `congruence.md` gains one scope bullet for documentation
+  the change leaves stale.
+- **Not comparable.** Every `bench-verifier` row of a case whose snapshot has a matching document
+  line: the verifier prompt is longer and asks for one more check. A case with no match has the
+  same prompt as before. Pillar rows are unaffected; pillars do not get the section.
+- **Scores,** the expected finding being `DYNAMIC-RENDERING.md:77`, which the change makes false.
+  The control is the entry of 2026-11-22 below (0 of 3 for each model, old prompt, a day
+  earlier), so the gain is from the bullet and the list together, not measured apart.
+
+  | Arm                                                       | Verifier | Caught | Cost per attempt |
+  | --------------------------------------------------------- | -------- | ------ | ---------------- |
+  | List in a file the congruence bullet points at            | Sonnet   | 0 of 3 | $0.11 to $0.14   |
+  | List in the prompt                                        | Sonnet   | 0 of 3 | $0.12 to $0.14   |
+  | List in the prompt                                        | Opus     | 1 of 1 | $0.47            |
+  | List in the prompt, "open the patch, do not decide alone" | Sonnet   | 1 of 3 | $0.12 to $0.15   |
+  | Shipped: as above, changed files named per search name    | Sonnet   | 3 of 3 | $0.14            |
+  | Shipped                                                   | Opus     | 2 of 2 | $0.36, $0.37     |
+
+  The first arm took 4 to 5 turns an attempt; whether an attempt read the file was not checked.
+  In the second, each summary said the listed lines
+  still held, in 4 to 7 turns, without opening a patch. The shipped arm also dropped names taken
+  from data and generated files (10 of the 16 lines were links to one JSON file) and from tests.
+  No attempt in any arm raised a finding on another listed line.
+
+- **False alarms.** Sonnet, shipped prompt, 1 attempt each on three clean mined cases, with an
+  empty pillar result: `vouchington-6166-1984d2d9` (the later head of the same pull request,
+  where line 77 is fixed and four other lines are listed), `vouchington-6087-fa05c982` (eight
+  lines, all from generated schema pages) and `vouchington-6110-a9458830` (no line found, so the prompt was unchanged). No findings in any;
+  $0.13 to $0.17 each. Pages under a `generated` directory were excluded after this run and not
+  re-measured.
+- **Not measured.** A full pipeline run; a case where the stale document does not name a changed
+  file (the search cannot find it); a rate on clean cases (one attempt each); the three
+  expectations of this case that belong to pillars.
+
 ## 2026-11-23: correction to the entry below; a verifier model comparison that had no input
 
 On `4c1a34f`, no change to cases, prompts or graders.
