@@ -20,6 +20,13 @@ describe('answerRules', () => {
     )
   })
 
+  it('links each skill to its file in the repository the plugin records', () => {
+    const { links } = answerRules(installs, ['answer-rules'], [])
+    expect(links?.get('answer-rules:locks')).toBe(
+      'https://github.com/example/answer-rules/blob/HEAD/skills/locks/SKILL.md',
+    )
+  })
+
   it('reads nothing of a plugin that is not configured', () => {
     expect(answerRules(installs, ['other'], []).texts.size).toBe(0)
   })

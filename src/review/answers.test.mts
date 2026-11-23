@@ -21,6 +21,15 @@ describe('readAnswer', () => {
     expect(answer).toEqual({ thread: 'PRT_1', body: 'No lock here.', rule: RULE })
   })
 
+  it('keeps a rule that names a skill with no quote, and a link only to a GitHub skill file', () => {
+    const url = 'https://github.com/jonathanong/no-mistakes/blob/HEAD/skills/locks/SKILL.md'
+    const rule = (extra: object) => ({ thread: 'T', body: 'x', rule: { skill: 'a:b', ...extra } })
+    expect(read(rule({})).answer?.rule).toEqual({ skill: 'a:b' })
+    expect(read(rule({ url })).answer?.rule).toEqual({ skill: 'a:b', url })
+    expect(read(rule({ url: 'https://evil.example/a' })).answer?.rule).toEqual({ skill: 'a:b' })
+    expect(read(rule({ quote: '  ', url: 7 })).answer?.rule).toEqual({ skill: 'a:b' })
+  })
+
   it('keeps a code answer that names where the code contradicts the note', () => {
     expect(read({ thread: 'PRT_1', body: 'It is guarded.', at: 'src/a.ts:4' }).answer).toEqual({
       thread: 'PRT_1',
@@ -35,12 +44,8 @@ describe('readAnswer', () => {
     ['an empty body', { thread: 'T', body: ' ', at: 'a.ts' }],
     ['an over-long body', { thread: 'T', body: 'x'.repeat(MAX_ANSWER_CHARS + 1), at: 'a.ts' }],
     ['neither a rule nor a location', { thread: 'T', body: 'x' }],
-    ['a rule without a quote', { thread: 'T', body: 'x', rule: { skill: 'a:b' } }],
+    ['a rule without a skill', { thread: 'T', body: 'x', rule: { quote: 'q'.repeat(30) } }],
     ['a null rule', { thread: 'T', body: 'x', rule: null }],
-    [
-      'a quote that is too short',
-      { thread: 'T', body: 'x', rule: { skill: 'a:b', quote: 'lock' } },
-    ],
     ['an @ mention in the body', { thread: 'T', body: 'ping @bob', at: 'a.ts' }],
     ['an @ mention in the location', { thread: 'T', body: 'x', at: '@bob' }],
     [
@@ -59,6 +64,25 @@ describe('renderAnswer', () => {
   it('ends a rule answer with the skill and the quoted sentence', () => {
     expect(renderAnswer({ thread: 'T', body: 'No lock.', rule: RULE })).toBe(
       'No lock.\n\nRule: jong-skills:locks: "Take a lock only on a row it writes."',
+    )
+  })
+
+  it('links the skill, and quotes it only when a quote is kept', () => {
+    const url = 'https://github.com/jonathanong/no-mistakes/blob/HEAD/skills/locks/SKILL.md'
+    expect(
+      renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'jong-skills:locks', url } }),
+    ).toBe(`b\n\nRule: [jong-skills:locks](${url})`)
+    expect(renderAnswer({ thread: 'T', body: 'b', rule: { ...RULE, url } })).toBe(
+      `b\n\nRule: [jong-skills:locks](${url}): "Take a lock only on a row it writes."`,
+    )
+  })
+
+  it('names the skill plainly when there is no link', () => {
+    expect(renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'jong-skills:locks' } })).toBe(
+      'b\n\nRule: jong-skills:locks',
+    )
+    expect(renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'a:b' }, at: 'a.ts:2' })).toBe(
+      'b\n\nRule: a:b (`a.ts:2`)',
     )
   })
 

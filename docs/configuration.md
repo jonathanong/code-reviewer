@@ -174,8 +174,8 @@ no user setting can widen the allow-list. With no references every prompt and fl
 
 ## `answers`
 
-Lets the verifier reply, in the thread, to another reviewer's open note it finds invalid, quoting the
-rule it relies on ([Answering other reviewers](review.md#answering-other-reviewers)).
+Lets the verifier reply, in the thread, to another reviewer's open note it finds invalid, linking the
+rule skill it relies on ([Answering other reviewers](review.md#answering-other-reviewers)).
 
 ```yaml
 answers:
