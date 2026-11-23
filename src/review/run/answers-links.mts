@@ -2,16 +2,12 @@ import { readFileSync } from 'node:fs'
 import { basename, dirname, join, sep } from 'node:path'
 
 import type { PluginInstall } from '../plugins.mts'
+import { DIR_RE, OWNER_REPO_RE, REF_RE, REPO_RE } from '../skill-url.mts'
 
 /** Where a plugin lives on GitHub: the repository, the ref its files are read at, and its directory in it. */
 export type PluginLocation = { repository: string; ref: string; dir: string }
 
 type Json = Record<string, unknown>
-
-const REPO_RE = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/u
-const OWNER_REPO_RE = /^[\w.-]+\/[\w.-]+$/u
-const REF_RE = /^[\w][\w./-]*$/u
-const DIR_RE = /^[\w.-]+(?:\/[\w.-]+)*$/u
 
 const asJson = (value: unknown): Json | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Json) : undefined

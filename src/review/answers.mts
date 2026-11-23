@@ -1,3 +1,5 @@
+import { isSkillUrl } from './skill-url.mts'
+
 /**
  * The rule an answer rests on: an installed rule skill, a link to it, and optionally one sentence
  * of it, verbatim. The reply may paraphrase the rule, so the quote is never required.
@@ -26,13 +28,11 @@ export const hasMention = (text: string): boolean => /@\w/u.test(text)
 export const normalizeSpace = (text: string): string => text.replaceAll(/\s+/gu, ' ').trim()
 
 const THREAD_ID_RE = /^[A-Za-z0-9_=-]+$/u
-const SKILL_URL_RE =
-  /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/blob\/HEAD\/skills\/[\w.-]+\/SKILL\.md$/u
 
 /**
  * Reads one answer; undefined with the reason in `why` when a guard fails. Whether the rule skill
  * is installed and the quote is in it is checked against installed text elsewhere: this checks
- * shape and text only. A `url` is kept only when it is a skill file of a GitHub repository.
+ * shape and text only. A `url` is kept only when it has the shape of a link `skillUrl` builds.
  */
 export function readAnswer(raw: unknown, why: string[]): Answer | undefined {
   const entry = raw as { thread?: unknown; body?: unknown; rule?: unknown; at?: unknown } | null
@@ -41,7 +41,7 @@ export function readAnswer(raw: unknown, why: string[]): Answer | undefined {
   const rule = entry?.rule as { skill?: unknown; quote?: unknown; url?: unknown } | null | undefined
   const skill = typeof rule?.skill === 'string' ? rule.skill.trim() : ''
   const quote = typeof rule?.quote === 'string' ? normalizeSpace(rule.quote) : ''
-  const url = typeof rule?.url === 'string' && SKILL_URL_RE.test(rule.url) ? rule.url : ''
+  const url = typeof rule?.url === 'string' && isSkillUrl(rule.url) ? rule.url : ''
   const check = (ok: boolean, reason: string) => (ok ? undefined : why.push(reason))
   check(typeof entry?.thread === 'string' && THREAD_ID_RE.test(entry.thread), 'no thread id')
   check(body !== '' && body.length <= MAX_ANSWER_CHARS, `body is empty or over ${MAX_ANSWER_CHARS}`)
