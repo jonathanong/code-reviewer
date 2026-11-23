@@ -14,6 +14,14 @@ describe('benchPlugins', () => {
     expect(result.settings).toEqual({ enabledPlugins: { 'other@m': false, 'jong-skills@m': true } })
   })
 
+  it('lists where the enabled user-scope plugins are installed', async () => {
+    const stdout = JSON.stringify([
+      { id: 'jong-skills@m', enabled: true, scope: 'user', installPath: '/p/jong' },
+    ])
+    const result = await benchPlugins(async () => stdout, '/cwd', true, vi.fn())
+    expect(result.installs).toEqual([{ name: 'jong-skills', installPath: '/p/jong' }])
+  })
+
   it('records none and switches everything off for a control run', async () => {
     const result = await benchPlugins(async () => LISTED, '/cwd', false, vi.fn())
     expect(result.labels).toEqual([])
@@ -30,10 +38,14 @@ describe('benchPlugins', () => {
     expect(await benchPlugins(failing, '/cwd', true, log)).toEqual({
       labels: ['unknown'],
       settings: undefined,
+      noPlugins: undefined,
+      installs: [],
     })
     expect(await benchPlugins(async () => '{}', '/cwd', false, log)).toEqual({
       labels: [],
       settings: undefined,
+      noPlugins: undefined,
+      installs: [],
     })
     expect(log).toHaveBeenCalledWith('plugins: no claude')
     expect(log).toHaveBeenCalledWith('plugins: claude plugin list did not print an array.')

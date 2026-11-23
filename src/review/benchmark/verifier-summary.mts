@@ -39,7 +39,7 @@ export function scoreAll(cases: EvalCase[], options: SummaryOptions, deps: Bench
     collectUsage(raw, verifierUsage, checkerUsage)
     if (raw.graded?.inputs !== gradeInputs(item, raw.output, [options.judge, options.checker]))
       errors.push(`- ${item.id}: not graded`)
-    else scores.push(scoreVerifierCase(item, raw.input, raw.output, raw.graded))
+    else scores.push(scoreVerifierCase(item, raw.input, raw.output, raw.graded, raw.answers))
   }
   const summary = summarizeVerifier(scores)
   const arm = options.noRules === true ? 'control' : 'with skills'

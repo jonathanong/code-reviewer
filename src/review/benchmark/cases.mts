@@ -6,6 +6,7 @@ import { parseExpectedRules, type ExpectedRule } from './expected-rules.mts'
 import { parseExpectedReads } from './reads-score.mts'
 import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
+import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
 
 export type ExpectedFinding = {
   pillar: Pillar
@@ -29,6 +30,8 @@ type CaseBase = {
   expectedRules?: ExpectedRule[]
   /** Skills `bench-selection` should not select for this case; none of them is expected. */
   unwantedSkills?: string[]
+  /** Other reviewers' open notes shown to the verifier, each with the outcome `bench-verifier` expects. */
+  answerable?: AnswerableCase[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -169,6 +172,7 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
     ...(expectedReads === undefined ? {} : { expectedReads }),
     ...(expectedRules === undefined ? {} : { expectedRules }),
     ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
+    ...parseAnswerable(raw.answerable, where),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',

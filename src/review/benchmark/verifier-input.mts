@@ -25,8 +25,9 @@ function otherPillar(pillar: Pillar): Pillar {
  * finding the judge matched to an expectation is "real"; each real finding gets a planted copy
  * under another pillar to test deduplication. Returns null when no pillar result exists, and
  * throws when a pillar with labels has no current judgement, since its real findings are unknown.
- * A case that expects a `congruence` finding gets an empty input instead of null: no pillar run
- * can produce that finding, so the verifier is measured on the case alone.
+ * A case that expects a `congruence` finding, or lists notes to answer, gets an empty input
+ * instead of null: no pillar run can produce that finding or those notes, so the verifier is
+ * measured on the case alone.
  */
 export function collectVerifierInput(
   item: EvalCase,
@@ -61,7 +62,8 @@ export function collectVerifierInput(
     })
   }
   if (!found) {
-    const verifierOnly = item.expected.some((entry) => entry.pillar === 'congruence')
+    const verifierOnly =
+      item.answerable !== undefined || item.expected.some((entry) => entry.pillar === 'congruence')
     return verifierOnly ? { findings: [], real: [], planted: [] } : null
   }
   const planted: Array<[number, number]> = real.map(([index]) => {

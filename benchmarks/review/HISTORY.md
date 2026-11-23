@@ -2,6 +2,28 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): `bench-verifier` grades the verifier's answers
+
+Not measured; no model was called.
+
+- **What changed.** A case may list `answerable` notes, each with `expect: "answer"` and the
+  `plugin:skill` its reply must cite, or `expect: "leave"`. The verifier prompt and schema then
+  carry the production answers block (`answerLines`, `withAnswers`) and the run reads its
+  transcript for the skills it loaded. The answers go through `checkedAnswers` against the
+  installed rule skills of the default rule plugins, and each note is graded by code: an `answer`
+  note passes when a checked answer for it cites the expected skill, a `leave` note when none
+  survives. `summary.md` adds one line, "Answers to other reviewers' notes: x of y", only when a
+  case listed notes. A case with `answerable` and no pillar findings is verified alone, as a
+  `congruence` case is.
+- **Comparable.** Every earlier `bench-verifier` row. A case without the field builds a
+  byte-identical prompt, schema and request, and its saved-output key is unchanged.
+- **New cases, unmeasured.** `answers-like-row-lock` and `answers-floating-promise`, in
+  `answers.json`, which the pillar benches do not run, so no pillar row changes. The third
+  scenario, a thread the reviewer already replied in, is covered by a unit test of
+  `answerableThreads` because a case lists notes after that filter.
+- Piloting: one attempt each, then read the answer, its quote and the findings by hand before
+  quoting a number.
+
 ## 2026-11-23 (no run): the verifier may answer other reviewers' open notes
 
 Not measured; no model was called.

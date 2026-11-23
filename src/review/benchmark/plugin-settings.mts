@@ -1,9 +1,11 @@
 import {
   DEFAULT_RULE_PLUGINS,
+  parsePluginInstalls,
   parsePluginList,
   pluginLabels,
   pluginSettings,
   type Plugin,
+  type PluginInstall,
 } from '../plugins.mts'
 import type { Exec } from './exec.mts'
 
@@ -14,6 +16,8 @@ export type BenchPlugins = {
   settings: object | undefined
   /** Every plugin off, for the judge, which needs none. */
   noPlugins: object | undefined
+  /** Where the enabled user-scope plugins live, to read their skills; empty when unlisted. */
+  installs: PluginInstall[]
 }
 
 /**
@@ -27,15 +31,20 @@ export async function benchPlugins(
   log: (line: string) => void,
 ): Promise<BenchPlugins> {
   let listed: Plugin[]
+  let installs: PluginInstall[]
   try {
-    listed = parsePluginList(await exec('claude', ['plugin', 'list', '--json']), cwd)
+    const stdout = await exec('claude', ['plugin', 'list', '--json'])
+    listed = parsePluginList(stdout, cwd)
+    installs = parsePluginInstalls(stdout)
   } catch (error) {
     log(`plugins: ${error instanceof Error ? error.message : String(error)}`)
-    return { labels: rules ? ['unknown'] : [], settings: undefined, noPlugins: undefined }
+    const labels = rules ? ['unknown'] : []
+    return { labels, settings: undefined, noPlugins: undefined, installs: [] }
   }
   return {
     labels: rules ? pluginLabels(listed) : [],
     settings: pluginSettings(listed, DEFAULT_RULE_PLUGINS, rules),
     noPlugins: pluginSettings(listed, DEFAULT_RULE_PLUGINS, false),
+    installs,
   }
 }
