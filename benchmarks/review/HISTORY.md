@@ -2,6 +2,82 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: pilot, a Haiku planning step that writes the questions
+
+One attempt per arm, commit b530360, nothing in the tree changed. It follows the entry below, where
+the questions were written by hand. Total $6.69 without the judge: planner $0.24, pillar runs $6.45.
+
+The planner ran as `claude -p --model haiku` in the snapshot tree of each head, with this prompt:
+
+> You plan a code review. You do not review.
+>
+> Read `.review/pr.md`, `.review/files.md` and every patch under `.review/diff/`. You may open files
+> in this tree to see what a changed line belongs to.
+>
+> Pick the changes in this pull request that most need one reviewer to check the rest of the
+> codebase against them. A change qualifies when its correctness depends on code outside the hunk:
+>
+> - it removes or weakens something other code may have relied on;
+> - it adds or changes something that must agree with code elsewhere;
+> - it adds code that writes state other code also reads or writes.
+>
+> Skip renames, formatting, comments, generated files, and changes whose effect is contained in the
+> hunk.
+>
+> Give at most 8 targets, the most consequential first. Fewer is better; give none when nothing
+> qualifies. One target is one change at one place; do not merge several files into one target.
+>
+> For each target give `path`, `line` (at the head; for a pure removal, where the removed code was)
+> and `change`: one clause that completes the sentence "At path:line it ...". State only what the
+> diff shows the code now does or no longer does. Do not say whether it is right, what might go
+> wrong, or what rule applies.
+>
+> Reply with only a JSON array of objects with those three keys.
+
+Targets per head, and whether a target named the path of each expected finding of the entry below:
+
+| Head                        | Targets | Expected site covered                         |
+| --------------------------- | ------- | --------------------------------------------- |
+| `vouchington-6055-2b300006` | 6       | `6055-finalize` yes, 2nd                      |
+| `vouchington-6059-99da41a9` | 8       | `6059-aliases` yes, 3rd; `6059-link` yes, 5th |
+| `vouchington-6076-578223cb` | 8       | `6076-flags` yes, 7th                         |
+| `vouchington-4154`          | 8       | `4154-index` no                               |
+| `vouchington-6050-02ad62d4` | 8       | `6050-seed` no                                |
+| `vouchington-6087-fa05c982` | 7       | none expected                                 |
+| `vouchington-6076-e7b25fb9` | 8       | none expected                                 |
+
+Pillar runs, correctness with its own prompt, Sonnet at `high`, judge Opus, `--select`, on
+`vouchington-6059-99da41a9` (two expected correctness findings) and the clean
+`vouchington-6087-fa05c982`, with the planner's targets in the planner's wording:
+
+| Arm                                                          | Runs | Matched | Findings | Cost  |
+| ------------------------------------------------------------ | ---- | ------- | -------- | ----- |
+| `6059`, whole diff, no question                              | 1    | 0 of 2  | 0        | $0.36 |
+| `6059`, whole diff, all 8 targets in one block               | 1    | 0 of 2  | 0        | $0.61 |
+| `6087`, whole diff, all 7 targets in one block               | 1    | none    | 0        | $0.29 |
+| `6059`, one run per target, that target's file, the template | 8    | 0 of 2  | 4        | $2.82 |
+| `6087`, one run per target, that target's file, the template | 7    | none    | 2        | $2.35 |
+
+The one-block arms appended a numbered list of the targets to the description under "In addition to
+your normal review, check each of these changes", ending with the template's last two sentences.
+The per-target arms used the template of the entry below unchanged.
+
+What this shows, on one attempt per arm, which is not a rate:
+
+- End to end, the planner's targets matched neither expected finding on `6059`, in one block or one
+  run per target. The hand-written questions of the entry below matched both in arm D. The two
+  runs on `aliases.mts` and `link-topic-alias.mts` here each raised only the low wrong-409 finding
+  that arm D also raised beside its match. So arm D's matches did not repeat with a second wording
+  of the same change, and one attempt cannot tell wording from chance.
+- `high` effort alone did not find them either (whole diff, no question, no finding).
+- The planner filled or nearly filled its cap on every head, the clean ones included, so one run per
+  target cost $2.82 and $2.35 a pull request against $0.22 for the single run of the entry below.
+- The extra findings were few: 6 over 15 runs, 2 of them medium (the accepted duplicate send on
+  `6087`, and a missing test on `merge-reference-conflict-pages.mts`).
+- The planner named neither site that is not a removed lock (`4154-index`, `6050-seed`).
+
+Not built. No planner, target or question exists in the review.
+
 ## 2026-11-22: pilot, `correctness` given one question about one change
 
 One attempt per arm, commit b48cebe, correctness pillar with its own prompt, Sonnet, judge Opus,
