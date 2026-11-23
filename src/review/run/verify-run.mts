@@ -8,6 +8,7 @@ import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
 import { referenceDomains } from './references-prompt.mts'
 import { withRaisedBy } from './restate-prompt.mts'
+import { checkedImpact, withImpact } from './impact-prompt.mts'
 import { withSplitProposal } from './split-prompt.mts'
 import { withRegressionPrevent } from './regression-prompt.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS } from './types.mts'
@@ -36,6 +37,7 @@ export async function runReviewVerifier(
     exec: Exec
   },
 ): Promise<ReviewVerifierOutput & { ran: StepRan }> {
+  const impact = options.mode === 'full'
   const run = await runModelStep(
     options.models ?? DEFAULT_STEP_MODELS,
     {
@@ -43,13 +45,13 @@ export async function runReviewVerifier(
       fallback: tierOfPlanned(options.model),
     },
     {
-      prompt: buildVerifierRunPrompt(input),
+      prompt: buildVerifierRunPrompt({ ...input, impact }),
       label: 'Verifier run',
       maxTurns: REVIEW_MAX_TURNS,
       schema: withExtraPillars(
         withRaisedBy(
           withSplitProposal(
-            withRegressionPrevent(REVIEW_VERIFIER_SCHEMA, input.regression),
+            withRegressionPrevent(withImpact(REVIEW_VERIFIER_SCHEMA, impact), input.regression),
             input.split,
           ),
           input.restate,
@@ -80,6 +82,7 @@ export async function runReviewVerifier(
       input.regression,
       input.split,
     ),
+    ...checkedImpact((run.structured as { impact?: unknown }).impact, impact),
     ran: run.ran,
   }
 }

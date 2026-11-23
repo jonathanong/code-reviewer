@@ -3,7 +3,8 @@ import { describe, expect, it, vi, type Mock } from 'vitest'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import { ReviewRejectedError, type ListedReview, type ReviewIo } from './github.mts'
 import { postReviews } from './submit.mts'
-import { reviewStatus, postFinalReview, revokeFinalApproval } from './post.mts'
+import { postFinalReview, revokeFinalApproval } from './post.mts'
+import { reviewStatus } from './status.mts'
 import { reviewMarker, type Verdict } from './render.mts'
 
 const SHA = 'c'.repeat(40)

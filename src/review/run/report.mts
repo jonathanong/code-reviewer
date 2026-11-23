@@ -15,6 +15,7 @@ import type { EvidenceReport } from './evidence-types.mts'
 import { reportPush, type ReportPush } from './push-report.mts'
 import { reportRegression, type ReportRegression } from './regression-report.mts'
 import { byStep, evidenceUsages } from './report-usage.mts'
+import { reportAdvice, type ReportAdvice } from './report-advice.mts'
 import { ranRows, type RanRow } from './report-models.mts'
 import { markDropped } from './report-pillars.mts'
 import { reportStack, type ReportStack } from './stack-report.mts'
@@ -74,13 +75,11 @@ export type ReportData = {
   earlierEvidence?: Array<{ source: string; commit: string; status: string }>
   /** The commits the change says it fixes or reverts, and the verifier's one-line recommendation. */
   regression?: ReportRegression // absent without linked commits
-  /** The verifier's proposal to split a large change with a mechanical part; absent without one. */
-  splitProposal?: string
   /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
   /** The harness and model that ran each step; absent in a report written before steps recorded them. */
   ran?: RanRow[]
-}
+} & ReportAdvice
 
 export type ReportInput = {
   repo: string
@@ -161,7 +160,7 @@ export function buildReport(input: ReportInput): ReportData {
           })),
         }),
     ...reportRegression(input.regression, output?.regressionPrevent),
-    ...(output?.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
+    ...reportAdvice(output),
     verifier:
       input.verifier === undefined
         ? null

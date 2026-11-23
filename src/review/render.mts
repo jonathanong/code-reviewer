@@ -1,3 +1,4 @@
+import { classLine } from './class-line.mts'
 import { dependsOnSection } from './dependency-render.mts'
 import { notesSection } from './notes.mts'
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
@@ -118,8 +119,12 @@ function skippedSection(skipped: readonly SkippedPillar[]): string[] {
   return [detail(`Skipped pillars (${skipped.length})`, rows)]
 }
 
-/** Renders the review's top section: verdict, reviewed SHA, summary, and the finding index. */
-export function renderHeader(input: ReviewInput, headSha: string): string {
+/** Renders the review's top section: verdict, reviewed SHA, class, summary, and the finding index. */
+export function renderHeader(
+  input: ReviewInput,
+  headSha: string,
+  paths: readonly string[] = [],
+): string {
   const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
   const index = sortFindings(input.findings).map((finding) => {
     const where = locationText(finding)
@@ -129,6 +134,7 @@ export function renderHeader(input: ReviewInput, headSha: string): string {
     reviewMarker(headSha, verdict, input.effort),
     `## [${verdict}] Code review`,
     `Reviewed \`${headSha.slice(0, 12)}\` at ${input.effort} effort · ${counts(input.findings)}`,
+    ...classLine(paths, input.impact),
     ...(input.summary ? [input.summary] : []),
     ...splitSection(input.splitProposal),
     ...(index.length > 0 ? [index.join('\n')] : []),

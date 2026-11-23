@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: the verifier judges the change's impact (no run)
+
+No run; nothing measured. A full review's verifier prompt gets an Impact block, its output schema
+an optional `impact` object (`kind`: breaking, architectural, maintenance or unsure, and a
+one-line `basis`), and `skills/review/references/verifier.md` a step pointing at that block. A
+light review's prompt and schema are unchanged. The class line the review header shows combines
+the impact with a scope computed from the pull request's file paths; the scope involves no model.
+
+- **Not comparable:** every stored verifier row, that is, the `bench-verifier` rows in
+  `README.md` (3 attempts each on the fixtures and the 8 mined cases). `bench-verifier` loads
+  `verifier.md`, which has a new step, and the production verifier prompt and schema it stands
+  for have changed. Those rows were already stale for earlier changes below.
+- **Not affected:** the pillar rows, the skill-selection rows and the context checks, which do
+  not read the verifier prompt or schema. The benchmark's own verifier schema
+  (`VERIFIER_OUTPUT_SCHEMA`) did not change.
+
 ## 2026-11-22: pilot, blast radius looks for neighbors in the repository; nothing kept
 
 One attempt per arm, commit 5967b5a, nothing in the tree changed. Six sites the review missed

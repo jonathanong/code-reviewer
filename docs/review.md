@@ -187,6 +187,45 @@ and shown as one line near the top of the review body (not collapsed) and under 
 `report.md`. A longer one makes `concise` warn. With no summary the prompt, schema and command
 line are unchanged.
 
+## The class line
+
+Every posted review (not the notice of a skipped one) carries one line under the
+`Reviewed ... effort` line that names the kind of pull request: `**Class:** <impact> · <scope>`.
+Two examples:
+
+- `**Class:** maintenance · dependencies-only`
+- ``**Class:** breaking (removes the `--foo` CLI flag) · source, tests``
+
+It changes no verdict, plan, label or effort, and it is not part of the `final-review` marker. When
+neither part is known there is no line.
+
+The scope comes from file paths alone, never from a model, the title, the labels or the
+description. `post` derives it from the pull request's whole file list (base to head, the list it
+already reads to place comments), so a hand-written `review.json` gets it too and a light
+follow-up still shows the scope of the whole pull request. Each changed file has one kind, from
+the same path classification as the rest of the reviewer, checked in this order: `agent
+direction` (`AGENTS.md`, `CLAUDE.md`, any `SKILL.md`, files under a `skills/**/references/`
+directory and under an `evals/` directory), `ci` (`.github/workflows/` and `.github/actions/`),
+`dependencies` (manifests and lockfiles), `tests`, `generated paths`, `docs`, `config`, and
+`source`. The line lists the distinct kinds, most files first and at most four. When every file is
+of one kind other than source it prints `test-only`, `docs-only`, `agent-direction-only`,
+`dependencies-only`, `generated-paths-only`, `ci-only` or `config-only` instead; an all-source
+change prints `source`.
+
+The impact is the verifier's judgment, one of `breaking`, `architectural`, `maintenance` or
+`unsure`, with a one-line basis (collapsed to one line, at most 160 characters). The defaults:
+breaking is a change that makes an existing caller, consumer, stored data or configuration stop
+working without a change on their side; architectural is a new dependency on a remote service or
+another repository, new persisted state or cache, a new process, queue or command family, or a
+change to how components are divided; maintenance is neither. When the reviewed repository's own
+`AGENTS.md` defines these words in the review context, its definitions win and the basis quotes
+the sentence used. When the verifier cannot tell it answers `unsure` and says what it would need.
+Only a full review asks for it: the verifier prompt gets an Impact block and its output schema an
+optional `impact` object. A light review shows the scope alone. A hand-written
+`review.json` may set `impact` (`{ "kind": ..., "basis": ... }`) too; the verdict never reads it.
+It is saved as `impact` in `review.json` and `report.json` and shown under `Impact` in
+`report.md`.
+
 ## Follow-ups build on this machine's last review
 
 On a follow-up (a light review of the diff since the last reviewed commit, `plan.sinceSha` set),

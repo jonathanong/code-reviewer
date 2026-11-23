@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ReviewInput } from './finding.mts'
 import type { ReviewIo } from './github.mts'
 import { abortReview, claimReview, completeReview, type LabelIo } from './labels.mts'
-import { reviewStatus, postFinalReview } from './post.mts'
+import { postFinalReview } from './post.mts'
+import { reviewStatus } from './status.mts'
 import { DEFAULT_LABELS } from './settings.mts'
 
 const { requested: REQUESTED_LABEL, completed: COMPLETE_LABEL } = DEFAULT_LABELS

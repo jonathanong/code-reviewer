@@ -86,7 +86,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 11. **Dependencies.** Apply the pillar contract's Dependencies rule: list in `dependencies` each
     thing outside this checkout that must land first and the diff shows (not the ones already in the
     Known dependencies block), never as a finding, and never as a reason for Request Changes.
-12. **Summarize** in two to four sentences a human can act on: what the change does, whether it
+12. **Impact.** Only when the run prompt has an Impact block: set `impact` as it says.
+13. **Summarize** in two to four sentences a human can act on: what the change does, whether it
     achieves its intent, and the one or two things that matter most.
 
 ## Severity
