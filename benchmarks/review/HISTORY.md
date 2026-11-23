@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: congruence checks what the change says it is limited to (no run)
+
+No run; nothing measured. `skills/review/references/pillars/congruence.md` gets one scope bullet:
+a title or description that limits the change (test-only, docs-only, a refactor, no behavior
+change) must be borne out by the changed files and the diff. The verifier performs this pillar,
+and its prompt and schema are unchanged.
+
+- **Not comparable:** the stored `bench-verifier` rows, already stale for the two entries below.
+- **No case:** no stored case has a title that the files contradict. One is owed before a rate is
+  quoted for this bullet.
+
 ## 2026-11-22: the impact block reads linked definitions and ignores ones the change edits (no run)
 
 No run; nothing measured. The Impact block of a full review's verifier prompt now tells the

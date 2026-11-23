@@ -23,5 +23,8 @@
 - Review less only on facts a pusher cannot forge. An author rule (`plan.authors`) holds while every commit is that author's; a commit by anyone else returns the pull request to the normal plan.
 - A follow-up on the same machine builds on that machine's last review and adds to it. Earlier evidence carries over to the verifier, and the evidence step still runs: new evidence may block or raise a question for the author.
 - Rule text given to a model is quoted verbatim by section with a link to the skill, never paraphrased.
+- The title, description and code of a pull request must agree. A claim the diff contradicts, such as test-only on a change that edits production code, is a finding.
+- A comparison with the base branch that a script can make, such as a lowered coverage threshold, tolerance or gate, belongs in the repository's CI. The reviewer recommends the missing test.
+- The reviewer does not inspect how CI or the test database is set up. It reads environment data only when the change makes it relevant.
 - The reviewer never merges a pull request it reviews. When the loop is unsure, it holds the review and flags it to a person.
 - A change to a prompt, schema or contract is recorded in the benchmark `HISTORY.md` in the same change, with the rows it makes non-comparable.
