@@ -138,6 +138,5 @@ a link, the location, and the start of the first comment as written, up to a cap
 comments and icon images left out because a reader cannot see them. A severity is given only where
 the comment states one through a marker in `SEVERITY_MARKERS`
 (`src/review/context/severity-markers.mts`); any other comment is `unstated`. Each later comment of a thread is shown as a `reply by <author>` line (a few, each cut), with a
-line saying how many more were not shown. Review summaries and issue comments are read here as
-context only. The section quotes
+line saying how many more were not shown. The section reads review threads and standing change requests only. The section quotes
 and sorts; it does not judge whether an item is valid, and the quoted text is not instructions.

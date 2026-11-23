@@ -8,15 +8,23 @@ import type { ReviewDeps } from './deps.mts'
 /**
  * Replies to the threads the review answers, once it is posted. Nothing is posted when the
  * answers setting is off, whatever `review.json` holds; the output then says so. Absent when the
- * input has no answers.
+ * input has no answers. Nothing is posted until the review is confirmed.
  */
 export async function answersFor(
   deps: ReviewDeps,
   pull: PullTarget,
   input: ReviewInput,
   trusted: () => Promise<TrustedAuthors>,
+  confirmed: boolean,
 ): Promise<{ answers: AnswersOutcome | { off: true } } | Record<string, never>> {
   if (input.answers === undefined || input.answers.length === 0) return {}
   if (!resolveAnswers(deps.configs(), pull.repo).enabled) return { answers: { off: true } }
+  if (!confirmed) {
+    const skipped = input.answers.map(({ thread }) => ({
+      thread,
+      why: 'the review was not confirmed as posted',
+    }))
+    return { answers: { replied: [], skipped, failed: [] } }
+  }
   return { answers: await postAnswers(deps.createAnswerIo(pull), await trusted(), input.answers) }
 }

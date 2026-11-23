@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MAX_ANSWERS } from '../answers.mts'
 import type { Answerable } from '../context/answerable.mts'
+import { normalizeLines } from './answers-quote.mts'
 import { answerLines, checkedAnswers, withAnswers, type AnswerRules } from './answers-prompt.mts'
 import { REVIEW_VERIFIER_SCHEMA, buildVerifierRunPrompt, type VerifierInput } from './verify.mts'
 
@@ -26,7 +27,7 @@ const INPUT: VerifierInput = {
 const SENTENCE = 'Never lock a parent row the transaction only reads.'
 const RULES: AnswerRules = {
   texts: new Map([
-    ['jong-skills:locks', `# Locks - Take a lock only on a row it writes. - ${SENTENCE}`],
+    ['jong-skills:locks', `# Locks\n- Take a lock only on a row it writes.\n- ${SENTENCE}`],
     ['jong-skills:other', `- ${SENTENCE}`],
   ]),
   selected: ['jong-skills:locks'],
@@ -98,6 +99,24 @@ describe('checkedAnswers', () => {
     const { answers, warnings } = check([entry])
     expect(answers).toEqual([])
     expect(warnings).toEqual([expect.stringContaining(reason)])
+  })
+
+  it('keeps a whole sentence or list item and drops the tail of one', () => {
+    const skill = `# Locks\n\n- Never lock a parent row the transaction only reads.\n- Prefer short   transactions. Keep every transaction\n  small and short.`
+    const rules: AnswerRules = {
+      texts: new Map([['jong-skills:locks', normalizeLines(skill)]]),
+      selected: ['jong-skills:locks'],
+    }
+    const quote = (text: string) => [
+      given('T1', { rule: { skill: 'jong-skills:locks', quote: text } }),
+    ]
+    const kept = (text: string) =>
+      checkedAnswers(quote(text), [item('T1')], rules, []).answers.length
+    expect(kept('Never lock a parent row the transaction only reads.')).toBe(1)
+    expect(kept('Prefer short transactions.')).toBe(1)
+    expect(kept('Keep every transaction small and short.')).toBe(1)
+    expect(kept('lock a parent row the transaction only reads.')).toBe(0)
+    expect(kept('Never lock a parent row')).toBe(0)
   })
 
   it('drops a second answer on a thread and everything past the cap', () => {

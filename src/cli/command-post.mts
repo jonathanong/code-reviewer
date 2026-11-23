@@ -63,7 +63,7 @@ export async function postCommand(
     input.findings,
     outcome.placements,
   )
-  const answered = await answersFor(deps, pull, input, () => io.trustedAuthors())
+  const answered = await answersFor(deps, pull, input, () => io.trustedAuthors(), outcome.confirmed)
   const problems = [saved.trackerProblem, tracked.trackerProblem].filter((p) => p !== undefined)
   const printed = {
     ...withoutPlacements(outcome),

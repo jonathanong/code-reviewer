@@ -98,5 +98,9 @@ export function parseAnswers(raw: unknown): { answers?: Answer[] } {
       throw new ReviewError(`answers[${index}] is invalid: ${why.join(', ')}.`)
     return answer
   })
+  answers.forEach((answer, index) => {
+    if (answers.findIndex((other) => other.thread === answer.thread) !== index)
+      throw new ReviewError(`answers[${index}] repeats thread ${answer.thread}.`)
+  })
   return answers.length === 0 ? {} : { answers }
 }

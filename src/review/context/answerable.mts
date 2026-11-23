@@ -17,6 +17,8 @@ export type Answerable = {
   text: string
   /** The later comments of the thread, so a settled point is not answered again. */
   replies: ThreadReply[]
+  /** How many later comments were read but left out of `replies`; absent when none. */
+  omitted?: number
 }
 
 export const MAX_ANSWERABLE = 10
@@ -50,6 +52,7 @@ export function answerableThreads(pull: PrConversation, own: TrustedAuthors): An
       if (totalCount !== undefined && totalCount > nodes.length) return []
       if (nodes.some((comment) => isTrustedAuthor(comment.author?.login, own))) return []
       const { text, cut } = visibleStart(first.body)
+      const omitted = nodes.length - 1 - MAX_REPLIES
       return [
         {
           thread: thread.id,
@@ -58,6 +61,7 @@ export function answerableThreads(pull: PrConversation, own: TrustedAuthors): An
           where: thread.line === null ? thread.path : `${thread.path}:${thread.line}`,
           text: cut ? `${text} [cut]` : text,
           replies: repliesOf(thread),
+          ...(omitted > 0 ? { omitted } : {}),
         },
       ]
     })

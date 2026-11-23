@@ -77,9 +77,18 @@ describe('parseAnswers', () => {
   })
 
   it('keeps at most the cap', () => {
+    const entries = Array.from({ length: MAX_ANSWERS + 2 }, (_, at) => ({
+      thread: `T${at}`,
+      body: 'x',
+      at: 'a.ts',
+    }))
+    expect(parseAnswers(entries).answers).toHaveLength(MAX_ANSWERS)
+  })
+
+  it('fails the input on a repeated thread, naming the entry', () => {
     const entry = { thread: 'T', body: 'x', at: 'a.ts' }
-    expect(parseAnswers(Array.from({ length: MAX_ANSWERS + 2 }, () => entry)).answers).toHaveLength(
-      MAX_ANSWERS,
+    expect(() => parseAnswers([entry, { ...entry, thread: 'U' }, entry])).toThrow(
+      'answers[2] repeats thread T.',
     )
   })
 

@@ -78,7 +78,8 @@ reads and confirms nothing.
 ## Replies to other reviewers
 
 When `review.json` has `answers` and the `answers` setting is on ([configuration](configuration.md#answers)),
-`post` replies in each thread after the review is confirmed, with the same identity as the review.
+`post` replies in each thread once the review is confirmed as posted (otherwise every answer is
+reported as skipped), with the same identity as the review.
 The reply is the body, then either the location or `Rule: <plugin>:<skill>: "<quote>"` (the skill
 name is not linked). It re-reads the threads first and skips one that is gone, resolved, longer
 than what was read, already answered by this reviewer, or whose final text mentions someone. It

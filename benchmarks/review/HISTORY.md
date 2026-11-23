@@ -8,7 +8,9 @@ Not measured; no model was called.
 
 - **What changed.** With the machine-only `answers` setting on and a non-empty `answerable` list in
   `context.json`, the verifier prompt gets one more block and its output schema an optional
-  `answers` field; code checks and `post` posts the replies. `verifier.md` is unchanged.
+  `answers` field; each listed note carries `omitted`, the count of later comments left out of its
+  replies, when there are any; code checks (a quoted rule must be a whole sentence or list item of
+  the skill) and `post` posts the replies once the review is confirmed. `verifier.md` is unchanged.
   `context.md`'s "Other reviewers" section now shows later comments of a thread.
 - **With the setting off or an empty list** the verifier prompt and schema are byte-identical to
   before. `bench-verifier` and `bench` build prompts without the block, so their rows are

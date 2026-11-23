@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 
-import { normalizeSpace } from '../answers.mts'
 import type { PluginInstall } from '../plugins.mts'
 import type { AnswerRules } from './answers-prompt.mts'
+import { normalizeLines } from './answers-quote.mts'
 import { listRuleSkillFiles } from './select-skills.mts'
 
 /**
@@ -17,7 +17,11 @@ export function answerRules(
 ): AnswerRules {
   const texts = new Map<string, string>()
   for (const skill of listRuleSkillFiles(installs, rulePlugins, [])) {
-    texts.set(skill.name, normalizeSpace(readFileSync(skill.file, 'utf8')))
+    try {
+      texts.set(skill.name, normalizeLines(readFileSync(skill.file, 'utf8')))
+    } catch {
+      // A skill that cannot be read cannot be quoted.
+    }
   }
   return { texts, selected }
 }

@@ -45,6 +45,16 @@ describe('answerableThreads', () => {
     ])
   })
 
+  it('counts the later comments left out beyond the replies shown, and nothing otherwise', () => {
+    const later = (count: number) =>
+      Array.from({ length: count }, (_, at) => comment('alice', `reply ${at}`))
+    const [long] = answerableThreads(pull(thread([comment('codex[bot]'), ...later(8)])), OWN)
+    expect(long?.replies).toHaveLength(5)
+    expect(long?.omitted).toBe(3)
+    const [exact] = answerableThreads(pull(thread([comment('codex[bot]'), ...later(5)])), OWN)
+    expect(exact).not.toHaveProperty('omitted')
+  })
+
   it('names a file-level thread by its path and a reply without an author', () => {
     const [item] = answerableThreads(
       pull(thread([comment('codex[bot]'), comment(null, 'ok')], { line: null })),

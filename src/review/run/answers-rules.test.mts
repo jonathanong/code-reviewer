@@ -11,12 +11,12 @@ const installs = [
 ]
 
 describe('answerRules', () => {
-  it('reads the text of the installed rule skills of the configured plugins, spaces collapsed', () => {
+  it('reads the text of the installed rule skills of the configured plugins, spaces collapsed per line', () => {
     const rules = answerRules(installs, ['answer-rules'], ['answer-rules:locks'])
     expect(rules.selected).toEqual(['answer-rules:locks'])
     expect([...rules.texts.keys()]).toEqual(['answer-rules:locks'])
     expect(rules.texts.get('answer-rules:locks')).toContain(
-      'Take a lock only on a row that the transaction writes.',
+      'Take a lock only on a row that the\ntransaction writes.',
     )
   })
 

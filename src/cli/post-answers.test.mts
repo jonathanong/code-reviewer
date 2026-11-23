@@ -43,7 +43,7 @@ function deps(enabled: boolean | undefined) {
 describe('answersFor', () => {
   it('replies when the setting is on', async () => {
     const { fake, reply } = deps(true)
-    const result = await answersFor(fake, PULL, INPUT, trusted)
+    const result = await answersFor(fake, PULL, INPUT, trusted, true)
     expect(result).toEqual({ answers: { replied: ['T1'], skipped: [], failed: [] } })
     expect(reply).toHaveBeenCalledWith('T1', 'Not needed.\n\n`src/a.ts:3`')
   })
@@ -53,15 +53,28 @@ describe('answersFor', () => {
     ['not set', undefined],
   ])('posts nothing and says so when the setting is %s', async (_name, enabled) => {
     const { fake, reply } = deps(enabled)
-    expect(await answersFor(fake, PULL, INPUT, trusted)).toEqual({ answers: { off: true } })
+    expect(await answersFor(fake, PULL, INPUT, trusted, true)).toEqual({ answers: { off: true } })
     expect(reply).not.toHaveBeenCalled()
+  })
+
+  it('skips every answer, and replies to none, when the review is not confirmed', async () => {
+    const { fake, reply, createAnswerIo } = deps(true)
+    expect(await answersFor(fake, PULL, INPUT, trusted, false)).toEqual({
+      answers: {
+        replied: [],
+        skipped: [{ thread: 'T1', why: 'the review was not confirmed as posted' }],
+        failed: [],
+      },
+    })
+    expect(reply).not.toHaveBeenCalled()
+    expect(createAnswerIo).not.toHaveBeenCalled()
   })
 
   it('is absent for an input without answers, and never opens the reply path', async () => {
     const { fake, createAnswerIo } = deps(true)
-    expect(await answersFor(fake, PULL, {} as ReviewInput, trusted)).toEqual({})
+    expect(await answersFor(fake, PULL, {} as ReviewInput, trusted, true)).toEqual({})
     expect(
-      await answersFor(fake, PULL, { answers: [] } as unknown as ReviewInput, trusted),
+      await answersFor(fake, PULL, { answers: [] } as unknown as ReviewInput, trusted, true),
     ).toEqual({})
     expect(createAnswerIo).not.toHaveBeenCalled()
   })
