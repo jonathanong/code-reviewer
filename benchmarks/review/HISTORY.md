@@ -22,6 +22,14 @@ On `e5b54e7`, no change to cases, prompts or graders. Runs were made one at a ti
   description with the code and does not ask for documents elsewhere in the repository that
   describe the changed behavior. The raw results do not record which files an attempt read.
 
+- **A scope bullet for documents outside the diff, tried and not shipped.** A `--prompts` copy of
+  `congruence.md` with one added bullet: documents in the repository that state the behavior the
+  change alters, search for the names of what changed, and a line the change makes false is a
+  finding. Sonnet verifier, 3 attempts, same session and case as the table above: 0 of 3, no
+  findings, $0.11 each. Each attempt took 4 turns and about 530 output tokens, the same as
+  without the bullet, so the verifier did not search. A bullet in the pillar file does not make a
+  verifier with nothing to verify go and read the repository. No other wording was tried.
+
 - **Two fixtures for misses of a full pipeline run, piloted and not kept.** A full run on a private
   pull request (16 files) raised 1 of the 4 findings a hand read raised. Two of the misses were
   rebuilt as small synthetic fixtures, 1 attempt each, Sonnet, judged by Opus:
