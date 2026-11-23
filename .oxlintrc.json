@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  "ignorePatterns": ["vendor/"],
+  "ignorePatterns": ["vendor/", "benchmarks/review/fixtures/"],
   "jsPlugins": ["eslint-plugin-no-mistakes"],
   "rules": {
     "no-mistakes/ts-no-const-aliases": "error",

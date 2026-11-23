@@ -1,0 +1,53 @@
+[
+  {
+    "id": "answers-like-row-lock",
+    "fixture": "fixtures/answers-like-row-lock",
+    "title": "feat: record a vote as a new row",
+    "kind": "negative",
+    "reason": "Another reviewer's open note asks for SELECT ... FOR UPDATE on the post row so concurrent votes serialize. The vote is an append-only insert whose latest row per voter wins, so the lock is unnecessary: jong-skills:postgres-locking says \"**Append-only writes never lock**: votes, events, history, anything where the latest row wins.\" and \"A reviewer's \"race condition\" finding, from a person or a bot, never by itself justifies a lock, a wider lock, or a coordination column.\" The verifier should answer the thread citing that skill, and its quote must be a sentence of the installed skill.",
+    "expected": [],
+    "answerable": [
+      {
+        "note": {
+          "thread": "PRRT_answersLikeRowLock01",
+          "login": "reviewer-one",
+          "url": "https://github.com/example/widgets/pull/1#discussion_r1001",
+          "where": "src/votes.mts:8",
+          "text": "Two requests from the same voter can interleave here and both insert. Take SELECT ... FOR UPDATE on the post row before the insert so concurrent votes are serialized.",
+          "replies": []
+        },
+        "expect": "answer",
+        "skill": "jong-skills:postgres-locking"
+      }
+    ]
+  },
+  {
+    "id": "answers-floating-promise",
+    "fixture": "fixtures/answers-floating-promise",
+    "title": "feat: email a farewell when an account is closed",
+    "kind": "positive",
+    "reason": "Another reviewer's open note says the try/catch around the send does not cover a failed send. It is right: sendFarewell is async and is neither awaited nor returned, so a rejection skips the catch and becomes an unhandled rejection, which also defeats the stated aim that a failed send must not matter. A valid note is handled as a finding, never an answer: the verifier should raise the defect itself and leave the thread without an answer.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/account.mts",
+        "lines": [7, 7],
+        "claim": "closeAccount calls the async sendFarewell without await, so the surrounding try/catch never sees its rejection: a failed send is an unhandled promise rejection (which can end the process) instead of being logged, and the failure is lost. The finding must say the promise is not awaited or handled; a finding about the email content or the missing retry does not match."
+      }
+    ],
+    "answerable": [
+      {
+        "note": {
+          "thread": "PRRT_answersFloatingPromise01",
+          "login": "reviewer-two",
+          "url": "https://github.com/example/widgets/pull/2#discussion_r2001",
+          "where": "src/account.mts:7",
+          "text": "This try/catch cannot catch a failed send: the call is not awaited, so a rejection escapes it.",
+          "replies": []
+        },
+        "expect": "leave"
+      }
+    ]
+  }
+]
