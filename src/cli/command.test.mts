@@ -96,6 +96,7 @@ function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
     targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
     createIo: vi.fn(() => io),
     createLabelIo: vi.fn(fakeLabelIo),
+    createAnswerIo: vi.fn(() => ({ conversation: vi.fn(), reply: vi.fn() })),
     createPrepareIo: vi.fn(() => ({}) as PrepareIo),
     guideReader: vi.fn(() => vi.fn(async () => '')),
     runner: vi.fn(() => vi.fn(async () => '')),

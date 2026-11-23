@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import type { Answerable } from '../context/answerable.mts'
 import type { Restatable } from '../context/restatable.mts'
 import { threadIdsOf } from './review-support.mts'
 
@@ -12,7 +13,25 @@ export function restatableOf(out: string): Restatable[] {
   return Array.isArray(restatable) ? (restatable as Restatable[]) : []
 }
 
-/** The lists the verifier input takes from the run directory, apart from the findings. */
-export function verifierContext(out: string): { threads: string[]; restate: Restatable[] } {
-  return { threads: threadIdsOf(out), restate: restatableOf(out) }
+/** The other reviewers' open notes `prepare` recorded; none in an older run. */
+export function answerableOf(out: string): Answerable[] {
+  const { answerable } = JSON.parse(readFileSync(join(out, 'context.json'), 'utf8')) as {
+    answerable?: unknown
+  }
+  return Array.isArray(answerable) ? (answerable as Answerable[]) : []
+}
+
+/**
+ * The lists the verifier input takes from the run directory, apart from the findings. The notes to
+ * answer are read only when the answers setting is on.
+ */
+export function verifierContext(
+  out: string,
+  answers = false,
+): { threads: string[]; restate: Restatable[]; answerable?: Answerable[] } {
+  return {
+    threads: threadIdsOf(out),
+    restate: restatableOf(out),
+    ...(answers ? { answerable: answerableOf(out) } : {}),
+  }
 }

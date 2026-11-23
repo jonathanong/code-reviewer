@@ -8,6 +8,7 @@ import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
 import { referenceDomains } from './references-prompt.mts'
 import { withRaisedBy } from './restate-prompt.mts'
+import { checkedAnswers, withAnswers, type AnswerRules } from './answers-prompt.mts'
 import { checkedImpact, withImpact } from './impact-prompt.mts'
 import { withSplitProposal } from './split-prompt.mts'
 import { withRegressionPrevent } from './regression-prompt.mts'
@@ -31,6 +32,8 @@ export async function runReviewVerifier(
     /** Names of the configured pillars, so their findings pass the output schema. */
     extraPillars?: readonly string[]
     mode: 'light' | 'full'
+    /** The installed rule skills an answer may cite; every answer with a rule is dropped without it. */
+    answerRules?: AnswerRules
     tree: string
     settings?: object
     models?: StepModels
@@ -49,12 +52,15 @@ export async function runReviewVerifier(
       label: 'Verifier run',
       maxTurns: REVIEW_MAX_TURNS,
       schema: withExtraPillars(
-        withRaisedBy(
-          withSplitProposal(
-            withRegressionPrevent(withImpact(REVIEW_VERIFIER_SCHEMA, impact), input.regression),
-            input.split,
+        withAnswers(
+          withRaisedBy(
+            withSplitProposal(
+              withRegressionPrevent(withImpact(REVIEW_VERIFIER_SCHEMA, impact), input.regression),
+              input.split,
+            ),
+            input.restate,
           ),
-          input.restate,
+          input.answerable,
         ),
         options.extraPillars ?? [],
       ),
@@ -83,6 +89,20 @@ export async function runReviewVerifier(
       input.split,
     ),
     ...checkedImpact((run.structured as { impact?: unknown }).impact, impact),
+    ...answersOf(run, input, options.answerRules),
     ran: run.ran,
   }
+}
+
+/** The checked answers of a run that listed notes to answer; nothing for any other run. */
+function answersOf(
+  run: { structured: unknown; skills: string[] },
+  input: VerifierInput,
+  rules: AnswerRules | undefined,
+): Pick<ReviewVerifierOutput, 'answers' | 'answerWarnings'> {
+  if (input.answerable === undefined || input.answerable.length === 0) return {}
+  const raw = (run.structured as { answers?: unknown }).answers
+  const none = { texts: new Map<string, string>(), selected: [] }
+  const { answers, warnings } = checkedAnswers(raw, input.answerable, rules ?? none, run.skills)
+  return { answers, answerWarnings: warnings }
 }

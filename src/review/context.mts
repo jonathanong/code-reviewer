@@ -1,5 +1,6 @@
 import type { PrConversation, ReviewThread } from './context-query.mts'
 import { parseBodyFindings } from './body-findings.mts'
+import { answerableThreads, type Answerable } from './context/answerable.mts'
 import { restatableThreads, type Restatable } from './context/restatable.mts'
 import { latestInstance } from './last-review.mts'
 import { MARKER_RE, PART_MARKER_RE } from './markers.mts'
@@ -41,6 +42,8 @@ export type FollowUpContext = {
   others: OtherNote[]
   /** Open blocking or high threads of other reviewers, which the verifier may restate. */
   restatable: Restatable[]
+  /** Open threads of other reviewers this one has not spoken in; the verifier may answer them. */
+  answerable: Answerable[]
 }
 
 const FINDING_RE = /^\*\*\[(blocking|high|medium|low)\]\*\* (.+)\n\n<sub>([a-z-]+)<\/sub>/u
@@ -188,5 +191,6 @@ export function buildFollowUpContext(
     priorQuestions: lastReviews.flatMap((review) => parseQuestions(review.body)),
     others: othersFrom(pull, markedIds),
     restatable: restatableThreads(pull, trusted),
+    answerable: answerableThreads(pull, trusted),
   }
 }

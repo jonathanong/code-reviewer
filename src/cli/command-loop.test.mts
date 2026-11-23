@@ -44,6 +44,7 @@ const UNSET = {
   evidence: { sources: [], from: null },
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
+  answers: { enabled: false, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
   limits: { ...LIMIT_DEFAULTS, maxCostFrom: null, from: null },
   pillars: {
@@ -276,6 +277,7 @@ describe('runLoopCommand', () => {
           from: 'machine owner',
         },
         approvalCheck: { enabled: false, from: 'machine owner' },
+        answers: { enabled: false, from: null },
         rulePlugins: { names: ['team-rules'], from: 'machine owner' },
         limits: {
           ...LIMIT_DEFAULTS,
@@ -492,9 +494,6 @@ describe('runLoopCommand', () => {
     expect(resolveThreads).toHaveBeenLastCalledWith(run, ['T1', 'T2'])
     await runLoopCommand('resolve', {}, target, deps)
     expect(resolveThreads).toHaveBeenLastCalledWith(run, [])
-  })
-
-  it('returns undefined for other subcommands', async () => {
     await expect(runLoopCommand('post', {}, target, fakeDeps().deps)).resolves.toBeUndefined()
   })
 })

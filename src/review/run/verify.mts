@@ -22,6 +22,9 @@ import { mergeLines } from './merge-prompt.mts'
 import { rulePluginLines } from './rule-plugins-prompt.mts'
 import { stackLines } from './stack-prompt.mts'
 import { checkedCredits, restateLines } from './restate-prompt.mts'
+import { answerLines } from './answers-prompt.mts'
+import type { Answer } from '../answers.mts'
+import type { Answerable } from '../context/answerable.mts'
 import { checkedRegressionPrevent, regressionLines } from './regression-prompt.mts'
 import type { Restatable } from '../context/restatable.mts'
 import type { LinkedCommit, PreviousReview } from '../context/types.mts'
@@ -66,6 +69,8 @@ export type VerifierInput = {
   threads: readonly string[]
   /** Open blocking or high items of other reviewers the verifier may restate; none by default. */
   restate?: readonly Restatable[]
+  /** Open notes of other reviewers the verifier may answer; none by default, and none when the setting is off. */
+  answerable?: readonly Answerable[]
   /** Commits the change says it fixes or reverts, found in local history; none by default. */
   regression?: readonly LinkedCommit[]
   /** True for a full review, which asks the verifier for the pull request's impact. */
@@ -111,6 +116,7 @@ export function buildVerifierRunPrompt(input: VerifierInput): string {
     ...issuesLines(input.run.issues, input.run.out),
     ...docsLines(input.run.docs),
     ...restateLines(input.restate),
+    ...answerLines(input.answerable),
     ...regressionLines(input.regression),
     ...splitLines(input.split),
     ...impactLines(input.impact),
@@ -142,6 +148,9 @@ export type ReviewVerifierOutput = VerifierOutput & {
   splitProposal?: string
   /** The change's kind, when the run asked for it. */
   impact?: Impact
+  /** Answers to other reviewers' threads that passed every guard, and why each other one did not. */
+  answers?: Answer[]
+  answerWarnings?: string[]
   skills: string[]
   usage: Usage
   ran?: StepRan

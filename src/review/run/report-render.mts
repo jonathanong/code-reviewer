@@ -1,5 +1,6 @@
 import type { Usage } from '../benchmark/usage.mts'
 import { renderModelTable } from '../benchmark/usage-summary.mts'
+import { renderAnswer, type Answer } from '../answers.mts'
 import type { Finding } from '../finding.mts'
 import { renderQuestions } from '../question.mts'
 import { raisedByLine } from '../raised-by.mts'
@@ -69,6 +70,15 @@ function pillar(result: ReportPillar): string {
   return lines.join('\n\n')
 }
 
+function renderAnswers(answers: readonly Answer[], warnings: readonly string[]): string[] {
+  if (answers.length === 0 && warnings.length === 0) return []
+  return [
+    `### Answers to other reviewers (${answers.length})`,
+    ...answers.map((answer) => `- thread \`${answer.thread}\`\n\n${quote(renderAnswer(answer))}`),
+    ...warnings.map((warning) => `- Not posted: ${warning}`),
+  ]
+}
+
 /** The report section for one pull request; a pure function of `report.json`. */
 export function renderReport(data: ReportData): string {
   const cost = costBreakdown(data)
@@ -108,6 +118,7 @@ export function renderReport(data: ReportData): string {
     ...(data.impact === undefined
       ? []
       : [`### Impact: ${data.impact.kind}\n\n${data.impact.basis ?? ''}`.trimEnd()]),
+    ...renderAnswers(data.answers ?? [], data.answerWarnings ?? []),
     ...renderQuestions(data.questions ?? []),
     ...renderApprovalCheck(data.approvalCheck),
     ...renderPostWarnings(data.postWarnings ?? []),

@@ -104,6 +104,7 @@ export function fakeDeps(options: FakeOptions) {
     targetConfig: vi.fn(async () => ({ config: undefined, problems: [] })),
     createIo: vi.fn(() => io),
     createLabelIo: vi.fn(() => labelIo),
+    createAnswerIo: vi.fn(),
     createPrepareIo: vi.fn(
       () => ({ files: async () => options.files ?? [] }) as unknown as PrepareIo,
     ),

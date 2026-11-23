@@ -1,3 +1,4 @@
+import { MAX_ANSWERS, readAnswer, type Answer } from './answers.mts'
 import { DEPENDENCY_KINDS, DEPENDENCY_STATES, type Dependency } from './dependency.mts'
 import { readImpact, type Impact } from './impact.mts'
 import { isRecord, oneOf, ReviewError, text, type Finding } from './finding.mts'
@@ -84,4 +85,22 @@ export function parseFix(record: Json, where: string): Pick<Finding, 'fix'> {
   if (typeof record.fix !== 'string') throw new ReviewError(`${where}.fix must be a string.`)
   const fix = record.fix.trim()
   return fix === '' ? {} : { fix }
+}
+
+/** The optional answers to other reviewers' threads; a malformed entry fails the input. */
+export function parseAnswers(raw: unknown): { answers?: Answer[] } {
+  if (raw === undefined) return {}
+  if (!Array.isArray(raw)) throw new ReviewError('answers must be an array.')
+  const answers = raw.slice(0, MAX_ANSWERS).map((entry: unknown, index) => {
+    const why: string[] = []
+    const answer = readAnswer(entry, why)
+    if (answer === undefined)
+      throw new ReviewError(`answers[${index}] is invalid: ${why.join(', ')}.`)
+    return answer
+  })
+  answers.forEach((answer, index) => {
+    if (answers.findIndex((other) => other.thread === answer.thread) !== index)
+      throw new ReviewError(`answers[${index}] repeats thread ${answer.thread}.`)
+  })
+  return answers.length === 0 ? {} : { answers }
 }

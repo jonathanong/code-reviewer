@@ -12,6 +12,7 @@ import {
   type PrepareIo,
   type PullTarget,
 } from '../review/index.mts'
+import { createGhAnswerIo, type AnswerIo } from '../review/answers-post.mts'
 import type { Exec } from '../review/benchmark/exec.mts'
 import { createTrackerIo } from '../tracker/io.mts'
 import type { TrackerIo } from '../tracker/types.mts'
@@ -53,6 +54,8 @@ export type ReviewDeps = {
   targetConfig(repo: string): Promise<TargetConfig>
   createIo(target: PullTarget): ReviewIo
   createLabelIo(target: PullTarget): LabelIo
+  /** Replies in review threads, as the identity that posts the review. */
+  createAnswerIo(target: PullTarget): AnswerIo
   createPrepareIo(target: PullTarget): PrepareIo
   /** Reads evidence guides from clones under `clones`, else `CODE_REVIEWER_CLONE_ROOT`. */
   guideReader(clones: string | undefined): GuideReader
@@ -139,6 +142,7 @@ export function createDefaultDeps(
         async () => (await repoSettings({ configs, targetConfig }, target.repo)).labels.approval,
       ),
     createLabelIo: (target) => createGhLabelIo(target, forTarget(target)),
+    createAnswerIo: (target) => createGhAnswerIo(target, forTarget(target)),
     createPrepareIo: (target) =>
       createGhPrepareIo(
         target,

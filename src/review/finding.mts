@@ -4,14 +4,17 @@ import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
 import type { Impact } from './impact.mts'
+import type { Answer } from './answers.mts'
 import {
   parseAdvice,
   parseDependency,
   parseFix,
   parseNotes,
   parsePrevent,
+  parseAnswers,
 } from './finding-extras.mts'
 import { PILLARS, pillarOf, type Pillar } from './pillar-name.mts'
+import { parseLocation } from './finding-location.mts'
 import { parseRaisedBy, type RaisedBy } from './raised-by.mts'
 
 export const SEVERITIES = ['blocking', 'high', 'medium', 'low'] as const
@@ -56,6 +59,8 @@ export type ReviewInput = {
   splitProposal?: string
   /** The verifier's judgment of the change's kind; shown in the class line, never part of the verdict. */
   impact?: Impact
+  /** Replies to other reviewers' open threads whose notes the code does not bear out. */
+  answers?: Answer[]
 }
 
 export class ReviewError extends Error {
@@ -85,32 +90,6 @@ export function text(record: Json, field: string, where: string): string {
     throw new ReviewError(`${where}.${field} must be a non-empty string.`)
   }
   return value
-}
-
-function positiveInt(value: unknown, field: string): number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
-    throw new ReviewError(`${field} must be a positive integer.`)
-  }
-  return value
-}
-
-function parseLocation(record: Json, where: string): Partial<Finding> {
-  if (record.path === undefined) {
-    if (record.line !== undefined) throw new ReviewError(`${where}.line needs a path.`)
-    return {}
-  }
-  const path = text(record, 'path', where)
-  if (path.includes('\0')) throw new ReviewError(`${where}.path is invalid.`)
-  if (record.line === undefined) return { path }
-  const line = positiveInt(record.line, `${where}.line`)
-  const side =
-    record.side === undefined ? 'RIGHT' : oneOf(['LEFT', 'RIGHT'], record.side, `${where}.side`)
-  if (record.startLine === undefined) return { path, line, side }
-  const startLine = positiveInt(record.startLine, `${where}.startLine`)
-  // Models often send a one-line range or reversed bounds; normalize instead of rejecting.
-  if (startLine === line) return { path, line, side }
-  if (startLine > line) return { path, line: startLine, side, startLine: line }
-  return { path, line, side, startLine }
 }
 
 function parseCredit(record: Json, where: string): Pick<Finding, 'raisedBy'> {
@@ -186,6 +165,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
     ...(notes.length === 0 ? {} : { notes }),
     ...(dependencies.length === 0 ? {} : { dependencies }),
     ...parseAdvice(raw),
+    ...parseAnswers(raw.answers),
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')

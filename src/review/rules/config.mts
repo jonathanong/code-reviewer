@@ -9,6 +9,7 @@ import {
   notObjectProblem,
   parseConfigText,
 } from './config-files.mts'
+import type { AnswersConfig } from './answers-parse.mts'
 import type { IssuesConfig } from '../../issues/config-parse.mts'
 import type { ModelConfig } from '../models.mts'
 import { consumesList } from './consumes-parse.mts'
@@ -55,10 +56,7 @@ export type RepoConfig = {
   consumes: Consumes[]
   labels?: Partial<LabelNames>
   checkRun?: CheckRunSettings
-  /**
-   * Machine config only: `true` lets the reviewed repository's own file set `evidence`,
-   * `references` and `rulePlugins`, so whoever can push to its default branch chooses them.
-   */
+  /** Machine config only: `true` lets the repository's own file set `evidence`, `references` and `rulePlugins`. */
   trustRepoConfig?: boolean
   /** Machine config, or the repository's own file when `trustRepoConfig` is on for it. */
   evidence?: EvidenceSource[]
@@ -68,11 +66,7 @@ export type RepoConfig = {
   references?: ReferenceSource[]
   /** Machine config only: `false` switches off the second check on an approval. */
   approvalCheck?: boolean
-  /**
-   * The plugins whose skills hold the shared rules, replacing the default list; machine config, or
-   * a trusted repository's own file. An enabled plugin loads its hooks too, and only an installed
-   * plugin loads.
-   */
+  /** The plugins whose skills hold the shared rules, replacing the default list; an enabled plugin loads its hooks too. */
   rulePlugins?: string[]
   /** Machine config only: it decides what the reviewer posts unattended. */
   run?: RunConfig
@@ -82,6 +76,8 @@ export type RepoConfig = {
   limits?: LimitsConfig
   /** Machine config only: it files issues in other repositories, so a reviewed repository cannot turn it on. */
   issues?: IssuesConfig
+  /** Machine config only: it replies in other reviewers' threads, so a reviewed repository cannot. */
+  answers?: AnswersConfig
   /** Built-in pillars to skip and extra pillars to run; a reviewed repository's own file may set it. */
   pillars?: PillarsConfig
   plan?: PlanConfig
@@ -109,6 +105,7 @@ const KEYS = new Set([
   'models',
   'limits',
   'issues',
+  'answers',
   'pillars',
   'plan',
 ])
