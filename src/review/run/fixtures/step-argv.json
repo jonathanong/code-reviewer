@@ -547,7 +547,7 @@
       "claude",
       [
         "-p",
-        "sha256:3acf9880a765bb0d5810a7f103c52929c8b34f1eaa386ada0481d2215db7108e",
+        "sha256:10a816af4fa11841b1f333574c050d8ab8f93ace00a2d4d11a34468edae6c11a",
         "--model",
         "opus",
         "--output-format",
@@ -623,7 +623,7 @@
       "claude",
       [
         "-p",
-        "sha256:9a6e479bf7bed2734f4b66051b42b6ccca7117c2d6b5ba2be50727fbd7825226",
+        "sha256:fb8a1c6b53f43385c0dc82576223f1fa5c4fffd088dda0ea87f17d7d45b69501",
         "--model",
         "opus",
         "--output-format",
@@ -699,7 +699,7 @@
       "claude",
       [
         "-p",
-        "sha256:813b47c26661db50589cfe6250bde96436609e67149e39e697a00c48048afd85",
+        "sha256:e81cac28697a6fa56236a2b1a8c1fe12db8b7bf343f67ed072be3fcb7bfd642e",
         "--model",
         "opus",
         "--output-format",
@@ -775,7 +775,7 @@
       "claude",
       [
         "-p",
-        "sha256:4ca13201d6abf8958b167bb2f1f40c2918bd6a5cd81ed47bb614697b236d76d9",
+        "sha256:95fb8a68300c456a77a5fda8c33dfaa96ac7731ccf8cee468edd0f1feea76371",
         "--model",
         "opus",
         "--output-format",
@@ -851,7 +851,7 @@
       "claude",
       [
         "-p",
-        "sha256:31e98d46867c49395a4005a3061adf8f95831d7e6bbb42640d4e9b3aa67eba7b",
+        "sha256:cf7f7e944da7bb7b28722f10dba5185f8c644125a6e19aab28f38e263170cbb8",
         "--model",
         "opus",
         "--output-format",
@@ -927,7 +927,7 @@
       "claude",
       [
         "-p",
-        "sha256:97c1cabcf7bbf6da56308aba0336f5dc0336aa5348ef618ca6c269707b345a7d",
+        "sha256:c59683ff95bc7da7d96d3857440b96aac22e2cf02c27bcc44f5ceb17ddc5a8ff",
         "--model",
         "opus",
         "--output-format",
@@ -1003,7 +1003,7 @@
       "claude",
       [
         "-p",
-        "sha256:953bc1f32d12fb8489077f65487e0dcbb2c4b7f5a05bc88d038eca2b68968361",
+        "sha256:0c7c50196e49add6ef186312c04dbc37d10904fb9128ee947f99052afb09c8a3",
         "--model",
         "opus",
         "--output-format",

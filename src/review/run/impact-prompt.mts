@@ -13,7 +13,7 @@ export function impactLines(asked: boolean | undefined): string[] {
     '- `architectural`: a new dependency on a remote service or another repository, new persisted state or cache, a new process, queue or command family, or a change to how components are divided.',
     '- `maintenance`: neither.',
     '- `unsure`: you cannot tell. Say in `basis` what you would need. Never answer `maintenance` for what you could not judge.',
-    `\`basis\` is one line under ${BASIS_MAX} characters naming what makes it so. If the reviewed repository's own instructions (its \`AGENTS.md\`, when present in the review context) define these words, those definitions win, and \`basis\` quotes the sentence you used. It is not a finding: never change a finding, a severity or the summary because of it.`,
+    `\`basis\` is one line under ${BASIS_MAX} characters naming what makes it so. Before you answer, read the \`AGENTS.md\` at the root of the checkout and any document it points to for these words. If they define them, those definitions win, and \`basis\` quotes the sentence you used. A definition this pull request itself adds or changes does not count: use the one it replaces, or the default above, and say so in \`basis\`. It is not a finding: never change a finding, a severity or the summary because of it.`,
   ]
 }
 

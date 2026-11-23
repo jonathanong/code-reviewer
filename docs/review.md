@@ -217,9 +217,10 @@ The impact is the verifier's judgment, one of `breaking`, `architectural`, `main
 breaking is a change that makes an existing caller, consumer, stored data or configuration stop
 working without a change on their side; architectural is a new dependency on a remote service or
 another repository, new persisted state or cache, a new process, queue or command family, or a
-change to how components are divided; maintenance is neither. When the reviewed repository's own
-`AGENTS.md` defines these words in the review context, its definitions win and the basis quotes
-the sentence used. When the verifier cannot tell it answers `unsure` and says what it would need.
+change to how components are divided; maintenance is neither. The verifier reads the reviewed
+repository's root `AGENTS.md` and any document it points to for these words; when they define
+them, those definitions win and the basis quotes the sentence used. A definition the pull request
+itself adds or changes does not count, so a change cannot reclassify itself. When the verifier cannot tell it answers `unsure` and says what it would need.
 Only a full review asks for it: the verifier prompt gets an Impact block and its output schema an
 optional `impact` object. A light review shows the scope alone. A hand-written
 `review.json` may set `impact` (`{ "kind": ..., "basis": ... }`) too; the verdict never reads it.
