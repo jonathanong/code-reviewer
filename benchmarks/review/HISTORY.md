@@ -2,6 +2,29 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23: the answer cases, three attempts per arm with Sonnet as the verifier
+
+Commit 3effb46. Verifier `claude-sonnet-5-5`, judge Sonnet, checker Opus, three attempts per
+arm, one run at a time, twelve runs, $1.11 for the verifier.
+
+| Case                       | With rules | Without rules | Cost per run, with / without |
+| -------------------------- | ---------- | ------------- | ---------------------------- |
+| `answers-like-row-lock`    | 3 of 3     | 0 of 3        | $0.12 / $0.07                |
+| `answers-floating-promise` | 3 of 3     | 3 of 3        | $0.11 / $0.07                |
+
+- **`answers-like-row-lock` separates the arms on the citation only.** Without rules all three
+  attempts still answered the note, with the same reasoning (append-only votes, the latest row
+  wins) and a code location in place of a rule; the production checks kept those answers. The
+  case expects the answer to cite `jong-skills:postgres-locking`, so they fail. The rule skill
+  supplies the citation, not the judgment.
+- **`answers-floating-promise` is a ceiling case.** Both arms left the valid note alone and raised
+  the defect as a correctness finding at `high` in every attempt. It is kept as the check that a
+  valid note is not answered.
+- **Sonnet is enough for this step on these two cases.** Three of three on both, at about 40% of
+  the Opus cost of the first pilot. Three attempts cannot resolve a failure rate under about one
+  in three, and two synthetic cases say nothing about a long or ambiguous thread.
+- Supersedes the one-attempt pilots below for these cases.
+
 ## 2026-11-23 (pilot): the answer cases without rules, and with Sonnet as the verifier
 
 Commit 2de09da. Judge Sonnet, checker Opus, one attempt per case, one case per run. A pilot; one
