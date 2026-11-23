@@ -94,6 +94,10 @@ judged by Sonnet, $25.14):
 - It confirmed all 5 other high or blocking findings it was asked to check, so this run does not
   show whether it would refute a wrong one.
 - It costs about $0.24 a fixture case and $0.43 a mined case, more than a pillar run.
+- Not in the table: `congruence-test-only-edits-source` and `congruence-test-only-with-helper`
+  check a title and description that say test-only against the changed files. They were added
+  on 2026-11-22 and only piloted (1 attempt); the positive is a ceiling case, caught with and
+  without the scope bullet it was written for.
 
 Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3 history cases;
 2026-11-22): is what a case depends on in the context a review builds?

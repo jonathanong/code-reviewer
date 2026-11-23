@@ -2,6 +2,37 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-22: two congruence cases for a test-only claim; pilot shows a ceiling
+
+Pilot, 1 attempt per arm, so no rate is quoted. On `801dc86` plus this change. `bench-verifier` on
+the two new cases, with `--findings-from` a `security` pillar run (Sonnet, $0.10) that found
+nothing. Arms: the current `congruence.md`, and a `--prompts` copy holding the file as it was
+before the scope bullet of the entry below.
+
+- **Cases added (`synthetic.json`):** `congruence-test-only-edits-source` (positive: title and
+  description say test-only, one line of `src/backoff.mts` changes behavior) and
+  `congruence-test-only-with-helper` (negative: the same claim, and the only file outside a test
+  file is a test helper the description names).
+- **Runner:** `bench-verifier` now gives a case that expects a `congruence` finding an empty
+  input when no pillar result exists. No pillar can run such a case, and before this it was
+  skipped. A negative still needs a pillar result.
+
+| Verifier model | Judge  | With the bullet        | Before the bullet      | Cost per case  |
+| -------------- | ------ | ---------------------- | ---------------------- | -------------- |
+| Opus 5.5       | Sonnet | caught, negative clean | caught, negative clean | $0.26 to $0.30 |
+| Sonnet 5.5     | Opus   | caught, negative clean | caught, negative clean | $0.11 to $0.13 |
+| Haiku 5.5      | Opus   | caught, negative clean | caught, negative clean | $0.01          |
+
+- **What it showed:** the positive is a ceiling case. The text before the bullet ("nothing
+  significant is unstated") already catches it on every model, so the case shows the bullet does
+  no harm, not that it helps. Every arm rated it `medium` on `src/backoff.mts`.
+- **Not shown:** a rate (one attempt), and anything about a real pull request. Haiku passing two
+  small fixtures says nothing about the verifier's other work (verifying, merging, summarizing).
+- **After the pilot:** the fixture files were run through the formatter (quote style and line
+  wrapping only).
+- **Owed:** a case the text before the bullet misses, if one exists; otherwise the bullet is
+  a statement of what the verifier already does.
+
 ## 2026-11-22: congruence checks what the change says it is limited to (no run)
 
 No run; nothing measured. `skills/review/references/pillars/congruence.md` gets one scope bullet:
@@ -11,7 +42,7 @@ and its prompt and schema are unchanged.
 
 - **Not comparable:** the stored `bench-verifier` rows, already stale for the two entries below.
 - **No case:** no stored case has a title that the files contradict. One is owed before a rate is
-  quoted for this bullet.
+  quoted for this bullet. (Two were added in the entry above.)
 
 ## 2026-11-22: the impact block reads linked definitions and ignores ones the change edits (no run)
 
