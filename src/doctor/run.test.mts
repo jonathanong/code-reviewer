@@ -41,6 +41,7 @@ describe('runDoctor', () => {
       'harness:claude',
       'harness:grok',
       'harness:codex',
+      'harness:agy',
       'tracker-dir',
       'tmp-dir',
       'clone-root',

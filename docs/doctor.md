@@ -26,6 +26,7 @@ the default rule plugins are checked. `--offline` makes no network call.
 | `harness:claude`          | runs                                                  |                                              | not on PATH or does not run                |
 | `harness:grok`            | runs, or absent (informational)                       |                                              |                                            |
 | `harness:codex`           | runs, or absent (informational)                       |                                              |                                            |
+| `harness:agy`             | runs, or absent (informational)                       |                                              |                                            |
 | `tracker-dir`, `tmp-dir`  | writable, or missing under a writable parent          |                                              | not writable, not a directory              |
 | `clone-root`              | unset, or a directory (with `--repo`: says if cloned) | set but not a directory                      |                                            |
 

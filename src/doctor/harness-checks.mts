@@ -1,3 +1,4 @@
+import { harness as agy } from '../harness/agy.mts'
 import { harness as claude } from '../harness/claude.mts'
 import { harness as codex } from '../harness/codex.mts'
 import { harness as grok } from '../harness/grok.mts'
@@ -5,7 +6,7 @@ import { missingWhy, probeBinary } from './probe.mts'
 import type { Check, DoctorIo } from './types.mts'
 
 /** The adapters in `src/harness/`; each runs the binary named like itself. */
-const ADAPTERS = [claude, grok, codex]
+const ADAPTERS = [claude, grok, codex, agy]
 
 export function harnessChecks(io: DoctorIo): Promise<Check[]> {
   return Promise.all(
