@@ -18,6 +18,20 @@ const ANSWER_KEYS = [
 const count = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
+const sum = (a: number | null, b: number | null) =>
+  a === null && b === null ? null : (a ?? 0) + (b ?? 0)
+
+/** The actions headless mode auto-denied, as `Bash` or `command`, from `denied_actions`. */
+function deniedActions(parsed: Record<string, unknown>): string[] {
+  const { denied_actions: denied } = parsed
+  if (!Array.isArray(denied)) return []
+  return denied.map((entry: unknown) => {
+    if (!isObject(entry)) return 'an action'
+    const name = entry.display_name ?? entry.action
+    return typeof name === 'string' ? name : 'an action'
+  })
+}
+
 function parseObject(stdout: string): Record<string, unknown> | undefined {
   try {
     const parsed: unknown = JSON.parse(stdout)
@@ -57,8 +71,8 @@ function parseAgyUsage(parsed: Record<string, unknown>): Usage {
     turns: count(parsed.num_turns),
     durationMs: null,
     inputTokens: count(tokens.input_tokens),
-    outputTokens: count(tokens.output_tokens),
-    cacheReadTokens: count(tokens.cache_read_input_tokens),
+    outputTokens: sum(count(tokens.output_tokens), count(tokens.thinking_tokens)),
+    cacheReadTokens: count(tokens.cache_read_tokens),
     cacheCreationTokens: count(tokens.cache_creation_input_tokens),
     byModel: {},
   }
@@ -75,8 +89,15 @@ export function readAgyResult(stdout: string, what: string): HarnessResult {
   const message = errorMessage(parsed)
   if (message !== undefined) throw new ReviewError(`${what} failed: ${message}`)
   const usage = parseAgyUsage(parsed)
+  const structured = structuredFrom(parsed)
+  const denied = deniedActions(parsed)
+  if (structured === undefined && denied.length > 0) {
+    throw new ReviewError(
+      `${what} failed: agy denied ${denied.join(', ')}: headless mode cannot approve it.`,
+    )
+  }
   return {
-    structured: structuredFrom(parsed),
+    structured,
     skills: [],
     reads: [],
     searches: [],

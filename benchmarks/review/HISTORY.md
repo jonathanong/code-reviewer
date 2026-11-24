@@ -2,6 +2,19 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: first agy run, and what the adapter now does with it
+
+- **Changed**, `src/harness/agy*.mts`, no pillar prompt or schema: the adapter appends "Use only
+  your file reading and search tools; do not run shell commands." to every agy prompt, stops
+  passing `--mode plan` (it has no effect with `--disable-slash-commands`), reports
+  `denied_actions` when agy returns no answer, and reads `cache_read_tokens` and
+  `thinking_tokens` from `usage`.
+- **First real run**, `gemini-4-hydrogen-medium`, `correctness` on `options-forwarded-to-helper`:
+  the model tried a shell command, headless agy auto-denied it and ended the turn with
+  `"response":""`, and the bench recorded only "Pillar run returned no structured findings." With
+  the shell instruction the same run returned `{"findings":[]}` in 18 s, correct for that case.
+- **Not comparable**: any agy row from before this change. None were measured, so no row changes.
+
 ## 2026-11-24: known miss `no-mistakes-4024-7a3dc0a`, new reports on arrays that cannot be empty
 
 - **Case added**, focus-only: `no-mistakes-4024-7a3dc0a`, one requester point from the live review

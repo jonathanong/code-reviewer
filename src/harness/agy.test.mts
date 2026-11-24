@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { ExecError } from '../review/benchmark/exec.mts'
 import { ReviewError } from '../review/finding.mts'
+import { AGY_TOOL_NOTE } from './agy-args.mts'
 import { harness } from './agy.mts'
 import { NO_TOOLS, READ_ONLY, type HarnessRun } from './types.mts'
 
@@ -28,15 +29,13 @@ const okExec = () =>
 
 const BASE = [
   '-p',
-  'P',
+  `P\n\n${AGY_TOOL_NOTE}`,
   '--model',
   'm1',
   '--output-format',
   'json',
   '--json-schema',
   '{"type":"object"}',
-  '--mode',
-  'plan',
   '--sandbox',
   '--disable-slash-commands',
 ]
@@ -109,6 +108,30 @@ describe('agy harness run', () => {
       expect(result.usage.inputTokens).toBeNull()
     },
   )
+
+  it('reports a denied action when there is no answer, with the real agy output shape', async () => {
+    const stdout = JSON.stringify({
+      status: 'SUCCESS',
+      response: '',
+      denied_actions: [{ action: 'command', display_name: 'Bash' }, {}, 'x'],
+    })
+    await expect(run(stdout)).rejects.toThrow(
+      'Step failed: agy denied Bash, an action, an action: headless mode cannot approve it.',
+    )
+    expect(
+      (await run('{"structured_output":{"a":1},"denied_actions":[{"action":"c"}]}')).structured,
+    ).toEqual({ a: 1 })
+    expect((await run('{"denied_actions":[]}')).structured).toBeUndefined()
+    expect((await run('{"denied_actions":"x"}')).structured).toBeUndefined()
+  })
+
+  it('reads agy usage keys, adding thinking tokens to output', async () => {
+    const usage = { input_tokens: 5, output_tokens: 2, thinking_tokens: 3, cache_read_tokens: 7 }
+    const result = await run(JSON.stringify({ structured_output: {}, usage }))
+    expect(result.usage).toMatchObject({ inputTokens: 5, outputTokens: 5, cacheReadTokens: 7 })
+    const thinkingOnly = await run(JSON.stringify({ usage: { thinking_tokens: 3 } }))
+    expect(thinkingOnly.usage.outputTokens).toBe(3)
+  })
 
   it.each(['', 'not json', '[1]', 'null'])('rejects malformed stdout %j', async (stdout) => {
     await expect(run(stdout)).rejects.toThrow(ReviewError)

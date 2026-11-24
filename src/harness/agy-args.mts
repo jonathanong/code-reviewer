@@ -23,25 +23,28 @@ export function assertAgyCan(request: HarnessRun): void {
   }
 }
 
+/** Appended to every prompt: agy has no tool allowlist, and a shell attempt ends its turn empty. */
+export const AGY_TOOL_NOTE =
+  'Use only your file reading and search tools; do not run shell commands.'
+
 /**
- * The `agy -p` argument list for one step. `--mode plan` is the most restrictive of agy's modes
- * (`accept-edits` and `auto` let it edit or run unprompted) and `--sandbox` restricts its
- * terminal. Neither `--dangerously-skip-permissions` nor `--mode auto` is ever passed, and
- * `--effort` takes the step's effort, which is never `max`.
+ * The `agy -p` argument list for one step. What stops edits and commands is headless mode, which
+ * cannot prompt and auto-denies any `command` or `edit` permission; `--sandbox` restricts its
+ * terminal. `--mode plan` is not passed: it has no effect while `--disable-slash-commands` is
+ * set (agy warns so on stderr). Neither `--dangerously-skip-permissions` nor `--mode auto` is
+ * ever passed, and `--effort` takes the step's effort, which is never `max`.
  */
 export function agyArgs(request: HarnessRun): string[] {
   const addDirs = request.addDirs ?? []
   return [
     '-p',
-    request.prompt,
+    `${request.prompt}\n\n${AGY_TOOL_NOTE}`,
     '--model',
     request.model,
     '--output-format',
     'json',
     '--json-schema',
     JSON.stringify(request.schema),
-    '--mode',
-    'plan',
     '--sandbox',
     '--disable-slash-commands',
     ...(request.effort === undefined ? [] : ['--effort', request.effort]),
