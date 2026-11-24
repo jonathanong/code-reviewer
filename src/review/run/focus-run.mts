@@ -7,6 +7,8 @@ import { attemptPillar } from './pillar-attempts.mts'
 import { pillarCapabilities } from './pillar-capabilities.mts'
 import { parsePillarOutput, type PillarOutput } from './pillar-output.mts'
 import type { RunDir } from './pillar-prompt.mts'
+import { buildFocusFacts } from './focus-facts.mts'
+import { renderFocusFacts } from './focus-facts-render.mts'
 import { buildFocusPrompt, checkedFocus, FOCUS_OUTPUT_SCHEMA, unchecked } from './focus-prompt.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS, type PillarResult } from './types.mts'
 
@@ -15,6 +17,8 @@ export type FocusInput = {
   points: readonly string[]
   tree: string
   run: RunDir
+  baseSha?: string | undefined
+  headSha?: string | undefined
   mode: 'light' | 'full'
   contract: string
   settings?: object
@@ -35,10 +39,20 @@ export type FocusRun = { result: PillarResult; answers: FocusAnswer[] }
  */
 export async function runFocus(input: FocusInput): Promise<FocusRun> {
   const { points } = input
+  const facts = renderFocusFacts(
+    await buildFocusFacts({
+      tree: input.tree,
+      out: input.run.out,
+      baseSha: input.baseSha,
+      headSha: input.headSha,
+      exec: input.exec,
+    }),
+  )
   const request: StepRequest = {
     prompt: buildFocusPrompt(
       { contract: input.contract, run: input.run, contextFile: input.contextFile, skills: [] },
       points,
+      facts,
     ),
     label: 'Focus run',
     maxTurns: REVIEW_MAX_TURNS,

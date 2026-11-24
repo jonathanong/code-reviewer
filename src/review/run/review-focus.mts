@@ -13,6 +13,8 @@ export type PillarsAndFocus = {
   extraPillars: string[]
 }
 
+export type FocusRange = { baseSha?: string | undefined; headSha?: string | undefined }
+
 /**
  * Runs the planned pillars and, when the requester gave points, the focus step beside them. The
  * focus step runs whatever the plan dispatched, and its points reach no one else: the pillars read
@@ -21,11 +23,14 @@ export type PillarsAndFocus = {
 export async function runPillarsAndFocus(
   input: PillarsInput,
   points: readonly string[] | undefined,
+  range?: FocusRange,
 ): Promise<PillarsAndFocus> {
   const extra = (input.extra ?? []).map((entry) => entry.name as string)
   const [results, focus] = await Promise.all([
     runPillars(input),
-    points === undefined ? undefined : runFocus({ ...input, points }),
+    points === undefined
+      ? undefined
+      : runFocus({ ...input, points, baseSha: range?.baseSha, headSha: range?.headSha }),
   ])
   if (focus === undefined) return { results, judged: results, extraPillars: extra }
   return {

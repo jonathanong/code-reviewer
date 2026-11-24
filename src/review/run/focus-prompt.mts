@@ -77,7 +77,7 @@ export const unchecked = (points: readonly string[], why: string): FocusAnswer[]
   points.map((point) => ({ point, status: 'not_checked', basis: why }))
 
 /** The points as the step is shown them: one array, fenced, each an untrusted claim. */
-export function focusLines(points: readonly string[]): string[] {
+export function focusLines(points: readonly string[], facts?: string): string[] {
   const items = points.map((point, index) => ({ index, point }))
   return [
     '# Requested checks',
@@ -87,6 +87,12 @@ export function focusLines(points: readonly string[]): string[] {
     '- `holds`: you checked the point and found nothing wrong on it. Cite the `path` (and `line`) that shows it and give a one-sentence `basis`. A `holds` with no `path` is recorded as not checked.',
     '- `does_not_hold`: you found a problem on this point that deserves a finding. Give a one-sentence `basis` with the `path` and `line`, and also add a finding in `findings` for what is wrong, in the normal finding shape and held to the same bar as any pillar. The finding must cite the same `path`: a `does_not_hold` with no `path`, or whose `path` no kept finding shares, is recorded as not checked.',
     '- `not_checked`: you could not tell, or the point is not about this change. Say why in the `basis`.',
+    ...(facts === undefined
+      ? []
+      : [
+          'The `## Change facts` block below is computed mechanically from local git and the pull request metadata, not estimated. Any point that these facts decide must be answered `holds` or `does_not_hold` from them, citing the fact in `basis`.',
+          facts,
+        ]),
     '```json',
     JSON.stringify(items, null, 2),
     '```',
@@ -97,6 +103,7 @@ export function focusLines(points: readonly string[]): string[] {
 export function buildFocusPrompt(
   input: Omit<PillarPromptInput, 'pillarText'>,
   points: readonly string[],
+  facts?: string,
 ): string {
-  return buildPillarRunPrompt({ ...input, pillarText: focusLines(points).join('\n\n') })
+  return buildPillarRunPrompt({ ...input, pillarText: focusLines(points, facts).join('\n\n') })
 }

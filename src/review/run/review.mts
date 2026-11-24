@@ -81,6 +81,7 @@ async function review(
       exec: steps.exec,
     },
     options.focus,
+    prepared,
   )
   // A pillar the ceiling kept from starting looks like a failed one, so stop before judging them.
   throwIfStopped(models.watch)
@@ -169,7 +170,6 @@ async function review(
     dependencies,
     ...reportFields(context),
   })
-  const report = writeReportFiles(out, data)
   return {
     ok: true,
     summary: reviewSummary({
@@ -177,7 +177,7 @@ async function review(
       verified,
       questions,
       check: second.check,
-      report,
+      report: writeReportFiles(out, data),
       out,
       headSha,
     }),

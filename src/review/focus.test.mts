@@ -44,6 +44,11 @@ describe('parseFocus', () => {
     expect(parseFocus(many).focus).toHaveLength(20)
   })
 
+  it('slices long points by code points without splitting surrogate pairs', () => {
+    const parsed = parseFocus([{ point: '🎉'.repeat(501), status: 'holds', basis: 'b' }])
+    expect(parsed.focus?.[0]?.point).toBe('🎉'.repeat(500))
+  })
+
   it.each([
     ['not an array', {}, 'focus must be an array.'],
     ['not an object', ['x'], 'focus[0] must be an object.'],

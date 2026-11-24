@@ -26,6 +26,13 @@ export const isSafePath = (path: string): boolean =>
 export const MAX_FOCUS_POINTS = 20
 export const MAX_FOCUS_CHARS = 500
 
+/** Counts Unicode code points, not UTF-16 code units or UTF-8 bytes. */
+export const charLength = (value: string): number => Array.from(value).length
+
+/** Slices by Unicode code points so surrogate pairs are never split. */
+export const sliceChars = (value: string, max: number): string =>
+  Array.from(value).slice(0, max).join('')
+
 /** The optional `focus` of a `review.json`; a malformed entry fails the input. */
 export function parseFocus(raw: unknown): { focus?: FocusAnswer[] } {
   if (raw === undefined) return {}
@@ -41,7 +48,7 @@ export function parseFocus(raw: unknown): { focus?: FocusAnswer[] } {
       throw new ReviewError(`${where}.line must be a positive integer.`)
     }
     return {
-      point: normalizeSpace(text(entry, 'point', where)).slice(0, MAX_FOCUS_CHARS),
+      point: sliceChars(normalizeSpace(text(entry, 'point', where)), MAX_FOCUS_CHARS),
       status: oneOf(FOCUS_STATUSES, entry.status, `${where}.status`),
       basis: normalizeSpace(text(entry, 'basis', where)),
       ...(path === undefined ? {} : { path: (path as string).trim() }),
