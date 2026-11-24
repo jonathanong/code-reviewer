@@ -47,6 +47,13 @@ Newest first. Every measured run and every change to what is measured gets an en
   cases 7 of 7 points, `vouchington-6282` 1 of 1, `vouchington-6254` 1 of 1 with no finding.
 - **`no-mistakes-4006`** (a point about a rule another open pull request also adds): 0 of 1,
   `not_checked`, before any change. The step cannot see another pull request.
+- **`no-mistakes-4006` with named pull requests** (the entry above; working tree on 190ccdf, the
+  other head pinned by `focusRefs`): 3 of 3 `does_not_hold`, each citing files both pull requests
+  add, about $0.47. The 0 of 1 before is one attempt, but the step had no way to see the other pull
+  request, so it is a structural miss and not a rate.
+- **`no-mistakes-3963`**, correctness pillar, Sonnet 5.5, judge Opus 5.5, one attempt per arm: 0 of 1
+  with selected skills and 0 of 1 with no rules, no findings in either, about $0.38. The miss
+  reproduces and no skill states the rule, so nothing here fixes it yet.
 - **What it showed.** The miss was a multi-point effect, not a single-point one, and one sentence
   moved it from 1 of 3 to 3 of 3 on one case. Three attempts cannot resolve whether the change
   makes the target point on that case less stable.
