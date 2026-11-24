@@ -42,6 +42,11 @@ Mined cases (8 real pull requests from `cases.json`):
 - One `vouchington-1146` run had no skills: the Haiku selection call failed, the review ran
   without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).
 - At 3 attempts a difference of one catch is noise.
+- Not in the table, mined from misses on no-mistakes reviews (see `HISTORY.md`): `no-mistakes-4008`
+  (positive, correctness and focus: a failed CI run accepted as the diff base, asked among five
+  requester points), `no-mistakes-3963` (positive, correctness: a new lint rule that reports nothing
+  for an indirect import its fixtures never use) and `no-mistakes-4006` (positive, focus: a point
+  about a rule that another open pull request also adds).
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the

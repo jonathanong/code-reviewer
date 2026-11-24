@@ -2,6 +2,39 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: three known misses from no-mistakes reviews, and a focus rule for multi-part points
+
+- **Cases added** to `cases.json`, each with `body` as the description read at the reviewed head:
+  `no-mistakes-4008`, `no-mistakes-3963`, `no-mistakes-4006`. The `expectedSkills` tags on the
+  first two (`github-actions-rules`, `static-analysis-checklist`) are loose fits: neither skill
+  states the missed rule.
+- **Prompt change.** The focus prompt gains one sentence: a point holds only when every part of it
+  holds, and when the code does what a point says must not happen the status is `does_not_hold`
+  even if a reason for it comes to mind. Every `bench-focus` row before this entry is not
+  comparable.
+- **Run.** Working tree on de37131, `bench-focus`, Sonnet 5.5, no judge, one case at a time, about
+  $2.00 in total.
+- **`no-mistakes-4008`** (the push diff base accepted a run that concluded `failure`; point "A
+  failed or cancelled previous run is not used as completed in a way that skips the paths of its
+  commits", expected `does_not_hold`):
+  - Asked alone, before the change: 1 of 1. The live miss did not reproduce.
+  - Asked with the other four points of the live run, in the same order, before the change: 1 of 3.
+    Both misses noted that cancelled runs are excluded and excused the failed run.
+  - Same five points after the change: 3 of 3.
+  - Only that point's rate is quoted. The first point (the fallback never narrows the diff) is
+    labelled `holds` from the live answer, and one attempt after the change answered
+    `does_not_hold` with a real observation (the ast-grep step falls back to `origin/main`, which
+    on a push to main is the head). Its label is unsettled. The target point on this case answered
+    `holds`, `does_not_hold` and `not_checked` across the three attempts after the change, and
+    `holds` in all three before.
+- **Cases the change does not target**, one attempt each after the change: the six synthetic focus
+  cases 7 of 7 points, `vouchington-6282` 1 of 1, `vouchington-6254` 1 of 1 with no finding.
+- **`no-mistakes-4006`** (a point about a rule another open pull request also adds): 0 of 1,
+  `not_checked`, before any change. The step cannot see another pull request.
+- **What it showed.** The miss was a multi-point effect, not a single-point one, and one sentence
+  moved it from 1 of 3 to 3 of 3 on one case. Three attempts cannot resolve whether the change
+  makes the target point on that case less stable.
+
 ## 2026-11-24: pilot of the `unneeded-concurrency-guard` target
 
 - **Run.** Working tree of the targeted-checks change (the entry below), focus and selection steps
