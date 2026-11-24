@@ -2,9 +2,14 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
-## 2026-11-24 (no run): congruence checks that behavior changes show one real run
+## 2026-11-24 (pilot): congruence checks that behavior changes show one real run
 
-Not measured; no model was called.
+Pilot of `congruence-missing-real-run` with `bench-verifier` (Opus 5.5 verifier, Sonnet judge, one
+attempt per arm, empty pillar findings): 1 of 1 with this change's prompts, 0 of 1 with the prompts
+on `main` (the control returned no finding). $0.26 per run. A first pair of runs on an earlier
+fixture gave the same 1 of 1 and 0 of 1, but the control reported a rounding bug the fixture did not
+intend (`1m 60s`); the fixture was corrected and both arms were run again. One attempt per arm shows
+the grader works and the control misses; it is not a rate.
 
 - **What changed.** `skills/review/references/pillars/congruence.md` gains a "One real run" section
   telling the verifier, when a change alters behavior a user or caller can see, to load

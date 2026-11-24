@@ -100,8 +100,8 @@ judged by Sonnet, $25.14):
   without the scope bullet it was written for.
 - Not in the table: `congruence-missing-real-run` checks that a user-visible behavior change whose
   description is a checklist with no realistic input or output raises one `low` congruence finding
-  under `jong-skills:pr-description`'s "Show one real run" rule. Added on 2026-11-24; not measured
-  yet.
+  under `jong-skills:pr-description`'s "Show one real run" rule. Added on 2026-11-24; piloted once per
+  arm (1 of 1 with the rule, 0 of 1 without), see `HISTORY.md`.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
   alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of
