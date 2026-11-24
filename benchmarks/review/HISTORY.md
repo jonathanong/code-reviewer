@@ -2,6 +2,32 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (pilot): a race finding must show the race is reachable
+
+Two one-attempt pilots of `vouchington-6282` on the `correctness` pillar (Sonnet 5.5, Opus judge,
+`--select`, $0.18 and $0.16): 0 of 1 both times. Neither run searched for callers, opened
+`backend/queues/psql/enqueues/schedules.mts` or `config.mts`, or loaded
+`jong-skills:postgres-locking`; each read the diff and two changed files and returned no finding.
+The second pilot used the guard sentence as it is committed (find every caller of the guarded code);
+the first used a weaker wording. The case stays as a known miss: the prompt alone does not make the
+pillar trace how a job is enqueued. No control arm and no three-attempt run were made, so no rate is
+quoted. `vouchington-6254` was not run.
+
+- **What changed.** `skills/review/references/pillars/correctness.md` now requires every race
+  finding to name both overlapping entry points (file and line each) and explain why they can
+  overlap after checking existing serialisation (queue ordering or group key with concurrency 1,
+  fixed job id or dedupe key, single schedule, unique constraint, or existing lock); an unreachable
+  overlap is not a finding, and for a change that adds a guard against concurrent runs the pillar
+  is told to find every caller and report the guard as unneeded when none can overlap.
+  `skills/review/references/verifier.md` now drops any race finding that omits both entry points or
+  whose overlap the code already serialises. Added two mined cases to `benchmarks/review/cases.json`
+  (not yet measured): `vouchington-6282` (positive, correctness: unneeded compare-and-set guard on a
+  concurrency-1 cleanup queue; `expectedSkills`: `jong-skills:postgres-locking`, `expectedReads`:
+  `backend/queues/psql/enqueues/schedules.mts` and `backend/queues/psql/config.mts`) and
+  `vouchington-6254` (negative: removing redundant account cleanup prelocks on the same queue).
+- **Comparability.** Correctness-pillar and verifier rows recorded before this change are not
+  comparable with runs after it.
+
 ## 2026-11-24 (no run): deterministic change facts in the focus step prompt
 
 Not measured; no model was called.
