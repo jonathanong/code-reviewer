@@ -729,12 +729,17 @@
       }
     ],
     "expectedSkills": ["jong-skills:static-analysis-checklist"],
-    "expectedTargets": ["untraced-name-passes"],
+    "expectedTargets": ["clean-code-newly-reports", "untraced-name-passes"],
     "focus": [
       {
         "target": "untraced-name-passes",
         "expectedStatus": "does_not_hold",
         "reason": "A spec that gets its test binding from a local wrapper module is treated as clean: the rule reports nothing and does not say the binding was unresolved."
+      },
+      {
+        "target": "clean-code-newly-reports",
+        "expectedStatus": "holds",
+        "reason": "The only existing rule whose reports change is the scroll-pagination rule, and its new sentinel reports run only when `sentinelLocatorNames` or `sentinelTestIds` is set; both default to empty and the description names them as opt-in."
       }
     ]
   },
