@@ -1026,7 +1026,7 @@
         "point": "Code that was clean before does not newly report: no finding appears at this head that the base branch does not report, except cases the description names and shows to be real.",
         "expectedStatus": "does_not_hold",
         "reason": "A loop that resets and refills an array, and a while : loop that fills one, newly report an array that cannot be empty; the description names neither.",
-        "basisPattern": "invalidate|reset|refill|emptying write|emptied|while (:|true)|runs_once|always runs|never empty|cannot be empty"
+        "basisPattern": "invalidate|refill|while (:|true)|runs_once|at least once|unconditional(ly)? loop|always runs|never empty|cannot be empty"
       }
     ]
   }

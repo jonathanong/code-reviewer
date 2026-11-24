@@ -19,6 +19,11 @@ Newest first. Every measured run and every change to what is measured gets an en
 - **Measured**, Sonnet 5.5, default mode, three attempts, same session: 0 of 1 point each time
   ($0.18, $0.15, $0.16). Every answer was `holds`, reasoned from the fixtures and the
   description's before and after comparison; none read the loop handling.
+- **Basis pattern.** It accepts the reset-and-refill shape (`invalidate`, `refill`) and the
+  always-entered loop (`while :`, `runs_once`, "at least once", "unconditional loop"). It does
+  not accept a bare "reset" or "emptied", which also describe `loop-conditional-append.sh`, a
+  report the description names as real. The three measured answers were `holds`, so the pattern
+  did not decide any of them.
 
 ## 2026-11-24: known miss `no-mistakes-3973-e0c9a77`, the focus step against the approval check
 
