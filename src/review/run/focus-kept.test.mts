@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Finding } from '../finding.mts'
 import { FOCUS_PILLAR, type FocusAnswer } from '../focus.mts'
-import { keptFocus } from './focus-kept.mts'
+import { focusVerifierLines, keptFocus } from './focus-kept.mts'
 
 const finding = (pillar: Finding['pillar'], path?: string): Finding => ({
   pillar,
@@ -59,5 +59,53 @@ describe('keptFocus', () => {
     ])
     expect(result?.[2]).toBe(holds)
     expect(result?.[3]).toBe(unchecked)
+  })
+
+  it('appends the verifier drop reason for the dropped focus finding when one was given', () => {
+    const inputs = [
+      finding('rules', 'a.ts'),
+      finding(FOCUS_PILLAR, 'a.ts'),
+      finding(FOCUS_PILLAR, 'b.ts'),
+    ]
+    const dropped = new Map<number, string>([[1, 'Handled by caller validation.']])
+    expect(keptFocus([fails('p', 'a.ts'), fails('q', 'b.ts')], [], inputs, dropped)).toEqual([
+      {
+        ...fails('p', 'a.ts'),
+        status: 'not_checked',
+        basis:
+          'Raised, but the verifier kept no finding: It does not. Reason dropped: Handled by caller validation.',
+      },
+      {
+        ...fails('q', 'b.ts'),
+        status: 'not_checked',
+        basis: 'Raised, but the verifier kept no finding: It does not.',
+      },
+    ])
+  })
+})
+
+describe('focusVerifierLines', () => {
+  it('returns nothing without focus answers', () => {
+    expect(focusVerifierLines(undefined, [])).toEqual([])
+    expect(focusVerifierLines([], [])).toEqual([])
+  })
+
+  it('lists focus outcomes and candidate focus finding indexes', () => {
+    const withCandidate = focusVerifierLines(
+      [fails('p', 'a.ts'), { point: 'u', status: 'not_checked', basis: 'Unclear.' }],
+      [finding('rules', 'a.ts'), finding(FOCUS_PILLAR, 'a.ts')],
+    ).join('\n\n')
+    expect(withCandidate).toContain('## Requested focus checks')
+    expect(withCandidate).toContain('index 1.')
+    expect(withCandidate).toContain('"point": "p"')
+    expect(withCandidate).toContain('"line": 3')
+
+    const withoutCandidate = focusVerifierLines(
+      [{ point: 'h', status: 'holds', basis: 'Yes.', path: 'a.ts' }],
+      [finding('rules', 'a.ts')],
+    ).join('\n\n')
+    expect(withoutCandidate).toContain(
+      'No candidate finding in `## Pillar findings` came from the `focus` step.',
+    )
   })
 })

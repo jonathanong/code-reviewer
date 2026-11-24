@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (no run): verifier sees focus outcomes and dropped focus points show the drop reason
+
+Not measured; no model was called.
+
+- **What changed.** `skills/review/references/verifier.md` now instructs the verifier that a finding
+  raised for a focus point answers a question the requester asked and, when dropping it, to give a
+  one-sentence reason because the reason is shown to the requester. When `--focus` is supplied, the
+  verifier prompt now includes a `## Requested focus checks` block listing each focus point's text,
+  outcome, basis, and the candidate finding indexes from the `focus` step; without `--focus`, the
+  verifier prompt and schema are unchanged. When no kept `focus` finding backs a `does_not_hold`
+  point, `keptFocus` still turns the point into `not_checked` with "Raised, but the verifier kept no
+  finding: ..." and now appends `Reason dropped: <reason>` when the verifier gave one in `dropped`
+  (adding no question and leaving verdict and hold behaviour unchanged).
+- **Comparability.** Verifier runs on reviews with `--focus` before this change are not comparable
+  with runs after it; `verifier.md` also changed for all runs, so verifier rows before this change
+  are not comparable. Without `--focus`, no prompt block or schema field is added.
+
 ## 2026-11-24 (no run): deterministic change facts in the focus step prompt
 
 Not measured; no model was called.

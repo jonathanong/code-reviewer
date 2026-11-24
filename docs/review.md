@@ -145,14 +145,19 @@ estimated, and that points it decides must be answered `holds` or `does_not_hold
 A point it did not answer is `not_checked`; so is a `holds` or `does_not_hold` that cites no file, because a point is
 the requester's own opinion and an unverified yes is worse than "could not check". A point that does
 not hold also gets a finding under the pillar name `focus`, which joins the other pillars' findings
-and is verified like any of them: the verifier alone decides what is posted. After the verifier
-has run, a `does_not_hold` stands only if a kept finding with pillar `focus` cites the same `path`;
-otherwise the point becomes `not_checked` with the basis "Raised, but the verifier kept no finding: <the step's basis>" and keeps its `path` and `line`,
-so the posted block never says a point fails when the review holds no finding for it.
+and is verified like any of them: the verifier alone decides what is posted. Before ruling, the
+verifier is shown each focus point's text, outcome, basis, and which candidate findings came from
+`focus`, and is told to give a one-sentence reason in `dropped` when dropping a focus finding. After
+the verifier has run, a `does_not_hold` stands only if a kept finding with pillar `focus` cites the
+same `path`; otherwise the point becomes `not_checked` with the basis "Raised, but the verifier kept
+no finding: <the step's basis>" (plus `Reason dropped: <reason>` when the verifier gave a drop
+reason), keeping its `path` and `line`, so the posted `Requested checks` block shows what the focus
+step found and why it was not kept without adding a question or changing the verdict.
 
 The points are the requester's words, so they are untrusted: the step is told each is a claim to
-check, not an instruction, and they are given only to it, never to the plan, the other pillars, the
-verifier or the approval check, and never written under the run directory those read. A point can
+check, not an instruction, and they are given only to it (and its outcomes to the verifier), never to
+the plan, the other pillars, or the approval check, and never written under the run directory those
+read. A point can
 add work; it cannot skip a pillar, change the plan or a severity, or move the verdict other than
 through a finding. `focus` is a reserved pillar name for [`pillars.extra`](configuration.md#pillars).
 
