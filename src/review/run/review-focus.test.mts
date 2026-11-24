@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
 import type { ReviewPlan } from '../plan.mts'
+import { focusMode } from './review-focus.mts'
 import { runReview, type ReviewSteps } from './review.mts'
 
 const dirs: string[] = []
@@ -270,5 +271,13 @@ describe('runReview with requester focus points', () => {
     for (const call of others(seen)) {
       expect(call.prompt).not.toContain('## Change facts')
     }
+  })
+})
+
+describe('focusMode', () => {
+  it('checks requester points at full effort and leaves target-only steps on the plan mode', () => {
+    expect(focusMode('light', [{ origin: 'target' }, { origin: 'requester' }])).toBe('full')
+    expect(focusMode('light', [{ origin: 'target' }])).toBe('light')
+    expect(focusMode('full', [{ origin: 'target' }])).toBe('full')
   })
 })

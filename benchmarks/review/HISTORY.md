@@ -2,6 +2,28 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: requester points are checked at full effort in a light plan; `no-mistakes-3963-eedd0e5`
+
+- **Runtime change.** The focus step ran at the plan's effort, so in a light plan (a follow-up
+  included) it ran at low effort. When the step carries a requester point it now runs at the full
+  plan's effort. `bench-focus` takes its mode from `--mode`, so no earlier row changes.
+- **Why.** The live light follow-up of no-mistakes #3963 at `eedd0e5` returned four of the five
+  requested points `not_checked` and approved. A hand read found untraceable shapes that still
+  pass silently.
+- **Comparison**, Sonnet 5.5, the five live points in one call, three attempts per mode, same
+  session. `--mode light`: 3 of 15 points answered (0, 1 and 2 of 5), the silent-shape point
+  `does_not_hold` 0 of 3, $0.15 to $0.17 an attempt. `--mode full`: 12 of 15 answered (4 of 5
+  each), the silent-shape point `does_not_hold` 3 of 3, $1.40, $0.27 and $0.33. The full-mode
+  answers named a `let` with no initializer once and a factory with a return that has no
+  provenance twice; both were then confirmed in the source.
+- **Case added**, focus-only: `no-mistakes-3963-eedd0e5`, the three of those points whose answer
+  is settled (two `holds`, one `does_not_hold` with a `basisPattern`). The other two live points
+  are left out because their answer is not settled. Default mode, three attempts, same session:
+  1 of 3, 2 of 3 and 3 of 3 points (6 of 9); the `does_not_hold` point 2 of 3. About $0.27 an
+  attempt. One attempt returned the two `holds` points `not_checked`; one answered `holds` on
+  the silent-shape point.
+- **Not measured:** a whole live follow-up with the change, and medium against high effort.
+
 ## 2026-11-24: two more known misses for `clean-code-newly-reports`; a rewording abandoned
 
 - **Cases added**, both focus-only, both expecting `does_not_hold` from the target:
