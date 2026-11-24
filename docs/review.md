@@ -198,8 +198,9 @@ that call fails). Unknown names are ignored, and a missing or malformed `targets
 post-selection prompt and schema is unchanged.
 
 Selected targets' point texts are taken verbatim from their files and run through the `focus` step
-in the same call as any requester points (requester points first, then targets, up to the cap of
-20; any target omitted by the cap is recorded in `report.json` as `droppedTargets` and listed in
+beside any requester points: requester points share one call and each target gets a call of its
+own, because a target asked beside several other points comes back unexamined (requester points
+first, then targets, up to the cap of 20; any target omitted by the cap is recorded in `report.json` as `droppedTargets` and listed in
 `report.md`). In the focus prompt and verifier prompt, target points carry their own framing as the
 reviewer's own standing checks — separate from untrusted requester text — with unambiguous indexes
 and `origin` (`requester` or `target:<name>`). With no target points, both prompts are unchanged. A

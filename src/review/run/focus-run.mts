@@ -1,6 +1,7 @@
 import type { StepAnalysis, StepRequest } from '../../harness/runner.mts'
 import { EFFORT } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
+import { addUsage, type Usage } from '../benchmark/usage.mts'
 import { FOCUS_PILLAR, type FocusAnswer, type FocusPoint } from '../focus.mts'
 import type { StepModels } from '../models.mts'
 import { attemptPillar } from './pillar-attempts.mts'
@@ -15,7 +16,7 @@ import { buildFocusPrompt, checkedFocus, FOCUS_OUTPUT_SCHEMA, unchecked } from '
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS, type PillarResult } from './types.mts'
 
 export type FocusInput = {
-  /** Requester points and selected target points; one agent checks them all. */
+  /** Requester points share one call; each selected target point gets a call of its own. */
   points: readonly FocusPoint[]
   tree: string
   run: RunDir
@@ -38,13 +39,12 @@ export type FocusInput = {
 export type FocusRun = { result: PillarResult; answers: FocusAnswer[] }
 
 /**
- * Checks the requester's points in one run, with the same context and tools as a pillar and one
- * retry. A step that fails twice is a failed pillar named `focus`, so it is listed as skipped, and
- * every point is `not_checked`. The points go only into this prompt: they are never written under
- * the run directory the pillars read.
+ * Checks one group of points in one run, with the same context and tools as a pillar and one
+ * retry. A call that fails twice is a failed pillar named `focus` and each of its points is
+ * `not_checked`. The points go only into this prompt: they are never written under the run
+ * directory the pillars read.
  */
-export async function runFocus(input: FocusInput): Promise<FocusRun> {
-  const { points } = input
+async function runFocusCall(input: FocusInput, points: readonly FocusPoint[]): Promise<FocusRun> {
   const changeFacts = renderFocusFacts(
     await buildFocusFacts({
       tree: input.tree,
@@ -93,4 +93,45 @@ export async function runFocus(input: FocusInput): Promise<FocusRun> {
     return { result, answers: unchecked(points, 'The step failed twice.') }
   }
   return { result, answers: parsed.answers }
+}
+
+/**
+ * Checks every point. Requester points share one call. Each target point gets its own call,
+ * because a target asked beside several other points comes back unexamined. The calls run
+ * together; the step is listed as skipped only when every call failed.
+ */
+export async function runFocus(input: FocusInput): Promise<FocusRun> {
+  const { points } = input
+  const requester = points.flatMap((point, at) => (point.origin === 'requester' ? [at] : []))
+  const targets = points.flatMap((point, at) => (point.origin === 'requester' ? [] : [[at]]))
+  const groups = requester.length === 0 ? targets : [requester, ...targets]
+  if (groups.length <= 1) return runFocusCall(input, points)
+  const runs = await Promise.all(
+    groups.map((group) =>
+      runFocusCall(
+        input,
+        group.map((at) => points[at] as FocusPoint),
+      ),
+    ),
+  )
+  const answers: FocusAnswer[] = []
+  groups.forEach((group, run) =>
+    group.forEach((at, nth) => {
+      answers[at] = (runs[run] as FocusRun).answers[nth] as FocusAnswer
+    }),
+  )
+  const results = runs.map((run) => run.result)
+  const first = results.find((result) => result.error === undefined) ?? (results[0] as PillarResult)
+  const failed = results.every((result) => result.error !== undefined)
+  const result: PillarResult = {
+    pillar: FOCUS_PILLAR,
+    model: first.model,
+    skills: [...new Set(results.flatMap((entry) => entry.skills))],
+    findings: results.flatMap((entry) => entry.findings),
+    usage: results.reduce<Usage | null>((sum, entry) => addUsage(sum, entry.usage), null),
+    failedAttempts: results.flatMap((entry) => entry.failedAttempts),
+    ...(failed ? { error: first.error as string } : {}),
+    ...(first.ran === undefined ? {} : { ran: first.ran }),
+  }
+  return { result, answers }
 }

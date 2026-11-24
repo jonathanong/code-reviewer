@@ -250,16 +250,18 @@ describe('targeted checks raised by the reviewer', () => {
     }
   })
 
-  it('runs requester points and selected targets in one focus call, listing only requester points in Requested checks', async () => {
+  it('runs requester points in one focus call and each selected target in its own, listing only requester points in Requested checks', async () => {
     const run = await runScenario({
       requesterPoints: ['the retry loop is bounded'],
       selectedTargets: ['unneeded-concurrency-guard'],
       focusStatus: 'holds',
     })
     const focusCalls = run.calls.filter(isFocusCall)
-    expect(focusCalls).toHaveLength(1)
-    expect(focusCalls[0]?.prompt).toContain('## Requested checks')
-    expect(focusCalls[0]?.prompt).toContain('## Targeted checks')
+    expect(focusCalls).toHaveLength(2)
+    const prompts = focusCalls.map((call) => call.prompt)
+    expect(prompts.filter((prompt) => prompt.includes('# Requested checks'))).toHaveLength(1)
+    expect(prompts.filter((prompt) => prompt.includes('# Targeted checks'))).toHaveLength(1)
+    expect(prompts.some((prompt) => prompt.includes('# Focus checks'))).toBe(false)
     expect(run.review.focus).toEqual([
       expect.objectContaining({ origin: 'requester', point: 'the retry loop is bounded' }),
       expect.objectContaining({ origin: 'target:unneeded-concurrency-guard', point: TARGET_POINT }),

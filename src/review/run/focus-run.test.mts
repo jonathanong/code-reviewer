@@ -94,9 +94,65 @@ describe('runFocus', () => {
         { point: 'b', origin: 'target:g' },
       ],
     })
-    expect(exec).toHaveBeenCalledTimes(2)
+    expect(exec).toHaveBeenCalledTimes(4)
     expect(result.error).toBeDefined()
+    expect(result.failedAttempts).toHaveLength(4)
     expect(answers.map((entry) => entry.status)).toEqual(['not_checked', 'not_checked'])
+  })
+
+  it('gives each target point its own call and keeps the answers in the order asked', async () => {
+    const reply = (basis: string, findings: unknown[] = []) =>
+      answer({ points: [{ index: 0, status: 'holds', basis, path: 'a.ts', line: 1 }], findings })
+    const finding = { severity: 'low', title: 'T', body: 'B' }
+    const exec = vi.fn<Exec>(async (...call) => {
+      const text = JSON.stringify(call)
+      if (text.includes('TARGET ONE')) return reply('one', [finding])
+      if (text.includes('TARGET TWO')) return reply('two')
+      return answer({
+        points: [
+          { index: 0, status: 'holds', basis: 'first', path: 'a.ts', line: 1 },
+          { index: 1, status: 'holds', basis: 'second', path: 'a.ts', line: 1 },
+        ],
+        findings: [],
+      })
+    })
+    const { result, answers } = await runFocus({
+      ...setup({ exec }),
+      points: [
+        { point: 'TARGET ONE', origin: 'target:one' },
+        { point: 'REQUESTER A', origin: 'requester' },
+        { point: 'TARGET TWO', origin: 'target:two' },
+        { point: 'REQUESTER B', origin: 'requester' },
+      ],
+    })
+    expect(exec).toHaveBeenCalledTimes(3)
+    expect(answers.map((entry) => entry.basis)).toEqual(['one', 'first', 'two', 'second'])
+    expect(answers.map((entry) => entry.origin)).toEqual([
+      'target:one',
+      'requester',
+      'target:two',
+      'requester',
+    ])
+    expect(result.error).toBeUndefined()
+    expect(result.findings).toHaveLength(1)
+    expect(result.usage?.costUsd).toBeCloseTo(1.5)
+  })
+
+  it('keeps the answers of the calls that worked when one target call fails twice', async () => {
+    const exec = vi.fn<Exec>(async (...call) =>
+      JSON.stringify(call).includes('TARGET ONE') ? 'not json' : answer(HOLDS),
+    )
+    const { result, answers } = await runFocus({
+      ...setup({ exec }),
+      points: [
+        { point: 'TARGET ONE', origin: 'target:one' },
+        { point: 'TARGET TWO', origin: 'target:two' },
+      ],
+    })
+    expect(exec).toHaveBeenCalledTimes(3)
+    expect(result.error).toBeUndefined()
+    expect(result.failedAttempts).toHaveLength(2)
+    expect(answers.map((entry) => entry.status)).toEqual(['not_checked', 'holds'])
   })
 
   it('answers after a retry that works', async () => {

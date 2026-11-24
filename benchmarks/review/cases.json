@@ -853,7 +853,7 @@
       {
         "target": "clean-code-newly-reports",
         "expectedStatus": "does_not_hold",
-        "reason": "On the base a later append overwrote the empty fact regardless of branch; the head merges branches, so a conditionally filled array newly reports, and the description does not say so."
+        "reason": "On the base any nonempty write made an array count as set everywhere; the head merges branch and loop states, so an array filled only inside an `if`, a loop or a called function newly reports. The description says the rule accounts for later writes and alternate paths and shows one finding removed; it never says code clean on the base can newly report."
       }
     ],
     "expectedTargets": ["clean-code-newly-reports"]
