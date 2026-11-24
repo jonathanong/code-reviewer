@@ -2,6 +2,34 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: a fourth targeted check, `peers-stand-down`
+
+- **Target added.** `skills/review/references/targets/peers-stand-down.md`: for a change in which
+  an actor checks for others of its kind and stands down when it finds one, write out what two
+  actors do when they run the check at the same moment, and test that at least one always
+  proceeds.
+- **Why.** `harness-plugins-103-18656f8`: a skill rule told the job that starts a run to look for
+  "a job of that sweep other than itself" and do nothing when it finds one. Two starters active
+  together each find the other and no run starts. A full review here approved it with no
+  findings; another reviewer found it. `harness-plugins-103` is the fixed head of the same pull
+  request, the quiet side. Both are focus-only cases.
+- **Focus step**, Sonnet 5.5, one case per command, three attempts each, same session, committed
+  cases: `harness-plugins-103-18656f8` 3 of 3 `does_not_hold` with a finding;
+  `harness-plugins-103` 3 of 3 `holds` with no finding. About $0.11 an attempt. A pilot with the
+  same text as a plain point: 1 of 1 on each.
+- **No control arm.** Without the target nothing is asked; the control is the approved review.
+- **Selection** (`bench-selection`, Haiku 5.5, three attempts a case): picked 3 of 3 on both
+  heads; 0 of 3 on `no-mistakes-4006`, `no-mistakes-3973`, `no-mistakes-4008`,
+  `vouchington-6282` and `vouchington-6254`. On both heads selection also picked
+  `unneeded-concurrency-guard` 3 of 3: the rule text discusses adding a guard. That is a second
+  focus call on a change that adds no guard in code; it is not marked unwanted and its answer
+  there was not measured.
+- **Not comparable.** The selection prompt now lists four targets, so target-selection rows from
+  before this entry are not comparable. Other prompts are unchanged.
+- **Not measured.** The same shape in code rather than in a written rule (one pull request, two
+  heads, is the whole evidence), a whole review with the target, the verifier's handling of its
+  finding, and a quiet case from a different change.
+
 ## 2026-11-24: a third targeted check, `clean-code-newly-reports`; each target in its own call; focus-only cases
 
 - **Target added.** `skills/review/references/targets/clean-code-newly-reports.md`: for a change to

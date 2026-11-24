@@ -633,7 +633,7 @@
       }
     ],
     "expectedTargets": ["unneeded-concurrency-guard"],
-    "unwantedTargets": ["clean-code-newly-reports", "untraced-name-passes"]
+    "unwantedTargets": ["clean-code-newly-reports", "peers-stand-down", "untraced-name-passes"]
   },
   {
     "id": "vouchington-6254",
@@ -647,6 +647,7 @@
     "expected": [],
     "unwantedTargets": [
       "clean-code-newly-reports",
+      "peers-stand-down",
       "unneeded-concurrency-guard",
       "untraced-name-passes"
     ],
@@ -707,7 +708,7 @@
         "reason": "Without the ref-keyed group two runs on main overlap; nothing else serialises them."
       }
     ],
-    "unwantedTargets": ["clean-code-newly-reports", "untraced-name-passes"]
+    "unwantedTargets": ["clean-code-newly-reports", "peers-stand-down", "untraced-name-passes"]
   },
   {
     "id": "no-mistakes-3963",
@@ -787,7 +788,7 @@
       "3963": "236cad49c02de57e3204c492ddf94e3b659951f2"
     },
     "expectedTargets": ["untraced-name-passes"],
-    "unwantedTargets": ["clean-code-newly-reports"]
+    "unwantedTargets": ["clean-code-newly-reports", "peers-stand-down"]
   },
   {
     "id": "no-mistakes-4027",
@@ -840,7 +841,8 @@
         "reason": "Producers that were unresolved on the base now resolve to a static queue name and report as unmatched when the check sees no worker; the description does not say existing code can newly report."
       }
     ],
-    "expectedTargets": ["clean-code-newly-reports"]
+    "expectedTargets": ["clean-code-newly-reports"],
+    "unwantedTargets": ["peers-stand-down"]
   },
   {
     "id": "no-mistakes-4024",
@@ -862,5 +864,47 @@
       }
     ],
     "expectedTargets": ["clean-code-newly-reports"]
+  },
+  {
+    "id": "harness-plugins-103-18656f8",
+    "repo": "jonathanong/harness-plugins",
+    "pr": 103,
+    "title": "bounded-iteration: a run keeps its own position, and does not start while one is active",
+    "baseSha": "1b0b2882538b3d4235beec436986a0750693eb0a",
+    "headSha": "18656f86c4f8a3bba1f7d396f5aed5ac67d8fb95",
+    "body": "## Problem\n\n`bounded-iteration` told every sweep to advance a stored position with a compare-and-set. A review then asked for that guard and a race test on a sweep whose jobs could not run at the same time, and the work was done for a race that could not happen.\n\nThe skill also said nothing about a sweep whose runs must not overlap.\n\n## Change\n\nTwo rules in rule 5 of `skills/bounded-iteration/SKILL.md`:\n\n- **A run's position belongs to that run.** It travels in the job's data, so no two runs write the same position. A stored cursor that runs share is only for a position that must commit with domain rows; that one keeps its compare-and-set. Asked to guard a shared cursor that need not be shared, move the position instead.\n- **Runs that must not overlap do not start.** When nothing needs a run to finish by a deadline, the job that starts a run checks the queue for a waiting, delayed, or active job of the sweep other than itself, and does nothing when it finds one. The run stays a chain of capped jobs: no single long job, no shared row, no lock.\n\nTwo cases, one per rule. The owner chose both designs; the wording is this repository's.\n\n## One real run\n\nThe second case describes a sweep whose passes take forty minutes on a fifteen-minute schedule, with no deadline, and asks how to stop them piling up.\n\nAn unaided answer (copied, opening):\n\n```text\nI'd make two changes: run a pass as a single job, and have the scheduler refuse to start a pass while one exists.\n```\n\nAn answer with the skill (copied, opening):\n\n```text\nStop the scheduler from starting a pass while one is still in the queue. Each pass stays a chain of 200-account jobs that carries its own position, and the scheduler's job becomes a no-op when a pass is active.\n```\n\nBoth are from run 5. I did not run any answer's code.\n\n## Results\n\nSonnet agent, Opus judge, 2026-11-24, one two-arm run of three attempts per arm on the committed text ($5.25).\n\n| Case | With plugin | Loaded | Without |\n| --- | --- | --- | --- |\n| `review-asks-to-guard-a-shared-cursor` (new) | 3 of 3 | 3 of 3 | 0 of 3 |\n| `no-new-run-while-one-runs` (new) | 3 of 3 | 3 of 3 | 0 of 3 |\n| `overlapping-purge-runs-stay-lock-free` | 3 of 3 | 3 of 3 | 0 of 3 |\n| `review-dispatcher-predicate-and-job-id` | 3 of 3 | 3 of 3 | 2 of 3 |\n| `review-staged-reconciler` | 3 of 3 | 3 of 3 | 0 of 3 |\n| `review-sweep-rewrites-its-trigger` | 2 of 3 | 2 of 3 | 3 of 3 |\n\n- The last row's failed attempt passed its outcome grader and did not load the skill. It is a ceiling case, as before.\n- The purge case is the one where a shared cursor keeps its compare-and-set; it still passes.\n- Five earlier runs ($10.93) are in `evals/HISTORY.md`. Two versions of the second case measured nothing: one grader predated the owner's choice, and one prompt named the queue call that answers the question.\n- A failure in run 5 counted the checking job itself as a pass in progress; the rule gained \"other than itself\" after it.\n- Not covered: a sweep that must not overlap and does have a deadline. `ROADMAP.md` lists it.\n- I read no answer from the final run beyond its grades.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_01MaU9nyzM7TPXyFzcdbxB6q\n\n\n<!-- This is an auto-generated description by cubic. -->\n<a href=\"https://cubic.dev/pr/jonathanong/harness-plugins/pull/103?utm_source=github\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"><img alt=\"View guided diff\" src=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"></picture></a> <a href=\"https://www.cubic.dev/action/auto-fix/pr/jonathanong/harness-plugins/103?returnTo=https%3A%2F%2Fgithub.com%2Fjonathanong%2Fharness-plugins%2Fpull%2F103&source=description\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/turn-on-auto-fix-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/turn-on-auto-fix-light.svg\"><img alt=\"Turn on auto-fix\" src=\"https://www.cubic.dev/buttons/turn-on-auto-fix-light.svg\"></picture></a>\n<!-- End of auto-generated description by cubic. -->\n\n\n",
+    "kind": "negative",
+    "focusOnly": true,
+    "reason": "A known miss: this head was approved here with no findings, and another reviewer then found that two starters defer to each other. Focus only; no pillar finding is recorded. The body is the description edit of 2026-11-24T18:08:46Z, the one in effect at this head.",
+    "expected": [],
+    "focus": [
+      {
+        "target": "peers-stand-down",
+        "expectedStatus": "does_not_hold",
+        "reason": "The starter checks the queue for a job of that sweep other than itself and does nothing when it finds one, so two starters active together each find the other and no run starts."
+      }
+    ],
+    "expectedTargets": ["peers-stand-down"]
+  },
+  {
+    "id": "harness-plugins-103",
+    "repo": "jonathanong/harness-plugins",
+    "pr": 103,
+    "title": "bounded-iteration: a run keeps its own position, and does not start while one is active",
+    "baseSha": "1b0b2882538b3d4235beec436986a0750693eb0a",
+    "headSha": "1d0997d68996b8abf8c05a084caa2e6aaa7cbc38",
+    "body": "## Problem\n\n`bounded-iteration` told every sweep to advance a stored position with a compare-and-set. A review then asked for that guard and a race test on a sweep whose jobs could not run at the same time, and the work was done for a race that could not happen.\n\nThe skill also said nothing about a sweep whose runs must not overlap.\n\n## Change\n\nTwo rules in rule 5 of `skills/bounded-iteration/SKILL.md`:\n\n- **A run's position belongs to that run.** It travels in the job's data, so no two runs write the same position. A stored cursor that runs share is only for a position that must commit with domain rows; that one keeps its compare-and-set. Asked to guard a shared cursor that need not be shared, move the position instead.\n- **Runs that must not overlap do not start.** When nothing needs a run to finish by a deadline, the job that starts a run checks the queue for a waiting, delayed, or active job of a run in progress, and does nothing when it finds one. It counts neither itself nor another job that is only starting a run. The run stays a chain of capped jobs: no single long job, no shared row, no lock.\n\nTwo cases, one per rule. The owner chose both designs; the wording is this repository's.\n\n## One real run\n\nThe second case describes a sweep whose passes take forty minutes on a fifteen-minute schedule, with no deadline, and asks how to stop them piling up.\n\nAn unaided answer (copied, opening):\n\n```text\nI'd make two changes: run a pass as a single job, and have the scheduler refuse to start a pass while one exists.\n```\n\nAn answer with the skill (copied, opening):\n\n```text\nStop the scheduler from starting a pass while one is still in the queue. Each pass stays a chain of 200-account jobs that carries its own position, and the scheduler's job becomes a no-op when a pass is active.\n```\n\nBoth are from run 5. I did not run any answer's code.\n\n## Results\n\nSonnet agent, Opus judge, 2026-11-24, three attempts per arm. Five rows are from one two-arm run of all six cases ($5.25); the second row is from a rerun of that case after the review fix ($0.88). Seven runs in all, $17.06.\n\n| Case | With plugin | Loaded | Without |\n| --- | --- | --- | --- |\n| `review-asks-to-guard-a-shared-cursor` (new) | 3 of 3 | 3 of 3 | 0 of 3 |\n| `no-new-run-while-one-runs` (new), rerun after the review fix | 3 of 3 | 3 of 3 | 1 of 3 |\n| `overlapping-purge-runs-stay-lock-free` | 3 of 3 | 3 of 3 | 0 of 3 |\n| `review-dispatcher-predicate-and-job-id` | 3 of 3 | 3 of 3 | 2 of 3 |\n| `review-staged-reconciler` | 3 of 3 | 3 of 3 | 0 of 3 |\n| `review-sweep-rewrites-its-trigger` | 2 of 3 | 2 of 3 | 3 of 3 |\n\n- The last row's failed attempt passed its outcome grader and did not load the skill. It is a ceiling case, as before.\n- The purge case is the one where a shared cursor keeps its compare-and-set; it still passes.\n- Five earlier runs ($10.93) and the rerun are in `evals/HISTORY.md`. Two versions of the second case measured nothing: one grader predated the owner's choice, and one prompt named the queue call that answers the question.\n- **Review fix:** the rule first told the starter to look for a job of the sweep \"other than itself\", so two starters active together would each defer to the other. It now looks for a job of a run in progress. Only the second case was rerun on that wording ($0.88); the other five rows are from the run before it, where that case was 3 of 3 against 0 of 3.\n- `review-sweep-rewrites-its-trigger` reads lower with the plugin than without. That is one attempt that did not load the skill; all three plugin answers passed the outcome grader.\n- A failure in run 5 counted the checking job itself as a pass in progress; the rule gained \"other than itself\" after it.\n- Not covered: a sweep that must not overlap and does have a deadline. `ROADMAP.md` lists it.\n- I read grades only for the six-case run, and the code of two answers from the rerun.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_01MaU9nyzM7TPXyFzcdbxB6q\n\n",
+    "kind": "negative",
+    "focusOnly": true,
+    "reason": "The fixed head of the same pull request, the quiet side of harness-plugins-103-18656f8. Focus only. The body is the description edit of 2026-11-24T18:22:10Z.",
+    "expected": [],
+    "focus": [
+      {
+        "target": "peers-stand-down",
+        "expectedStatus": "holds",
+        "reason": "The starter does not count itself or another job that is only starting a run, so two starters both proceed, and the rule says a second run only repeats work."
+      }
+    ],
+    "expectedTargets": ["peers-stand-down"]
   }
 ]

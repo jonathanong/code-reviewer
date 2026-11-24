@@ -179,7 +179,8 @@ Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
 `no-mistakes-3963-f282a5d` declare `target: "untraced-name-passes"` (expected `does_not_hold`; 3 of 3
 each, see `HISTORY.md`). The quiet pair `focus-target-untraced-reported` scored 7 of 9. `no-mistakes-3973` and
 `no-mistakes-4024` declare `target: "clean-code-newly-reports"` (expected `does_not_hold`; 9 of 10 and
-3 of 4 in its own call, see `HISTORY.md`); `no-mistakes-3963` also declares it expecting `holds`. A case with `focusOnly: true` is graded only by its focus points and is left out of every
+3 of 4 in its own call, see `HISTORY.md`); `no-mistakes-3963` also declares it expecting `holds`. `harness-plugins-103-18656f8` and `harness-plugins-103`
+declare `target: "peers-stand-down"` (`does_not_hold` and `holds`; 3 of 3 each). A case with `focusOnly: true` is graded only by its focus points and is left out of every
 pillar run.
 
 ```bash
