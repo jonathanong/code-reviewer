@@ -678,8 +678,8 @@
     "focus": [
       {
         "point": "The push-diff-base fallback never narrows the diff: when no base is found, every path is treated as changed.",
-        "expectedStatus": "holds",
-        "reason": "Every failure path (gh api error, invalid JSON, no prior run, non-ancestor or unfetchable base) returns baseSha \"\", and ci.yml treats an empty BASE_SHA as full scope (e.g. benchmark step at ci.yml:118"
+        "expectedStatus": "does_not_hold",
+        "reason": "With no base the ast-grep step passes origin/main, which on a push to main is the head, so the fixture baseline is compared with itself and the shrink-only rule cannot fail; the four path-scoping steps treat an empty base as full scope."
       },
       {
         "point": "A failed or cancelled previous run is not used as \"completed\" in a way that skips the paths of its commits.",
@@ -753,5 +753,37 @@
     "focusRefs": {
       "3963": "236cad49c02de57e3204c492ddf94e3b659951f2"
     }
+  },
+  {
+    "id": "no-mistakes-4027",
+    "repo": "jonathanong/no-mistakes",
+    "pr": 4027,
+    "title": "Share mutable receiver fixture analysis across native tests",
+    "baseSha": "489c2abc44fffc8be3888ab125704da7a6b6f428",
+    "headSha": "dc0894f0a7e40f0398fa46c6757758b6d8a7bf66",
+    "body": "Fixes #4025\n\nThe real N-API mutable-receiver suite scanned the same provenance fixture twice in each of 82 cases, once through CommonJS and once through ESM. On a slow CI runner, `mutable-let-pattern-conditional-whole` took 7,180.2 ms and `mutable-let-pattern-logical-rebind` took 6,051.6 ms, above the 5,000 ms per-test gate. [Failing native API job](https://github.com/jonathanong/no-mistakes/actions/runs/45395361920/job/138453515108)\n\nThis changes only `mutable-receiver-api.test.js`. The first receiver case in each shard starts one lazy `analyzeProject` batch per facade. All 82 existing named cases retain their cross-facade comparisons and expected output assertions and read their report from those batches. One dedicated case compares full standalone `effects()` reports with the prepared reports in both formats. The cases for `check()` and provider-scale inputs still use their original paths. The 5,000 ms gate and shard parallelism are unchanged, with no retries added.\n\n## Real N-API timings\n\nI ran each Linux shard once on main (`489c2abc4`) and once with this patch, using the same compiled CLI and addon for both. Each run used `node .github/scripts/native-api-shards.cjs <shard> 4 linux` followed by `node .github/scripts/report-native-api-tests.cjs target/native-api-tests.json target`. All four shards passed on both revisions, with zero tests at or above 5,000 ms. The first receiver case in each shard includes preparation.\n\n| Case | Shard | Before (ms) | After (ms) |\n| --- | ---: | ---: | ---: |\n| `mutable-let-pattern-conditional-whole` | 4 | 197.924 | 0.031 |\n| `mutable-let-pattern-logical-rebind` | 4 | 199.830 | 0.015 |\n| `mutable-let-pattern-rhs-rebind` | 4 | 207.205 | 0.015 |\n| `mutable-let-pattern-static-rebind` (first receiver case) | 1 | 215.01 | 378.18 |\n| `mutable-let-pattern-replaced-rhs-rebind` (first receiver case) | 2 | 198.03 | 383.42 |\n| `mutable-affected-alias-overflow` (first receiver case) | 3 | 186.10 | 382.48 |\n| `mutable-affected-cross-scope` (first receiver case) | 4 | 204.00 | 386.70 |\n| Standalone effects versus prepared reports (new parity case) | 1 | | 210.07 |\n\n## Fixture output\n\nThe new parity case uses the saved cross-scope receiver fixture. The CLI output for that input is identical before and after. Run from the repository root with the compiled CLI on `PATH`.\n\n```sh\nno-mistakes effects valkey \\\n  --root \"$PWD/test-cases/rules/query-reached-per-item/provenance-fixture\" \\\n  --config mutable-receivers.yml \\\n  --entry src/nested-receiver-containers/mutable-affected-cross-scope.mts \\\n  --format json | jq '[.callSites[] | {line, callee}]'\n```\n\n```json\n[\n  { \"line\": 9, \"callee\": \"primary.get\" },\n  { \"line\": 12, \"callee\": \"replica.get\" }\n]\n```\n\n\n<!-- This is an auto-generated description by cubic. -->\n<a href=\"https://cubic.dev/pr/jonathanong/no-mistakes/pull/4027?utm_source=github\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"><img alt=\"View guided diff\" src=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"></picture></a> <a href=\"https://www.cubic.dev/action/auto-fix/pr/jonathanong/no-mistakes/4027?returnTo=https%3A%2F%2Fgithub.com%2Fjonathanong%2Fno-mistakes%2Fpull%2F4027&source=description\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/turn-on-auto-fix-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/turn-on-auto-fix-light.svg\"><img alt=\"Turn on auto-fix\" src=\"https://www.cubic.dev/buttons/turn-on-auto-fix-light.svg\"></picture></a>\n<!-- End of auto-generated description by cubic. -->\n\n",
+    "kind": "negative",
+    "reason": "Multi-point focus case where every point holds, hand-verified and merged: a shared analysis across 82 test cases with no timing gate or retry change. Guards against the focus step raising problems when several points are asked together.",
+    "expected": [],
+    "focus": [
+      {
+        "point": "Each test case still fails if its own acquisition is wrong; sharing one analysis across cases does not weaken what any case asserts.",
+        "expectedStatus": "holds",
+        "expectNoFindings": true,
+        "reason": "Each case registers its own entry and asserts on that entry's result (CJS/ESM parity plus its own expected callSites/callees); a missing result would throw on `report.callSites`, so sharing the analys"
+      },
+      {
+        "point": "The 5000 ms timing gate is not raised and no retry is added.",
+        "expectedStatus": "holds",
+        "expectNoFindings": true,
+        "reason": "The patch has no timeout, 5000, or retry text, and the file has no timing gate or retry logic."
+      },
+      {
+        "point": "Only test files change.",
+        "expectedStatus": "holds",
+        "expectNoFindings": true,
+        "reason": "Change facts show exactly one changed file, which is a test file."
+      }
+    ]
   }
 ]

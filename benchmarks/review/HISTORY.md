@@ -2,22 +2,6 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
-## 2026-11-24: focus step reads the pull requests a requester point names (no run)
-
-- **Change.** A requester focus point that names another pull request of the same repository
-  (`#123`, `PR 123`, `pull request 123`) now adds one computed block per named pull request (the
-  first 3) to the focus prompt: its head commit, changed-file count and file list from local git,
-  marking paths the reviewed pull request also changes. The focus prompt changes only then; with no
-  such point it is byte-identical and no git fetch runs. The verifier, pillar and selection prompts
-  are unchanged.
-- **Case field.** `focusRefs` (pull request number to a full 40-character commit) pins the other
-  head for `bench-focus` so the run is reproducible; `no-mistakes-4006` pins 3963.
-- **Not comparable.** `no-mistakes-4006` (its focus point names 3963; it answered `not_checked`
-  before, with "PR 3963 isn't in the checkout"), and any other focus row whose requester point
-  matches those patterns, such as `no-mistakes-3963` and `no-mistakes-4008` if their points name a
-  pull request. Synthetic focus cases and `vouchington-6282` name none, so their rows still
-  compare. No run.
-
 ## 2026-11-24: three known misses from no-mistakes reviews, and a focus rule for multi-part points
 
 - **Cases added** to `cases.json`, each with `body` as the description read at the reviewed head:
@@ -38,25 +22,48 @@ Newest first. Every measured run and every change to what is measured gets an en
     Both misses noted that cancelled runs are excluded and excused the failed run.
   - Same five points after the change: 3 of 3.
   - Only that point's rate is quoted. The first point (the fallback never narrows the diff) is
-    labelled `holds` from the live answer, and one attempt after the change answered
-    `does_not_hold` with a real observation (the ast-grep step falls back to `origin/main`, which
-    on a push to main is the head). Its label is unsettled. The target point on this case answered
+    was labelled `holds` from the live answer during these runs; see the label correction below. The target point on this case answered
     `holds`, `does_not_hold` and `not_checked` across the three attempts after the change, and
     `holds` in all three before.
 - **Cases the change does not target**, one attempt each after the change: the six synthetic focus
   cases 7 of 7 points, `vouchington-6282` 1 of 1, `vouchington-6254` 1 of 1 with no finding.
 - **`no-mistakes-4006`** (a point about a rule another open pull request also adds): 0 of 1,
   `not_checked`, before any change. The step cannot see another pull request.
-- **`no-mistakes-4006` with named pull requests** (the entry above; working tree on 190ccdf, the
+- **`no-mistakes-4006` with named pull requests** (the entry below; working tree on 190ccdf, the
   other head pinned by `focusRefs`): 3 of 3 `does_not_hold`, each citing files both pull requests
   add, about $0.47. The 0 of 1 before is one attempt, but the step had no way to see the other pull
   request, so it is a structural miss and not a rate.
 - **`no-mistakes-3963`**, correctness pillar, Sonnet 5.5, judge Opus 5.5, one attempt per arm: 0 of 1
   with selected skills and 0 of 1 with no rules, no findings in either, about $0.38. The miss
   reproduces and no skill states the rule, so nothing here fixes it yet.
+- **Side effects of the sentence on a multi-point case where every point holds.** New case
+  `no-mistakes-4027` (three requester points, hand-verified and merged, `expectNoFindings`), three
+  attempts per arm in the same session: 9 of 9 points `holds` with no finding without the sentence,
+  and 9 of 9 with no finding with it.
+- **Label corrected after the runs.** On `no-mistakes-4008` the first point (the fallback never
+  narrows the diff) now expects `does_not_hold`: with no base the ast-grep step passes
+  `origin/main`, which on a push to main is the head, so `check-inline-fixture-writes.py` compares
+  the baseline with itself and its shrink-only rule cannot fail. Under the new label that point
+  scored 0 of 3 before the sentence and 1 of 3 after. Not re-run.
 - **What it showed.** The miss was a multi-point effect, not a single-point one, and one sentence
   moved it from 1 of 3 to 3 of 3 on one case. Three attempts cannot resolve whether the change
   makes the target point on that case less stable.
+
+## 2026-11-24: focus step reads the pull requests a requester point names (no run)
+
+- **Change.** A requester focus point that names another pull request of the same repository
+  (`#123`, `PR 123`, `pull request 123`) now adds one computed block per named pull request (the
+  first 3) to the focus prompt: its head commit, changed-file count and file list from local git,
+  marking paths the reviewed pull request also changes. The focus prompt changes only then; with no
+  such point it is byte-identical and no git fetch runs. The verifier, pillar and selection prompts
+  are unchanged.
+- **Case field.** `focusRefs` (pull request number to a full 40-character commit) pins the other
+  head for `bench-focus` so the run is reproducible; `no-mistakes-4006` pins 3963.
+- **Not comparable.** `no-mistakes-4006` (its focus point names 3963; it answered `not_checked`
+  before, with "PR 3963 isn't in the checkout"), and any other focus row whose requester point
+  matches those patterns, such as `no-mistakes-3963` and `no-mistakes-4008` if their points name a
+  pull request. Synthetic focus cases and `vouchington-6282` name none, so their rows still
+  compare. No run in this entry; the entry above measures it.
 
 ## 2026-11-24: pilot of the `unneeded-concurrency-guard` target
 
