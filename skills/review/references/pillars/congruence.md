@@ -26,6 +26,17 @@ Does the code match what the pull request says?
 - Commit and release metadata where the repository uses it (conventional commit type and scope,
   breaking-change markers).
 
+## One real run
+
+When the change alters behavior a user or caller can see, load `jong-skills:pr-description` and
+apply its "Show one real run" rule.
+
+- Raise one `low` finding when the description does not let a reader see what the change does on
+  one realistic input (the input, the command or call, and the real output).
+- Do not raise it for docs-only, test-only, CI-only, dependency bumps, pure refactors with no
+  behavior change, or descriptions that already show a run.
+- Severity is always `low`; it never blocks.
+
 ## Not in scope
 
 Whether the behavior is correct or well designed. Only whether it is described truthfully.

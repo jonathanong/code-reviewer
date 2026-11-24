@@ -28,6 +28,27 @@ quoted. `vouchington-6254` was not run.
 - **Comparability.** Correctness-pillar and verifier rows recorded before this change are not
   comparable with runs after it.
 
+## 2026-11-24 (pilot): congruence checks that behavior changes show one real run
+
+Pilot of `congruence-missing-real-run` with `bench-verifier` (Opus 5.5 verifier, Sonnet judge, one
+attempt per arm, empty pillar findings): 1 of 1 with this change's prompts, 0 of 1 with the prompts
+on `main` (the control returned no finding). $0.26 per run. A first pair of runs on an earlier
+fixture gave the same 1 of 1 and 0 of 1, but the control reported a rounding bug the fixture did not
+intend (`1m 60s`); the fixture was corrected and both arms were run again. One attempt per arm shows
+the grader works and the control misses; it is not a rate.
+
+- **What changed.** `skills/review/references/pillars/congruence.md` gains a "One real run" section
+  telling the verifier, when a change alters behavior a user or caller can see, to load
+  `jong-skills:pr-description`, apply its "Show one real run" rule, and raise one `low` finding
+  (never blocking) when the description does not show one realistic input, command or call, and real
+  output. Docs-only, test-only, CI-only, dependency bumps, pure refactors with no behavior change,
+  and descriptions that already show a run are excluded.
+- **Cases added (`synthetic.json`).** `congruence-missing-real-run` (positive, `expectedSkills`:
+  `jong-skills:pr-description`, expected one `low` congruence finding): a small behavior change in
+  `src/format-duration.mts` whose description is a checklist with no input or output.
+- **Comparability.** The congruence pillar prompt changed, so congruence rows (and verifier rows
+  that score congruence) before this entry are not comparable with runs after it.
+
 ## 2026-11-24 (no run): deterministic change facts in the focus step prompt
 
 Not measured; no model was called.
