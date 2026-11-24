@@ -33,8 +33,10 @@ stricter rule wins.
   says why they can overlap. Before raising it, check what already serialises them: a queue ordering
   or group key with concurrency 1, a fixed job id or dedupe key, a single schedule, a unique
   constraint, or an existing lock. If the overlap is not reachable, it is not a finding.
-- If the change adds a guard (lock, compare-and-set, retry) for an overlap that is not reachable,
-  raise a question asking which two callers can overlap; do not praise or require the guard.
+- When the change adds a guard against concurrent runs (a lock, a compare-and-set, a retry on
+  conflict), find every caller of the guarded code and how each is scheduled or enqueued, and check
+  whether two of them can overlap. If none can, report the guard as unneeded and name what already
+  serialises the callers; do not praise or require the guard.
 
 ## Not in scope
 
