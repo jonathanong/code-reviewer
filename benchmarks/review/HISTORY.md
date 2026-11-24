@@ -2,6 +2,41 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: a second targeted check, `untraced-name-passes`
+
+- **Target added.** `skills/review/references/targets/untraced-name-passes.md`: for a change to a
+  check that decides by a name in the code it scans, test three shapes (re-exported from a local
+  module, built by a call in a local module, the result of calling an imported function) and
+  whether each is reported or reported as unresolved. Other shapes do not fail the claim.
+- **Why three shapes.** The first wording ("never treats an untraced name as clean") answered
+  `does_not_hold` on the sound fixture in 4 of 5 attempts across three fixture repairs, each time
+  for a deeper real gap (subpath imports, methods on imported objects, local aliases, nested
+  members). A claim no check can meet is noise on every lint-rule change, so it was narrowed.
+- **Cases.** `no-mistakes-3963` gains a target focus entry (`does_not_hold`).
+  `no-mistakes-3963-f282a5d` is the later head of the same pull request, focus-only: the fix
+  follows wrapped bindings but still drops a receiver built by an imported factory with no
+  traceable argument (read in `ast/playwright_bindings.rs`; reported to the author's session).
+  `focus-target-untraced-reported` in `synthetic.json` is a check that reports all three shapes
+  (`holds`, no finding).
+- **Focus step, committed wording**, Sonnet 5.5, one case per command, three attempts each, same
+  session: `no-mistakes-3963` 3 of 3, `no-mistakes-3963-f282a5d` 3 of 3,
+  `focus-target-untraced-reported` 3 of 3 with no finding. Before its last repair the fixture
+  scored 2 of 3; the failing attempt named `make()()`, a real gap inside the third shape, which
+  the fixture now reports. About $0.20 a mined attempt and $0.12 a fixture attempt.
+- **No control arm.** Without the target nothing is asked, so there is no "before" status. The
+  nearest baseline is the correctness pillar on `no-mistakes-3963`: 0 of 1 with skills and 0 of 1
+  without (entry below).
+- **Selection** (`bench-selection`, Haiku 5.5, three attempts a case): the new target was picked
+  3 of 3 on `no-mistakes-3963`, `no-mistakes-3963-f282a5d`, `no-mistakes-4006` and the fixture,
+  and 0 of 3 on `no-mistakes-4008`, `vouchington-6282`, `vouchington-6254`,
+  `select-target-no-guard` and `focus-target-guard-needed`. `vouchington-6254` picked the older
+  `unneeded-concurrency-guard` in 2 of 3 though it only removes locks; not measured before this
+  change, so whether listing a second target caused it is unknown.
+- **Not comparable.** The selection prompt now lists two targets, so target-selection rows from
+  before this entry are not comparable. Pillar and verifier prompts are unchanged.
+- **Not measured.** A whole review with the target, the verifier's handling of its findings, and
+  any repository other than no-mistakes.
+
 ## 2026-11-24: three known misses from no-mistakes reviews, and a focus rule for multi-part points
 
 - **Cases added** to `cases.json`, each with `body` as the description read at the reviewed head:

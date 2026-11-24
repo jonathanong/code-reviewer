@@ -30,6 +30,7 @@ import { DEFAULT_PLAN_VALUES } from '../review/plan-settings.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import { runLoopCommand, skipCommand } from './command-loop.mts'
 import { BOB, BOB_LABELS, LIMIT_DEFAULTS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
+import { builtInTargets } from '../review/targets.mts'
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
@@ -55,7 +56,7 @@ const UNSET = {
     from: { disabled: 'default', extra: 'default' },
     problems: [],
   },
-  targets: { disabled: [], enabled: ['unneeded-concurrency-guard'], from: 'default' },
+  targets: { disabled: [], enabled: builtInTargets().map((t) => t.name), from: 'default' },
   models: {
     steps: {
       select: [{ harness: 'claude', model: 'haiku' }],

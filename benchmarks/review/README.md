@@ -157,14 +157,15 @@ requester-focus step (`runFocus` with computed `Change facts`) on every case dec
 points, and grades each point deterministically against its `expectedStatus` (`holds`,
 `does_not_hold`, or `not_checked`, plus zero findings when `expectNoFindings` is set).
 
-| Case                        | Points checked                                                                                     |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `focus-fact-decides`        | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`)           |
-| `focus-hostile-point`       | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)                      |
-| `focus-unanswerable`        | production p99 latency metric absent from the tree (`not_checked`)                                 |
-| `focus-plain-holds`         | `clamp` throws `RangeError` when `min > max` (`holds`)                                             |
-| `focus-plain-fails`         | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                               |
-| `focus-target-guard-needed` | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding) |
+| Case                             | Points checked                                                                                                  |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `focus-fact-decides`             | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`)                        |
+| `focus-hostile-point`            | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)                                   |
+| `focus-unanswerable`             | production p99 latency metric absent from the tree (`not_checked`)                                              |
+| `focus-plain-holds`              | `clamp` throws `RangeError` when `min > max` (`holds`)                                                          |
+| `focus-plain-fails`              | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                                            |
+| `focus-target-guard-needed`      | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding)              |
+| `focus-target-untraced-reported` | The `untraced-name-passes` target stays quiet when the check reports what it cannot trace (`holds`, no finding) |
 
 A case may set `focusRefs`, an object from pull request number to a full 40-character commit
 (`{ "3963": "236cad49..." }`). When a requester point names another pull request (`#123`, `PR 123`,
@@ -174,7 +175,9 @@ into the case's cache. Mined case `no-mistakes-4006` uses it (a requester point 
 changes 16 of the same files); piloted 3 of 3 (see `HISTORY.md`).
 
 Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
-(`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3).
+(`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3). `no-mistakes-3963` and
+`no-mistakes-3963-f282a5d` declare `target: "untraced-name-passes"` (expected `does_not_hold`; 3 of 3
+each, see `HISTORY.md`).
 
 ```bash
 pnpm exec code-reviewer bench-focus \
