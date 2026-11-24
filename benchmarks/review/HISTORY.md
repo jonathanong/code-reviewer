@@ -27,6 +27,7 @@ quoted. `vouchington-6254` was not run.
   `vouchington-6254` (negative: removing redundant account cleanup prelocks on the same queue).
 - **Comparability.** Correctness-pillar and verifier rows recorded before this change are not
   comparable with runs after it.
+
 ## 2026-11-24 (no run): deterministic change facts in the focus step prompt
 
 Not measured; no model was called.
