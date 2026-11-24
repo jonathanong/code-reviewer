@@ -10,24 +10,26 @@ Newest first. Every measured run and every change to what is measured gets an en
   reports or the description names each kind.
 - **Why.** Two reviews approved here were rejected downstream for exactly this
   (`no-mistakes-3973`, `no-mistakes-4024`, pinned in the entry below).
-- **Focus step, target alone**, Sonnet 5.5, one case per command, same session, scratch case
-  files holding only this point. Counts are attempts answering as expected.
+- **Focus step, target in its own call**, Sonnet 5.5, one case per command, same session. Counts
+  are attempts answering as expected, pooled over scratch case files holding only this point and
+  the runs beside requester points after the split below (the target's call is the same prompt).
 
   | Case               | Expected            | Committed wording | Without its two examples |
   | ------------------ | ------------------- | ----------------- | ------------------------ |
-  | `no-mistakes-3973` | `does_not_hold`     | 7 of 7            | 4 of 6                   |
+  | `no-mistakes-3973` | `does_not_hold`     | 9 of 10           | 5 of 9                   |
   | `no-mistakes-4024` | `does_not_hold`     | 3 of 4            | 3 of 3                   |
   | `no-mistakes-4006` | `holds`, no finding | 3 of 3            | 3 of 3                   |
   | `no-mistakes-4008` | `holds`, no finding | 3 of 3            | 3 of 3                   |
-  | `no-mistakes-3963` | `holds`, no finding | 3 of 3            | 3 of 3                   |
+  | `no-mistakes-3963` | `holds`, no finding | 4 of 4            | 3 of 3                   |
 
-  The failing `no-mistakes-4024` attempt compared against an intermediate head and said the
+  The failing `no-mistakes-3973` attempt answered `holds`, naming only the opt-in kinds. The
+  failing `no-mistakes-4024` attempt compared against an intermediate head and said the
   description lists the added reports. About $0.20 an attempt.
 
 - **The two examples are the two cases' own mechanisms.** "A name that was unresolved and now
   resolves" is `no-mistakes-3973` and "a value set in one branch that the base took as set
   everywhere" is `no-mistakes-4024`. They were kept because without them `no-mistakes-3973` fell
-  to 4 of 6 alone (and 1 of 3 more beside requester points, below). The score on these two cases
+  to 5 of 9. The score on these two cases
   therefore says little about a rule change with a different mechanism; no such case is pinned.
 - **Earlier wordings.** A plain point ("does not report anything on code the base passes beyond
   what the description says") got 1 of 2 on one attempt each (missed 3973). A first target
@@ -39,11 +41,17 @@ Newest first. Every measured run and every change to what is measured gets an en
 - **Each target now gets its own call** (`src/review/run/focus-run.mts`). Requester points share
   one call; each selected target runs in a call of its own, at the same time; the step counts as
   failed only when every call failed. Same case and points, three attempts: 2 of 3 with the
-  committed wording (the miss answered `holds`, naming the opt-in kinds), and 1 of 3 without the
-  examples. A review with requester points and one target now makes two focus calls instead of
+  committed wording and 1 of 3 without the examples (both counted in the table), at $0.35 to
+  $0.41 a run against $0.20 for the single call. In one of the six runs a requester point came
+  back `not_checked`; the other seventeen requester answers were as expected. A target call that
+  fails twice leaves its point `not_checked` with "The step failed twice." in the report's focus
+  list; the step is not listed as skipped unless every call failed. A review with requester points and one target now makes two focus calls instead of
   one, about $0.20 more.
 - **No control arm for the target itself.** Without it nothing is asked. Both pull requests were
   approved by full reviews (the misses themselves).
+- **Committed quiet entry.** `no-mistakes-3963` now carries this target expecting `holds`,
+  beside its `untraced-name-passes` entry (`does_not_hold`); one attempt on the committed case:
+  2 of 2, two calls, $0.39. It has no `expectNoFindings`, which is graded for the whole case.
 - **Selection** (`bench-selection`, Haiku 5.5, three attempts a case): picked 3 of 3 on
   `no-mistakes-3973` and `no-mistakes-4024`; 0 of 3 on `no-mistakes-4006`, `no-mistakes-4008`
   and `vouchington-6282`. It is also picked 3 of 3 on `no-mistakes-3963`, beside
@@ -61,8 +69,7 @@ Newest first. Every measured run and every change to what is measured gets an en
   prompts are unchanged.
 - **Not measured.** A whole review with the target, the verifier's handling of its findings, any
   repository other than no-mistakes, a change to a non-lint check (a type checker, a validator),
-  two or more targets beside requester points after the split, and a committed quiet case (the
-  quiet runs above used scratch case files).
+  and two or more targets beside requester points after the split.
 
 ## 2026-11-24: a second targeted check, `untraced-name-passes`
 
