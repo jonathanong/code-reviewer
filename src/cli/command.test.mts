@@ -113,6 +113,7 @@ function deps(io: ReviewIo, input = '{}', tracker = memoryTracker()): MockDeps {
     runVerifierBench: vi.fn(async () => 8),
     runSelectionBench: vi.fn(async () => 9),
     runContextBench: vi.fn(async () => 3),
+    runFocusBench: vi.fn(async () => 2),
   }
 }
 
@@ -366,7 +367,7 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'code-reviewer: give a subcommand: post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, or bench-context.',
+      'code-reviewer: give a subcommand: post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, or bench-focus.',
     )
   })
 

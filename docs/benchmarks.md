@@ -555,6 +555,34 @@ pnpm exec code-reviewer bench-context \
 It does not measure whether a pillar reads or applies the excerpt; `bench --excerpts` does. The
 score is in the benchmark README.
 
+## Focus step
+
+`bench-focus` benchmarks the requester-focus step (`--focus FILE`) on its own, running the real
+`runFocus` step (the same prompt builder, schema, `checkedFocus` guard, and computed `Change facts`
+as `review`) against every case that declares an optional `focus` list.
+
+```bash
+pnpm exec code-reviewer bench-focus \
+  --cases benchmarks/review/synthetic.json \
+  --out "$TMPDIR/review-focus"
+```
+
+- **Case format.** Any case in `cases.json` or `synthetic.json` may declare `focus`: an array of
+  1 to 20 `{ point, expectedStatus, reason, expectNoFindings? }` entries where `expectedStatus` is
+  `holds`, `does_not_hold`, or `not_checked`. Cases without `focus` are skipped.
+- **Snapshot and facts.** For fixture cases, `bench-focus` initializes a two-commit git repository
+  (`base/` then `head/`) and writes `context.json`, `context.md`, and `diff/INDEX.md` in a review
+  run directory so `buildFocusFacts` computes real line counts and diff stats.
+- **Deterministic grading.** No judge model is called: a point passes when its returned status
+  equals `expectedStatus` (and, when `expectNoFindings: true` is set, when the focus step also
+  returned zero findings).
+- **Output and flags.** Raw runs go to `<out>/raw/<case>.json`; `summary.json` and `summary.md`
+  report per-case and overall points correct, cost, tokens by model, and every wrong point with its
+  expected status, returned status, and returned basis. `--case <id>` filters cases, `--model NAME`
+  overrides the focus step model, `--mode light|full` selects effort, `--no-rules` disables rule
+  staging and plugins, `--cache DIR` reuses a repo cache, and `--score-only` re-scores saved runs
+  without calling any model.
+
 ## Metrics
 
 | Metric             | Meaning                                                                              |

@@ -27,6 +27,7 @@ code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]..
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
 code-reviewer bench-context [--cases cases.json]... [--history history.json]... --out DIR [--case ID]...
+code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prompts DIR] [--model NAME] [--mode light|full] [--jobs N] [--cache DIR] [--no-rules] [--score-only]
   auth reports whether gh calls use the GitHub App (app.yaml, .yml, .json or .jsonc in the config home ~/.config/code-reviewer, or
   CODE_REVIEWER_APP_ID with CODE_REVIEWER_APP_PRIVATE_KEY or _PATH, which wins) or the local gh
   login. Under App auth it also prints source (env or the App config file path) and
@@ -123,7 +124,11 @@ code-reviewer bench-context [--cases cases.json]... [--history history.json]... 
   bench-context makes no model call: for each case with expectedSkills it builds the rule-excerpts
   section for exactly those skills and reports each skill quoted in full, in part or not, and
   whether each expectedRules text is quoted, cut, or missing from the installed skill; --history
-  files build small git repositories and check the history sections find the commits. It exits 0. bench and bench-verifier stage the same rule sources under
+  files build small git repositories and check the history sections find the commits. It exits 0.
+  bench-focus runs the real focus step (with computed change facts) on each case declaring focus
+  points, grades each point deterministically against expectedStatus (and checks zero findings when
+  expectNoFindings is set), writes raw/<case>.json, summary.json and summary.md, and prints one JSON
+  line; --score-only re-scores saved runs without calling any model. bench and bench-verifier stage the same rule sources under
   .review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by
   the case's repoId); --no-rules stages none and withholds the Skill tool, for control

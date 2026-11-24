@@ -14,6 +14,9 @@
 - Check the shared context with `pnpm exec code-reviewer bench-context --cases <file>... --history <file>... --out <dir>`;
   it makes no model call and costs nothing. Give a tagged case `expectedRules` (a verbatim substring of the
   installed skill's rule line) and re-run it after a skill update or a change under `src/review/context/`.
+- Run the requester-focus eval with `pnpm exec code-reviewer bench-focus --cases <file>... --out <dir>`
+  (add `--case <id>` for one case, `--score-only` to re-score saved runs); it runs `runFocus` on
+  every case declaring `focus` points and grades statuses deterministically without a judge model.
 - Pilot a new case with one attempt. Before quoting a number, run 3 attempts with `--select` (what
   `review` does: Haiku picks the skills, and only the `rules` pillar is told to load them; `--select-all-pillars` forces
   them on every pillar for comparison) and 3 with `--no-rules` in the same session, then score

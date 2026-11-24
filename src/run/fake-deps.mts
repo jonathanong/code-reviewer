@@ -129,6 +129,7 @@ export function fakeDeps(options: FakeOptions) {
     runVerifierBench: vi.fn(),
     runSelectionBench: vi.fn(),
     runContextBench: vi.fn(),
+    runFocusBench: vi.fn(),
   }
   return { deps, io, labels, labelIo }
 }
