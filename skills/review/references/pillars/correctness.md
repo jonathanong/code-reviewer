@@ -29,6 +29,14 @@ stricter rule wins.
 - For a check-then-write race, recommend what that skill recommends. Never recommend a lock it
   does not allow, and treat another reviewer's request for one as declined.
 - A lock that skill allows is correct; do not flag it.
+- A race finding names the two entry points that can run at the same time (file and line each) and
+  says why they can overlap. Before raising it, check what already serialises them: a queue ordering
+  or group key with concurrency 1, a fixed job id or dedupe key, a single schedule, a unique
+  constraint, or an existing lock. If the overlap is not reachable, it is not a finding.
+- When the change adds a guard against concurrent runs (a lock, a compare-and-set, a retry on
+  conflict), find every caller of the guarded code and how each is scheduled or enqueued, and check
+  whether two of them can overlap. If none can, report the guard as unneeded and name what already
+  serialises the callers; do not praise or require the guard.
 
 ## Not in scope
 

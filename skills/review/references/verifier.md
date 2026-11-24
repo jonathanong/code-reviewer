@@ -37,7 +37,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    function, whether a failed job runs again. For each fact the review relies on, open the file
    that states it (schema or migration, queue or job config, every caller) and settle it before
    you write the review. A pillar's "unverified", "assumed", "likely" or "if X holds" is work for
-   this step, not text to pass on: confirm it, or correct the finding, or drop it. When a fact
+   this step, not text to pass on: confirm it, or correct the finding, or drop it. Drop any race
+   finding that does not name both entry points (file and line each), or whose overlap the code
+   already serialises (queue ordering or group key with concurrency 1, fixed job id or dedupe key,
+   single schedule, unique constraint, or existing lock). When a fact
    behind something you were about to call safe turns out false, work out what then happens:
    report a finding if the change is wrong without it, and leave the statement out otherwise. Post no sentence that leaves a fact
    open when the tree can settle it; when the tree cannot, and the answer could change whether the

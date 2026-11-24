@@ -42,6 +42,10 @@ Mined cases (8 real pull requests from `cases.json`):
 - One `vouchington-1146` run had no skills: the Haiku selection call failed, the review ran
   without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).
 - At 3 attempts a difference of one catch is noise.
+- Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
+  compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
+  removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
+  race-reachability rules in `correctness.md` and `verifier.md`.
 
 Review-round cases (`revisions.json`, 51 heads of 29 pull requests): not measured yet. Each is
 one reviewed head of a pull request that took several rounds, with the findings a final review
@@ -98,6 +102,10 @@ judged by Sonnet, $25.14):
   check a title and description that say test-only against the changed files. They were added
   on 2026-11-22 and only piloted (1 attempt); the positive is a ceiling case, caught with and
   without the scope bullet it was written for.
+- Not in the table: `congruence-missing-real-run` checks that a user-visible behavior change whose
+  description is a checklist with no realistic input or output raises one `low` congruence finding
+  under `jong-skills:pr-description`'s "Show one real run" rule. Added on 2026-11-24; piloted once per
+  arm (1 of 1 with the rule, 0 of 1 without), see `HISTORY.md`.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
   alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of

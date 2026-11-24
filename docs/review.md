@@ -172,7 +172,10 @@ A reviewer may challenge whether a change should exist in this form (it solves t
 duplicates something already in the tree, or a much smaller change reaches the stated goal), but
 only with evidence from the tree or the context, as a `medium` or `low` finding that the verifier
 may turn into a question; never as `blocking` or `high` on that ground alone. These are prompt
-rules in the pillar contract, with no code check.
+rules in the pillar contract, with no code check. In the congruence pillar, the verifier also loads
+`jong-skills:pr-description` when a change alters user- or caller-visible behavior and raises one
+`low` finding (never blocking) when the description does not show one realistic input, command or
+call, and real output under its "Show one real run" rule.
 
 A finding's `body` is for the human reading the review: what is wrong and why it matters. Two
 optional fields hold what only whoever fixes it needs. `fix` is exact steps, file lists, commands
