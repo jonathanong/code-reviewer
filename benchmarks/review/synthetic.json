@@ -752,7 +752,7 @@
     "kind": "negative",
     "reason": "Selection fixture: the diff removes a redundant lock rather than adding a guard, so selection should not pick unneeded-concurrency-guard.",
     "expected": [],
-    "unwantedTargets": ["unneeded-concurrency-guard"]
+    "unwantedTargets": ["unneeded-concurrency-guard", "untraced-name-passes"]
   },
   {
     "id": "focus-target-guard-needed",
@@ -767,6 +767,24 @@
         "target": "unneeded-concurrency-guard",
         "expectedStatus": "holds",
         "reason": "nightly and exportNow both enqueue the same export id with nothing serialising them, and the queue runs 4 workers per process.",
+        "expectNoFindings": true
+      }
+    ],
+    "unwantedTargets": ["untraced-name-passes"]
+  },
+  {
+    "id": "focus-target-untraced-reported",
+    "fixture": "fixtures/focus-target-untraced-reported",
+    "title": "feat(lint): flag direct calls to the wall clock outside lib/",
+    "kind": "negative",
+    "reason": "The target must stay quiet: the check follows re-exports, aliases and export star, and reports an imported name it cannot trace as unresolved instead of passing it.",
+    "expected": [],
+    "expectedTargets": ["untraced-name-passes"],
+    "focus": [
+      {
+        "target": "untraced-name-passes",
+        "expectedStatus": "holds",
+        "reason": "Every imported name that cannot be traced is reported as unresolved and fails the build.",
         "expectNoFindings": true
       }
     ]

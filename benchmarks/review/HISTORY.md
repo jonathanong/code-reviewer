@@ -2,6 +2,56 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: a second targeted check, `untraced-name-passes`
+
+- **Target added.** `skills/review/references/targets/untraced-name-passes.md`: for a change to a
+  check that decides by a name in the code it scans, test three shapes (re-exported from a local
+  module, built by a call in a local module, the result of calling an imported function) and
+  whether each is reported or reported as unresolved. Other shapes do not fail the claim.
+- **Why three shapes.** Two earlier wordings asked that no untraced name be treated as clean. On
+  the sound fixture they answered `does_not_hold` in 5 of 7 attempts across fixture repairs, each
+  time for a deeper real gap (subpath imports, methods on imported objects, local aliases, nested
+  members). A claim no check can meet is noise on every lint-rule change, so it was narrowed.
+- **Cases.** `no-mistakes-3963` gains a target focus entry (`does_not_hold`).
+  `no-mistakes-3963-f282a5d` is the later head of the same pull request, focus-only: the fix
+  follows wrapped bindings but still drops a receiver built by an imported factory with no
+  traceable argument. That label rests on this session's reading of
+  `ast/playwright_bindings.rs`; it was reported to the author's session and is not yet confirmed.
+  Its `body` is the description edit in effect when that head was pushed. `focus-target-untraced-reported` in `synthetic.json` is a
+  check meant to report all three shapes (`holds`, no finding); its own tests pass.
+- **Focus step, committed wording**, Sonnet 5.5, one case per command, same session:
+  `no-mistakes-3963` 3 of 3 and `no-mistakes-3963-f282a5d` 3 of 3 (`does_not_hold`).
+  The three attempts on the later head ran before its `body` was pinned; one attempt with the
+  body was also correct.
+  `focus-target-untraced-reported`, three attempts after each of four fixture states: 2 of 3,
+  then 3 of 3, 2 of 3 and 2 of 3 on the last three, so 7 of 9 since the wording was committed.
+  Every failing attempt named a real gap inside the third shape (`make()()`; a result held by
+  `export const`; a result that is awaited, destructured or function-scoped). The first two were
+  repaired and the last was left: a hand-written check is rarely complete, so expect this target
+  to raise a finding on most real checks and the verifier to weigh it. About $0.20 a mined
+  attempt and $0.12 a fixture attempt.
+- **A different implementation.** One attempt on `no-mistakes-4006` (not a committed focus entry)
+  answered `holds`: that rule falls back to matching the name `test`, so all three shapes report.
+- **No control arm.** Without the target nothing is asked, so there is no "before" status. The
+  nearest baseline is the correctness pillar on `no-mistakes-3963`: 0 of 1 with skills and 0 of 1
+  without (entry below).
+- **Selection** (`bench-selection`, Haiku 5.5, three attempts a case): the new target was picked
+  3 of 3 on `no-mistakes-3963`, `no-mistakes-3963-f282a5d`, `no-mistakes-4006` and the fixture,
+  and 0 of 3 on `no-mistakes-4008`, `vouchington-6282`, `vouchington-6254`,
+  `select-target-no-guard` and `focus-target-guard-needed`, each of which lists it under
+  `unwantedTargets`. `vouchington-6254` picked the older `unneeded-concurrency-guard` in 2 of 3
+  though it only removes locks; not measured before this change, so whether listing a second
+  target caused it is unknown.
+- **Two more known misses pinned, no target yet.** `no-mistakes-3973` and `no-mistakes-4024`:
+  approved here, then rejected downstream because the change made code the base passes newly
+  report. Each carries one plain focus point (`does_not_hold` expected). Pilot, one attempt:
+  `no-mistakes-4024` correct, `no-mistakes-3973` wrong (`holds`; the description's "after"
+  output shows one new `unmatched-producer` line without comment). Not a rate.
+- **Not comparable.** The selection prompt now lists two targets, so target-selection rows from
+  before this entry are not comparable. Pillar and verifier prompts are unchanged.
+- **Not measured.** A whole review with the target, the verifier's handling of its findings, and
+  any repository other than no-mistakes.
+
 ## 2026-11-24: three known misses from no-mistakes reviews, and a focus rule for multi-part points
 
 - **Cases added** to `cases.json`, each with `body` as the description read at the reviewed head:

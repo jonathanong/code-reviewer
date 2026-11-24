@@ -119,6 +119,7 @@ describe('parseFocusCase', () => {
       'focus-plain-holds',
       'focus-plain-fails',
       'focus-target-guard-needed',
+      'focus-target-untraced-reported',
     ])
     expect(focusCases[1]?.focus?.[0]?.expectNoFindings).toBe(true)
 
