@@ -127,8 +127,8 @@ export type PostedRun = {
   repo: string
   pr: number
   headSha: string
-  /** The `--input` file; `review` wrote it into the run directory. */
-  input: string
+  /** The `--input` file; `review` wrote it into the run directory. Absent for carried approvals. */
+  input?: string
   findings: readonly Finding[]
   outcome: PostOutcome
 }
@@ -151,7 +151,7 @@ export function recordPosted(io: TrackerIo, run: PostedRun): Recorded {
       event: run.outcome.event,
       downgraded: run.outcome.downgraded ?? null,
       postedAt: io.now().toISOString(),
-      runDir: dirname(resolve(run.input)),
+      runDir: run.input === undefined ? null : dirname(resolve(run.input)),
     })
   })
 }

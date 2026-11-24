@@ -11,6 +11,7 @@ code-reviewer context --repo owner/name --pr N --tree DIR [--out DIR] [--skill p
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
 code-reviewer post --repo owner/name --pr N --head-sha SHA --input findings.json [--dry-run] [--allow-long] [--body-target N] [--inline-target N]
+code-reviewer carry --repo owner/name --pr N --from-sha OLD [--allow-delta] [--dry-run] [--clones DIR]
 code-reviewer diff --repo owner/name --pr N
 code-reviewer revoke --repo owner/name --pr N
 code-reviewer status --repo owner/name --pr N
@@ -86,7 +87,7 @@ code-reviewer bench-context [--cases cases.json]... [--history history.json]... 
   hidden marker and collapsed details not counted in a body) and text that narrates the review
   (the verifier, a pillar, tools, praise) are reported in warnings; over three times a target is
   refused unless --allow-long (tooLong lists those). It adds the "final
-  approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. diff prints the pull request
+  approval" label on Approve or removes it otherwise, then marks final-review:complete. It refuses when the head moved. carry compares the pull request's diff at --from-sha (which must have a posted Approve review from this reviewer) against the current head's diff in local git (from --clones or CODE_REVIEWER_CLONE_ROOT, else a temporary blobless clone), without any model call. When the changes against the base are identical per file it posts a carried Approve review through post's path; when they differ it prints the delta (differing files, line counts and patch) and exits 1 without posting unless --allow-delta is given. It exits 11 when the head already equals --from-sha, and --dry-run prints what would be posted without posting. diff prints the pull request
   diff with base and head line numbers on every line, for reviewers to cite. revoke removes
   the label before a re-review. status exits 0 only when the newest review approved the current
   head and the label is present, or skipped the current head. bench runs each pillar prompt against labeled cases from a git checkout of the pre-merge head
