@@ -121,7 +121,7 @@ Copy `skipped` from `plan.json` (plus any pillar that failed), then write `revie
 ```json
 {
   "effort": "high",
-  "summary": "Two to four sentences.",
+  "summary": "Two to four sentences, about the change, never in the first person: 'Nothing to raise.', not 'I found no issues.'",
   "skipped": [{ "pillar": "security", "reason": "No security trigger paths changed." }],
   "dependencies": [
     {
