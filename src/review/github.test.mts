@@ -76,10 +76,13 @@ describe('createGhReviewIo', () => {
     ])
   })
 
-  it('lists reviews that request changes, and dismisses one with a message', async () => {
-    const { io, calls } = setup(['{"id":9,"body":"b","author":"bot[bot]"}\n', ''])
-    await expect(io.changesRequested()).resolves.toEqual([{ id: 9, body: 'b', author: 'bot[bot]' }])
-    expect(calls[0]?.at(-1)).toContain('CHANGES_REQUESTED')
+  it('lists reviews that request changes or approve, and dismisses one with a message', async () => {
+    const row = '{"id":9,"body":"b","state":"APPROVED","author":"bot[bot]"}\n'
+    const { io, calls } = setup([row, ''])
+    await expect(io.standingReviews()).resolves.toEqual([
+      { id: 9, body: 'b', state: 'APPROVED', author: 'bot[bot]' },
+    ])
+    expect(calls[0]?.at(-1)).toContain('.state == "CHANGES_REQUESTED" or .state == "APPROVED"')
     await io.dismissReview(9, 'Superseded.')
     expect(calls[1]).toEqual([
       'api',

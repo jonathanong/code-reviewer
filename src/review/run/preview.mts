@@ -23,6 +23,6 @@ export function renderPreview(
   const dismissal =
     ids.length === 0
       ? ''
-      : `\n\nWould dismiss this reviewer's earlier request for changes: ${ids.join(', ')}.`
+      : `\n\nWould dismiss this reviewer's earlier reviews that block or approve: ${ids.join(', ')}.`
   return `# Preview: ${outcome.verdict}\n\n${posted}${dismissal}\n\n${parts.join('\n\n')}\n`
 }

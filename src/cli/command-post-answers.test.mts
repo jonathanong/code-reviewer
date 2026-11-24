@@ -22,7 +22,7 @@ const io = (): ReviewIo => {
     listReviews: async () => [...posted],
     trustedAuthors: async () => new Set(['bot']),
     pullAuthor: async () => 'dev',
-    changesRequested: async () => [],
+    standingReviews: async () => [],
     hasApprovalLabel: async () => false,
     postReview: async (review: { body: string }) => {
       posted.push({ id: 7, url: 'https://example.test/r', body: review.body, author: 'bot' })

@@ -104,7 +104,7 @@ describe('the scope of a posted review comes from the pull request files', () =>
       listFiles: vi.fn(async () => filenames.map((filename) => ({ filename }))),
       pullAuthor: vi.fn(async () => 'dev'),
       trustedAuthors: vi.fn(async () => new Set<string>()),
-      changesRequested: vi.fn(async () => []),
+      standingReviews: vi.fn(async () => []),
     }) as unknown as ReviewIo
   const input: ReviewInput = {
     effort: 'high',
