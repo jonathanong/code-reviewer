@@ -601,5 +601,40 @@
     "reason": "Migration 0735 untouched by any later PR through 2026-11-01 (about 35 days).",
     "expected": [],
     "confidence": "medium"
+  },
+  {
+    "id": "vouchington-6282",
+    "repo": "vouchington/vouchington",
+    "pr": 6282,
+    "title": "fix(data-retention): compare and set sweep cursors",
+    "baseSha": "1fd45447686f20fd1145a618dd5002f13534aeac",
+    "headSha": "7d0e7495900c7197e841df7eba3f149bf99fe7d0",
+    "kind": "positive",
+    "reason": "Guarded two cleanup runs overlapping with compare-and-set, although the cleanup job is enqueued with ordering key 'data_retention:cleanup' and concurrency 1; closed by the owner as not planned.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": null,
+        "lines": null,
+        "claim": "The compare-and-set guards two cleanup runs overlapping, but the cleanup job runs under one ordering key with concurrency 1, so the overlap is unreachable and the guard is unneeded."
+      }
+    ],
+    "expectedSkills": ["jong-skills:postgres-locking"],
+    "expectedReads": [
+      "backend/queues/psql/enqueues/schedules.mts",
+      "backend/queues/psql/config.mts"
+    ]
+  },
+  {
+    "id": "vouchington-6254",
+    "repo": "vouchington/vouchington",
+    "pr": 6254,
+    "title": "refactor(data-retention): remove redundant account cleanup prelocks",
+    "baseSha": "3061bb4315408f58e54ae39297aecd76d7a62b35",
+    "headSha": "a7c3ac1a239a39e8ce70ec82d8d17722f8b53872",
+    "kind": "negative",
+    "reason": "Merged PR removing redundant account cleanup prelocks because the cleanup job is already serialised by ordering key 'data_retention:cleanup' with concurrency 1.",
+    "expected": []
   }
 ]
