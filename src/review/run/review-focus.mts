@@ -80,6 +80,15 @@ export function combineFocusPoints(
 }
 
 /**
+ * The focus step's mode. A requester's points are checked at full effort whatever the plan: at a
+ * light plan's low effort the step can return the points of a large change unexamined.
+ */
+export const focusMode = (
+  mode: PillarsInput['mode'],
+  points: ReadonlyArray<{ origin: string }>,
+): PillarsInput['mode'] => (points.some((point) => point.origin === 'requester') ? 'full' : mode)
+
+/**
  * Runs the planned pillars and, when requester or selected target points exist, the focus step
  * beside them. Points reach no one else: the pillars read the run directory, so the answers reach
  * disk only in `review.json` and the report, after every step.
@@ -99,6 +108,7 @@ export async function runPillarsAndFocus(
       : runFocus({
           ...input,
           points: combined,
+          mode: focusMode(input.mode, combined),
           baseSha: range?.baseSha,
           headSha: range?.headSha,
           pr: range?.pr,

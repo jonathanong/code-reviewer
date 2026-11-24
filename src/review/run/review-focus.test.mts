@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
 import type { ReviewPlan } from '../plan.mts'
+import { focusMode } from './review-focus.mts'
 import { runReview, type ReviewSteps } from './review.mts'
 
 const dirs: string[] = []
@@ -36,7 +37,7 @@ const result = (structured: unknown) =>
     structured_output: structured,
   })
 
-type Seen = { prompt: string; schema: string; filesWithPoints: string[] }
+type Seen = { prompt: string; schema: string; effort: string; filesWithPoints: string[] }
 type Answer = 'answers' | 'broken' | 'empty' | 'dropped'
 
 const FOCUS_ANSWER = {
@@ -78,7 +79,8 @@ async function run(
   const exec: Exec = async (_command, args) => {
     const prompt = args[1] as string
     const schema = args[args.indexOf('--json-schema') + 1] as string
-    seen.push({ prompt, schema, filesWithPoints: filesWith(out) })
+    const effort = args[args.indexOf('--effort') + 1] as string
+    seen.push({ prompt, schema, effort, filesWithPoints: filesWith(out) })
     if (args[args.indexOf('--tools') + 1] === '') return result({ skills: [] })
     if (prompt.includes('VERIFIER prompt text')) {
       return result({
@@ -207,6 +209,8 @@ describe('runReview with requester focus points', () => {
     }
     const { review, seen } = await run(POINTS, 'answers', light)
     expect(seen.filter(isFocus)).toHaveLength(1)
+    expect(seen.filter(isFocus)[0]?.effort).toBe('medium')
+    expect(seen.some((call) => !isFocus(call) && call.effort === 'low')).toBe(true)
     expect(review.focus).toHaveLength(2)
   })
 
@@ -270,5 +274,13 @@ describe('runReview with requester focus points', () => {
     for (const call of others(seen)) {
       expect(call.prompt).not.toContain('## Change facts')
     }
+  })
+})
+
+describe('focusMode', () => {
+  it('checks requester points at full effort and leaves target-only steps on the plan mode', () => {
+    expect(focusMode('light', [{ origin: 'target' }, { origin: 'requester' }])).toBe('full')
+    expect(focusMode('light', [{ origin: 'target' }])).toBe('light')
+    expect(focusMode('full', [{ origin: 'target' }])).toBe('full')
   })
 })
