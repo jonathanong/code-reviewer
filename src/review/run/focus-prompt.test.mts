@@ -35,13 +35,15 @@ describe('checkedFocus', () => {
         { index: 5, status: 'holds', basis: 'x', path: 'a.ts' },
         { index: -1, status: 'holds', basis: 'x', path: 'a.ts' },
         { index: 'one', status: 'holds', basis: 'x', path: 'a.ts' },
-        { index: 0, status: 'does_not_hold', basis: 'first answer' },
+        { index: 0, status: 'does_not_hold', basis: 'first answer', path: 'a.ts' },
         { index: 0, status: 'holds', basis: 'second answer', path: 'a.ts' },
         null,
       ],
       ['only'],
     )
-    expect(answers).toEqual([{ point: 'only', status: 'does_not_hold', basis: 'first answer' }])
+    expect(answers).toEqual([
+      { point: 'only', status: 'does_not_hold', basis: 'first answer', path: 'a.ts' },
+    ])
   })
 
   it('records a missing, unknown or empty answer as not checked', () => {
@@ -78,6 +80,12 @@ describe('checkedFocus', () => {
     ])
   })
 
+  it('does not accept a does_not_hold that cites no file', () => {
+    expect(checkedFocus([{ index: 0, status: 'does_not_hold', basis: 'Bad.' }], ['p'])).toEqual([
+      { point: 'p', status: 'not_checked', basis: 'The answer cited no code to support it.' },
+    ])
+  })
+
   it('treats a path that could break out of the posted block as no path', () => {
     const [entry] = checkedFocus(
       [{ index: 0, status: 'holds', basis: 'b', path: 'a`</details>@x.ts', line: 2 }],
@@ -92,13 +100,17 @@ describe('checkedFocus', () => {
       checkedFocus(
         [
           { index: 0, status: 'holds', basis: 'b', path: 'a.ts', line: 0 },
-          { index: 1, status: 'does_not_hold', basis: 'b', line: 3 },
+          { index: 1, status: 'holds', basis: 'b', line: 3 },
         ],
         ['p', 'q'],
       ),
     ).toEqual([
       { point: 'p', status: 'holds', basis: 'b', path: 'a.ts' },
-      { point: 'q', status: 'does_not_hold', basis: 'b' },
+      {
+        point: 'q',
+        status: 'not_checked',
+        basis: 'The answer cited no code to support it.',
+      },
     ])
   })
 })

@@ -37,7 +37,7 @@ const result = (structured: unknown) =>
   })
 
 type Seen = { prompt: string; schema: string; filesWithPoints: string[] }
-type Answer = 'answers' | 'broken' | 'empty'
+type Answer = 'answers' | 'broken' | 'empty' | 'dropped'
 
 const FOCUS_ANSWER = {
   points: [
@@ -84,19 +84,20 @@ async function run(
       return result({
         summary: 'S.',
         pullRequestSummary: 'P.',
-        findings: prompt.includes('Token logged')
-          ? [
-              {
-                pillar: 'focus',
-                severity: 'high',
-                title: 'Token logged',
-                body: 'The token is logged.',
-                path: 'a.ts',
-                line: 9,
-                sources: [0],
-              },
-            ]
-          : [],
+        findings:
+          prompt.includes('Token logged') && answer !== 'dropped'
+            ? [
+                {
+                  pillar: 'focus',
+                  severity: 'high',
+                  title: 'Token logged',
+                  body: 'The token is logged.',
+                  path: 'a.ts',
+                  line: 9,
+                  sources: [0],
+                },
+              ]
+            : [],
       })
     }
     if (prompt.includes('# Requested checks')) {
@@ -202,6 +203,13 @@ describe('runReview with requester focus points', () => {
     expect(skipped).toEqual(['Lockfile only. The requested checks were not run.'])
     const plain = await run(undefined, 'answers', skip)
     expect(plain.skipped).toEqual(['Lockfile only.'])
+  })
+
+  it('makes a does_not_hold not checked when the verifier drops its finding', async () => {
+    const { review } = await run(POINTS, 'dropped')
+    expect(review.findings).toEqual([])
+    expect(statuses(review)).toEqual(['holds', 'not_checked'])
+    expect(review.focus[1].basis).toBe('The verifier did not keep a finding for this point.')
   })
 
   it('marks every point not checked and lists the step as skipped when it fails', async () => {

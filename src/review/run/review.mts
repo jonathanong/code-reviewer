@@ -14,6 +14,7 @@ import { buildAnalysis } from './analysis-prompt.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
+import { keptFocus } from './focus-kept.mts'
 import { runPillarsAndFocus } from './review-focus.mts'
 import { buildReviewContext, reportFields, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
@@ -141,7 +142,7 @@ async function review(
     questions,
     run,
     dependencies,
-    focus: focus?.answers,
+    focus: keptFocus(focus?.answers, verified),
   })
   writeJson(join(out, 'review.json'), input)
   markComplete(out, headSha)

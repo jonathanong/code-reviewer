@@ -133,10 +133,13 @@ agent checks every point against the code, with the same context, read-only tool
 failure handling as a pillar. Its model is `focus`, else `pillars`, else the `medium` tier, so
 `--model focus=...` and `models.steps` accept it. It answers each point by index: `holds`,
 `does_not_hold` or `not_checked`, with a one-sentence basis and the `path` and `line` it rests on.
-A point it did not answer is `not_checked`; so is a `holds` that cites no file, because a point is
+A point it did not answer is `not_checked`; so is a `holds` or `does_not_hold` that cites no file, because a point is
 the requester's own opinion and an unverified yes is worse than "could not check". A point that does
 not hold also gets a finding under the pillar name `focus`, which joins the other pillars' findings
-and is verified like any of them: the verifier alone decides what is posted.
+and is verified like any of them: the verifier alone decides what is posted. After the verifier
+has run, a `does_not_hold` stands only if a kept finding with pillar `focus` cites the same `path`;
+otherwise the point becomes `not_checked` ("The verifier did not keep a finding for this point."),
+so the posted block never says a point fails when the review holds no finding for it.
 
 The points are the requester's words, so they are untrusted: the step is told each is a claim to
 check, not an instruction, and they are given only to it, never to the plan, the other pillars, the
@@ -146,7 +149,7 @@ through a finding. `focus` is a reserved pillar name for [`pillars.extra`](confi
 
 The answers go in `review.json` as `focus` (`point`, `status`, `basis`, optional `path` and `line`), the posted body shows them as one collapsed block, "Requested checks: 2
 hold, 1 does not, 1 not checked", with a line for each point. A review with no `focus` shows
-nothing. A plan that skips the review runs no step, and its skip reason then says the requested checks were not run; a plan with no pillar still fails the review. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
+nothing. A plan that skips the review does not run the step; its skip reason says the requested checks were not run. A plan with no pillar still fails the review. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
 review still completes. Its cost counts toward the cost ceiling. `bench` does not run this step.
 
 ## Findings: premise and prevention
