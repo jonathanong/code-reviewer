@@ -9,6 +9,7 @@ import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
 import { parseFocusFields, type FocusFields } from './focus-case.mts'
+import { appliesToPillar } from './pillar-applies.mts'
 import { parseSelectionTargets } from './selection-targets.mts'
 
 export type ExpectedFinding = {
@@ -191,9 +192,7 @@ export function parseEvalCases(
   return cases
 }
 
-/** Cases that exercise one pillar: its positives plus every negative. */
+/** Cases that exercise one pillar: its positives plus every negative that is not focus-only. */
 export function casesForPillar(cases: readonly EvalCase[], pillar: Pillar): EvalCase[] {
-  return cases.filter(
-    (item) => item.kind === 'negative' || item.expected.some((entry) => entry.pillar === pillar),
-  )
+  return cases.filter((item) => appliesToPillar(item, pillar))
 }

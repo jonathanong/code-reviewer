@@ -2,6 +2,46 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: a third targeted check, `clean-code-newly-reports`, and focus-only cases
+
+- **Target added.** `skills/review/references/targets/clean-code-newly-reports.md`: for a change to
+  the logic of an existing check, rule or resolver, find input the base passes that the head
+  reports, compare any before and after output in the description, and test that nothing newly
+  reports or the description names each kind.
+- **Why.** Two reviews approved here were rejected downstream for exactly this
+  (`no-mistakes-3973`, `no-mistakes-4024`, pinned in the entry below).
+- **Wording.** A plain point ("does not report anything on code the base passes beyond what the
+  description says") got 1 of 2 on one attempt each (missed 3973). A first target wording that
+  led with the description's output got 1 of 2 the other way (missed 4024, where the answer said
+  it had not read the analysis). The committed wording asks for both.
+- **Focus step, committed wording**, Sonnet 5.5, one case per command, three attempts each, same
+  session, run from a scratch case file holding only this point: `no-mistakes-3973` 3 of 3 and
+  `no-mistakes-4024` 2 of 3 (`does_not_hold`); `no-mistakes-4006` 3 of 3 and `no-mistakes-4008`
+  3 of 3 (`holds`, no finding). One further attempt each on the committed entries for 3973 and
+  4024: both correct. About $0.20 an attempt.
+- **A target beside other points can go unanswered.** Asked in one call with four requester
+  points on `no-mistakes-4008`, both target points came back `not_checked` ("not examined"); on
+  `no-mistakes-4006`, beside one requester point, also `not_checked`. A `not_checked` target
+  leaves no trace in a review, so in a live review with a focus file a target can silently not
+  run. The quiet entries were therefore not committed; there is no committed quiet case for this
+  target. Running targets in their own call is the next change.
+- **No control arm.** Without the target nothing is asked. Both pull requests were approved by
+  full reviews (the misses themselves).
+- **Selection** (`bench-selection`, Haiku 5.5, three attempts a case): picked 3 of 3 on
+  `no-mistakes-3973` and `no-mistakes-4024`; 0 of 3 on `no-mistakes-4006`, `no-mistakes-4008`
+  and `vouchington-6282`. `vouchington-6254` had one unwanted pick in 3 (which target is in the
+  raw output; the older guard target was picked there 2 of 3 in the entry below).
+- **Focus-only cases.** A case may set `focusOnly: true` (a negative with focus points). No
+  pillar run scores it and its expected skills and reads apply to no pillar. Set on
+  `no-mistakes-3963-f282a5d`, `no-mistakes-3973`, `no-mistakes-4024` and `no-mistakes-4006`,
+  which were negatives only because no pillar finding is recorded. Pillar false-alarm rows that
+  included `no-mistakes-4006` (since the entry below the next) are not comparable.
+- **Not comparable.** The selection prompt now lists three targets, so target-selection rows
+  from before this entry are not comparable. Pillar and verifier prompts are unchanged.
+- **Not measured.** A whole review with the target, the verifier's handling of its findings, any
+  repository other than no-mistakes, and a change to a non-lint check (a type checker, a
+  validator).
+
 ## 2026-11-24: a second targeted check, `untraced-name-passes`
 
 - **Target added.** `skills/review/references/targets/untraced-name-passes.md`: for a change to a

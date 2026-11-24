@@ -1,6 +1,7 @@
 import { ReviewError } from '../finding.mts'
 import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
+import { appliesToPillar } from './pillar-applies.mts'
 
 /** Parses a case's optional `expectedReads`: a non-empty array of non-empty file paths. */
 export function parseExpectedReads(value: unknown, where: string): string[] | undefined {
@@ -25,8 +26,7 @@ export type ReadCase = {
 
 /** The files a case expects one pillar to open: those of its expected pillars; all for a negative. */
 export function expectedReadsFor(item: EvalCase, pillar: Pillar): string[] {
-  const applies = item.kind === 'negative' || item.expected.some((entry) => entry.pillar === pillar)
-  return applies ? (item.expectedReads ?? []) : []
+  return appliesToPillar(item, pillar) ? (item.expectedReads ?? []) : []
 }
 
 /**
