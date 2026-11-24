@@ -44,8 +44,15 @@ describe('readFocusFile', () => {
   it('refuses more points, or longer ones, than a review checks', () => {
     const many = write(Array.from({ length: 21 }, (_, i) => `point ${i}`).join('\n'))
     expect(() => readFocusFile(many)).toThrow('21 points; at most 20.')
-    const long = write(`ok\n${'x'.repeat(501)}`)
-    expect(() => readFocusFile(long)).toThrow('point 2 is over 500 characters.')
+    const long = write(`ok\n\n${'x'.repeat(501)}`)
+    expect(() => readFocusFile(long)).toThrow('line 3 is 501 characters; at most 500.')
+  })
+
+  it('counts Unicode code points for the character limit', () => {
+    const ok = write('🎉'.repeat(500))
+    expect(readFocusFile(ok)).toEqual(['🎉'.repeat(500)])
+    const over = write(`ok\n${'🎉'.repeat(501)}`)
+    expect(() => readFocusFile(over)).toThrow('line 2 is 501 characters; at most 500.')
   })
 })
 

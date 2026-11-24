@@ -240,4 +240,14 @@ describe('runReview with requester focus points', () => {
     expect(prompts(plain.seen)).toEqual(prompts(withFocus.seen))
     expect(plain.seen.map((call) => call.schema).join()).not.toContain('"focus"')
   })
+
+  it('gives the computed Change facts block to the focus step only', async () => {
+    const { seen } = await run(POINTS)
+    const focusCall = seen.find(isFocus)
+    expect(focusCall?.prompt).toContain('## Change facts')
+    expect(focusCall?.prompt).toContain('Pull request: title 1 characters.')
+    for (const call of others(seen)) {
+      expect(call.prompt).not.toContain('## Change facts')
+    }
+  })
 })

@@ -152,6 +152,18 @@ describe('the focus prompt', () => {
     expect(prompt.startsWith('CONTRACT\n\n# Requested checks')).toBe(true)
     expect(prompt).toContain('/out/diff/INDEX.md')
     expect(prompt).not.toContain('call the Skill tool')
+    expect(prompt).not.toContain('## Change facts')
+  })
+
+  it('includes the computed facts block and instruction when facts are supplied', () => {
+    const prompt = buildFocusPrompt(
+      input,
+      ['file is under 200 lines'],
+      '## Change facts\n\nChanged files: 1.',
+    )
+    expect(prompt).toContain('computed mechanically')
+    expect(prompt).toContain('answered `holds` or `does_not_hold` from them, citing the fact')
+    expect(prompt).toContain('## Change facts\n\nChanged files: 1.')
   })
 })
 

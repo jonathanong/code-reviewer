@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (no run): deterministic change facts in the focus step prompt
+
+Not measured; no model was called.
+
+- **What changed.** The `focus` step prompt now includes a mechanically computed `## Change facts`
+  block (pull request title and description lengths in code points, changed file count, and a table
+  of up to 200 changed files with status, added/removed lines or `binary`, total line count at head,
+  and YAML frontmatter `description:` character length when present), computed from local git and
+  `context.json` with no model or GitHub API call. The prompt instructs the step that the block is
+  computed rather than estimated and that any point the facts decide must be answered `holds` or
+  `does_not_hold` from them, citing the fact.
+- **Comparability.** Focus-step runs before this change are not comparable with runs after it. No
+  pillar, verifier, approval check, or non-focus prompt or schema changed, so existing benchmark
+  rows are unaffected (`bench` does not run the focus step).
+
 ## 2026-11-23 (no run): the review summary is never in the first person
 
 Not measured; no model was called.

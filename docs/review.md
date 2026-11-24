@@ -124,13 +124,21 @@ check accept the extra's name on findings.
 
 `--focus FILE` on `review` and `run` carries what whoever asked for the review wants checked.
 `FILE` is text, one point per non-empty line, a leading `- ` stripped; at most 20 points of 500
-characters. A file that is missing, unreadable, has no point, or has too many or too long ones
-stops the command before any work, naming `--focus` and the file. Without the flag nothing changes:
+characters (counted as Unicode code points). A file that is missing, unreadable, has no point, or has too many or too long ones
+stops the command before any work, naming `--focus`, the file, and for an over-long line its line number and length. Without the flag nothing changes:
 no step, no prompt, no cost.
 
 With points, one extra step, `focus`, runs beside the pillars, whatever the plan dispatched. One
 agent checks every point against the code, with the same context, read-only tools, retry and
-failure handling as a pillar. Its model is `focus`, else `pillars`, else the `medium` tier, so
+failure handling as a pillar. Its prompt also includes a `## Change facts` Markdown block computed
+mechanically from local git and `context.json` (with no model or GitHub API call): pull request
+title and description lengths in characters, total changed files, and a table of up to 200 changed
+files (the 200 with the most changed lines when there are more, with the omitted count stated) giving
+each file's status, added/removed lines (or `binary`), total lines at head, and the character length
+of its YAML frontmatter `description:` value when present. If git fails for a fact, that fact is
+omitted and the step still runs. The prompt tells the step that the block is computed rather than
+estimated, and that points it decides must be answered `holds` or `does_not_hold` from it rather than
+`not_checked`. The facts block goes only to `focus`, never to the pillars or the verifier. Its model is `focus`, else `pillars`, else the `medium` tier, so
 `--model focus=...` and `models.steps` accept it. It answers each point by index: `holds` (it checked and found nothing wrong on the point),
 `does_not_hold` (it found a problem on the point that deserves a finding) or `not_checked`; a point phrased as a question is answered the same way. Each has a one-sentence basis and the `path` and `line` it rests on.
 A point it did not answer is `not_checked`; so is a `holds` or `does_not_hold` that cites no file, because a point is

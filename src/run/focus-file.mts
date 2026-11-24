@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 
-import { MAX_FOCUS_CHARS, MAX_FOCUS_POINTS } from '../review/focus.mts'
+import { charLength, MAX_FOCUS_CHARS, MAX_FOCUS_POINTS } from '../review/focus.mts'
 
 /**
  * The points in a `--focus` file: one per non-empty line, a leading `- ` stripped. Throws a message
@@ -16,22 +16,27 @@ export function readFocusFile(path: string): string[] {
       cause: error,
     })
   }
-  const points = raw
+  const entries = raw
     .split(/\r?\n/u)
-    .map((line) =>
-      line
+    .map((line, index) => ({
+      line: index + 1,
+      point: line
         .trim()
         .replace(/^-(\s+|$)/u, '')
         .trim(),
-    )
-    .filter((line) => line !== '')
-  if (points.length === 0) throw new Error(`--focus ${path}: the file has no focus points.`)
-  if (points.length > MAX_FOCUS_POINTS) {
-    throw new Error(`--focus ${path}: ${points.length} points; at most ${MAX_FOCUS_POINTS}.`)
+    }))
+    .filter((entry) => entry.point !== '')
+  if (entries.length === 0) throw new Error(`--focus ${path}: the file has no focus points.`)
+  if (entries.length > MAX_FOCUS_POINTS) {
+    throw new Error(`--focus ${path}: ${entries.length} points; at most ${MAX_FOCUS_POINTS}.`)
   }
-  const long = points.findIndex((point) => point.length > MAX_FOCUS_CHARS)
-  if (long !== -1) {
-    throw new Error(`--focus ${path}: point ${long + 1} is over ${MAX_FOCUS_CHARS} characters.`)
+  for (const entry of entries) {
+    const length = charLength(entry.point)
+    if (length > MAX_FOCUS_CHARS) {
+      throw new Error(
+        `--focus ${path}: line ${entry.line} is ${length} characters; at most ${MAX_FOCUS_CHARS}.`,
+      )
+    }
   }
-  return points
+  return entries.map((entry) => entry.point)
 }
