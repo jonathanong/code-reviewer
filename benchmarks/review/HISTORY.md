@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): the review summary is never in the first person
+
+Not measured; no model was called.
+
+- **What changed.** The verifier's output example in `skills/review/references/verifier.md` now says
+  the summary is about the change and never in the first person. Summaries of light reviews had
+  ended "I found no issues" or "I found nothing to flag".
+- **Comparability.** The verifier prompt changed, so rows that score the verifier's output are not
+  comparable with earlier entries. No finding, severity or verdict rule changed.
+
 ## 2026-11-23 (no run): a review request's focus points are checked by their own step
 
 Not measured; no model was called.
