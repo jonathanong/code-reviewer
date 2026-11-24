@@ -6,6 +6,7 @@ import { writeDiffDir } from '../write-diff.mts'
 import { isFixtureCase, type EvalCase } from './cases.mts'
 import type { Exec } from './exec.mts'
 import type { stageCaseRules } from './rules.mts'
+import { cacheDirOf, fetchShas } from './snapshot-cache.mts'
 import { CONTEXT_DIR, type Snapshot } from './snapshot.mts'
 
 const GIT_IDENTITY = [
@@ -70,6 +71,12 @@ export async function prepareFocusCase(
   deps: PrepareFocusDeps,
 ): Promise<PreparedFocusCase> {
   const snapshot = await deps.prepare(item, options.cache, options.work, deps.exec)
+  if (!isFixtureCase(item) && item.focusRefs !== undefined) {
+    // The checkout reads the cache's objects through `alternates`, so a pinned head fetched here is
+    // reachable from it and `runFocus` needs no network and no remote.
+    const pinned = Object.values(item.focusRefs)
+    await fetchShas(cacheDirOf(options.cache, item.repo), pinned, deps.exec)
+  }
   const { tree, baseSha, headSha } = isFixtureCase(item)
     ? {
         tree: join(options.work, item.id, 'git-tree'),

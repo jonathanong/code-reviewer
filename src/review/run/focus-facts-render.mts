@@ -17,7 +17,7 @@ export type FocusFacts = {
   files: { total: number; omitted: number; listed: FocusFileFact[] } | null
 }
 
-function cellPath(path: string): string {
+export function cellPath(path: string): string {
   const safe = path.replaceAll('\r', '\\r').replaceAll('\n', '\\n').replaceAll('|', '\\|')
   const runs = safe.match(/`+/gu)
   if (runs === null) return `\`${safe}\``

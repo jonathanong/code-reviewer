@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: focus step reads the pull requests a requester point names (no run)
+
+- **Change.** A requester focus point that names another pull request of the same repository
+  (`#123`, `PR 123`, `pull request 123`) now adds one computed block per named pull request (the
+  first 3) to the focus prompt: its head commit, changed-file count and file list from local git,
+  marking paths the reviewed pull request also changes. The focus prompt changes only then; with no
+  such point it is byte-identical and no git fetch runs. The verifier, pillar and selection prompts
+  are unchanged.
+- **Case field.** `focusRefs` (pull request number to a full 40-character commit) pins the other
+  head for `bench-focus` so the run is reproducible; `no-mistakes-4006` pins 3963.
+- **Not comparable.** `no-mistakes-4006` (its focus point names 3963; it answered `not_checked`
+  before, with "PR 3963 isn't in the checkout"), and any other focus row whose requester point
+  matches those patterns, such as `no-mistakes-3963` and `no-mistakes-4008` if their points name a
+  pull request. Synthetic focus cases and `vouchington-6282` name none, so their rows still
+  compare. No run.
+
 ## 2026-11-24: three known misses from no-mistakes reviews, and a focus rule for multi-part points
 
 - **Cases added** to `cases.json`, each with `body` as the description read at the reviewed head:

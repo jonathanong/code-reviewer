@@ -749,6 +749,9 @@
         "expectedStatus": "does_not_hold",
         "reason": "Pull request 3963 adds rules named test-no-retries and playwright-no-serial with the same docs pages; only one can merge."
       }
-    ]
+    ],
+    "focusRefs": {
+      "3963": "236cad49c02de57e3204c492ddf94e3b659951f2"
+    }
   }
 ]

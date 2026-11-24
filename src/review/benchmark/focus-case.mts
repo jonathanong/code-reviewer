@@ -76,3 +76,46 @@ export function parseFocusCase(
   })
   return { focus }
 }
+
+const SHA_RE = /^[0-9a-f]{40}$/u
+const PR_NUMBER_RE = /^[1-9][0-9]{0,8}$/u
+
+/**
+ * Parses a case's optional `focusRefs`: pull request number to the full commit the benchmark uses
+ * for that pull request's head, so a case that names another pull request stays reproducible.
+ */
+export function parseFocusRefs(
+  raw: unknown,
+  where: string,
+): { focusRefs?: Record<string, string> } {
+  if (raw === undefined) return {}
+  if (!isRecord(raw) || Object.keys(raw).length === 0) {
+    throw new ReviewError(`${where}: focusRefs must map pull request numbers to commits`)
+  }
+  for (const [number, sha] of Object.entries(raw)) {
+    if (!PR_NUMBER_RE.test(number)) {
+      throw new ReviewError(`${where}: focusRefs key "${number}" must be a pull request number`)
+    }
+    if (typeof sha !== 'string' || !SHA_RE.test(sha)) {
+      throw new ReviewError(`${where}: focusRefs.${number} must be a full 40-character commit`)
+    }
+  }
+  return { focusRefs: raw as Record<string, string> }
+}
+
+/** A case's focus points and the pull request heads they may name. */
+export type FocusFields = {
+  focus?: FocusCasePoint[]
+  /** Pull request number to the commit used as its head when a focus point names it. */
+  focusRefs?: Record<string, string>
+}
+
+/** Parses `focus` and `focusRefs` of a raw case. */
+export const parseFocusFields = (
+  raw: Json,
+  where: string,
+  targets?: readonly ReviewTarget[],
+): FocusFields => ({
+  ...parseFocusCase(raw.focus, where, targets),
+  ...parseFocusRefs(raw.focusRefs, where),
+})

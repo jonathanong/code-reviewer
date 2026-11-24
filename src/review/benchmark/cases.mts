@@ -8,7 +8,7 @@ import { parseExpectedReads } from './reads-score.mts'
 import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
-import { parseFocusCase, type FocusCasePoint } from './focus-case.mts'
+import { parseFocusFields, type FocusFields } from './focus-case.mts'
 import { parseSelectionTargets } from './selection-targets.mts'
 
 export type ExpectedFinding = {
@@ -19,7 +19,7 @@ export type ExpectedFinding = {
   claim: string
 }
 
-type CaseBase = {
+type CaseBase = FocusFields & {
   id: string
   title: string
   kind: 'positive' | 'negative'
@@ -32,7 +32,6 @@ type CaseBase = {
   expectedTargets?: string[]
   unwantedTargets?: string[]
   answerable?: AnswerableCase[]
-  focus?: FocusCasePoint[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -168,7 +167,7 @@ function evalCase(
     ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
     ...parseSelectionTargets(raw.expectedTargets, raw.unwantedTargets, where, targetNames),
     ...parseAnswerable(raw.answerable, where),
-    ...parseFocusCase(raw.focus, where, targets),
+    ...parseFocusFields(raw, where, targets),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',

@@ -76,7 +76,7 @@ async function review(
       ...harness,
     },
     options.focus,
-    prepared,
+    { ...prepared, pr: options.pr },
     selectedReviewTargets(steps, mode, skillChoice.targets),
   )
   // A pillar the ceiling kept from starting looks like a failed one, so stop before judging them.

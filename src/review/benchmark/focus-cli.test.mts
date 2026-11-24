@@ -10,7 +10,7 @@ import { runReviewFocusBenchCli, type FocusBenchDeps } from './focus-cli.mts'
 const SHA_A = 'a'.repeat(40)
 const SHA_B = 'b'.repeat(40)
 
-const caseJson = (id: string, focus?: unknown) => ({
+const caseJson = (id: string, focus?: unknown, focusRefs?: unknown) => ({
   id,
   repo: 'acme/widgets',
   pr: 1,
@@ -20,6 +20,7 @@ const caseJson = (id: string, focus?: unknown) => ({
   kind: 'negative',
   expected: [],
   ...(focus === undefined ? {} : { focus }),
+  ...(focusRefs === undefined ? {} : { focusRefs }),
 })
 
 const POINT = { point: 'check x', expectedStatus: 'holds', reason: 'r' }
@@ -311,5 +312,39 @@ describe('runReviewFocusBenchCli', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('gives runFocus the pull request under review and the pinned heads of the case', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const h = harness(() => okRun('holds'))
+    const pin = { '7': 'c'.repeat(40) }
+    h.store.set(
+      'pinned.json',
+      JSON.stringify([
+        caseJson('pin', [POINT], pin),
+        caseJson('nopin', [POINT]),
+        { id: 'fx', fixture: 'fx', title: 'fx', kind: 'negative', expected: [], focus: [POINT] },
+      ]),
+    )
+    await runReviewFocusBenchCli(
+      [
+        ...BASE,
+        '--cases',
+        'pinned.json',
+        '--case',
+        'pin',
+        '--case',
+        'nopin',
+        '--case',
+        'fx',
+        '--jobs',
+        '1',
+      ],
+      h.deps,
+    )
+    const inputs = h.ran as { pr?: number; refs?: unknown }[]
+    expect(inputs).toHaveLength(3)
+    expect(inputs.map((input) => input.pr)).toEqual([1, 1, undefined])
+    expect(inputs.map((input) => input.refs).filter((refs) => refs !== undefined)).toEqual([pin])
   })
 })

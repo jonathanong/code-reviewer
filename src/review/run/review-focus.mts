@@ -18,7 +18,12 @@ export type PillarsAndFocus = {
   extraPillars: string[]
 }
 
-export type FocusRange = { baseSha?: string | undefined; headSha?: string | undefined }
+export type FocusRange = {
+  baseSha?: string | undefined
+  headSha?: string | undefined
+  /** The number of the pull request under review. */
+  pr?: number | undefined
+}
 
 /** Enabled built-in targets from `<references>/targets/`, after repository config disables any. */
 export function enabledReviewTargets(
@@ -91,7 +96,13 @@ export async function runPillarsAndFocus(
     runPillars(input),
     combined.length === 0
       ? undefined
-      : runFocus({ ...input, points: combined, baseSha: range?.baseSha, headSha: range?.headSha }),
+      : runFocus({
+          ...input,
+          points: combined,
+          baseSha: range?.baseSha,
+          headSha: range?.headSha,
+          pr: range?.pr,
+        }),
   ])
   if (focus === undefined) return { results, judged: results, droppedTargets, extraPillars: extra }
   return {
