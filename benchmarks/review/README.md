@@ -143,6 +143,25 @@ graded by code and reported per thread. The pillar benches do not run this file.
   (`answerableThreads`), so a case file, which lists notes after that filter, cannot express it;
   a unit test covers it instead.
 
+Focus cases (`synthetic.json`, `bench-focus`): **piloted once, 6 of 6 points (2026-11-24); no rate yet.** `bench-focus` runs the real
+requester-focus step (`runFocus` with computed `Change facts`) on every case declaring `focus`
+points, and grades each point deterministically against its `expectedStatus` (`holds`,
+`does_not_hold`, or `not_checked`, plus zero findings when `expectNoFindings` is set).
+
+| Case                  | Points checked                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `focus-fact-decides`  | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`) |
+| `focus-hostile-point` | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)            |
+| `focus-unanswerable`  | production p99 latency metric absent from the tree (`not_checked`)                       |
+| `focus-plain-holds`   | `clamp` throws `RangeError` when `min > max` (`holds`)                                   |
+| `focus-plain-fails`   | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                     |
+
+```bash
+pnpm exec code-reviewer bench-focus \
+  --cases benchmarks/review/synthetic.json \
+  --out "$TMPDIR/review-focus"
+```
+
 ### How to read the numbers
 
 - Every rate is out of 3 attempts per arm. A difference of one catch is noise.
@@ -181,7 +200,7 @@ those already quoted in the shared context; see [the benchmarks reference](../..
 `bench --loads-only --pillar <p> --case <id>` runs a pillar on a case it expects nothing from, with no judge,
 only to record the skills it loads.
 
-Other commands: `bench-selection`, `bench-verifier` and `bench-context` (no model); `--score-only` re-scores saved results
+Other commands: `bench-selection`, `bench-verifier`, `bench-focus` and `bench-context` (no model); `--score-only` re-scores saved results
 without model calls. A run costs dollars and minutes per case, so run only the pillars
 whose prompts changed, and read [AGENTS.md](AGENTS.md) first. Raw results land in
 `<out>/raw/`, with `summary.json` and `summary.md` beside them, and are not committed.

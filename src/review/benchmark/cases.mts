@@ -7,6 +7,7 @@ import { parseExpectedReads } from './reads-score.mts'
 import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
+import { parseFocusCase, type FocusCasePoint } from './focus-case.mts'
 
 export type ExpectedFinding = {
   pillar: Pillar
@@ -32,6 +33,8 @@ type CaseBase = {
   unwantedSkills?: string[]
   /** Other reviewers' open notes shown to the verifier, each with the outcome `bench-verifier` expects. */
   answerable?: AnswerableCase[]
+  /** Requester points and expected outcomes for `bench-focus`. */
+  focus?: FocusCasePoint[]
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -54,20 +57,14 @@ export type FixtureCase = CaseBase & {
 
 export type EvalCase = RepoCase | FixtureCase
 
-export function isFixtureCase(item: EvalCase): item is FixtureCase {
-  return 'fixture' in item
-}
+export const isFixtureCase = (item: EvalCase): item is FixtureCase => 'fixture' in item
 
 const REPO_FIELDS = ['repo', 'pr', 'baseSha', 'headSha'] as const
-
 type Json = Record<string, unknown>
-
 const SHA_RE = /^[0-9a-f]{40}$/u
 const REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u
-
-function isRecord(value: unknown): value is Json {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
+const isRecord = (value: unknown): value is Json =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
 
 function fail(where: string, message: string): never {
   throw new ReviewError(`${where}: ${message}`)
@@ -88,9 +85,8 @@ function lines(value: unknown, where: string): [number, number] | null {
     !Number.isInteger(end) ||
     (start as number) < 1 ||
     (end as number) < (start as number)
-  ) {
+  )
     fail(where, 'lines must be ascending positive integers')
-  }
   return [start as number, end as number]
 }
 
@@ -173,6 +169,7 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
     ...(expectedRules === undefined ? {} : { expectedRules }),
     ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
     ...parseAnswerable(raw.answerable, where),
+    ...parseFocusCase(raw.focus, where),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',

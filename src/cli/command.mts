@@ -22,7 +22,7 @@ import { REVIEW_USAGE } from './usage.mts'
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, or bench-context'
+  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, or bench-focus'
 
 /** Subcommands that call GitHub for a repository or owner; `run` checks the App in its own preflight. */
 const NEEDS_IDENTITY = new Set([
@@ -70,6 +70,7 @@ async function run(
   if (subcommand === 'bench-verifier') return deps.runVerifierBench(args)
   if (subcommand === 'bench-selection') return deps.runSelectionBench(args)
   if (subcommand === 'bench-context') return deps.runContextBench(args)
+  if (subcommand === 'bench-focus') return deps.runFocusBench(args)
   const digest = subcommand === 'outcomes' && args[0] === 'digest'
   const values = parse(digest ? args.slice(1) : args)
   if (subcommand === undefined) throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)

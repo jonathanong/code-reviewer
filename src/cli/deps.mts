@@ -46,11 +46,7 @@ export type ReviewDeps = {
   checkInstallation(owner: string, repo?: string): Promise<void>
   /** The per-owner and per-repository settings read from the machine config directory. */
   configs(): RepoConfigs
-  /**
-   * The `.code-reviewer` config file (any accepted ending) on `repo`'s default branch, read through
-   * the GitHub API at most once per repository; a missing file is no config and a failed read is a
-   * problem, not an error.
-   */
+  /** The `.code-reviewer` config file on `repo`'s default branch, read once via GitHub API. */
   targetConfig(repo: string): Promise<TargetConfig>
   createIo(target: PullTarget): ReviewIo
   createLabelIo(target: PullTarget): LabelIo
@@ -81,6 +77,7 @@ export type ReviewDeps = {
   runVerifierBench(args: string[]): Promise<number>
   runSelectionBench(args: string[]): Promise<number>
   runContextBench(args: string[]): Promise<number>
+  runFocusBench(args: string[]): Promise<number>
 }
 
 /** Default dependencies; App or `gh` auth is chosen once, on first use. */
@@ -193,5 +190,7 @@ export function createDefaultDeps(
       (await import('../review/benchmark/selection-cli.mts')).runReviewSelectionBenchCli(args),
     runContextBench: async (args) =>
       (await import('../review/benchmark/context-cli.mts')).runReviewContextBenchCli(args),
+    runFocusBench: async (args) =>
+      (await import('../review/benchmark/focus-cli.mts')).runReviewFocusBenchCli(args),
   }
 }

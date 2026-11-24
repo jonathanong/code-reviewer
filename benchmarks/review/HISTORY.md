@@ -2,6 +2,37 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (pilot): add `bench-focus` and five synthetic focus cases
+
+Pilot, one attempt per case, Sonnet 5.5, run one case at a time: 6 of 6 points correct across the
+five cases ($0.43 in total, about $0.09 a case). The hostile point came back `not_checked` with no
+finding. One attempt shows the graders work; it is not a rate. Every case passed, so the suite is a
+guard against regressions in the focus step, not a measure of how much the step helps.
+
+- **What changed.** Added `code-reviewer bench-focus` (`src/review/benchmark/focus-cli.mts`,
+  `focus-case.mts`, `focus-prepare.mts`, `focus-score.mts`) to benchmark the real requester-focus
+  step (`runFocus` with computed `Change facts`) without changing the focus prompt, schema, or
+  verifier. Cases in existing case files may declare an optional `focus` array of
+  `{ point, expectedStatus, reason, expectNoFindings? }`; `bench-focus` skips cases without
+  `focus`, builds a two-commit git checkout for fixture cases so `buildFocusFacts` runs real git
+  commands, and grades statuses deterministically (plus zero findings when `expectNoFindings` is
+  set) with no judge model.
+- **Cases added (`synthetic.json`).** Five synthetic focus cases: `focus-fact-decides`,
+  `focus-hostile-point`, `focus-unanswerable`, `focus-plain-holds`, and `focus-plain-fails`.
+- **Comparability.** No existing prompt, schema, or case changed; earlier rows are unaffected.
+  The five new focus cases were piloted once (above).
+
+## 2026-11-24 (pilot): the race rule on an existing true-race case
+
+After the race rule merged, `vouchington-2936` (a real race, correctness medium) was run once per
+arm through the correctness pillar (Sonnet 5.5, Opus judge): 0 of 1 with the rule ($0.14, no
+finding, one search for the lock's callers) and 0 of 1 with the prompts from the commit before it
+(one medium finding about a blocking advisory lock, not the expected one). The verifier (Opus 5.5,
+$0.47), given the with-rule arm's empty findings, dropped nothing and added one medium finding the
+judge did not count as the label. One attempt per arm: no evidence the rule lost a true race
+finding, and none that it helped. Whether the rule quietens the lock-rule finding the control
+reported is not known.
+
 ## 2026-11-24 (pilot): a race finding must show the race is reachable
 
 Two one-attempt pilots of `vouchington-6282` on the `correctness` pillar (Sonnet 5.5, Opus judge,
