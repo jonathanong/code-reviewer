@@ -576,6 +576,9 @@ pnpm exec code-reviewer bench-focus \
 - **Case format.** Any case in `cases.json` or `synthetic.json` may declare `focus`: an array of
   1 to 20 `{ point, expectedStatus, reason, expectNoFindings? }` entries — or `{ target, expectedStatus, reason, expectNoFindings? }`, where `target` names a built-in target file under `skills/review/references/targets/` whose body is loaded verbatim — where `expectedStatus` is
   `holds`, `does_not_hold`, or `not_checked`. Cases without `focus` are skipped.
+- **Focus-only cases.** A negative case with focus points may set `focusOnly: true`. It is graded
+  only by `bench-focus` (and `bench-selection` for its targets): no pillar run scores it, and its
+  expected skills and reads apply to no pillar.
 - **Snapshot and facts.** For fixture cases, `bench-focus` initializes a two-commit git repository
   (`base/` then `head/`) and writes `context.json`, `context.md`, and `diff/INDEX.md` in a review
   run directory so `buildFocusFacts` computes real line counts and diff stats.

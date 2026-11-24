@@ -1,5 +1,6 @@
 import type { Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
+import { appliesToPillar } from './pillar-applies.mts'
 
 export type SkillOutcome = 'grounded' | 'ungrounded' | 'loaded-missed' | 'missed'
 
@@ -42,8 +43,7 @@ export function skillLabel(expected: ExpectedSkill): string {
 
 /** The skills a case expects for one pillar: those of its expected pillars; all for a negative. */
 export function expectedSkillsFor(item: EvalCase, pillar: Pillar): ExpectedSkill[] {
-  const applies = item.kind === 'negative' || item.expected.some((entry) => entry.pillar === pillar)
-  return applies ? (item.expectedSkills ?? []) : []
+  return appliesToPillar(item, pillar) ? (item.expectedSkills ?? []) : []
 }
 
 function outcome(caught: boolean, missing: readonly ExpectedSkill[]): SkillOutcome {

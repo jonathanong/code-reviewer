@@ -108,9 +108,20 @@ export type FocusFields = {
   focus?: FocusCasePoint[]
   /** Pull request number to the commit used as its head when a focus point names it. */
   focusRefs?: Record<string, string>
+  /** The case is graded only by its focus points; no pillar run scores it. */
+  focusOnly?: true
 }
 
-/** Parses `focus` and `focusRefs` of a raw case. */
+function parseFocusOnly(raw: Json, where: string): { focusOnly?: true } {
+  if (raw.focusOnly === undefined || raw.focusOnly === false) return {}
+  if (raw.focusOnly !== true) throw new ReviewError(`${where}: focusOnly must be a boolean`)
+  if (!Array.isArray(raw.focus) || raw.kind !== 'negative') {
+    throw new ReviewError(`${where}: a focusOnly case is a negative with focus points`)
+  }
+  return { focusOnly: true }
+}
+
+/** Parses `focus`, `focusRefs` and `focusOnly` of a raw case. */
 export const parseFocusFields = (
   raw: Json,
   where: string,
@@ -118,4 +129,5 @@ export const parseFocusFields = (
 ): FocusFields => ({
   ...parseFocusCase(raw.focus, where, targets),
   ...parseFocusRefs(raw.focusRefs, where),
+  ...parseFocusOnly(raw, where),
 })

@@ -223,4 +223,25 @@ describe('casesForPillar', () => {
     expect(casesForPillar(cases, 'security').map((item) => item.id)).toEqual(['p1', 'n1'])
     expect(casesForPillar(cases, 'design').map((item) => item.id)).toEqual(['n1'])
   })
+
+  it('leaves a focus-only case out of every pillar', () => {
+    const focus = [{ point: 'p', expectedStatus: 'holds', reason: 'r' }]
+    const cases = parseEvalCases([negative(), negative({ id: 'f1', focusOnly: true, focus })])
+    expect(cases[1]?.focusOnly).toBe(true)
+    expect(casesForPillar(cases, 'design').map((item) => item.id)).toEqual(['n1'])
+  })
+
+  it('rejects a focus-only case that is not a negative with focus points', () => {
+    const focus = [{ point: 'p', expectedStatus: 'holds', reason: 'r' }]
+    expect(() => parseEvalCases([negative({ focusOnly: true })])).toThrow(
+      'a focusOnly case is a negative with focus points',
+    )
+    expect(() => parseEvalCases([positive({ focusOnly: true, focus })])).toThrow(
+      'a focusOnly case is a negative with focus points',
+    )
+    expect(() => parseEvalCases([negative({ focusOnly: 'yes', focus })])).toThrow(
+      'focusOnly must be a boolean',
+    )
+    expect(parseEvalCases([negative({ focusOnly: false })])[0]?.focusOnly).toBeUndefined()
+  })
 })
