@@ -17,16 +17,19 @@ Newest first. Every measured run and every change to what is measured gets an en
   follows wrapped bindings but still drops a receiver built by an imported factory with no
   traceable argument. That label rests on this session's reading of
   `ast/playwright_bindings.rs`; it was reported to the author's session and is not yet confirmed.
-  Its `body` was read one head later. `focus-target-untraced-reported` in `synthetic.json` is a
-  check meant to report all three shapes (`holds`, no finding); its own tests pass (12 of 12).
+  Its `body` is the description edit in effect when that head was pushed. `focus-target-untraced-reported` in `synthetic.json` is a
+  check meant to report all three shapes (`holds`, no finding); its own tests pass.
 - **Focus step, committed wording**, Sonnet 5.5, one case per command, same session:
   `no-mistakes-3963` 3 of 3 and `no-mistakes-3963-f282a5d` 3 of 3 (`does_not_hold`).
-  `focus-target-untraced-reported`: 2 of 3 before its last repair (the failing attempt named
-  `make()()`), 3 of 3 after it, then 2 of 3 after a test-only fix to the fixture, so 5 of 6 on
-  the repaired check. The failing attempt named a real gap inside the third shape (a result held
-  by `export const`, destructuring or `await`). The fixture was not repaired again: a
-  hand-written check is rarely complete, so expect this target to raise a finding on most real
-  checks and the verifier to weigh it. About $0.20 a mined attempt and $0.12 a fixture attempt.
+  The three attempts on the later head ran before its `body` was pinned; one attempt with the
+  body was also correct.
+  `focus-target-untraced-reported`, three attempts after each of four fixture states: 2 of 3,
+  then 3 of 3, 2 of 3 and 2 of 3 on the last three, so 7 of 9 since the wording was committed.
+  Every failing attempt named a real gap inside the third shape (`make()()`; a result held by
+  `export const`; a result that is awaited, destructured or function-scoped). The first two were
+  repaired and the last was left: a hand-written check is rarely complete, so expect this target
+  to raise a finding on most real checks and the verifier to weigh it. About $0.20 a mined
+  attempt and $0.12 a fixture attempt.
 - **A different implementation.** One attempt on `no-mistakes-4006` (not a committed focus entry)
   answered `holds`: that rule falls back to matching the name `test`, so all three shapes report.
 - **No control arm.** Without the target nothing is asked, so there is no "before" status. The

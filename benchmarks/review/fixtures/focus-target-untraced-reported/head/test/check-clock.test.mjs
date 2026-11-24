@@ -92,6 +92,7 @@ it('reports a call on what a local imported function returned as unresolved', ()
   const use = (body) => ({ ...make, 'app/a.mjs': `import { make } from './make.mjs'\n${body}` })
   expect(kinds(use('const stamp = make()\nstamp()\n'))).toEqual(['unresolved'])
   expect(kinds(use('const c = make()\nc.now()\n'))).toEqual(['unresolved'])
+  expect(kinds(use('export const s = make()\ns()\n'))).toEqual(['unresolved'])
   expect(kinds(use('make()()\nmake().now()\n'))).toEqual(['unresolved', 'unresolved'])
   const registry = "import { parse } from 'acorn'\nconst tree = parse('')\ntree.body.at(0)\n"
   expect(kinds({ 'app/a.mjs': registry })).toEqual([])

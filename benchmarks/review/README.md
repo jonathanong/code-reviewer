@@ -177,7 +177,7 @@ changes 16 of the same files); piloted 3 of 3 (see `HISTORY.md`).
 Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
 (`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3). `no-mistakes-3963` and
 `no-mistakes-3963-f282a5d` declare `target: "untraced-name-passes"` (expected `does_not_hold`; 3 of 3
-each, see `HISTORY.md`). The quiet pair `focus-target-untraced-reported` scored 5 of 6. `no-mistakes-3973` and
+each, see `HISTORY.md`). The quiet pair `focus-target-untraced-reported` scored 7 of 9. `no-mistakes-3973` and
 `no-mistakes-4024` carry one plain point each for a change that makes clean code newly report; piloted
 once (1 of 2), not a rate.
 

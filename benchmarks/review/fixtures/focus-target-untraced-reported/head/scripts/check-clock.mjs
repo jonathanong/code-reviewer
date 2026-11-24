@@ -99,7 +99,9 @@ function importedNames(tree) {
 /** Top-level names holding the result of calling an imported function: `const t = make()`. */
 function builtByImportedCall(tree, imports) {
   const built = new Map()
-  for (const node of tree.body) {
+  for (const statement of tree.body) {
+    const exported = statement.type === 'ExportNamedDeclaration' && statement.declaration
+    const node = exported || statement
     if (node.type !== 'VariableDeclaration') continue
     for (const decl of node.declarations) {
       const callee = decl.init?.type === 'CallExpression' ? decl.init.callee : undefined
