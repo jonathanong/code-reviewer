@@ -18,8 +18,10 @@ export async function skipReview(
   },
   out: string,
   closed: { value: boolean },
+  focus?: readonly string[],
 ): Promise<ReviewResult> {
-  const skipReason = plan.skipReason as string
+  // Points the requester gave are never dropped without saying so.
+  const skipReason = `${plan.skipReason as string}${focus === undefined ? '' : ' The requested checks were not run.'}`
   await steps.skip(skipReason, base.headSha)
   closed.value = true
   const data = buildReport({

@@ -73,6 +73,8 @@ export type ReviewOptions = {
   /** Absolute checkout of the pull request head. */
   tree: string
   jobs: number
+  /** The requester's points to check beside the pillars; absent when none were given. */
+  focus?: readonly string[] | undefined
 }
 
 export type ReviewResult = { ok: boolean; summary: Record<string, unknown> }

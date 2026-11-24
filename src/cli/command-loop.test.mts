@@ -61,6 +61,7 @@ const UNSET = {
     steps: {
       select: [{ harness: 'claude', model: 'haiku' }],
       pillars: [{ harness: 'claude', model: 'sonnet' }],
+      focus: [{ harness: 'claude', model: 'sonnet' }],
       'pillar.history': [{ harness: 'claude', model: 'haiku' }],
       verifier: [{ harness: 'claude', model: 'opus' }],
       'verifier.light': [{ harness: 'claude', model: 'sonnet' }],

@@ -5,6 +5,7 @@ import { APPROVAL_CHECK } from './skipped.mts'
 import type { Dependency } from './dependency.mts'
 import type { Impact } from './impact.mts'
 import type { Answer } from './answers.mts'
+import { parseFocus, type FocusAnswer } from './focus.mts'
 import {
   parseAdvice,
   parseDependency,
@@ -61,6 +62,8 @@ export type ReviewInput = {
   impact?: Impact
   /** Replies to other reviewers' open threads whose notes the code does not bear out. */
   answers?: Answer[]
+  /** What the step that checks the requester's focus points found for each; informational, never part of the verdict. */
+  focus?: FocusAnswer[]
 }
 
 export class ReviewError extends Error {
@@ -166,6 +169,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
     ...(dependencies.length === 0 ? {} : { dependencies }),
     ...parseAdvice(raw),
     ...parseAnswers(raw.answers),
+    ...parseFocus(raw.focus),
   }
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')

@@ -108,6 +108,24 @@ describe('reviewCommand', () => {
     expect((await steps({ out: 'o', tree: 't', jobs: '2' })).options.jobs).toBe(2)
   })
 
+  it('passes the points of a --focus file, or of a run, to the review', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'review-focus-'))
+    const file = join(dir, 'focus.txt')
+    writeFileSync(file, '- a\n- b\n')
+    await steps({ out: 'o', tree: 't', focus: file })
+    expect(vi.mocked(runReview).mock.calls[0]?.[1]).toMatchObject({ focus: ['a', 'b'] })
+    vi.clearAllMocks()
+    await steps({ out: 'o', tree: 't', focusPoints: ['c'] })
+    expect(vi.mocked(runReview).mock.calls[0]?.[1]).toMatchObject({ focus: ['c'] })
+    vi.clearAllMocks()
+    await steps({ out: 'o', tree: 't' })
+    expect(vi.mocked(runReview).mock.calls[0]?.[1]).not.toHaveProperty('focus')
+    await expect(
+      reviewCommand({ out: 'o', tree: 't', focus: join(dir, 'missing.txt') }, TARGET, deps),
+    ).rejects.toThrow('--focus')
+    rmSync(dir, { recursive: true, force: true })
+  })
+
   it('validates --jobs', async () => {
     expect((await steps({ out: 'o', tree: 't', jobs: '5' })).options.jobs).toBe(5)
     for (const jobs of ['0', 'x', '1.5']) {

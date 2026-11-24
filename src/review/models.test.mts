@@ -10,6 +10,7 @@ import {
   parseModelOverrides,
   resolveModelPlan,
   runModelStep,
+  stepKeys,
   tierOfPlanned,
 } from './models.mts'
 
@@ -131,6 +132,7 @@ describe('modelTable', () => {
     expect(Object.keys(table)).toEqual([
       'select',
       'pillars',
+      'focus',
       'pillar.history',
       'verifier',
       'verifier.light',
@@ -138,6 +140,16 @@ describe('modelTable', () => {
       'approvalCheck',
       'pillar.rules',
     ])
+  })
+
+  it('runs the focus step on the pillars tier until `focus` is set', () => {
+    expect(stepKeys('focus')).toEqual(['focus', 'pillars'])
+    const table = modelTable(resolveModelPlan({ steps: { pillars: 'large' } }))
+    expect(table.focus).toEqual([claude('opus')])
+    const own = modelTable(resolveModelPlan({ steps: { pillars: 'large', focus: 'small' } }))
+    expect(own.focus).toEqual([claude('haiku')])
+    expect(() => parseModelOverrides(['pillar.focus=claude:haiku'])).toThrow('unknown step')
+    expect(parseModelOverrides(['focus=claude:haiku'])).toEqual({ focus: [claude('haiku')] })
   })
 
   it('resolves a pillar with the keys the runner uses, so `pillars` reaches history', () => {

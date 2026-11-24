@@ -14,7 +14,8 @@ import { buildAnalysis } from './analysis-prompt.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
-import { runPillars } from './pillars.mts'
+import { keptFocus } from './focus-kept.mts'
+import { runPillarsAndFocus } from './review-focus.mts'
 import { buildReviewContext, reportFields, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
@@ -25,7 +26,6 @@ import { verifierContext } from './verifier-context.mts'
 import { answerOptions } from './answers-rules.mts'
 import { withEarlier } from './earlier-run.mts'
 import { clearComplete, markComplete } from '../complete-file.mts'
-
 import {
   loadRulePlugins,
   pillarTexts,
@@ -53,7 +53,7 @@ async function review(
   const title = titleOf(out)
   const base = { repo: options.repo, pr: options.pr, title, headSha, effort: plan.effort }
   const mode = plan.mode
-  if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed)
+  if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed, options.focus)
   const { settings, skills, installs } = await loadRulePlugins(steps)
   const models = steps.models ?? DEFAULT_STEP_MODELS
   const followUp = plan.sinceSha !== null
@@ -62,32 +62,32 @@ async function review(
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
   const analysis = steps.analysis && (await buildAnalysis(await steps.analysis()))
-  const prompts = pillarTexts(steps)
   const harness = { tree, settings, models, exec: steps.exec }
-  const extra = steps.pillars?.extra ?? []
-  const extraPillars = extra.map((entry) => entry.name)
-  const results = await runPillars({
-    pillars: plan.pillars,
-    extra,
-    tree,
-    run,
-    mode,
-    jobs: options.jobs,
-    ...prompts,
-    skills: skillChoice.selected,
-    settings,
-    models,
-    analysis,
-    contextFile: context.file,
-    ...(web === undefined ? {} : { web }),
-    exec: steps.exec,
-  })
+  const { results, judged, focus, extraPillars } = await runPillarsAndFocus(
+    {
+      pillars: plan.pillars,
+      extra: steps.pillars?.extra ?? [],
+      tree,
+      run,
+      mode,
+      jobs: options.jobs,
+      ...pillarTexts(steps),
+      skills: skillChoice.selected,
+      settings,
+      models,
+      analysis,
+      contextFile: context.file,
+      ...(web === undefined ? {} : { web }),
+      exec: steps.exec,
+    },
+    options.focus,
+  )
   // A pillar the ceiling kept from starting looks like a failed one, so stop before judging them.
   throwIfStopped(models.watch)
   requireAnswer(results, out)
-  const pillarSkips = [...plan.skipped, ...failedSkips(results)]
+  const pillarSkips = [...plan.skipped, ...failedSkips(judged)]
   const at = { out, tree, headSha, exec: steps.exec }
-  const { findings, block } = await withEarlier({ ...at, findings: flattenFindings(results) })
+  const { findings, block } = await withEarlier({ ...at, findings: flattenFindings(judged) })
   const output = await runReviewVerifier(
     {
       verifierPrompt: read(join(steps.references, 'verifier.md')),
@@ -116,7 +116,7 @@ async function review(
     model: plan.verifierModel,
     extraPillars,
     ...harness,
-    input: approvalCheckInput(steps.references, run, output, results, findings, pillarSkips),
+    input: approvalCheckInput(steps.references, run, output, judged, findings, pillarSkips),
   })
   throwIfStopped(models.watch)
   const { questions, skipped } = second
@@ -142,6 +142,7 @@ async function review(
     questions,
     run,
     dependencies,
+    focus: keptFocus(focus?.answers, verified),
   })
   writeJson(join(out, 'review.json'), input)
   markComplete(out, headSha)
@@ -155,7 +156,7 @@ async function review(
     postWarnings: outcome.warnings,
     skipped,
     skillSelection: skillChoice,
-    pillars: results,
+    pillars: judged,
     verifier: {
       model: output.ran.model,
       output: { ...posted, findings: verified, questions },

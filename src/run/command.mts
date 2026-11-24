@@ -20,6 +20,8 @@ export type RunValues = {
   'max-cost'?: string | undefined
   quiet?: boolean | undefined
   clones?: string | undefined
+  /** A file of points the requester wants checked, one per line. */
+  focus?: string | undefined
 }
 
 /** The machine around the command, replaceable in a test. */

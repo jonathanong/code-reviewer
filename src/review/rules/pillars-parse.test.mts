@@ -63,6 +63,11 @@ describe('parsePillars', () => {
     ['a bad name', { extra: [extra({ name: 'Bad_Name' })] }, 'extra[0].name: must match'],
     ['a built-in name', { extra: [extra({ name: 'history' })] }, 'is a built-in pillar'],
     [
+      'the focus step name',
+      { extra: [extra({ name: 'focus' })] },
+      'is reserved for the requester-focus step',
+    ],
+    [
       'a repeated name',
       { extra: [extra(), extra({ prompt: 'y' })] },
       'extra[1].name: "accessibility" is used more than once',

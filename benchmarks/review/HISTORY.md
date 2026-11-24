@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): a review request's focus points are checked by their own step
+
+Not measured; no model was called.
+
+- **What changed.** `run --focus FILE` (and `review --focus FILE`) adds one step, `focus`, beside the
+  pillars. It has its own prompt and its own output schema (`points` by index with a status, a
+  basis, `path` and `line`, plus the normal pillar findings; a `holds` or `does_not_hold` must cite a `path`, and after the verifier a `does_not_hold` stands only if a kept `focus` finding has the same path, else it is `not_checked` with the basis "Raised, but the verifier kept no finding: ...", keeping path and line; statuses are defined by outcome, `holds` = checked and nothing wrong, `does_not_hold` = a problem worth a finding, so a point phrased as a question fits; the posted labels are ok, problem, not checked); the pillar output schema is not
+  loosened. Its findings are tagged with the reserved pillar name `focus`, join the other pillars'
+  findings and are verified like them. The `review.json` contract gains an optional `focus` array,
+  rendered as one collapsed block in the posted body. `focus` is a new model step on the `pillars`
+  tier, and `focus` is a reserved name for a configured pillar.
+- **Comparability.** No existing row is affected. Without `--focus` no step is added and no prompt
+  or schema changes: the pillar, verifier and approval check prompts and schemas are what they were
+  (`fixtures/step-argv.json`, which pins the argv and schema of the pillar, verifier and approval check steps, did not change, and `review-focus.test.mts` runs a review with and without points and compares the prompts). With points,
+  the verifier's output schema also allows `focus` as a finding's pillar. `bench` does not run the
+  step, so no benchmark row measures it yet.
+
 ## 2026-11-23 (no run): an answer's rule quote is optional and the skill is linked
 
 Not measured; no model was called.
