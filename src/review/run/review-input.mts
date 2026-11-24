@@ -1,5 +1,6 @@
 import type { Dependency } from '../dependency.mts'
 import type { Effort, Finding, ReviewInput, SkippedPillar } from '../finding.mts'
+import type { FocusAnswer } from '../focus.mts'
 import type { Question } from '../question.mts'
 import { noteFields } from './review-support.mts'
 import type { RunDir } from './pillar-prompt.mts'
@@ -14,8 +15,10 @@ export function buildReviewInput(parts: {
   questions: Question[]
   run: RunDir
   dependencies: Dependency[]
+  /** The answers of the focus step; absent when no points were supplied. */
+  focus?: FocusAnswer[] | undefined
 }): ReviewInput {
-  const { effort, output, skipped, findings, questions, run, dependencies } = parts
+  const { effort, output, skipped, findings, questions, run, dependencies, focus } = parts
   return {
     effort,
     summary: output.summary,
@@ -32,5 +35,6 @@ export function buildReviewInput(parts: {
     ...(output.answers === undefined || output.answers.length === 0
       ? {}
       : { answers: output.answers }),
+    ...(focus === undefined || focus.length === 0 ? {} : { focus }),
   }
 }

@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-23 (no run): a review request's focus points are checked by their own step
+
+Not measured; no model was called.
+
+- **What changed.** `run --focus FILE` (and `review --focus FILE`) adds one step, `focus`, beside the
+  pillars. It has its own prompt and its own output schema (`points` by index with a status, a
+  basis, `path` and `line`, plus the normal pillar findings); the pillar output schema is not
+  loosened. Its findings are tagged with the reserved pillar name `focus`, join the other pillars'
+  findings and are verified like them. The `review.json` contract gains an optional `focus` array,
+  rendered as one collapsed block in the posted body. `focus` is a new model step on the `pillars`
+  tier, and `focus` is a reserved name for a configured pillar.
+- **Comparability.** No existing row is affected. Without `--focus` no step is added and no prompt
+  or schema changes: the pillar, verifier and approval check prompts and schemas are what they were
+  (`review-focus.test.mts` runs a review with and without points and compares them). With points,
+  the verifier's output schema also allows `focus` as a finding's pillar. `bench` does not run the
+  step, so no benchmark row measures it yet.
+
 ## 2026-11-23 (no run): an answer's rule quote is optional and the skill is linked
 
 Not measured; no model was called.

@@ -1,4 +1,5 @@
 import { classLine } from './class-line.mts'
+import { focusSection } from './focus.mts'
 import { dependsOnSection } from './dependency-render.mts'
 import { notesSection } from './notes.mts'
 import type { Effort, ReviewInput, Finding, Severity, SkippedPillar } from './finding.mts'
@@ -144,6 +145,7 @@ export function renderHeader(
     ...splitSection(input.splitProposal),
     ...(index.length > 0 ? [index.join('\n')] : []),
     ...renderQuestions(input.questions),
+    ...focusSection(input.focus),
     ...notesSection(input.notes),
     ...dependsOnSection(input.dependencies),
     ...regressionSection(input.regressionPrevent),

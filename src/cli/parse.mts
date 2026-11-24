@@ -39,6 +39,7 @@ export function parse(args: string[]) {
       free: { type: 'boolean' },
       probes: { type: 'string' },
       skill: { type: 'string', multiple: true },
+      focus: { type: 'string' },
     },
   }).values
 }

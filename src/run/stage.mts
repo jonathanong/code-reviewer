@@ -157,6 +157,7 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
       ...(stage.limits['max-cost'] === undefined ? {} : { 'max-cost': stage.limits['max-cost'] }),
       ...(stage.limits.quiet === undefined ? {} : { quiet: stage.limits.quiet }),
       ...(stage.effort === undefined ? {} : { effort: stage.effort }),
+      ...(flags.focus === undefined ? {} : { focusPoints: flags.focus }),
     },
     pull,
     abortable,

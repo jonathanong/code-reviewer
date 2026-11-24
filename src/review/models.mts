@@ -48,6 +48,7 @@ export const DEFAULT_TIERS: Record<Tier, Candidate[]> = {
 export const DEFAULT_STEPS: Record<string, Tier> = {
   select: 'small',
   pillars: 'medium',
+  focus: 'medium',
   'pillar.history': 'small',
   verifier: 'large',
   'verifier.light': 'medium',
@@ -134,9 +135,9 @@ export function parseModelOverrides(values: readonly string[]): Record<string, C
   return found
 }
 
-/** The keys a step looks up, most specific first: a pillar falls back to `pillars`. */
+/** The keys a step looks up, most specific first: a pillar, and the requester-focus step, fall back to `pillars`. */
 export const stepKeys = (step: string): string[] =>
-  step.startsWith('pillar.') ? [step, 'pillars'] : [step]
+  step.startsWith('pillar.') || step === 'focus' ? [step, 'pillars'] : [step]
 
 /** Each step with the candidates the runner resolves it to, for `settings`. */
 export function modelTable(plan: ModelPlan): Record<string, Candidate[]> {

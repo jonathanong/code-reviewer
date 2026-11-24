@@ -5,8 +5,8 @@ code-reviewer claim --repo owner/name --pr N [--force]
 code-reviewer skip --repo owner/name --pr N --reason TEXT
 code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|high] [--tree DIR] [--clones DIR]
 code-reviewer abort --repo owner/name --pr N [--requeue]
-code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--effort low|medium|high] [--force]
-code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR]
+code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--effort low|medium|high] [--force] [--focus FILE]
+code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--focus FILE]
 code-reviewer context --repo owner/name --pr N --tree DIR [--out DIR] [--skill plugin:name]...
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...

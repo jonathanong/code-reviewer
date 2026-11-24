@@ -18,6 +18,7 @@ import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
 import { labelsFor } from '../cli/review-settings.mts'
 import { requireValidConfig } from '../cli/config-check.mts'
+import { readFocusFile } from './focus-file.mts'
 
 /** A missing plugin, a bad setting, unresolvable auth or a bad flag: nothing was claimed or posted. */
 export class Precondition extends Error {}
@@ -26,6 +27,8 @@ export type RunFlags = {
   pull: PullTarget
   post: 'auto' | 'hold'
   force: boolean
+  /** The requester's points from `--focus`; absent without the flag. */
+  focus?: string[]
 }
 
 type FlagValues = {
@@ -36,6 +39,17 @@ type FlagValues = {
   force?: boolean | undefined
   model?: string[] | undefined
   'max-cost'?: string | undefined
+  focus?: string | undefined
+}
+
+/** The points of a `--focus` file; a file that cannot give any is a configuration problem. */
+function focusPoints(path: string | undefined): string[] | undefined {
+  if (path === undefined) return undefined
+  try {
+    return readFocusFile(path)
+  } catch (error) {
+    throw new Precondition((error as Error).message, { cause: error })
+  }
 }
 
 /** Validates the flags before anything is read or written. */
@@ -61,7 +75,8 @@ export function parseFlags(values: FlagValues): RunFlags {
   } catch (error) {
     throw new Precondition((error as Error).message, { cause: error })
   }
-  return { pull, post, force: values.force === true }
+  const focus = focusPoints(values.focus)
+  return { pull, post, force: values.force === true, ...(focus === undefined ? {} : { focus }) }
 }
 
 /**

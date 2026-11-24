@@ -6,6 +6,7 @@ import {
   type DispatchedPillar,
   type ExtraPillar,
 } from '../pillar-name.mts'
+import { FOCUS_PILLAR } from '../focus.mts'
 import { isRecord, unknownKeys } from './settings-parse.mts'
 
 export const PILLAR_MODES = ['light', 'full'] as const
@@ -75,6 +76,10 @@ function parseName(raw: unknown, where: string, taken: readonly string[], proble
     problems.push(`${where}.name: must match [a-z][a-z0-9-]*`)
   } else if (PILLARS.some((builtin) => builtin === raw)) {
     problems.push(`${where}.name: "${raw}" is a built-in pillar; choose another name`)
+  } else if (raw === FOCUS_PILLAR) {
+    problems.push(
+      `${where}.name: "${raw}" is reserved for the requester-focus step; choose another name`,
+    )
   } else if (taken.includes(raw)) problems.push(`${where}.name: "${raw}" is used more than once`)
   else return extraPillar(raw)
   return undefined

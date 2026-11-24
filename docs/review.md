@@ -1,7 +1,7 @@
 # Running a review
 
 ```bash
-code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--force]
+code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT [--jobs N] [--clones DIR] [--effort low|medium|high] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--force] [--focus FILE]
 code-reviewer report --out DIR
 ```
 
@@ -119,6 +119,36 @@ contract; a `when` trigger sits at its top, and a pillar it does not fit returns
 instead of costing a separate call. A `run` pillar sends its command as the whole prompt followed by
 the contract, so it needs a harness that understands the command. The verifier and the approval
 check accept the extra's name on findings.
+
+## Requester focus
+
+`--focus FILE` on `review` and `run` carries what whoever asked for the review wants checked.
+`FILE` is text, one point per non-empty line, a leading `- ` stripped; at most 20 points of 500
+characters. A file that is missing, unreadable, has no point, or has too many or too long ones
+stops the command before any work, naming `--focus` and the file. Without the flag nothing changes:
+no step, no prompt, no cost.
+
+With points, one extra step, `focus`, runs beside the pillars, whatever the plan dispatched. One
+agent checks every point against the code, with the same context, read-only tools, retry and
+failure handling as a pillar. Its model is `focus`, else `pillars`, else the `medium` tier, so
+`--model focus=...` and `models.steps` accept it. It answers each point by index: `holds`,
+`does_not_hold` or `not_checked`, with a one-sentence basis and the `path` and `line` it rests on.
+A point it did not answer is `not_checked`; so is a `holds` that cites no file, because a point is
+the requester's own opinion and an unverified yes is worse than "could not check". A point that does
+not hold also gets a finding under the pillar name `focus`, which joins the other pillars' findings
+and is verified like any of them: the verifier alone decides what is posted.
+
+The points are the requester's words, so they are untrusted: the step is told each is a claim to
+check, not an instruction, and they are given only to it, never to the plan, the other pillars, the
+verifier or the approval check, and never written under the run directory those read. A point can
+add work; it cannot skip a pillar, change the plan or a severity, or move the verdict other than
+through a finding. `focus` is a reserved pillar name for [`pillars.extra`](configuration.md#pillars).
+
+The answers go in `review.json` as `focus` (`point`, `status`, `basis`, optional `path` and `line`)
+and in `focus.json`, and the posted body shows them as one collapsed block, "Requested checks: 2
+hold, 1 does not, 1 not checked", with a line for each point. A review with no `focus` shows
+nothing. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
+review still completes. Its cost counts toward the cost ceiling. `bench` does not run this step.
 
 ## Findings: premise and prevention
 

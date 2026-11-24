@@ -6,6 +6,7 @@ import { runReview, type ReviewResult } from '../review/run/review.mts'
 import { parseModelOverrides } from '../review/models.mts'
 import { resolveAnalysis } from '../review/analysis-settings.mts'
 import { resolveLimits } from '../review/limits-settings.mts'
+import { readFocusFile } from '../run/focus-file.mts'
 import { requireValidConfig } from './config-check.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { requirePillars } from '../review/pillars-settings.mts'
@@ -41,6 +42,9 @@ export async function reviewCommand(
     model?: string[] | undefined
     'max-cost'?: string | undefined
     quiet?: boolean | undefined
+    /** A file of points to check, one per line; `run` reads it first and passes `focusPoints`. */
+    focus?: string | undefined
+    focusPoints?: readonly string[] | undefined
   },
   target: PullTarget,
   deps: ReviewDeps,
@@ -50,6 +54,8 @@ export async function reviewCommand(
   }
   // The diff indexes embed these paths, so a relative path would break once a run changes directory.
   const overrides = parseModelOverrides(values.model ?? [])
+  const focus =
+    values.focusPoints ?? (values.focus === undefined ? undefined : readFocusFile(values.focus))
   const out = resolve(values.out)
   const tree = resolve(values.tree)
   const resolved = {
@@ -108,7 +114,14 @@ export async function reviewCommand(
       exec: deps.exec,
       references: deps.references(),
     },
-    { repo: target.repo, pr: target.pr, out, tree, jobs: jobs(values.jobs, limits.pillarJobs) },
+    {
+      repo: target.repo,
+      pr: target.pr,
+      out,
+      tree,
+      jobs: jobs(values.jobs, limits.pillarJobs),
+      ...(focus === undefined ? {} : { focus }),
+    },
   )
   const result = await running.catch((error: unknown) => {
     // Never masks the review's own error; the tracker's problem has nowhere to go on this path.
