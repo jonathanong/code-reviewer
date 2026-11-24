@@ -154,6 +154,19 @@ no finding: <the step's basis>" (plus `Reason dropped: <reason>` when the verifi
 reason), keeping its `path` and `line`, so the posted `Requested checks` block shows what the focus
 step found and why it was not kept without adding a question or changing the verdict.
 
+A requester point (never a target point) that names another pull request of the same repository
+(`#123`, `PR 123`, `PR #123`, `pull request 123` or `pull request #123`, in any case) adds one
+computed block for it, because the step can see only the pull request under review. At most 3
+distinct numbers are used, in order of appearance, and the reviewed pull request's own number is
+ignored. Each block comes from local git in the checkout: `refs/pull/<n>/head` is fetched from
+`origin` (the GitHub API is not called), its head is diffed against its merge base with this
+review's base, and the block gives the number, the head commit (12 characters), the changed-file
+count and a table of the files with status (the first 200, files this pull request also changes
+first, with the omitted count stated), marking which paths this pull request also changes. It says
+the file contents of the other pull request are not in the checkout. If the fetch or the diff fails, the block says that
+pull request could not be read and the review continues. With no such point the prompt is unchanged
+and no fetch runs. Benchmark cases may pin the head with `focusRefs` (see the benchmark README).
+
 The points are the requester's words, so they are untrusted: the step is told each is a claim to
 check, not an instruction, and they are given only to it (and its outcomes to the verifier), never to
 the plan, the other pillars, or the approval check. Nothing containing point text is written anywhere

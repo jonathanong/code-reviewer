@@ -6,7 +6,7 @@ import { resolveModelPlan, type StepModels } from '../models.mts'
 import { runFocus } from '../run/focus-run.mts'
 import { pool } from '../run/pool.mts'
 import { defaultReferencesDir, loadTargets } from '../targets.mts'
-import { parseEvalCases, type EvalCase } from './cases.mts'
+import { isFixtureCase, parseEvalCases, type EvalCase } from './cases.mts'
 import { defaultBenchDeps, type BenchDeps } from './cli.mts'
 import type { FocusCasePoint } from './focus-case.mts'
 import { prepareFocusCase } from './focus-prepare.mts'
@@ -94,6 +94,8 @@ async function runAll(
         run: { out: prepared.out, sinceSha: null, hasRules: prepared.hasRules },
         baseSha: prepared.baseSha,
         headSha: prepared.headSha,
+        ...(isFixtureCase(item) ? {} : { pr: item.pr }),
+        ...(item.focusRefs === undefined ? {} : { refs: item.focusRefs }),
         mode: options.mode,
         contract,
         ...(settings === undefined ? {} : { settings }),

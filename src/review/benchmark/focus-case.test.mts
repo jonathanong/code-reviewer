@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MAX_FOCUS_POINTS } from '../focus.mts'
 import { parseEvalCases } from './cases.mts'
-import { parseFocusCase } from './focus-case.mts'
+import { parseFocusCase, parseFocusRefs } from './focus-case.mts'
 
 const validPoint = (overrides: Record<string, unknown> = {}) => ({
   point: 'No added file exceeds 200 lines.',
@@ -139,5 +139,45 @@ describe('parseFocusCase', () => {
     expect(quiet?.target).toBe('unneeded-concurrency-guard')
     expect(quiet?.expectedStatus).toBe('holds')
     expect(quiet?.expectNoFindings).toBe(true)
+  })
+})
+
+describe('parseFocusRefs', () => {
+  const SHA = '236cad49c02de57e3204c492ddf94e3b659951f2'
+
+  it('is empty when omitted and keeps a valid pin', () => {
+    expect(parseFocusRefs(undefined, 'case')).toEqual({})
+    expect(parseFocusRefs({ '3963': SHA }, 'case')).toEqual({ focusRefs: { '3963': SHA } })
+  })
+
+  it.each([
+    [[], 'case: focusRefs must map pull request numbers to commits'],
+    [{}, 'case: focusRefs must map pull request numbers to commits'],
+    [{ abc: SHA }, 'case: focusRefs key "abc" must be a pull request number'],
+    [{ '0': SHA }, 'case: focusRefs key "0" must be a pull request number'],
+    [{ '12': 'abc123' }, 'case: focusRefs.12 must be a full 40-character commit'],
+    [{ '12': 5 }, 'case: focusRefs.12 must be a full 40-character commit'],
+    [{ '12': SHA.toUpperCase() }, 'case: focusRefs.12 must be a full 40-character commit'],
+  ])('rejects %j', (raw, message) => {
+    expect(() => parseFocusRefs(raw, 'case')).toThrow(message)
+  })
+
+  it('is read from a case and names the case on a bad pin', () => {
+    const base = {
+      id: 'x',
+      repo: 'a/b',
+      pr: 1,
+      baseSha: SHA,
+      headSha: SHA,
+      title: 't',
+      kind: 'negative',
+      expected: [],
+    }
+    expect(parseEvalCases([{ ...base, focusRefs: { '7': SHA } }])[0]?.focusRefs).toEqual({
+      '7': SHA,
+    })
+    expect(() => parseEvalCases([{ ...base, focusRefs: { '7': 'nope' } }])).toThrow(
+      /focusRefs\.7 must be a full 40-character commit/u,
+    )
   })
 })

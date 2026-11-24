@@ -42,6 +42,12 @@ Mined cases (8 real pull requests from `cases.json`):
 - One `vouchington-1146` run had no skills: the Haiku selection call failed, the review ran
   without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).
 - At 3 attempts a difference of one catch is noise.
+- Not in the table, mined from misses on no-mistakes reviews (see `HISTORY.md`): `no-mistakes-4008`
+  (positive, correctness and focus: a failed CI run accepted as the diff base, asked among five
+  requester points), `no-mistakes-3963` (positive, correctness: a new lint rule that reports nothing
+  for an indirect import its fixtures never use) and `no-mistakes-4006` (focus only, no expected pillar finding: a point
+  about a rule that another open pull request also adds). `no-mistakes-4027` (negative, focus: three
+  requester points that all hold) checks that asking several points together raises nothing.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
@@ -159,6 +165,13 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-plain-holds`         | `clamp` throws `RangeError` when `min > max` (`holds`)                                             |
 | `focus-plain-fails`         | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                               |
 | `focus-target-guard-needed` | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding) |
+
+A case may set `focusRefs`, an object from pull request number to a full 40-character commit
+(`{ "3963": "236cad49..." }`). When a requester point names another pull request (`#123`, `PR 123`,
+`pull request 123`), the real step reads that pull request's changed files from git; `focusRefs`
+pins which commit it reads instead of the live `refs/pull/<n>/head`, and `bench-focus` fetches the pin
+into the case's cache. Mined case `no-mistakes-4006` uses it (a requester point names 3963, which
+changes 16 of the same files); piloted 3 of 3 (see `HISTORY.md`).
 
 Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
 (`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3).
