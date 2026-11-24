@@ -21,6 +21,7 @@ const locationKey = (path: string, line: number | undefined): string => `${path}
 
 function isKept(
   answer: FocusAnswer,
+  kept: readonly Finding[],
   keptFocusFindings: readonly Finding[],
   answerKeys: ReadonlySet<string>,
   inputIndex: number | undefined,
@@ -28,17 +29,18 @@ function isKept(
 ): boolean {
   if (answer.path === undefined) return false
   if (inputIndex !== undefined && dropped.has(inputIndex)) return false
-  if (keptFocusFindings.some((f) => f.path === answer.path && f.line === answer.line)) return true
+  if (kept.some((f) => f.path === answer.path && f.line === answer.line)) return true
   return keptFocusFindings.some(
     (f) => f.path === answer.path && !answerKeys.has(locationKey(f.path as string, f.line)),
   )
 }
 
 /**
- * The answers once the verifier has spoken. A `does_not_hold` stands when a kept `focus` finding
- * backs it (matching path and line, or an unclaimed kept finding on the same path when the verifier
- * corrected the line, unless its input finding is in `dropped`); otherwise it becomes `not_checked`
- * with the verifier's drop reason when one was given.
+ * The answers once the verifier has spoken. A `does_not_hold` stands when a kept finding backs it,
+ * unless its input finding is in `dropped`: a kept finding of any pillar on the same path and line
+ * (the verifier keeps one copy of a defect two steps raised), or an unclaimed kept `focus` finding
+ * on the same path when the verifier corrected the line. Otherwise it becomes `not_checked` with
+ * the verifier's drop reason when one was given.
  */
 export function keptFocus(
   answers: readonly FocusAnswer[] | undefined,
@@ -58,7 +60,7 @@ export function keptFocus(
   return answers.map((answer) => {
     if (answer.status !== 'does_not_hold') return answer
     const inputIndex = findingIndexFor(answer, inputFindings)
-    if (isKept(answer, keptFocusFindings, answerKeys, inputIndex, dropped)) return answer
+    if (isKept(answer, kept, keptFocusFindings, answerKeys, inputIndex, dropped)) return answer
     const reason = inputIndex === undefined ? undefined : dropped.get(inputIndex)
     const detail = reason === undefined ? '' : ` Reason dropped: ${reason}`
     return { ...answer, status: 'not_checked', basis: `${NOT_KEPT} ${answer.basis}${detail}` }

@@ -42,9 +42,19 @@ describe('keptFocus', () => {
     ])
   })
 
-  it('does not count another pillar, another path, or a finding or answer with no path', () => {
+  it("keeps a does_not_hold when the verifier kept another pillar's copy on the same path and line", () => {
+    const answer = fails('p', 'a.ts', 3)
+    const inputs = [finding('correctness', 'a.ts', 3), finding(FOCUS_PILLAR, 'a.ts', 3)]
+    expect(keptFocus([answer], [finding('correctness', 'a.ts', 3)], inputs)).toEqual([answer])
+    const dropped = new Map([[1, 'Not a defect.']])
+    expect(
+      keptFocus([answer], [finding('correctness', 'a.ts', 3)], inputs, dropped)?.[0]?.status,
+    ).toBe('not_checked')
+  })
+
+  it('does not count another pillar on another line, another path, or a finding or answer with no path', () => {
     const kept = [
-      finding('rules', 'a.ts', 3),
+      finding('rules', 'a.ts', 9),
       finding(FOCUS_PILLAR, 'b.ts', 3),
       finding(FOCUS_PILLAR),
     ]

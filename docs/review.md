@@ -148,8 +148,9 @@ not hold also gets a finding under the pillar name `focus`, which joins the othe
 and is verified like any of them: the verifier alone decides what is posted. Before ruling, the
 verifier is shown each focus point's text, outcome, basis, and which candidate findings came from
 `focus`, and is told to give a one-sentence reason in `dropped` when dropping a focus finding. After
-the verifier has run, a `does_not_hold` stands only if a kept finding with pillar `focus` cites the
-same `path`; otherwise the point becomes `not_checked` with the basis "Raised, but the verifier kept
+the verifier has run, a `does_not_hold` stands only if a kept finding backs it: a kept finding with
+pillar `focus` on the same `path`, or a kept finding of any pillar on the same `path` and `line`
+(the verifier keeps one copy of a defect that two steps raised). Otherwise the point becomes `not_checked` with the basis "Raised, but the verifier kept
 no finding: <the step's basis>" (plus `Reason dropped: <reason>` when the verifier gave a drop
 reason), keeping its `path` and `line`, so the posted `Requested checks` block shows what the focus
 step found and why it was not kept without adding a question or changing the verdict.
