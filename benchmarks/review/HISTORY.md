@@ -36,6 +36,10 @@ Newest first. Every measured run and every change to what is measured gets an en
 - **`no-mistakes-3963`**, correctness pillar, Sonnet 5.5, judge Opus 5.5, one attempt per arm: 0 of 1
   with selected skills and 0 of 1 with no rules, no findings in either, about $0.38. The miss
   reproduces and no skill states the rule, so nothing here fixes it yet.
+- **`no-mistakes-4006` is a focus-only case.** No shared skill states a rule about duplicate pull
+  requests, so it declares no expected pillar finding and is typed `negative` only because a case
+  must have a kind. The pull request had other real findings, so it is not a pillar negative; do
+  not include it in a pillar run.
 - **Side effects of the sentence on a multi-point case where every point holds.** New case
   `no-mistakes-4027` (three requester points, hand-verified and merged, `expectNoFindings`), three
   attempts per arm in the same session: 9 of 9 points `holds` with no finding without the sentence,

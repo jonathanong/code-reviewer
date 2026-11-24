@@ -45,7 +45,7 @@ Mined cases (8 real pull requests from `cases.json`):
 - Not in the table, mined from misses on no-mistakes reviews (see `HISTORY.md`): `no-mistakes-4008`
   (positive, correctness and focus: a failed CI run accepted as the diff base, asked among five
   requester points), `no-mistakes-3963` (positive, correctness: a new lint rule that reports nothing
-  for an indirect import its fixtures never use) and `no-mistakes-4006` (positive, focus: a point
+  for an indirect import its fixtures never use) and `no-mistakes-4006` (focus only, no expected pillar finding: a point
   about a rule that another open pull request also adds). `no-mistakes-4027` (negative, focus: three
   requester points that all hold) checks that asking several points together raises nothing.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
