@@ -15,8 +15,32 @@ const ANSWER_KEYS = [
   'output',
 ]
 
+/** A run agy ended without an answer, keeping the usage it reported. */
+export class AgyDeniedError extends ReviewError {
+  readonly usage: Usage
+
+  constructor(message: string, usage: Usage) {
+    super(message)
+    this.usage = usage
+  }
+}
+
 const count = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
+
+const sum = (a: number | null, b: number | null) =>
+  a === null && b === null ? null : (a ?? 0) + (b ?? 0)
+
+/** The actions headless mode auto-denied, as `Bash` or `command`, from `denied_actions`. */
+function deniedActions(parsed: Record<string, unknown>): string[] {
+  const { denied_actions: denied } = parsed
+  if (!Array.isArray(denied)) return []
+  return denied.map((entry: unknown) => {
+    if (!isObject(entry)) return 'an action'
+    const name = entry.display_name ?? entry.action
+    return typeof name === 'string' ? name : 'an action'
+  })
+}
 
 function parseObject(stdout: string): Record<string, unknown> | undefined {
   try {
@@ -57,8 +81,8 @@ function parseAgyUsage(parsed: Record<string, unknown>): Usage {
     turns: count(parsed.num_turns),
     durationMs: null,
     inputTokens: count(tokens.input_tokens),
-    outputTokens: count(tokens.output_tokens),
-    cacheReadTokens: count(tokens.cache_read_input_tokens),
+    outputTokens: sum(count(tokens.output_tokens), count(tokens.thinking_tokens)),
+    cacheReadTokens: count(tokens.cache_read_tokens),
     cacheCreationTokens: count(tokens.cache_creation_input_tokens),
     byModel: {},
   }
@@ -75,8 +99,16 @@ export function readAgyResult(stdout: string, what: string): HarnessResult {
   const message = errorMessage(parsed)
   if (message !== undefined) throw new ReviewError(`${what} failed: ${message}`)
   const usage = parseAgyUsage(parsed)
+  const structured = structuredFrom(parsed)
+  const denied = deniedActions(parsed)
+  if (structured === undefined && denied.length > 0) {
+    throw new AgyDeniedError(
+      `${what} failed: agy denied ${denied.join(', ')}: headless mode cannot approve it.`,
+      usage,
+    )
+  }
   return {
-    structured: structuredFrom(parsed),
+    structured,
     skills: [],
     reads: [],
     searches: [],
@@ -87,6 +119,7 @@ export function readAgyResult(stdout: string, what: string): HarnessResult {
 
 /** The message to record for a failed run; a non-zero exit keeps the error agy printed. */
 export function describeAgyFailure(error: unknown): { message: string; usage: Usage | null } {
+  if (error instanceof AgyDeniedError) return { message: error.message, usage: error.usage }
   if (!(error instanceof ExecError)) {
     return { message: error instanceof Error ? error.message : String(error), usage: null }
   }
