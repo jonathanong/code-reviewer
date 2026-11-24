@@ -62,4 +62,26 @@ describe('renderNamedPrFacts', () => {
       '## Pull request #9, named in a point\n\nPull request #9 could not be read from git, so what it changes is unknown.',
     ])
   })
+
+  it('says the overlap is unknown, in the sentence and the cells, when it could not be computed', () => {
+    const [block] = renderNamedPrFacts([
+      {
+        number: 5,
+        head: 'abcdefabcdef',
+        files: {
+          total: 202,
+          shared: null,
+          omitted: 2,
+          listed: [{ path: 'a.ts', status: 'added', shared: null }],
+        },
+      },
+    ])
+    expect(block).toBe(
+      [
+        '## Pull request #5, named in a point',
+        "Computed from git: head `abcdefabcdef`, 202 changed files since its merge base with this review's base, which of them this pull request also changes is unknown, because this pull request's own changed files could not be read (showing 1; 2 omitted). The file contents of pull request #5 are not in the checkout.",
+        '| File | Status | Also changed here |\n| --- | --- | --- |\n| `a.ts` | added | unknown |',
+      ].join('\n\n'),
+    )
+  })
 })

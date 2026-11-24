@@ -10,13 +10,14 @@ const SHA_RE = /^[0-9a-f]{40}$/u
 /** `#123`, `PR 123`, `PR #123`, `pull request 123` and `pull request #123`, in any case. */
 const REFERENCE = /(?<![\w&])#(\d{1,9})(?!\w)|\b(?:PR|pull\s+request)\s+#?(\d{1,9})(?!\w)/giu
 
-export type NamedPrFile = StatusEntry & { shared: boolean }
+/** `shared` is null when this pull request's own changed files could not be read. */
+export type NamedPrFile = StatusEntry & { shared: boolean | null }
 
 export type NamedPrFact = {
   number: number
   /** Null when the pull request could not be read from git. */
   head: string | null
-  files: { total: number; shared: number; omitted: number; listed: NamedPrFile[] } | null
+  files: { total: number; shared: number | null; omitted: number; listed: NamedPrFile[] } | null
 }
 
 /**
@@ -70,23 +71,23 @@ async function factFor(
   input: NamedPrInput,
   base: string,
   number: number,
-  here: Set<string>,
+  here: Set<string> | null,
 ): Promise<NamedPrFact> {
   try {
     const head = await resolveHead(input, number)
     const mergeBase = (await git(input, ['merge-base', base, head])).trim()
     const all = (await changed(input, mergeBase, head)).map((entry): NamedPrFile => ({
       ...entry,
-      shared: here.has(entry.path),
+      shared: here === null ? null : here.has(entry.path),
     }))
-    const shared = all.filter((file) => file.shared)
-    const listed = [...shared, ...all.filter((file) => !file.shared)]
+    const shared = all.filter((file) => file.shared === true)
+    const listed = [...shared, ...all.filter((file) => file.shared !== true)]
     return {
       number,
       head: head.slice(0, 12),
       files: {
         total: all.length,
-        shared: shared.length,
+        shared: here === null ? null : shared.length,
         omitted: Math.max(0, all.length - MAX_FOCUS_FACT_FILES),
         listed: listed.slice(0, MAX_FOCUS_FACT_FILES),
       },
@@ -111,11 +112,13 @@ export async function buildNamedPrFacts(
   if (baseSha === undefined || headSha === undefined) {
     return numbers.map((number) => ({ number, head: null, files: null }))
   }
-  let here = new Set<string>()
+  // Null when unreadable: the marking is then unknown, which is not the same as no overlap.
+  let here: Set<string> | null = null
   try {
-    here = new Set((await changed(input, baseSha, headSha)).map((entry) => entry.path))
+    const own = (await git(input, ['merge-base', baseSha, headSha])).trim()
+    here = new Set((await changed(input, own, headSha)).map((entry) => entry.path))
   } catch {
-    // This pull request's own file list is only for marking; the named one is still shown.
+    // The named pull request is still shown, with the overlap unknown.
   }
   const facts: NamedPrFact[] = []
   for (const number of numbers) facts.push(await factFor(input, baseSha, number, here))

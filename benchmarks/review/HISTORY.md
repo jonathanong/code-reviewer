@@ -63,6 +63,7 @@ Newest first. Every measured run and every change to what is measured gets an en
   are unchanged.
 - **Case field.** `focusRefs` (pull request number to a full 40-character commit) pins the other
   head for `bench-focus` so the run is reproducible; `no-mistakes-4006` pins 3963.
+- **Overlap marking.** It compares the named pull request with this pull request's own changes since their merge base (not the endpoint diff); the rendered block text for a readable case keeps its form. When this pull request's own diff cannot be read, the shared count and the "Also changed here" cells read unknown, and the sentence says so.
 - **Not comparable.** `no-mistakes-4006` (its focus point names 3963; it answered `not_checked`
   before, with "PR 3963 isn't in the checkout"), and any other focus row whose requester point
   matches those patterns, such as `no-mistakes-3963` and `no-mistakes-4008` if their points name a

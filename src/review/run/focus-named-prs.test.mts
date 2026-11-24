@@ -153,9 +153,39 @@ describe('buildNamedPrFacts', () => {
     expect(exec).not.toHaveBeenCalled()
   })
 
-  it('still lists the files when this pull request own diff cannot be read', async () => {
+  it('lists the files with the overlap unknown when this pull request own diff cannot be read', async () => {
     const [fact] = await buildNamedPrFacts([7], { ...input(), headSha: '0'.repeat(40) })
+    expect(fact?.files).toMatchObject({ total: 3, shared: null })
+    expect(fact?.files?.listed.map((file) => file.shared)).toEqual([null, null, null])
+  })
+
+  it('reports zero shared files, not unknown, when this pull request changes nothing', async () => {
+    const [fact] = await buildNamedPrFacts([7], { ...input(), headSha: base })
     expect(fact?.files).toMatchObject({ total: 3, shared: 0 })
+    expect(fact?.files?.listed.map((file) => file.shared)).toEqual([false, false, false])
+  })
+
+  it('compares against this pull request merge base, so files only the advanced base changed do not count', async () => {
+    await git(origin, 'checkout', '-q', '-b', 'adv', base)
+    put(origin, 'docs/base-only.md', 'base moved\n')
+    const advanced = await commit(origin, 'base advanced')
+    await git(origin, 'checkout', '-q', '-b', 'pr10', base)
+    put(origin, 'docs/base-only.md', 'named pr\n')
+    const named = await commit(origin, 'named')
+    await git(origin, 'update-ref', 'refs/pull/10/head', named)
+    await git(origin, 'checkout', '-q', 'main')
+    const clone = join(root, 'advanced')
+    await git(root, 'clone', '-q', '--branch', 'here', origin, clone)
+    const [fact] = await buildNamedPrFacts([10], {
+      tree: clone,
+      baseSha: advanced,
+      headSha: here,
+      exec: defaultExec,
+    })
+    expect(fact?.files).toMatchObject({ total: 1, shared: 0 })
+    expect(fact?.files?.listed).toEqual([
+      { path: 'docs/base-only.md', status: 'added', shared: false },
+    ])
   })
 
   it('caps the list at 200 files, shared files first, and counts the rest', async () => {
