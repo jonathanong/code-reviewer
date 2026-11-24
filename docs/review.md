@@ -132,7 +132,8 @@ With points, one extra step, `focus`, runs beside the pillars, whatever the plan
 agent checks every point against the code, with the same context, read-only tools, retry and
 failure handling as a pillar. Its prompt also includes a `## Change facts` Markdown block computed
 mechanically from local git and `context.json` (with no model or GitHub API call): pull request
-title and description lengths in characters, total changed files, and a table of up to 200 changed
+title and description lengths in characters (or "at least N characters (clipped)" when
+`context.json` clipped the description at its limit), total changed files, and a table of up to 200 changed
 files (the 200 with the most changed lines when there are more, with the omitted count stated) giving
 each file's status, added/removed lines (or `binary`), total lines at head, and the character length
 of its YAML frontmatter `description:` value when present. If git fails for a fact, that fact is

@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { Exec } from '../benchmark/exec.mts'
+import { BODY_CHARS } from '../context.mts'
 import { charLength } from '../focus.mts'
 import { parseYamlConfig } from '../rules/yaml-config.mts'
+import type { FocusFacts, FocusFileFact } from './focus-facts-render.mts'
 import { pool } from './pool.mts'
 
 export const MAX_FOCUS_FACT_FILES = 200
@@ -18,24 +20,6 @@ type NumstatEntry = {
   removed: number | null
 }
 type StatusEntry = { path: string; oldPath?: string; status: string }
-
-export type FocusFileFact = {
-  path: string
-  oldPath?: string
-  status: string | null
-  binary: boolean
-  added: number | null
-  removed: number | null
-  lines: number | null
-  descriptionChars: number | null
-}
-
-export type FocusFacts = {
-  titleChars: number | null
-  descriptionChars: number | null
-  /** Null when neither numstat nor name-status could be read from git. */
-  files: { total: number; omitted: number; listed: FocusFileFact[] } | null
-}
 
 export type FocusFactsInput = {
   tree: string
@@ -95,17 +79,21 @@ function parseNumstatZ(output: string): NumstatEntry[] {
   const entries: NumstatEntry[] = []
   const queue = output.split('\0')
   for (let token = queue.shift(); token !== undefined; token = queue.shift()) {
-    const [rawAdded, rawRemoved, rawPath] = token.split('\t')
-    if (rawRemoved === undefined) continue
+    const first = token.indexOf('\t')
+    const second = first === -1 ? -1 : token.indexOf('\t', first + 1)
+    if (second === -1) continue
+    const rawAdded = token.slice(0, first)
+    const rawRemoved = token.slice(first + 1, second)
+    const rawPath = token.slice(second + 1)
     const renamed = rawPath === ''
     const oldPath = renamed ? (queue.shift() as string) : undefined
-    const path = renamed ? (queue.shift() as string) : (rawPath as string)
+    const path = renamed ? (queue.shift() as string) : rawPath
     const binary = rawAdded === '-'
     entries.push({
       path,
       ...(oldPath === undefined ? {} : { oldPath }),
       binary,
-      added: binary ? null : Number.parseInt(rawAdded as string, 10),
+      added: binary ? null : Number.parseInt(rawAdded, 10),
       removed: binary ? null : Number.parseInt(rawRemoved, 10),
     })
   }
@@ -151,12 +139,14 @@ function readPrLengths(out: string, readFile: (path: string) => string) {
       title?: unknown
       intent?: { body?: unknown }
     }
+    const body = typeof intent?.body === 'string' ? intent.body : null
     return {
       titleChars: typeof title === 'string' ? charLength(title) : null,
-      descriptionChars: typeof intent?.body === 'string' ? charLength(intent.body) : null,
+      descriptionChars: body === null ? null : charLength(body),
+      descriptionClipped: body !== null && body.length >= BODY_CHARS,
     }
   } catch {
-    return { titleChars: null, descriptionChars: null }
+    return { titleChars: null, descriptionChars: null, descriptionClipped: false }
   }
 }
 

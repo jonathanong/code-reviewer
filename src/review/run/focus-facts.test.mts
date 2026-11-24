@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Exec } from '../benchmark/exec.mts'
+import { BODY_CHARS } from '../context.mts'
 import {
   buildFocusFacts,
   countLines,
@@ -263,5 +264,69 @@ describe('buildFocusFacts and renderFocusFacts', () => {
       },
     })
     expect(renderFocusFacts(nothing)).toBeUndefined()
+  })
+
+  it('keeps tabs inside paths when joining numstat and name-status', async () => {
+    const tabPath = 'dir/a\tb.mts'
+    const facts = await buildFocusFacts({
+      tree: '/tree',
+      out: '/out',
+      baseSha: BASE,
+      headSha: HEAD,
+      exec: fakeExec({
+        numstat: `7\t2\t${tabPath}\0`,
+        nameStatus: `M\0${tabPath}\0`,
+        show: { [`${HEAD}:${tabPath}`]: 'one\ntwo\n' },
+      }),
+      readFile: contextReader({}),
+    })
+    expect(facts.files?.total).toBe(1)
+    expect(facts.files?.listed).toEqual([
+      {
+        path: tabPath,
+        status: 'modified',
+        binary: false,
+        added: 7,
+        removed: 2,
+        lines: 2,
+        descriptionChars: null,
+      },
+    ])
+  })
+
+  it('encodes newlines, carriage returns, pipes and backticks in rendered paths and oldPaths', async () => {
+    const oldPath = 'old\n`name`\r|x.mts'
+    const newPath = 'new\r\n``dir``|y.mts'
+    const facts = await buildFocusFacts({
+      tree: '/tree',
+      out: '/out',
+      baseSha: BASE,
+      headSha: HEAD,
+      exec: fakeExec({
+        numstat: `1\t1\t\0${oldPath}\0${newPath}\0`,
+        nameStatus: `R100\0${oldPath}\0${newPath}\0`,
+        show: { [`${HEAD}:${newPath}`]: 'ok\n' },
+      }),
+      readFile: contextReader({}),
+    })
+    const block = renderFocusFacts(facts) as string
+    const tableRow = block.split('\n').at(-1) as string
+    expect(tableRow).toBe(
+      '| ``` new\\r\\n``dir``\\|y.mts ``` (from `` old\\n`name`\\r\\|x.mts ``) | renamed | 1 | 1 | 1 |',
+    )
+  })
+
+  it('marks descriptions at the context.json clip limit as clipped instead of exact', async () => {
+    const clipped = `${'a'.repeat(BODY_CHARS - 1)}…`
+    const facts = await buildFocusFacts({
+      tree: '/tree',
+      out: '/out',
+      exec: fakeExec({}),
+      readFile: contextReader({ title: 'Long', intent: { body: clipped } }),
+    })
+    expect(facts.descriptionClipped).toBe(true)
+    expect(renderFocusFacts(facts)).toBe(
+      `## Change facts\n\nPull request: title 4 characters, description at least ${BODY_CHARS} characters (clipped).`,
+    )
   })
 })

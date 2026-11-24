@@ -48,7 +48,7 @@ export type FollowUpContext = {
   answerable: Answerable[]
 }
 
-const BODY_CHARS = 24_000
+export const BODY_CHARS = 24_000
 const ISSUE_BODY_CHARS = 1500
 
 function clip(text: string, max: number): string {
