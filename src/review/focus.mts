@@ -62,16 +62,16 @@ function summaryOf(focus: readonly FocusAnswer[]): string {
   const not = count('does_not_hold')
   const unchecked = count('not_checked')
   const parts = [
-    ...(holds === 0 ? [] : [`${holds} hold`]),
-    ...(not === 0 ? [] : [`${not} ${not === 1 ? 'does' : 'do'} not`]),
+    ...(holds === 0 ? [] : [`${holds} ok`]),
+    ...(not === 0 ? [] : [`${not} problem`]),
     ...(unchecked === 0 ? [] : [`${unchecked} not checked`]),
   ]
   return `Requested checks: ${parts.join(', ')}`
 }
 
 const LABEL: Record<FocusStatus, string> = {
-  holds: 'holds',
-  does_not_hold: 'does not hold',
+  holds: 'ok',
+  does_not_hold: 'problem',
   not_checked: 'not checked',
 }
 

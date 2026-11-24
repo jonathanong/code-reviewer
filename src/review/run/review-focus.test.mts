@@ -209,7 +209,11 @@ describe('runReview with requester focus points', () => {
     const { review } = await run(POINTS, 'dropped')
     expect(review.findings).toEqual([])
     expect(statuses(review)).toEqual(['holds', 'not_checked'])
-    expect(review.focus[1].basis).toBe('The verifier did not keep a finding for this point.')
+    expect(review.focus[1]).toMatchObject({
+      basis: 'Raised, but the verifier kept no finding: It logs the token.',
+      path: 'a.ts',
+      line: 9,
+    })
   })
 
   it('marks every point not checked and lists the step as skipped when it fails', async () => {

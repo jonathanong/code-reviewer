@@ -131,14 +131,14 @@ no step, no prompt, no cost.
 With points, one extra step, `focus`, runs beside the pillars, whatever the plan dispatched. One
 agent checks every point against the code, with the same context, read-only tools, retry and
 failure handling as a pillar. Its model is `focus`, else `pillars`, else the `medium` tier, so
-`--model focus=...` and `models.steps` accept it. It answers each point by index: `holds`,
-`does_not_hold` or `not_checked`, with a one-sentence basis and the `path` and `line` it rests on.
+`--model focus=...` and `models.steps` accept it. It answers each point by index: `holds` (it checked and found nothing wrong on the point),
+`does_not_hold` (it found a problem on the point that deserves a finding) or `not_checked`; a point phrased as a question is answered the same way. Each has a one-sentence basis and the `path` and `line` it rests on.
 A point it did not answer is `not_checked`; so is a `holds` or `does_not_hold` that cites no file, because a point is
 the requester's own opinion and an unverified yes is worse than "could not check". A point that does
 not hold also gets a finding under the pillar name `focus`, which joins the other pillars' findings
 and is verified like any of them: the verifier alone decides what is posted. After the verifier
 has run, a `does_not_hold` stands only if a kept finding with pillar `focus` cites the same `path`;
-otherwise the point becomes `not_checked` ("The verifier did not keep a finding for this point."),
+otherwise the point becomes `not_checked` with the basis "Raised, but the verifier kept no finding: <the step's basis>" and keeps its `path` and `line`,
 so the posted block never says a point fails when the review holds no finding for it.
 
 The points are the requester's words, so they are untrusted: the step is told each is a claim to
@@ -148,7 +148,7 @@ add work; it cannot skip a pillar, change the plan or a severity, or move the ve
 through a finding. `focus` is a reserved pillar name for [`pillars.extra`](configuration.md#pillars).
 
 The answers go in `review.json` as `focus` (`point`, `status`, `basis`, optional `path` and `line`), the posted body shows them as one collapsed block, "Requested checks: 2
-hold, 1 does not, 1 not checked", with a line for each point. A review with no `focus` shows
+ok, 1 problem, 1 not checked" (the stored statuses `holds`, `does_not_hold` and `not_checked` show as ok, problem and not checked), with a line for each point. A review with no `focus` shows
 nothing. A plan that skips the review does not run the step; its skip reason says the requested checks were not run. A plan with no pillar still fails the review. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
 review still completes. Its cost counts toward the cost ceiling. `bench` does not run this step.
 

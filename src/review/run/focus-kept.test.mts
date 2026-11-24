@@ -32,9 +32,9 @@ describe('keptFocus', () => {
   it('makes a does_not_hold whose finding the verifier dropped not checked', () => {
     expect(keptFocus([fails('p', 'a.ts')], [])).toEqual([
       {
-        point: 'p',
+        ...fails('p', 'a.ts'),
         status: 'not_checked',
-        basis: 'The verifier did not keep a finding for this point.',
+        basis: `Raised, but the verifier kept no finding: ${fails('p', 'a.ts').basis}`,
       },
     ])
   })

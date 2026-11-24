@@ -111,11 +111,11 @@ describe('focusSection', () => {
     expect(rest).toEqual([])
     expect(block).toBe(
       [
-        '<details><summary>Requested checks: 2 hold, 1 does not, 1 not checked</summary>',
+        '<details><summary>Requested checks: 2 ok, 1 problem, 1 not checked</summary>',
         '',
-        '- "the retry is bounded": holds. It stops after three tries. (`a.ts:4`)',
-        '- "q": holds. It stops after three tries. (`b.ts`)',
-        '- "r": does not hold. It is unbounded. (`a.ts:4`)',
+        '- "the retry is bounded": ok. It stops after three tries. (`a.ts:4`)',
+        '- "q": ok. It stops after three tries. (`b.ts`)',
+        '- "r": problem. It is unbounded. (`a.ts:4`)',
         '- "s": not checked. Not checked.',
         '',
         '</details>',
@@ -123,12 +123,12 @@ describe('focusSection', () => {
     )
   })
 
-  it('counts several points that do not hold with the plural', () => {
+  it('counts several problems', () => {
     const [block] = focusSection([
       answer({ status: 'does_not_hold' }),
       answer({ status: 'does_not_hold' }),
     ]) as [string]
-    expect(block).toContain('<summary>Requested checks: 2 do not</summary>')
+    expect(block).toContain('<summary>Requested checks: 2 problem</summary>')
   })
 
   it('cannot close the block or mention anyone', () => {
@@ -151,7 +151,7 @@ describe('focusSection', () => {
       },
       'a'.repeat(40),
     )
-    expect(body).toContain('<summary>Requested checks: 1 hold</summary>')
+    expect(body).toContain('<summary>Requested checks: 1 ok</summary>')
     const without = renderHeader(
       { effort: 'high', summary: 'S.', skipped: [], findings: [], questions: [] },
       'a'.repeat(40),
