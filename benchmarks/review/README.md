@@ -42,6 +42,10 @@ Mined cases (8 real pull requests from `cases.json`):
 - One `vouchington-1146` run had no skills: the Haiku selection call failed, the review ran
   without them, and it missed. The other 23 runs loaded every skill they were told to (4 to 19).
 - At 3 attempts a difference of one catch is noise.
+- Not in the table (not measured yet): `vouchington-6282` (positive, correctness: unneeded
+  compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
+  removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
+  race-reachability rules in `correctness.md` and `verifier.md`.
 
 Review-round cases (`revisions.json`, 51 heads of 29 pull requests): not measured yet. Each is
 one reviewed head of a pull request that took several rounds, with the findings a final review

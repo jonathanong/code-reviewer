@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (no run): a race finding must show the race is reachable
+
+Not measured; no model was called.
+
+- **What changed.** `skills/review/references/pillars/correctness.md` now requires every race
+  finding to name both overlapping entry points (file and line each) and explain why they can
+  overlap after checking existing serialisation (queue ordering or group key with concurrency 1,
+  fixed job id or dedupe key, single schedule, unique constraint, or existing lock); an unreachable
+  overlap is not a finding, and a guard added for one draws a question rather than praise.
+  `skills/review/references/verifier.md` now drops any race finding that omits both entry points or
+  whose overlap the code already serialises. Added two mined cases to `benchmarks/review/cases.json`
+  (not yet measured): `vouchington-6282` (positive, correctness: unneeded compare-and-set guard on a
+  concurrency-1 cleanup queue; `expectedSkills`: `jong-skills:postgres-locking`, `expectedReads`:
+  `backend/queues/psql/enqueues/schedules.mts` and `backend/queues/psql/config.mts`) and
+  `vouchington-6254` (negative: removing redundant account cleanup prelocks on the same queue).
+- **Comparability.** Correctness-pillar and verifier rows recorded before this change are not
+  comparable with runs after it.
 ## 2026-11-24 (no run): deterministic change facts in the focus step prompt
 
 Not measured; no model was called.
