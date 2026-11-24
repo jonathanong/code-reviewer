@@ -584,7 +584,10 @@ pnpm exec code-reviewer bench-focus \
   run directory so `buildFocusFacts` computes real line counts and diff stats.
 - **Deterministic grading.** No judge model is called: a point passes when its returned status
   equals `expectedStatus` (and, when `expectNoFindings: true` is set, when the focus step also
-  returned zero findings).
+  returned zero findings). An entry may also set `basisPattern`, a regular
+  expression matched against the answer's basis ignoring case: the point then passes only when
+  the status and the basis both match, so a right status reached for another reason does not
+  count. Keep the pattern to the words any correct basis must use.
 - **Output and flags.** Raw runs go to `<out>/raw/<case>.json`; `summary.json` and `summary.md`
   report per-case and overall points correct, cost, tokens by model, and every wrong point with its
   expected status, returned status, and returned basis. `--case <id>` filters cases, `--model NAME`

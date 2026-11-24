@@ -11,6 +11,8 @@ export type FocusCasePoint = {
   reason: string
   /** When true, the point passes only if the focus step also returned zero findings. */
   expectNoFindings?: boolean
+  /** When set, the point passes only if the answer's basis matches this pattern, ignoring case. */
+  basisPattern?: string
 }
 
 type Json = Record<string, unknown>
@@ -24,6 +26,17 @@ function nonEmpty(record: Json, field: string, where: string): string {
     throw new ReviewError(`${where}: ${field} must be a non-empty string`)
   }
   return value
+}
+
+function basisPattern(entry: Json, here: string): { basisPattern?: string } {
+  if (entry.basisPattern === undefined) return {}
+  const pattern = nonEmpty(entry, 'basisPattern', here)
+  try {
+    new RegExp(pattern, 'iu')
+  } catch {
+    throw new ReviewError(`${here}: basisPattern is not a valid regular expression`)
+  }
+  return { basisPattern: pattern }
 }
 
 function resolvePoint(
@@ -72,6 +85,7 @@ export function parseFocusCase(
       expectedStatus: status,
       reason: nonEmpty(entry, 'reason', here),
       ...(expectNoFindings === undefined ? {} : { expectNoFindings }),
+      ...basisPattern(entry, here),
     }
   })
   return { focus }

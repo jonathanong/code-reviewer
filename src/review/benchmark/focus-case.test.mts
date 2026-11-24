@@ -17,6 +17,18 @@ describe('parseFocusCase', () => {
     expect(parseFocusCase(undefined, 'cases[0]')).toEqual({})
   })
 
+  it('keeps a valid basisPattern and rejects an empty or invalid one', () => {
+    expect(parseFocusCase([validPoint({ basisPattern: '240 lines' })], 'cases[0]')).toEqual({
+      focus: [{ ...validPoint(), basisPattern: '240 lines' }],
+    })
+    expect(() => parseFocusCase([validPoint({ basisPattern: '' })], 'cases[0]')).toThrow(
+      'cases[0].focus[0]: basisPattern must be a non-empty string',
+    )
+    expect(() => parseFocusCase([validPoint({ basisPattern: '(' })], 'cases[0]')).toThrow(
+      'cases[0].focus[0]: basisPattern is not a valid regular expression',
+    )
+  })
+
   it('parses valid focus points including optional expectNoFindings', () => {
     const parsed = parseFocusCase(
       [
