@@ -629,5 +629,22 @@
     "kind": "negative",
     "reason": "The same title and tests, but the source already has the behavior the tests assert. The only file outside a test file is test-helpers/fake-sleep.mts, which only tests import and which the description names. The test-only claim holds; nothing should be flagged.",
     "expected": []
+  },
+  {
+    "id": "congruence-missing-real-run",
+    "fixture": "fixtures/congruence-missing-real-run",
+    "title": "feat: format durations of a minute or more in minutes and seconds",
+    "kind": "positive",
+    "reason": "The change alters user-visible formatting behavior in src/format-duration.mts, and the description is a checklist with no realistic input, command or call, or real output. The congruence pillar loads jong-skills:pr-description and applies its \"Show one real run\" rule, raising one low finding.",
+    "expected": [
+      {
+        "pillar": "congruence",
+        "severity": "low",
+        "path": null,
+        "lines": null,
+        "claim": "The change alters user-visible behavior (formatting durations of a minute or more in minutes and seconds), but the pull request description is a checklist that does not show what the change does on one realistic input (the input, the command or call, and the real output), as jong-skills:pr-description's \"Show one real run\" rule requires. Severity must be low."
+      }
+    ],
+    "expectedSkills": ["jong-skills:pr-description"]
   }
 ]

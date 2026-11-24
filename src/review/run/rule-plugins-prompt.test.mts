@@ -70,9 +70,11 @@ describe('renderRulePlugins with another list', () => {
   })
 
   it('leaves a pillar file with no shared-rules bullet alone', () => {
-    const text = pillar('correctness')
-    expect(renderRulePlugins(text, ['one'], true)).toBe(text)
-    expect(renderRulePlugins(text, [], true)).toBe(text)
+    for (const name of ['correctness', 'congruence']) {
+      const text = pillar(name)
+      expect(renderRulePlugins(text, ['one'], true)).toBe(text)
+      expect(renderRulePlugins(text, [], true)).toBe(text)
+    }
   })
 })
 

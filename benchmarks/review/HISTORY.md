@@ -2,6 +2,21 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (no run): congruence checks that behavior changes show one real run
+
+Not measured; no model was called.
+
+- **What changed.** `skills/review/references/pillars/congruence.md` gains a "One real run" section
+  telling the verifier, when a change alters behavior a user or caller can see, to load
+  `jong-skills:pr-description`, apply its "Show one real run" rule, and raise one `low` finding
+  (never blocking) when the description does not show one realistic input, command or call, and real
+  output. Docs-only, test-only, CI-only, dependency bumps, pure refactors with no behavior change,
+  and descriptions that already show a run are excluded.
+- **Cases added (`synthetic.json`).** `congruence-missing-real-run` (positive, `expectedSkills`:
+  `jong-skills:pr-description`, expected one `low` congruence finding): a small behavior change in
+  `src/format-duration.mts` whose description is a checklist with no input or output.
+- **Comparability.** The congruence pillar prompt changed, so congruence rows (and verifier rows
+  that score congruence) before this entry are not comparable with runs after it.
 ## 2026-11-24 (no run): deterministic change facts in the focus step prompt
 
 Not measured; no model was called.
