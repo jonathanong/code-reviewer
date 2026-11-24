@@ -37,7 +37,7 @@ const result = (structured: unknown) =>
     structured_output: structured,
   })
 
-type Seen = { prompt: string; schema: string; filesWithPoints: string[] }
+type Seen = { prompt: string; schema: string; effort: string; filesWithPoints: string[] }
 type Answer = 'answers' | 'broken' | 'empty' | 'dropped'
 
 const FOCUS_ANSWER = {
@@ -79,7 +79,8 @@ async function run(
   const exec: Exec = async (_command, args) => {
     const prompt = args[1] as string
     const schema = args[args.indexOf('--json-schema') + 1] as string
-    seen.push({ prompt, schema, filesWithPoints: filesWith(out) })
+    const effort = args[args.indexOf('--effort') + 1] as string
+    seen.push({ prompt, schema, effort, filesWithPoints: filesWith(out) })
     if (args[args.indexOf('--tools') + 1] === '') return result({ skills: [] })
     if (prompt.includes('VERIFIER prompt text')) {
       return result({
@@ -208,6 +209,8 @@ describe('runReview with requester focus points', () => {
     }
     const { review, seen } = await run(POINTS, 'answers', light)
     expect(seen.filter(isFocus)).toHaveLength(1)
+    expect(seen.filter(isFocus)[0]?.effort).toBe('medium')
+    expect(seen.some((call) => !isFocus(call) && call.effort === 'low')).toBe(true)
     expect(review.focus).toHaveLength(2)
   })
 

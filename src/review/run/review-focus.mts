@@ -81,7 +81,7 @@ export function combineFocusPoints(
 
 /**
  * The focus step's mode. A requester's points are checked at full effort whatever the plan: at a
- * light plan's low effort the step returns them unexamined.
+ * light plan's low effort the step can return the points of a large change unexamined.
  */
 export const focusMode = (
   mode: PillarsInput['mode'],

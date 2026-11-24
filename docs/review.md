@@ -189,7 +189,7 @@ with YAML frontmatter (`name` in kebab-case and `when`, one sentence naming the 
 applies to) and a single-paragraph body of at most 500 characters.
 
 Targeted checks run only in `full` reviews: `light` and `skip` reviews never offer or run them
-(requester `--focus` points still run in `light` reviews, and at the full plan's effort: at low effort the step returns them unexamined). When any built-in target is enabled for
+(requester `--focus` points still run in `light` reviews, and at the full plan's effort: at low effort the step can return the points of a large change unexamined). When any built-in target is enabled for
 the repository (see [`targets`](configuration.md#targets)), the selection step (`selectSkills`) is
 shown each target's `name` and `when` — never its body — and returns a `targets` array of matching
 names alongside `skills` (or `targets` alone when `rulePlugins` is `[]`, degrading to no targets if

@@ -6,23 +6,33 @@ Newest first. Every measured run and every change to what is measured gets an en
 
 - **Runtime change.** The focus step ran at the plan's effort, so in a light plan (a follow-up
   included) it ran at low effort. When the step carries a requester point it now runs at the full
-  plan's effort. `bench-focus` takes its mode from `--mode`, so no earlier row changes.
+  plan's effort (medium). `bench-focus` takes its mode from `--mode`, so no earlier row changes.
 - **Why.** The live light follow-up of no-mistakes #3963 at `eedd0e5` returned four of the five
   requested points `not_checked` and approved. A hand read found untraceable shapes that still
   pass silently.
 - **Comparison**, Sonnet 5.5, the five live points in one call, three attempts per mode, same
-  session. `--mode light`: 3 of 15 points answered (0, 1 and 2 of 5), the silent-shape point
-  `does_not_hold` 0 of 3, $0.15 to $0.17 an attempt. `--mode full`: 12 of 15 answered (4 of 5
-  each), the silent-shape point `does_not_hold` 3 of 3, $1.40, $0.27 and $0.33. The full-mode
-  answers named a `let` with no initializer once and a factory with a return that has no
-  provenance twice; both were then confirmed in the source.
+  session, whole-pull-request context. `--mode light`: 3 of 15 points answered (0, 1 and 2 of
+  5), the silent-shape point `does_not_hold` 0 of 3, $0.15 to $0.17 an attempt. `--mode full`:
+  12 of 15 answered (4 of 5 each), the silent-shape point `does_not_hold` 3 of 3, $1.40 (the
+  first call of the session), then $0.27 and $0.33. Each light attempt ran after a full attempt
+  on the same case, so the costs compare warm calls only. The full-mode answers named a `let`
+  with no initializer once and a factory with a return that has no provenance twice; both were
+  then confirmed in the source.
 - **Case added**, focus-only: `no-mistakes-3963-eedd0e5`, the three of those points whose answer
   is settled (two `holds`, one `does_not_hold` with a `basisPattern`). The other two live points
   are left out because their answer is not settled. Default mode, three attempts, same session:
   1 of 3, 2 of 3 and 3 of 3 points (6 of 9); the `does_not_hold` point 2 of 3. About $0.27 an
   attempt. One attempt returned the two `holds` points `not_checked`; one answered `holds` on
-  the silent-shape point.
-- **Not measured:** a whole live follow-up with the change, and medium against high effort.
+  the silent-shape point while naming the gap as possible. The pattern was written after
+  reading these attempts.
+- **Not measured.**
+  - A live follow-up with the change. The live answers gave scope as their reason ("from an
+    earlier commit", "not determined from the follow-up diff"); the benchmark gives the step the
+    whole pull request, so a second cause in the follow-up context is not ruled out. The same
+    head can no longer be planned as a follow-up, so the next real one is the check.
+  - Small light reviews. One on the same day (harness-plugins #108, $0.37) answered its
+    requester points at low effort; the change raises their focus step to medium too.
+  - Medium against high effort.
 
 ## 2026-11-24: two more known misses for `clean-code-newly-reports`; a rewording abandoned
 

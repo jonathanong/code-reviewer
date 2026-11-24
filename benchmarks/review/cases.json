@@ -977,7 +977,7 @@
       {
         "point": "No other untraceable shape still passes silently: name any wrapper or binding shape the code neither traces nor records as incomplete.",
         "expectedStatus": "does_not_hold",
-        "basisPattern": "ValueTrace::None|no initiali[sz]er|uninitiali[sz]ed|silently",
+        "basisPattern": "ValueTrace::None|no initiali[sz]er|uninitiali[sz]ed|without an initiali[sz]er|no provenance|parameter",
         "reason": "A let with no initializer that is assigned later returns ValueTrace::None (playwright_wrappers/provenance.rs:14-16), and a factory with a return that has no provenance returns None for the whole factory (playwright_wrappers/body.rs:76); both pass silently."
       }
     ]
