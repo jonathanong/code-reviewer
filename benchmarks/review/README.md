@@ -182,7 +182,7 @@ each, see `HISTORY.md`). The quiet pair `focus-target-untraced-reported` scored 
 3 of 4 in its own call, see `HISTORY.md`); `no-mistakes-3963` also declares it expecting `holds`. `harness-plugins-103-18656f8` and `harness-plugins-103`
 declare `target: "peers-stand-down"` (`does_not_hold` and `holds`; 3 of 3 each). `no-mistakes-4024-19e1e46` and
 `no-mistakes-3973-0f1513f` declare `target: "clean-code-newly-reports"` expecting `does_not_hold`
-and are current misses (1 of 4 each). A case with `focusOnly: true` is graded only by its focus points and is left out of every
+with a `basisPattern`, and are current misses (0 of 4 and 1 of 4). A case with `focusOnly: true` is graded only by its focus points and is left out of every
 pillar run.
 
 ```bash

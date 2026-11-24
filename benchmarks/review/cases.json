@@ -923,7 +923,8 @@
       {
         "target": "clean-code-newly-reports",
         "expectedStatus": "does_not_hold",
-        "reason": "The description says the head differs from the base only by the guard cases and one named branch case, but any array written in a loop body or by a called function loses its non-empty fact, so a non-empty array appended to in a loop newly reports."
+        "reason": "The description says the head differs from the base only by the guard cases and one named branch case, but any array written in a loop body or by a called function loses its non-empty fact, so a non-empty array appended to in a loop newly reports.",
+        "basisPattern": "append\\w*[^.]{0,80}\\bloop\\b(?!-)|\\bloop\\b(?!-)[^.]{0,80}append|\\bcall(ed|s)?\\b[^.]{0,80}function|function call"
       }
     ],
     "expectedTargets": ["clean-code-newly-reports"]
@@ -944,7 +945,8 @@
       {
         "target": "clean-code-newly-reports",
         "expectedStatus": "does_not_hold",
-        "reason": "Producers and workers in configured test scope are removed before matching, so a production producer whose only worker is in a test file newly reports as unmatched; the description says new unmatched findings appear only when an imported name newly resolves."
+        "reason": "Producers and workers in configured test scope are removed before matching, so a production producer whose only worker is in a test file newly reports as unmatched; the description says new unmatched findings appear only when an imported name newly resolves.",
+        "basisPattern": "test[- ]scope|test file|configured test"
       }
     ],
     "expectedTargets": ["clean-code-newly-reports"]

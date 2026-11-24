@@ -21,6 +21,8 @@ export type FocusPointScore = {
   basis: string
   pass: boolean
   findingViolation?: boolean
+  /** True when the status matched but the basis did not match the case's `basisPattern`. */
+  basisViolation?: boolean
 }
 
 export type FocusCaseScore = {
@@ -80,7 +82,12 @@ export function scoreFocusCase(
     const returnedStatus = answer?.status ?? 'not_checked'
     const basis = answer?.basis ?? 'No answer returned.'
     const findingViolation = item.expectNoFindings === true && raw.findings.length > 0
-    const pass = returnedStatus === item.expectedStatus && !findingViolation
+    const statusMatch = returnedStatus === item.expectedStatus
+    const basisViolation =
+      statusMatch &&
+      item.basisPattern !== undefined &&
+      !new RegExp(item.basisPattern, 'iu').test(basis)
+    const pass = statusMatch && !findingViolation && !basisViolation
     return {
       index,
       point: item.point,
@@ -89,6 +96,7 @@ export function scoreFocusCase(
       basis,
       pass,
       ...(findingViolation ? { findingViolation: true } : {}),
+      ...(basisViolation ? { basisViolation: true } : {}),
     }
   })
   return {
@@ -150,7 +158,9 @@ export function renderFocus(
       .map((point) => {
         const extra = point.findingViolation
           ? `; returned ${score.findings} finding(s), expected 0`
-          : ''
+          : point.basisViolation
+            ? '; the basis does not match the expected pattern'
+            : ''
         return `- ${score.id}[${point.index}] "${point.point}": expected \`${point.expectedStatus}\`, got \`${point.returnedStatus}\`${extra}. Basis: ${point.basis}`
       }),
   )

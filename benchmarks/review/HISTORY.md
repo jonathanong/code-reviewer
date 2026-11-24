@@ -12,15 +12,20 @@ Newest first. Every measured run and every change to what is measured gets an en
   - `no-mistakes-3973-0f1513f`: the reworked head. A full review here said approve; a hand read
     found the description says unmatched findings can newly appear "only" when an imported name
     resolves, while producers and workers in test scope are now removed before matching.
+- **Grader change.** A focus entry may set `basisPattern`, a regular expression matched against
+  the answer's basis ignoring case; the point passes only when status and basis both match. Both
+  new cases set one. No earlier case sets it, so earlier rows are unaffected. The numbers below
+  are the saved attempts regraded with the patterns; the patterns were written after reading
+  those attempts.
 - **In the live reviews** the target was selected on both and answered `holds` on both.
 - **Focus step, committed wording**, Sonnet 5.5, one case per command, four attempts each (one
-  pilot, three more, same session): `no-mistakes-4024-19e1e46` 1 of 4, and that one answered on
-  two added zsh snapshot entries, not on the loop and call resets the case is about;
+  pilot, three more, same session): `no-mistakes-4024-19e1e46` 0 of 4 (one `does_not_hold`, on two added zsh snapshot entries and
+  not on the loop and call resets the case is about, so the basis pattern fails it);
   `no-mistakes-3973-0f1513f` 1 of 4. About $0.24 an attempt. The answers that held said the
   description names each kind. These rows are misses, kept as the measure of the gap.
 - **Rewording abandoned.** A body that asked for a list of each kind of input whose result
   differs, with its deciding line and whether the description names it, and gave no examples.
-  Three attempts a case, same session: `no-mistakes-4024-19e1e46` 1 of 3 (same zsh basis),
+  Three attempts a case, same session: `no-mistakes-4024-19e1e46` 0 of 3 (one `does_not_hold` on the same zsh basis),
   `no-mistakes-3973-0f1513f` 1 of 3, `no-mistakes-3973` 1 of 3, `no-mistakes-4024` 2 of 3,
   `no-mistakes-3963` 3 of 3 `holds`. It did not help the new cases and `no-mistakes-3973` fell
   from 9 of 10 under the committed wording. Not committed; do not repeat it.

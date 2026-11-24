@@ -51,6 +51,38 @@ const USAGE: Usage = {
 }
 
 describe('scoreFocusCase', () => {
+  it('fails a point whose status matches but whose basis misses the case pattern', () => {
+    const point: FocusCasePoint = { ...POINT_FAILS, basisPattern: '240 lines' }
+    const answer = { point: point.point, status: 'does_not_hold' as const, path: 'src/codes.mts' }
+    const hit = scoreFocusCase('c1', [point], {
+      id: 'c1',
+      answers: [{ ...answer, basis: 'codes.mts has 240 LINES.' }],
+      findings: [],
+      usage: USAGE,
+    })
+    expect(hit.points[0]).toMatchObject({ pass: true })
+    expect(hit.points[0]).not.toHaveProperty('basisViolation')
+    const miss = scoreFocusCase('c1', [point], {
+      id: 'c1',
+      answers: [{ ...answer, basis: 'A different file is too long.' }],
+      findings: [],
+      usage: USAGE,
+    })
+    expect(miss.points[0]).toMatchObject({ pass: false, basisViolation: true })
+    const wrongStatus = scoreFocusCase('c1', [point], {
+      id: 'c1',
+      answers: [{ ...answer, status: 'holds', basis: 'Looked fine.' }],
+      findings: [],
+      usage: USAGE,
+    })
+    expect(wrongStatus.points[0]).toMatchObject({ pass: false })
+    expect(wrongStatus.points[0]).not.toHaveProperty('basisViolation')
+    const summary = summarizeFocus([miss], [USAGE])
+    expect(renderFocus([miss], summary, summarizeByModel('focus', null, [USAGE]))).toContain(
+      'the basis does not match the expected pattern',
+    )
+  })
+
   it('scores passing, mismatched, missing, and expectNoFindings violations deterministically', () => {
     const raw: FocusRawResult = {
       id: 'c1',
