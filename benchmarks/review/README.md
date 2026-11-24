@@ -183,7 +183,7 @@ each, see `HISTORY.md`). The quiet pair `focus-target-untraced-reported` scored 
 declare `target: "peers-stand-down"` (`does_not_hold` and `holds`; 3 of 3 each). `no-mistakes-4024-19e1e46` and
 `no-mistakes-3973-0f1513f` declare `target: "clean-code-newly-reports"` expecting `does_not_hold`
 with a `basisPattern`, and are current misses (0 of 4 and 1 of 4). A case with `focusOnly: true` is graded only by its focus points and is left out of every
-pillar run. `no-mistakes-3963-eedd0e5` holds three requester points from a follow-up head (two `holds`, one `does_not_hold` with a `basisPattern`; 6 of 9 points over three attempts).
+pillar run. `no-mistakes-3963-eedd0e5` holds three requester points from a follow-up head (two `holds`, one `does_not_hold` with a `basisPattern`; 6 of 9 points over three attempts). `no-mistakes-3973-e0c9a77` holds two requester points on a later head of the same change, both expected `does_not_hold` for one defect the focus step did not find (0 of 6 points over three attempts).
 
 ```bash
 pnpm exec code-reviewer bench-focus \

@@ -2,6 +2,33 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: known miss `no-mistakes-3973-e0c9a77`, the focus step against the approval check
+
+- **Case added**, focus-only: `no-mistakes-3973-e0c9a77`, two requester points from the live review
+  of no-mistakes #3973 at `e0c9a77`, both expected `does_not_hold` with a `basisPattern`. No
+  prompt, schema or grader changed, so no earlier row changes.
+- **The defect.** One raw `new Worker(...)` whose queue name does not resolve, anywhere in the
+  project, drops `unmatched-producer` for every job (`has_unresolved_worker_for_job`,
+  `graph_checks.rs:38`, used at `graph_build.rs:63`). Main reported those producers. Confirmed
+  by hand in the source.
+- **Live run**, full plan at high effort, $3.78. The focus step (Sonnet 5.5) answered the
+  unresolved-input point `holds` and the lost-finding point `not_checked`. No pillar raised the
+  defect and the verifier kept one low, so the verdict was Approve. The approval check (Opus)
+  then found the defect and changed the verdict to Comment. Without that step the review would
+  have approved.
+- **Measured**, Sonnet 5.5, default mode, three attempts, same session: 0 of 2 points each time
+  (0 of 6), $0.16, $0.22 and $0.21.
+  - Unresolved-input point: `does_not_hold` twice, both times for a different site (a job-state
+    receiver skipped with `continue`) that the pattern rightly does not accept; `holds` once,
+    after reading the abstention at `graph_build.rs:63` and taking it as limited to a worker
+    that could handle the job, which the code does not check.
+  - Lost-finding point: `not_checked` twice ("I did not diff base and head findings across the
+    159 files"); `holds` once, on the same misreading.
+- **Read.** The step can reach the line and still accept it. Two of the three lost-finding
+  answers stop at "did not compare both branches", where reading the one changed call site on
+  the base branch settles it. The same basis appeared live on no-mistakes #4040.
+- **Not measured.** Opus on this case, and a tool-using step.
+
 ## 2026-11-24: requester points are checked at full effort in a light plan; `no-mistakes-3963-eedd0e5`
 
 - **Runtime change.** The focus step ran at the plan's effort, so in a light plan (a follow-up
