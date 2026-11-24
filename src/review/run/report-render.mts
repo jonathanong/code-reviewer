@@ -13,6 +13,7 @@ import { renderRan } from './report-models.mts'
 import { renderStack } from './stack-report.mts'
 import { renderApprovalCheck } from './approval-check-render.mts'
 import { renderEvidence } from './evidence-render.mts'
+import { renderFocusReport } from './focus-report.mts'
 import { costBreakdown, type ReportData, type ReportFinding, type ReportPillar } from './report.mts'
 
 function money(value: number | null): string {
@@ -120,6 +121,7 @@ export function renderReport(data: ReportData): string {
       : [`### Impact: ${data.impact.kind}\n\n${data.impact.basis ?? ''}`.trimEnd()]),
     ...renderAnswers(data.answers ?? [], data.answerWarnings ?? []),
     ...renderQuestions(data.questions ?? []),
+    ...renderFocusReport(data.focus, data.droppedTargets),
     ...renderApprovalCheck(data.approvalCheck),
     ...renderPostWarnings(data.postWarnings ?? []),
     ...(data.fixedThreadIds.length === 0
@@ -133,6 +135,9 @@ export function renderReport(data: ReportData): string {
       : renderEvidence(data.evidence, data.findings, money(cost.evidence))),
     '### Pillars',
     `Skills selected: ${data.skillSelection.selected.length === 0 ? 'none' : data.skillSelection.selected.join(', ')}${data.skillSelection.error === undefined ? '' : ` (selection error: ${data.skillSelection.error})`}`,
+    ...(data.skillSelection.targets === undefined || data.skillSelection.targets.length === 0
+      ? []
+      : [`Targets selected: ${data.skillSelection.targets.join(', ')}`]),
     ...(data.contextNote === undefined
       ? []
       : [`Context file: not built (${data.contextNote}); the pillars ran without it.`]),

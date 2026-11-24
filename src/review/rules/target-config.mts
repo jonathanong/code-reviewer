@@ -1,4 +1,5 @@
 import type { RunTextCommand } from '../../gh-cli/index.mts'
+import { defaultReferencesDir, targetNamesIn } from '../targets.mts'
 import { CONFIG_EXTENSIONS, TARGET_CONFIG_NAMES, conflictProblem } from './config-files.mts'
 import { parseRepoConfig, type RepoConfig, type RepoConfigs } from './config.mts'
 import { defaultRef, gitReader } from './reader.mts'
@@ -76,6 +77,7 @@ export async function readTargetConfig(
   read: TargetFileReader,
   repo: string,
   trusted = false,
+  referencesDir = defaultReferencesDir(),
 ): Promise<TargetConfig> {
   try {
     const files = await read()
@@ -89,6 +91,7 @@ export async function readTargetConfig(
       file.text,
       `${repo}/${file.name}`,
       trusted ? 'trusted' : 'target',
+      targetNamesIn(referencesDir),
     )
     return { config, problems: config.problems }
   } catch (error) {

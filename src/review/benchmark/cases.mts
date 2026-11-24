@@ -2,12 +2,14 @@ import { resolve } from 'node:path'
 
 import { ReviewError, SEVERITIES, type Severity } from '../finding.mts'
 import { PILLARS, type Pillar } from '../pillar-name.mts'
+import type { ReviewTarget } from '../targets.mts'
 import { parseExpectedRules, type ExpectedRule } from './expected-rules.mts'
 import { parseExpectedReads } from './reads-score.mts'
 import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
 import { parseFocusCase, type FocusCasePoint } from './focus-case.mts'
+import { parseSelectionTargets } from './selection-targets.mts'
 
 export type ExpectedFinding = {
   pillar: Pillar
@@ -23,17 +25,13 @@ type CaseBase = {
   kind: 'positive' | 'negative'
   reason: string
   expected: ExpectedFinding[]
-  /** Rule skills a run should load by full `plugin:skill` name; an array entry is any-of. */
   expectedSkills?: ExpectedSkill[]
-  /** Repo-relative files a good review opens; counted against the run's recorded reads, never part of the finding match. */
   expectedReads?: string[]
-  /** Rule lines the expected finding depends on; `bench-context` checks the excerpts hold them. */
   expectedRules?: ExpectedRule[]
-  /** Skills `bench-selection` should not select for this case; none of them is expected. */
   unwantedSkills?: string[]
-  /** Other reviewers' open notes shown to the verifier, each with the outcome `bench-verifier` expects. */
+  expectedTargets?: string[]
+  unwantedTargets?: string[]
   answerable?: AnswerableCase[]
-  /** Requester points and expected outcomes for `bench-focus`. */
   focus?: FocusCasePoint[]
 }
 
@@ -43,17 +41,11 @@ export type RepoCase = CaseBase & {
   pr: number
   baseSha: string
   headSha: string
-  /** The description as it read at `headSha`; without it the snapshot uses the current one. */
   body?: string
 }
 
 /** A synthetic case: a directory holding `base/`, `head/`, `pr.md`, and optional `context.md`. */
-export type FixtureCase = CaseBase & {
-  fixture: string
-  fixtureDir: string
-  /** The fixture repository's `owner/name`, for config files that name it. */
-  repoId?: string
-}
+export type FixtureCase = CaseBase & { fixture: string; fixtureDir: string; repoId?: string }
 
 export type EvalCase = RepoCase | FixtureCase
 
@@ -143,7 +135,12 @@ function skillNames(value: unknown, where: string): ExpectedSkill[] | undefined 
   })
 }
 
-function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
+function evalCase(
+  raw: unknown,
+  index: number,
+  baseDir: string,
+  targets?: readonly ReviewTarget[],
+): EvalCase {
   const where = `cases[${index}]`
   if (!isRecord(raw)) fail(where, 'must be an object')
   const origin = source(raw, where, baseDir)
@@ -161,6 +158,7 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
   const expectedReads = parseExpectedReads(raw.expectedReads, where)
   const expectedRules = parseExpectedRules(raw.expectedRules, expectedSkills, where)
   const unwantedSkills = parseUnwantedSkills(raw.unwantedSkills, expectedSkills, where)
+  const targetNames = targets?.map((target) => target.name)
   return {
     id: str(raw, 'id', where),
     ...origin,
@@ -168,8 +166,9 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
     ...(expectedReads === undefined ? {} : { expectedReads }),
     ...(expectedRules === undefined ? {} : { expectedRules }),
     ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
+    ...parseSelectionTargets(raw.expectedTargets, raw.unwantedTargets, where, targetNames),
     ...parseAnswerable(raw.answerable, where),
-    ...parseFocusCase(raw.focus, where),
+    ...parseFocusCase(raw.focus, where, targets),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',
@@ -178,9 +177,13 @@ function evalCase(raw: unknown, index: number, baseDir: string): EvalCase {
 }
 
 /** Parses labeled eval cases; ids must be unique. Fixture paths resolve against `baseDir`. */
-export function parseEvalCases(raw: unknown, baseDir = '.'): EvalCase[] {
+export function parseEvalCases(
+  raw: unknown,
+  baseDir = '.',
+  targets?: readonly ReviewTarget[],
+): EvalCase[] {
   if (!Array.isArray(raw)) throw new ReviewError('Eval cases must be a JSON array.')
-  const cases = raw.map((item, index) => evalCase(item, index, baseDir))
+  const cases = raw.map((item, index) => evalCase(item, index, baseDir, targets))
   const seen = new Set<string>()
   for (const item of cases) {
     if (seen.has(item.id)) throw new ReviewError(`Duplicate eval case id: ${item.id}`)

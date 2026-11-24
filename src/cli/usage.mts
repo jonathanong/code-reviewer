@@ -51,8 +51,8 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   (this repository's AGENTS.md and skills at the base when --tree is given; the rules of cloned repositories
   the diff imports, or that the reviewer's configs link to the
   change as consumed or as consumers) read from --clones DIR (or CODE_REVIEWER_CLONE_ROOT). abort drops in-progress (--requeue asks again).
-  review runs claim, prepare, a Haiku skill selection, the planned pillars (--jobs at a time,
-  default 3, each retried once), and the verifier with headless claude runs, then writes
+  review runs claim, prepare, a Haiku skill and target selection, the planned pillars (--jobs at a time,
+  default 3, each retried once, plus the focus step when --focus points or selected built-in targets apply), and the verifier with headless claude runs, then writes
   review.json, preview.md, report.md and report.json to --out and stops before posting. It fails
   closed (abort without requeue, exit 1) when every pillar fails. report re-renders report.md
   from report.json.
@@ -115,9 +115,9 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   also planted under a second pillar), and scores real findings kept, label recall, severity
   agreement, duplicates merged, and other blocking and high findings confirmed by --checker;
   --prompts is the skill's references directory.
-  bench-selection runs only the Haiku skill-selection step (the same call review makes) on the
-  cases that declare expectedSkills, --attempts times each (default 3), and writes one raw file per
-  attempt to --out/raw/<case>/<n>.json. It scores how often every expected skill is selected, per
+  bench-selection runs only the Haiku skill-and-target selection step (the same call review makes) on the
+  cases that declare expectedSkills, expectedTargets or unwantedTargets, --attempts times each (default 3), and writes one raw file per
+  attempt to --out/raw/<case>/<n>.json. It scores how often every expected skill and target is selected, per
   case and per expected skill, with mean skills selected and cost by model. It does not run a
   reviewer, so it does not show that a selected skill is then loaded or applied. --cache DIR
   reuses the clone cache of an earlier bench; --score-only re-scores saved attempts.
@@ -126,7 +126,7 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   whether each expectedRules text is quoted, cut, or missing from the installed skill; --history
   files build small git repositories and check the history sections find the commits. It exits 0.
   bench-focus runs the real focus step (with computed change facts) on each case declaring focus
-  points, grades each point deterministically against expectedStatus (and checks zero findings when
+  points (inline point or built-in target name), grades each point deterministically against expectedStatus (and checks zero findings when
   expectNoFindings is set), writes raw/<case>.json, summary.json and summary.md, and prints one JSON
   line; --score-only re-scores saved runs without calling any model. bench and bench-verifier stage the same rule sources under
   .review/rules (fixtures may hold

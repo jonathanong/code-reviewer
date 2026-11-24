@@ -157,6 +157,7 @@ describe('runReview with requester focus points', () => {
     expect(review.focus).toEqual([
       {
         point: POINTS[0],
+        origin: 'requester',
         status: 'holds',
         basis: 'It stops after 3 tries.',
         path: 'a.ts',
@@ -164,6 +165,7 @@ describe('runReview with requester focus points', () => {
       },
       {
         point: POINTS[1],
+        origin: 'requester',
         status: 'does_not_hold',
         basis: 'It logs the token.',
         path: 'a.ts',
@@ -180,16 +182,21 @@ describe('runReview with requester focus points', () => {
     expect(verifier?.prompt).toContain(POINTS[0])
   })
 
-  it('shows the focus text only to the focus step and verifier, and writes it nowhere pillars read', async () => {
+  it('shows the focus text only to the focus step and verifier, and writes nothing with point text before all model steps finish', async () => {
     const { seen, out } = await run(POINTS)
+    expect(seen.length).toBeGreaterThanOrEqual(4)
+    for (const call of seen) expect(call.filesWithPoints).toEqual([])
     const nonVerifier = others(seen).filter((call) => !call.prompt.includes('VERIFIER prompt text'))
     expect(nonVerifier.length).toBeGreaterThanOrEqual(3)
     for (const call of nonVerifier) {
       for (const point of POINTS) expect(call.prompt).not.toContain(point)
-      expect(call.filesWithPoints).toEqual([])
     }
     expect(seen.filter(isFocus)[0]?.prompt).toContain(POINTS[1])
-    expect(filesWith(out)).toEqual([join(out, 'review.json')])
+    expect(filesWith(out).sort()).toEqual([
+      join(out, 'report.json'),
+      join(out, 'report.md'),
+      join(out, 'review.json'),
+    ])
   })
 
   it('checks the points of a light review that plans one pillar', async () => {

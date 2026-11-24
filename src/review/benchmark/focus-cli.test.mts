@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { FOCUS_PILLAR } from '../focus.mts'
+import { FOCUS_PILLAR, type FocusPoint } from '../focus.mts'
 import type { FocusRun } from '../run/focus-run.mts'
 import { runReviewFocusBenchCli, type FocusBenchDeps } from './focus-cli.mts'
 
@@ -57,7 +57,7 @@ const USAGE = {
 }
 
 function harness(
-  answer: (points: readonly string[]) => FocusRun | Promise<FocusRun>,
+  answer: (points: readonly FocusPoint[]) => FocusRun | Promise<FocusRun>,
   plugins = true,
 ) {
   const store = new Map<string, string>([
@@ -146,7 +146,9 @@ describe('runReviewFocusBenchCli', () => {
   it('runs only cases declaring focus, applies options, and writes raw and summary files', async () => {
     const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const h = harness((points) =>
-      points[0] === HOSTILE.point ? okRun('not_checked', 'Instruction ignored.') : okRun('holds'),
+      points[0]?.point === HOSTILE.point
+        ? okRun('not_checked', 'Instruction ignored.')
+        : okRun('holds'),
     )
     await expect(
       runReviewFocusBenchCli(
@@ -207,7 +209,7 @@ describe('runReviewFocusBenchCli', () => {
           answers: [],
         }
       }
-      if (points[0] === HOSTILE.point) throw new Error('prepare broke')
+      if (points[0]?.point === HOSTILE.point) throw new Error('prepare broke')
       throw 'non-error failure'
     }, false)
     await expect(
@@ -259,6 +261,53 @@ describe('runReviewFocusBenchCli', () => {
       expect(md).toContain('- Cases: 2 (1 scored)')
       expect(md).toContain('- Points correct: 1 of 1 (100%)')
       expect(md).toContain('- f2: not run')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('loads target points from --prompts/targets and passes target:<name> origin to runFocus', async () => {
+    vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const dir = mkdtempSync(join(tmpdir(), 'bench-focus-targets-'))
+    try {
+      mkdirSync(join(dir, 'targets'), { recursive: true })
+      writeFileSync(
+        join(dir, 'targets', 'custom-guard.md'),
+        '---\nname: custom-guard\nwhen: Adds guard.\n---\n\nVerbatim custom target text.\n',
+      )
+      const h = harness((points) => ({
+        result: {
+          pillar: FOCUS_PILLAR,
+          model: 'sonnet',
+          findings: [],
+          skills: [],
+          failedAttempts: [],
+          usage: USAGE,
+        },
+        answers: points.map((entry) => ({
+          point: entry.point,
+          origin: entry.origin,
+          status: 'holds',
+          basis: 'Checked.',
+          path: 'a.ts',
+        })),
+      }))
+      h.store.set(join(dir, 'pillars', '_contract.md'), '# Contract')
+      h.store.set(
+        'target-cases.json',
+        JSON.stringify([
+          caseJson('t1', [{ target: 'custom-guard', expectedStatus: 'holds', reason: 'r' }]),
+        ]),
+      )
+      await expect(
+        runReviewFocusBenchCli(
+          ['--cases', 'target-cases.json', '--out', 'o', '--prompts', dir, '--no-rules'],
+          h.deps,
+        ),
+      ).resolves.toBe(0)
+      expect((h.ran[0] as { points: FocusPoint[] }).points).toEqual([
+        { point: 'Verbatim custom target text.', origin: 'target:custom-guard' },
+      ])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

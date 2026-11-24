@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { ExecError } from '../benchmark/exec.mts'
 import { DEFAULT_RULE_PLUGINS, type PluginInstall } from '../plugins.mts'
 import {
+  SKILL_AND_TARGET_SELECTION_SCHEMA,
   SKILL_SELECTION_SCHEMA,
+  TARGET_ONLY_SELECTION_SCHEMA,
   buildSelectionPrompt,
   listRuleSkillFiles,
   listRuleSkills,
@@ -177,5 +179,56 @@ describe('selectSkills', () => {
     const exec = vi.fn(async () => answer([]))
     await selectSkills({ ...base, exec })
     expect((exec.mock.calls[0] as unknown as [string, string[]])[1]).not.toContain('--settings')
+  })
+
+  it('offers targets by name and when, uses the extended schema, ignores unknown names, and degrades when targets is absent', async () => {
+    const targets = [{ name: 'unneeded-concurrency-guard', when: 'Adds a lock or CAS guard.' }]
+    const exec = vi.fn(async () =>
+      JSON.stringify({
+        type: 'result',
+        total_cost_usd: 0.01,
+        structured_output: {
+          skills: ['jong-skills:documentation'],
+          targets: ['unneeded-concurrency-guard', 'made-up', 'unneeded-concurrency-guard', 9],
+        },
+      }),
+    )
+    const choice = await selectSkills({ ...base, targets, exec })
+    expect(choice.selected).toEqual(['jong-skills:documentation'])
+    expect(choice.targets).toEqual(['unneeded-concurrency-guard'])
+    const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
+    expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string)).toEqual(
+      SKILL_AND_TARGET_SELECTION_SCHEMA,
+    )
+    expect(args[1]).toContain('## Targeted checks')
+    expect(args[1]).toContain('- unneeded-concurrency-guard: Adds a lock or CAS guard.')
+
+    const missing = await selectSkills({ ...base, targets, exec: async () => answer([]) })
+    expect(missing.error).toBeUndefined()
+    expect(missing.targets).toEqual([])
+  })
+
+  it('makes a target-only call when rulePlugins is empty and targets are offered', async () => {
+    const targets = [{ name: 'unneeded-concurrency-guard', when: 'Adds a lock or CAS guard.' }]
+    const exec = vi.fn(async () =>
+      JSON.stringify({
+        type: 'result',
+        total_cost_usd: 0.01,
+        structured_output: { targets: ['unneeded-concurrency-guard', 'bogus'] },
+      }),
+    )
+    const choice = await selectSkills({ ...base, skills: [], rulePlugins: [], targets, exec })
+    expect(exec).toHaveBeenCalledOnce()
+    expect(choice).toMatchObject({
+      selected: [],
+      targets: ['unneeded-concurrency-guard'],
+      available: 0,
+    })
+    const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
+    expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string)).toEqual(
+      TARGET_ONLY_SELECTION_SCHEMA,
+    )
+    expect(args[1]).toContain('## Targeted checks')
+    expect(args[1]).not.toContain('## Installed rule skills')
   })
 })

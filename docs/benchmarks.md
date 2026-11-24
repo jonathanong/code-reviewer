@@ -515,6 +515,12 @@ They appear in `summary.md`, in `summary.json` (`summary.unwanted`, and `unwante
 and attempt that declares it) and as an `unwanted` object in the final JSON line. A hit does not
 depend on them.
 
+`bench-selection` also passes the built-in targeted checks (`name` and `when` only) to
+`selectSkills`. A case may declare `"expectedTargets"` and/or `"unwantedTargets"` (non-empty arrays
+of built-in target names with no overlap); `bench-selection` includes cases that declare either
+field even without `expectedSkills`, and reports target selection hits and unwanted selections in
+`summary.md`, `summary.json` (`targets` and `targetScores`), and the final JSON line (`targets`).
+
 It does not show that the reviewer then loads or applies a selected skill, that a selected skill
 helps, or that the other skills offered did no harm: it counts only the names returned. Without
 `unwantedSkills`, selecting extra skills is not penalized; the mean number selected is reported
@@ -568,7 +574,7 @@ pnpm exec code-reviewer bench-focus \
 ```
 
 - **Case format.** Any case in `cases.json` or `synthetic.json` may declare `focus`: an array of
-  1 to 20 `{ point, expectedStatus, reason, expectNoFindings? }` entries where `expectedStatus` is
+  1 to 20 `{ point, expectedStatus, reason, expectNoFindings? }` entries — or `{ target, expectedStatus, reason, expectNoFindings? }`, where `target` names a built-in target file under `skills/review/references/targets/` whose body is loaded verbatim — where `expectedStatus` is
   `holds`, `does_not_hold`, or `not_checked`. Cases without `focus` are skipped.
 - **Snapshot and facts.** For fixture cases, `bench-focus` initializes a two-commit git repository
   (`base/` then `head/`) and writes `context.json`, `context.md`, and `diff/INDEX.md` in a review

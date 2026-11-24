@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -6,12 +6,14 @@ import {
   conflictProblem,
   groupConfigFiles,
   invalidProblem,
+  listConfigFiles,
   notObjectProblem,
   parseConfigText,
 } from './config-files.mts'
 import type { AnswersConfig } from './answers-parse.mts'
 import type { IssuesConfig } from '../../issues/config-parse.mts'
 import type { ModelConfig } from '../models.mts'
+import { defaultReferencesDir, targetNamesIn } from '../targets.mts'
 import { consumesList } from './consumes-parse.mts'
 import type { AnalysisTool } from './analysis-parse.mts'
 import type { EvidenceSource } from './evidence-parse.mts'
@@ -27,6 +29,7 @@ import {
   type CheckRunSettings,
   type LabelNames,
 } from './settings-parse.mts'
+import { parseTargets, type TargetsConfig } from './targets-parse.mts'
 
 /** The reviewer's config home, `code-reviewer` under the XDG config home; the App config lives here. */
 export function configHome(env: Record<string, string | undefined>): string {
@@ -80,6 +83,8 @@ export type RepoConfig = {
   answers?: AnswersConfig
   /** Built-in pillars to skip and extra pillars to run; a reviewed repository's own file may set it. */
   pillars?: PillarsConfig
+  /** Built-in targeted checks to skip; a reviewed repository's own file may set it. */
+  targets?: TargetsConfig
   plan?: PlanConfig
   problems: string[]
 }
@@ -107,6 +112,7 @@ const KEYS = new Set([
   'issues',
   'answers',
   'pillars',
+  'targets',
   'plan',
 ])
 
@@ -127,6 +133,7 @@ export function parseRepoConfig(
   text: string,
   file: string,
   scope: ConfigScope = 'repo',
+  knownTargets: readonly string[] = targetNamesIn(defaultReferencesDir()),
 ): RepoConfig {
   let raw: unknown
   try {
@@ -143,6 +150,7 @@ export function parseRepoConfig(
   }
   const machine = parseMachineKeys(scope, raw, file, problems)
   const pillars = parsePillars(raw.pillars, `${file} pillars`, problems)
+  const targets = parseTargets(raw.targets, `${file} targets`, problems, knownTargets)
   const plan = parsePlan(scope, raw.plan, `${file} plan`, problems)
   return {
     consumes: scope === 'owner' ? [] : consumesList(raw.consumes, file, problems),
@@ -150,6 +158,7 @@ export function parseRepoConfig(
     ...(checkRun === undefined ? {} : { checkRun }),
     ...machine,
     ...(pillars === undefined ? {} : { pillars }),
+    ...(targets === undefined ? {} : { targets }),
     ...(plan === undefined ? {} : { plan }),
     problems,
   }
@@ -166,22 +175,13 @@ export type RepoConfigs = {
 export const NO_CONFIGS: RepoConfigs = { byRepo: new Map(), byOwner: new Map(), problems: [] }
 
 /** Reads every `<owner>` and `<owner>/<name>` config file under `dir`; a missing directory has none. */
-export function loadRepoConfigs(dir: string): RepoConfigs {
+export function loadRepoConfigs(dir: string, referencesDir = defaultReferencesDir()): RepoConfigs {
   const byRepo = new Map<string, RepoConfig>()
   const byOwner = new Map<string, RepoConfig>()
   const problems: string[] = []
-  if (!existsSync(dir)) return { byRepo, byOwner, problems }
-  const entries = readdirSync(dir, { withFileTypes: true })
-  const names = (kind: 'isFile' | 'isDirectory') =>
-    entries
-      .filter((entry) => entry[kind]())
-      .map((entry) => entry.name)
-      .sort()
-  const files = names('isFile')
-  for (const owner of names('isDirectory')) {
-    const inside = readdirSync(join(dir, owner)).sort()
-    files.push(...inside.map((name) => `${owner}/${name}`))
-  }
+  const files = listConfigFiles(dir)
+  if (files.length === 0) return { byRepo, byOwner, problems }
+  const knownTargets = targetNamesIn(referencesDir)
   for (const [key, group] of groupConfigFiles(files)) {
     if (group.length > 1) {
       problems.push(conflictProblem(group))
@@ -189,7 +189,7 @@ export function loadRepoConfigs(dir: string): RepoConfigs {
     }
     const file = group[0] as string
     const scope = key.includes('/') ? 'repo' : 'owner'
-    const config = parseRepoConfig(readFileSync(join(dir, file), 'utf8'), file, scope)
+    const config = parseRepoConfig(readFileSync(join(dir, file), 'utf8'), file, scope, knownTargets)
     problems.push(...config.problems)
     ;(scope === 'repo' ? byRepo : byOwner).set(key, config)
   }

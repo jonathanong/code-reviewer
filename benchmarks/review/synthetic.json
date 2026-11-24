@@ -735,5 +735,23 @@
         "reason": "src/timeout.mts only checks Number.isInteger(value), so 0 and negative integers are returned instead of rejected."
       }
     ]
+  },
+  {
+    "id": "select-target-concurrency-guard",
+    "fixture": "fixtures/select-target-concurrency-guard",
+    "title": "fix(cleanup): add compare-and-set guard on sweep cursor",
+    "kind": "negative",
+    "reason": "Selection fixture: the diff adds a compare-and-set guard against overlapping cleanup runs, so selection should pick the unneeded-concurrency-guard target.",
+    "expected": [],
+    "expectedTargets": ["unneeded-concurrency-guard"]
+  },
+  {
+    "id": "select-target-no-guard",
+    "fixture": "fixtures/select-target-no-guard",
+    "title": "refactor(cleanup): remove redundant prelock before sweep",
+    "kind": "negative",
+    "reason": "Selection fixture: the diff removes a redundant lock rather than adding a guard, so selection should not pick unneeded-concurrency-guard.",
+    "expected": [],
+    "unwantedTargets": ["unneeded-concurrency-guard"]
   }
 ]

@@ -97,8 +97,8 @@ code-reviewer help
 
 ## Documentation
 
-- [Running a review](docs/review.md): `review` and `report`, the files a run writes, and how the
-  headless runs are confined.
+- [Running a review](docs/review.md): `review` and `report`, requester focus, built-in targeted
+  checks, the files a run writes, and how the headless runs are confined.
 - [Unattended runs](docs/run.md): `run`, its exit codes and JSON line, the hold rules, and use
   from another agent session.
 - [Health check](docs/doctor.md): `doctor`, what it checks and how to read its output.

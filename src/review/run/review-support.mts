@@ -5,6 +5,7 @@ import type { Exec } from '../benchmark/exec.mts'
 import { ReviewError, type Finding, type ReviewInput } from '../finding.mts'
 import type { Pillar } from '../pillar-name.mts'
 import type { PillarSettings } from '../pillars-settings.mts'
+import type { TargetSettings } from '../targets-settings.mts'
 import type { Mode } from '../mode.mts'
 import type { PostOutcome } from '../post.mts'
 import type { PrepareSummary } from '../prepare.mts'
@@ -54,14 +55,13 @@ export type ReviewSteps = {
   approvalCheck: boolean
   /** True when the settings let the verifier answer other reviewers' threads; off when absent. */
   answers?: boolean
-  /** Built-in pillars to skip and extra pillars to run; the built-ins alone when absent. */
   pillars?: PillarSettings
-  /** The harness and model of each step; the default tiers when absent. */
+  /** Built-in targeted checks to skip; all enabled when absent. */
+  targets?: TargetSettings
   models?: StepModels
-  /** The machine-local state directory holding the tracker; a follow-up reads its earlier review from it. */
   stateDir?: string
   exec: Exec
-  /** Directory holding `verifier.md` and `pillars/`. */
+  /** Directory holding `verifier.md`, `pillars/`, and `targets/`. */
   references: string
 }
 

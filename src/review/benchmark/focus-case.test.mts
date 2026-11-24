@@ -71,10 +71,47 @@ describe('parseFocusCase', () => {
     }
   })
 
-  it('parses all five synthetic focus cases from benchmarks/review/synthetic.json', () => {
-    const url = new URL('../../../benchmarks/review/synthetic.json', import.meta.url)
-    const cases = parseEvalCases(JSON.parse(readFileSync(url, 'utf8')) as unknown, 'benchmarks')
-    const focusCases = cases.filter((item) => item.focus !== undefined)
+  it('resolves target references verbatim from target files and rejects invalid target usage', () => {
+    const targets = [{ name: 'my-target', when: 'W.', point: 'Verbatim target point.' }]
+    const parsed = parseFocusCase(
+      [{ target: 'my-target', expectedStatus: 'does_not_hold', reason: 'Overlap impossible.' }],
+      'cases[0]',
+      targets,
+    )
+    expect(parsed.focus).toEqual([
+      {
+        point: 'Verbatim target point.',
+        target: 'my-target',
+        expectedStatus: 'does_not_hold',
+        reason: 'Overlap impossible.',
+      },
+    ])
+    expect(() =>
+      parseFocusCase(
+        [{ point: 'a', target: 'my-target', expectedStatus: 'holds', reason: 'r' }],
+        'cases[0]',
+        targets,
+      ),
+    ).toThrow('set only one of point and target')
+    expect(() =>
+      parseFocusCase(
+        [{ target: 'missing', expectedStatus: 'holds', reason: 'r' }],
+        'cases[0]',
+        targets,
+      ),
+    ).toThrow('unknown target "missing"')
+    expect(() =>
+      parseFocusCase([{ target: ' ', expectedStatus: 'holds', reason: 'r' }], 'cases[0]', targets),
+    ).toThrow('target must be a non-empty string')
+  })
+
+  it('parses all five synthetic focus cases and vouchington-6282 target focus case', () => {
+    const synthUrl = new URL('../../../benchmarks/review/synthetic.json', import.meta.url)
+    const synth = parseEvalCases(
+      JSON.parse(readFileSync(synthUrl, 'utf8')) as unknown,
+      'benchmarks',
+    )
+    const focusCases = synth.filter((item) => item.focus !== undefined)
     expect(focusCases.map((item) => item.id)).toEqual([
       'focus-fact-decides',
       'focus-hostile-point',
@@ -83,5 +120,20 @@ describe('parseFocusCase', () => {
       'focus-plain-fails',
     ])
     expect(focusCases[1]?.focus?.[0]?.expectNoFindings).toBe(true)
+
+    const realUrl = new URL('../../../benchmarks/review/cases.json', import.meta.url)
+    const real = parseEvalCases(JSON.parse(readFileSync(realUrl, 'utf8')) as unknown, 'benchmarks')
+    const guard = real.find((item) => item.id === 'vouchington-6282')
+    expect(guard?.focus).toEqual([
+      {
+        target: 'unneeded-concurrency-guard',
+        point:
+          'The change adds a guard against two runs of the same code overlapping. Find every caller of the guarded code and how each is scheduled or enqueued, then look for what already serialises them: a queue ordering or group key with concurrency 1, a fixed job id or dedupe key, a single schedule, a unique constraint, an existing lock. Claim to test: two runs can overlap, so the guard is needed.',
+        expectedStatus: 'does_not_hold',
+        reason:
+          'The cleanup job is enqueued with one ordering key at concurrency 1, so two runs never overlap.',
+      },
+    ])
+    expect(real.find((item) => item.id === 'vouchington-6254')?.focus).toBeUndefined()
   })
 })

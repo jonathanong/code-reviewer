@@ -1,10 +1,11 @@
 import { dirname, join } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { pluginRoot } from '../../plugin-root.mts'
+import type { FocusPoint } from '../focus.mts'
 import { resolveModelPlan, type StepModels } from '../models.mts'
 import { runFocus } from '../run/focus-run.mts'
 import { pool } from '../run/pool.mts'
+import { defaultReferencesDir, loadTargets } from '../targets.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
 import { defaultBenchDeps, type BenchDeps } from './cli.mts'
 import type { FocusCasePoint } from './focus-case.mts'
@@ -26,7 +27,6 @@ export type FocusBenchDeps = BenchDeps & {
   stageRules: typeof stageCaseRules
   runFocus: typeof runFocus
 }
-
 export const defaultFocusDeps: FocusBenchDeps = {
   ...defaultBenchDeps,
   prepareFocus: prepareFocusCase,
@@ -35,7 +35,6 @@ export const defaultFocusDeps: FocusBenchDeps = {
 }
 
 type FocusCase = EvalCase & { focus: FocusCasePoint[] }
-
 type Options = {
   out: string
   cache: string
@@ -50,9 +49,8 @@ const rawPath = (out: string, id: string) => join(out, 'raw', `${id}.json`)
 
 function positive(value: string, name: string): number {
   const count = Number(value)
-  if (!Number.isInteger(count) || count < 1) {
+  if (!Number.isInteger(count) || count < 1)
     throw new Error(`--${name} must be a positive integer.`)
-  }
   return count
 }
 
@@ -62,10 +60,10 @@ function parseMode(value: string | undefined): 'light' | 'full' {
   throw new Error('--mode must be light or full.')
 }
 
-function modelsFor(model: string | undefined): StepModels | undefined {
-  if (model === undefined) return undefined
-  return { plan: resolveModelPlan(undefined, { focus: [{ harness: 'claude', model }] }) }
-}
+const modelsFor = (model: string | undefined): StepModels | undefined =>
+  model === undefined
+    ? undefined
+    : { plan: resolveModelPlan(undefined, { focus: [{ harness: 'claude', model }] }) }
 
 async function runAll(
   cases: readonly FocusCase[],
@@ -86,8 +84,12 @@ async function runAll(
         { cache: options.cache, work: join(options.out, 'work'), noRules: options.noRules },
         { exec: deps.exec, prepare: deps.prepare, stageRules: deps.stageRules },
       )
+      const points: FocusPoint[] = item.focus.map((entry) => ({
+        point: entry.point,
+        origin: entry.target === undefined ? 'requester' : `target:${entry.target}`,
+      }))
       const done = await deps.runFocus({
-        points: item.focus.map((entry) => entry.point),
+        points,
         tree: prepared.tree,
         run: { out: prepared.out, sinceSha: null, hasRules: prepared.hasRules },
         baseSha: prepared.baseSha,
@@ -166,12 +168,15 @@ export async function runReviewFocusBenchCli(
     },
   })
   const files = values.cases ?? []
-  if (files.length === 0 || values.out === undefined) {
+  if (files.length === 0 || values.out === undefined)
     throw new Error('bench-focus needs --cases and --out.')
-  }
+  const prompts = values.prompts ?? defaultReferencesDir()
+  const targets = loadTargets(prompts)
   const ids = new Set(values.case ?? [])
   const cases = files
-    .flatMap((file) => parseEvalCases(JSON.parse(deps.readFile(file)) as unknown, dirname(file)))
+    .flatMap((file) =>
+      parseEvalCases(JSON.parse(deps.readFile(file)) as unknown, dirname(file), targets),
+    )
     .filter((item): item is FocusCase => item.focus !== undefined)
     .filter((item) => ids.size === 0 || ids.has(item.id))
   if (new Set(cases.map((item) => item.id)).size !== cases.length) {
@@ -181,7 +186,7 @@ export async function runReviewFocusBenchCli(
   const options: Options = {
     out: values.out,
     cache: values.cache ?? join(values.out, 'cache'),
-    prompts: values.prompts ?? join(pluginRoot(), 'skills/review/references'),
+    prompts,
     mode: parseMode(values.mode),
     model: values.model,
     jobs: positive(values.jobs ?? '3', 'jobs'),

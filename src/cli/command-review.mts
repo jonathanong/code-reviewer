@@ -10,6 +10,7 @@ import { readFocusFile } from '../run/focus-file.mts'
 import { requireValidConfig } from './config-check.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { requirePillars } from '../review/pillars-settings.mts'
+import { resolveTargets } from '../review/targets-settings.mts'
 import { stepWatchFor } from './step-watch-for.mts'
 import { recordReview, recordStoppedReview } from '../tracker/record.mts'
 import {
@@ -67,7 +68,9 @@ export async function reviewCommand(
   const targetOf = () => target
   // Before any claim or model step: a configuration problem stops the review, as it stops `run`.
   const own = (await requireValidConfig(deps, target.repo)).config
+  const references = deps.references()
   const pillars = requirePillars(deps.configs(), target.repo, own)
+  const targets = resolveTargets(deps.configs(), target.repo, own, references)
   const limits = resolveLimits(deps.configs(), target.repo)
   const tracker = deps.tracker()
   const startedAt = tracker.now().toISOString()
@@ -100,6 +103,8 @@ export async function reviewCommand(
       rulePlugins: resolveRulePlugins(deps.configs(), target.repo, own).names,
       // Machine or repository config; a repository may switch off or add pillars of its own.
       pillars,
+      // Machine or repository config; a repository may switch off built-in targeted checks.
+      targets: { disabled: targets.disabled },
       // Machine config, then --model: a repository cannot choose which model reads its code.
       models: {
         plan: resolveModels(deps.configs(), target.repo, overrides).plan,
@@ -112,7 +117,7 @@ export async function reviewCommand(
       },
       stateDir: tracker.dir,
       exec: deps.exec,
-      references: deps.references(),
+      references,
     },
     {
       repo: target.repo,

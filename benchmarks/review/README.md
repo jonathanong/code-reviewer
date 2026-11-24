@@ -83,7 +83,10 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 
 Skill selection alone (`bench-selection`, Haiku, 22 tagged cases, 3 attempts, $0.19): the expected
 skill was named in 66 of 66 attempts, with 9.1 skills selected on average (2 to 9 on fixtures, 5
-to 20 on mined cases).
+to 20 on mined cases). **Stale for target selection:** `selectSkills` now also selects built-in
+targeted checks; `synthetic.json` includes two target-selection fixtures
+(`select-target-concurrency-guard` and `select-target-no-guard`), piloted only (6 of 6 attempts
+matched; see `HISTORY.md`, 2026-11-24).
 
 Verifier (`bench-verifier`, Opus, on the with-skills findings of the run above, 3 attempts, labels
 judged by Sonnet, $25.14):
@@ -155,6 +158,9 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-unanswerable`  | production p99 latency metric absent from the tree (`not_checked`)                       |
 | `focus-plain-holds`   | `clamp` throws `RangeError` when `min > max` (`holds`)                                   |
 | `focus-plain-fails`   | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                     |
+
+Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
+(`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3).
 
 ```bash
 pnpm exec code-reviewer bench-focus \

@@ -23,6 +23,8 @@ export type PillarResult = {
 /** What the skill-selection call decided, saved as `skills.json`. */
 export type SkillChoice = {
   selected: string[]
+  /** Built-in targeted checks selected for the focus step; absent when no targets were offered. */
+  targets?: string[]
   /** How many rule skills were offered. */
   available: number
   error?: string

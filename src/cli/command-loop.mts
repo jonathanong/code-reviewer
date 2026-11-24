@@ -31,6 +31,7 @@ import { authCommand } from './command-auth.mts'
 import type { ReviewDeps } from './deps.mts'
 import { listQueueFor } from './queue.mts'
 import { describePillars, resolvePillars } from '../review/pillars-settings.mts'
+import { resolveTargets } from '../review/targets-settings.mts'
 import { checkRunFor, effort, labelsFor, prepareSettingsFor } from './review-settings.mts'
 import { planSummary, resolvePlanValues } from '../review/plan-settings.mts'
 
@@ -77,6 +78,7 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
     answers: resolveAnswers(configs, scope),
     rulePlugins: resolveRulePlugins(configs, scope, target?.config),
     pillars: describePillars(resolvePillars(configs, scope, target?.config)),
+    targets: resolveTargets(configs, scope, target?.config, deps.references()),
     plan: planSummary(resolvePlanValues(configs, scope, target?.config)),
     // What each step runs on; a pillar with no setting follows the plan (see docs/configuration.md).
     models: {
@@ -85,7 +87,6 @@ async function settings(values: LoopValues, deps: ReviewDeps) {
       retry: models.plan.retry,
       from: models.from,
     },
-    // `maxCostFrom` null means maxCostUsd is the built-in default.
     limits,
     problems: [
       ...settingsProblems(configs, scope.split('/')[0] as string),

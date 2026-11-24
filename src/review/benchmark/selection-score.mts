@@ -8,6 +8,12 @@ import {
   unwantedTotals,
   type UnwantedSummary,
 } from './selection-unwanted.mts'
+import {
+  renderTargetSelection,
+  targetSelectionTotals,
+  type TargetCaseScore,
+  type TargetSelectionSummary,
+} from './selection-targets.mts'
 import { summarizeUsage } from './usage-summary.mts'
 import type { Usage } from './usage.mts'
 
@@ -132,6 +138,8 @@ export function renderSelection(
   summary: SelectionSummary,
   usages: readonly Usage[],
   models: ModelReport,
+  targetScores: readonly TargetCaseScore[] = [],
+  targetSummary: TargetSelectionSummary | null = null,
 ): string {
   const usage = summarizeUsage(usages)
   const mean = summary.meanSelected === null ? 'n/a' : summary.meanSelected.toFixed(1)
@@ -153,7 +161,7 @@ export function renderSelection(
     (row) =>
       `| ${cell(row.skill)} | ${row.hits} of ${row.attempts} | ${percent(row.hits, row.attempts)} |`,
   )
-  const problems = scores.flatMap((score) => [
+  const problems = [...scores, ...targetScores].flatMap((score) => [
     ...score.errors.map((error) => `- ${score.id} ${error}`),
     ...score.notRun.map((attempt) => `- ${score.id} attempt ${attempt}: not run`),
   ])
@@ -165,6 +173,7 @@ export function renderSelection(
       `- Hit rate: ${summary.hits} of ${summary.attempts} (${percent(summary.hits, summary.attempts)})`,
       `- Mean skills selected per attempt: ${mean}`,
       ...(summary.unwanted === null ? [] : [unwantedTotals(summary.unwanted)]),
+      ...(targetSummary === null ? [] : [targetSelectionTotals(targetSummary)]),
       `- Errors: ${summary.errors}; not run: ${summary.notRun}`,
       `- Cost: ${cost}`,
     ].join('\n'),
@@ -177,6 +186,7 @@ export function renderSelection(
     '## Per expected skill',
     ['| Skill | Hits | Rate |', '| --- | --- | --- |', ...skillRows].join('\n'),
     ...(summary.unwanted === null ? [] : renderUnwanted(scores, summary.unwanted)),
+    ...renderTargetSelection(targetScores),
     '## Tokens by model',
     renderModelReports([models]),
     ...(problems.length > 0 ? ['## Errors', problems.join('\n')] : []),
