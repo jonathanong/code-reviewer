@@ -7,6 +7,7 @@ import { ExecError } from '../benchmark/exec.mts'
 
 import { readTranscript } from '../../harness/claude-stream.mts'
 import { ReviewError, type Finding } from '../finding.mts'
+import { FOCUS_PILLAR } from '../focus.mts'
 import {
   REVIEW_VERIFIER_SCHEMA,
   buildVerifierRunPrompt,
@@ -76,6 +77,31 @@ describe('buildVerifierRunPrompt', () => {
     expect(buildVerifierRunPrompt({ ...INPUT, run: { ...INPUT.run, stack: undefined } })).toBe(
       prompt,
     )
+    expect(buildVerifierRunPrompt({ ...INPUT, focus: undefined })).toBe(prompt)
+  })
+
+  it('includes the focus outcomes block only when focus points were checked', () => {
+    expect(prompt).not.toContain('## Requested focus checks')
+    const withFocus = buildVerifierRunPrompt({
+      ...INPUT,
+      findings: [
+        ...FINDINGS,
+        { pillar: FOCUS_PILLAR, severity: 'high', title: 'F', body: 'f', path: 'a.ts', line: 2 },
+      ],
+      focus: [
+        {
+          point: 'retry is bounded',
+          status: 'does_not_hold',
+          basis: 'Unbounded.',
+          path: 'a.ts',
+          line: 2,
+        },
+      ],
+    })
+    expect(withFocus).toContain('## Requested focus checks')
+    expect(withFocus).toContain('retry is bounded')
+    expect(withFocus).toContain('index 2.')
+    expect(withFocus).toContain('"findingIndex": 2')
   })
 
   it('adds the stack block with the later diffs when stack.json exists', () => {

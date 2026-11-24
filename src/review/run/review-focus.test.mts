@@ -84,6 +84,9 @@ async function run(
       return result({
         summary: 'S.',
         pullRequestSummary: 'P.',
+        ...(answer === 'dropped'
+          ? { dropped: [{ index: 0, reason: 'The token is redacted before logging.' }] }
+          : {}),
         findings:
           prompt.includes('Token logged') && answer !== 'dropped'
             ? [
@@ -170,14 +173,18 @@ describe('runReview with requester focus points', () => {
     expect(review.findings).toEqual([
       expect.objectContaining({ pillar: 'focus', title: 'Token logged' }),
     ])
+    expect(review.questions).toEqual([])
     const verifier = seen.find((call) => call.prompt.includes('VERIFIER prompt text'))
     expect(verifier?.schema).toContain('"focus"')
+    expect(verifier?.prompt).toContain('## Requested focus checks')
+    expect(verifier?.prompt).toContain(POINTS[0])
   })
 
-  it('shows the focus text to the focus step only, and writes it nowhere the others read', async () => {
+  it('shows the focus text only to the focus step and verifier, and writes it nowhere pillars read', async () => {
     const { seen, out } = await run(POINTS)
-    expect(others(seen).length).toBeGreaterThanOrEqual(4)
-    for (const call of others(seen)) {
+    const nonVerifier = others(seen).filter((call) => !call.prompt.includes('VERIFIER prompt text'))
+    expect(nonVerifier.length).toBeGreaterThanOrEqual(3)
+    for (const call of nonVerifier) {
       for (const point of POINTS) expect(call.prompt).not.toContain(point)
       expect(call.filesWithPoints).toEqual([])
     }
@@ -205,12 +212,14 @@ describe('runReview with requester focus points', () => {
     expect(plain.skipped).toEqual(['Lockfile only.'])
   })
 
-  it('makes a does_not_hold not checked when the verifier drops its finding', async () => {
+  it('keeps the verifier drop reason on the focus point and adds no question when the verifier drops its finding', async () => {
     const { review } = await run(POINTS, 'dropped')
     expect(review.findings).toEqual([])
+    expect(review.questions).toEqual([])
     expect(statuses(review)).toEqual(['holds', 'not_checked'])
     expect(review.focus[1]).toMatchObject({
-      basis: 'Raised, but the verifier kept no finding: It logs the token.',
+      basis:
+        'Raised, but the verifier kept no finding: It logs the token. Reason dropped: The token is redacted before logging.',
       path: 'a.ts',
       line: 9,
     })
@@ -236,8 +245,13 @@ describe('runReview with requester focus points', () => {
     const withFocus = await run(POINTS, 'empty')
     expect(plain.seen.some(isFocus)).toBe(false)
     expect(plain.review.focus).toBeUndefined()
-    const prompts = (calls: Seen[]) => others(calls).map((c) => c.prompt.replace(RUN_DIR, 'RUN'))
-    expect(prompts(plain.seen)).toEqual(prompts(withFocus.seen))
+    const nonVerifier = (calls: Seen[]) =>
+      others(calls)
+        .filter((call) => !call.prompt.includes('VERIFIER prompt text'))
+        .map((c) => c.prompt.replace(RUN_DIR, 'RUN'))
+    expect(nonVerifier(plain.seen)).toEqual(nonVerifier(withFocus.seen))
+    const plainVerifier = plain.seen.find((call) => call.prompt.includes('VERIFIER prompt text'))
+    expect(plainVerifier?.prompt).not.toContain('## Requested focus checks')
     expect(plain.seen.map((call) => call.schema).join()).not.toContain('"focus"')
   })
 
