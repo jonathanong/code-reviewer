@@ -122,16 +122,13 @@ export async function runFocus(input: FocusInput): Promise<FocusRun> {
   )
   const results = runs.map((run) => run.result)
   const first = results.find((result) => result.error === undefined) ?? (results[0] as PillarResult)
-  const failed = results.every((result) => result.error !== undefined)
+  // `first` is a call that worked when one did, so it carries an error only when every call failed.
   const result: PillarResult = {
-    pillar: FOCUS_PILLAR,
-    model: first.model,
+    ...first,
     skills: [...new Set(results.flatMap((entry) => entry.skills))],
     findings: results.flatMap((entry) => entry.findings),
     usage: results.reduce<Usage | null>((sum, entry) => addUsage(sum, entry.usage), null),
     failedAttempts: results.flatMap((entry) => entry.failedAttempts),
-    ...(failed ? { error: first.error as string } : {}),
-    ...(first.ran === undefined ? {} : { ran: first.ran }),
   }
   return { result, answers }
 }

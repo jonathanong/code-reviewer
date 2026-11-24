@@ -138,6 +138,22 @@ describe('runFocus', () => {
     expect(result.usage?.costUsd).toBeCloseTo(1.5)
   })
 
+  it('reports the first failure when every call of a split step throws', async () => {
+    const exec = vi.fn<Exec>(async () => {
+      throw new Error('spawn failed')
+    })
+    const { result, answers } = await runFocus({
+      ...setup({ exec }),
+      points: [
+        { point: 'a', origin: 'requester' },
+        { point: 'b', origin: 'target:g' },
+      ],
+    })
+    expect(result.error).toBeDefined()
+    expect(result.error).toContain('spawn failed')
+    expect(answers.map((entry) => entry.status)).toEqual(['not_checked', 'not_checked'])
+  })
+
   it('keeps the answers of the calls that worked when one target call fails twice', async () => {
     const exec = vi.fn<Exec>(async (...call) =>
       JSON.stringify(call).includes('TARGET ONE') ? 'not json' : answer(HOLDS),
