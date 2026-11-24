@@ -729,7 +729,7 @@
         "claim": "`playwright-no-serial` silently reports nothing when a spec imports `test` from a local module that builds it through `.extend()` inside helper calls, so serial suites in such specs are missed with no warning that the binding was unresolved."
       }
     ],
-    "expectedSkills": ["jong-skills:static-analysis-checklist"],
+    "expectedSkills": ["jong-skills:lint-rule-authoring"],
     "expectedTargets": ["clean-code-newly-reports", "untraced-name-passes"],
     "focus": [
       {

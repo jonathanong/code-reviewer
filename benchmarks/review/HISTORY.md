@@ -2,6 +2,20 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: `no-mistakes-3963` expects the skill that states its rule
+
+- **Case edit.** `expectedSkills` on `no-mistakes-3963` changes from
+  `jong-skills:static-analysis-checklist` to `jong-skills:lint-rule-authoring`. An earlier entry
+  called the first a loose fit: it did not state the rule. The new skill does, in its section
+  "A name the rule cannot trace is unknown, not clean", and is in the installed plugin
+  (`jong-skills` at `477432c6fdaa`).
+- **Selection** (`bench-selection`, Haiku 5.5, three attempts, this case only): the new skill was
+  selected 3 of 3, among 14 to 15 skills each time.
+- **Not comparable.** Skill-selection and skill-load rows that include `no-mistakes-3963` from
+  before this entry.
+- **Not measured.** Whether a pillar loads the skill or finds the defect with it; no pillar run
+  was made.
+
 ## 2026-11-24: a fourth targeted check, `peers-stand-down`
 
 - **Target added.** `skills/review/references/targets/peers-stand-down.md`: for a change in which
