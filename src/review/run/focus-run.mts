@@ -9,6 +9,8 @@ import { parsePillarOutput, type PillarOutput } from './pillar-output.mts'
 import type { RunDir } from './pillar-prompt.mts'
 import { buildFocusFacts } from './focus-facts.mts'
 import { renderFocusFacts } from './focus-facts-render.mts'
+import { buildNamedPrFacts, namedPullRequests } from './focus-named-prs.mts'
+import { renderNamedPrFacts } from './focus-named-render.mts'
 import { buildFocusPrompt, checkedFocus, FOCUS_OUTPUT_SCHEMA, unchecked } from './focus-prompt.mts'
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS, type PillarResult } from './types.mts'
 
@@ -19,6 +21,10 @@ export type FocusInput = {
   run: RunDir
   baseSha?: string | undefined
   headSha?: string | undefined
+  /** The number of the pull request under review; a point naming it names no other one. */
+  pr?: number | undefined
+  /** Pull request number to a pinned commit, used in place of the live `refs/pull/<n>/head`. */
+  refs?: Readonly<Record<string, string>> | undefined
   mode: 'light' | 'full'
   contract: string
   settings?: object
@@ -39,7 +45,7 @@ export type FocusRun = { result: PillarResult; answers: FocusAnswer[] }
  */
 export async function runFocus(input: FocusInput): Promise<FocusRun> {
   const { points } = input
-  const facts = renderFocusFacts(
+  const changeFacts = renderFocusFacts(
     await buildFocusFacts({
       tree: input.tree,
       out: input.run.out,
@@ -48,6 +54,11 @@ export async function runFocus(input: FocusInput): Promise<FocusRun> {
       exec: input.exec,
     }),
   )
+  const named = renderNamedPrFacts(
+    await buildNamedPrFacts(namedPullRequests(points, input.pr), input),
+  )
+  const blocks = [...(changeFacts === undefined ? [] : [changeFacts]), ...named]
+  const facts = blocks.length === 0 ? undefined : blocks.join('\n\n')
   const request: StepRequest = {
     prompt: buildFocusPrompt(
       { contract: input.contract, run: input.run, contextFile: input.contextFile, skills: [] },

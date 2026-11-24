@@ -110,4 +110,31 @@ describe('prepareFocusCase', () => {
     expect(stageRules).toHaveBeenCalledOnce()
     expect(preparedNoDir.hasRules).toBe(false)
   })
+
+  it('fetches the pinned heads of a repo case into the cache so the checkout can read them', async () => {
+    const snapDir = join(root, 'pinned-snap')
+    mkdirSync(snapDir, { recursive: true })
+    const item: RepoCase = {
+      id: 'r2',
+      repo: 'acme/widgets',
+      pr: 3,
+      baseSha: 'a'.repeat(40),
+      headSha: 'b'.repeat(40),
+      title: 'feat: repo case',
+      kind: 'negative',
+      reason: 'test',
+      expected: [],
+      focusRefs: { '7': 'c'.repeat(40), '9': 'd'.repeat(40) },
+    }
+    const exec = vi.fn(async () => '')
+    await prepareFocusCase(
+      item,
+      { cache: join(root, 'cache'), work: join(root, 'work'), noRules: true },
+      { exec, prepare: async () => ({ dir: snapDir, diff: '', body: '' }), stageRules: vi.fn() },
+    )
+    const [command, args] = exec.mock.calls[0] as unknown as [string, string[]]
+    expect(command).toBe('git')
+    expect(args).toContain(join(root, 'cache', 'acme__widgets.git'))
+    expect(args.slice(-3)).toEqual(['origin', 'c'.repeat(40), 'd'.repeat(40)])
+  })
 })

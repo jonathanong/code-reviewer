@@ -19,7 +19,7 @@ type NumstatEntry = {
   added: number | null
   removed: number | null
 }
-type StatusEntry = { path: string; oldPath?: string; status: string }
+export type StatusEntry = { path: string; oldPath?: string; status: string }
 
 export type FocusFactsInput = {
   tree: string
@@ -100,7 +100,7 @@ function parseNumstatZ(output: string): NumstatEntry[] {
   return entries
 }
 
-function parseNameStatusZ(output: string): StatusEntry[] {
+export function parseNameStatusZ(output: string): StatusEntry[] {
   const entries: StatusEntry[] = []
   const queue = output.split('\0')
   for (let code = queue.shift(); code !== undefined; code = queue.shift()) {

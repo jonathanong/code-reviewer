@@ -160,6 +160,13 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-plain-fails`         | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                               |
 | `focus-target-guard-needed` | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding) |
 
+A case may set `focusRefs`, an object from pull request number to a full 40-character commit
+(`{ "3963": "236cad49..." }`). When a requester point names another pull request (`#123`, `PR 123`,
+`pull request 123`), the real step reads that pull request's changed files from git; `focusRefs`
+pins which commit it reads instead of the live `refs/pull/<n>/head`, and `bench-focus` fetches the pin
+into the case's cache. Mined case `no-mistakes-4006` uses it (a requester point names 3963, which
+changes 16 of the same files); no run yet.
+
 Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
 (`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3).
 

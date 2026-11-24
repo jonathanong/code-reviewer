@@ -127,7 +127,8 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   files build small git repositories and check the history sections find the commits. It exits 0.
   bench-focus runs the real focus step (with computed change facts) on each case declaring focus
   points (inline point or built-in target name), grades each point deterministically against expectedStatus (and checks zero findings when
-  expectNoFindings is set), writes raw/<case>.json, summary.json and summary.md, and prints one JSON
+  expectNoFindings is set; a case's focusRefs, pull request number to a full 40-character commit, pins the head of
+  another pull request a point names, so the run is reproducible), writes raw/<case>.json, summary.json and summary.md, and prints one JSON
   line; --score-only re-scores saved runs without calling any model. bench and bench-verifier stage the same rule sources under
   .review/rules (fixtures may hold
   dependency and consumer repositories under repos/, and configs under configs/ keyed by

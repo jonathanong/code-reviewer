@@ -46,11 +46,10 @@ export async function ensureCache(repo: string, repoDir: string, exec: Exec): Pr
   await created
 }
 
-/** Fetches the base and head commits, with their full history and nothing newer. */
-export async function fetchCommits(
+/** Fetches commits by SHA, with their full history, into the cache. */
+export async function fetchShas(
   repoDir: string,
-  baseSha: string,
-  headSha: string,
+  shas: readonly string[],
   exec: Exec,
 ): Promise<void> {
   await exec('git', [
@@ -61,7 +60,10 @@ export async function fetchCommits(
     '--quiet',
     '--no-tags',
     'origin',
-    baseSha,
-    headSha,
+    ...shas,
   ])
 }
+
+/** Fetches the base and head commits, with their full history and nothing newer. */
+export const fetchCommits = (repoDir: string, baseSha: string, headSha: string, exec: Exec) =>
+  fetchShas(repoDir, [baseSha, headSha], exec)
