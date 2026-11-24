@@ -67,18 +67,15 @@ async function review(
     {
       pillars: plan.pillars,
       extra: steps.pillars?.extra ?? [],
-      tree,
       run,
       mode,
       jobs: options.jobs,
       ...pillarTexts(steps),
       skills: skillChoice.selected,
-      settings,
-      models,
       analysis,
       contextFile: context.file,
       ...(web === undefined ? {} : { web }),
-      exec: steps.exec,
+      ...harness,
     },
     options.focus,
     prepared,
@@ -99,6 +96,7 @@ async function review(
       ...verifierContext(out, steps.answers === true),
       ...verifierContextFields(context),
       ...(block === undefined ? {} : { earlier: block }),
+      ...(focus === undefined ? {} : { focus: focus.answers }),
       analysis,
       ...(web === undefined ? {} : { web }),
     },
@@ -120,7 +118,6 @@ async function review(
     input: approvalCheckInput(steps.references, run, output, judged, findings, pillarSkips),
   })
   throwIfStopped(models.watch)
-  const { questions, skipped } = second
   const { evidence, findings: verified } = await applyEvidence({
     setup: () => steps.evidence(),
     readPrompt: () => read(join(steps.references, 'evidence.md')),
@@ -138,12 +135,12 @@ async function review(
   const input = buildReviewInput({
     effort: plan.effort,
     output: posted,
-    skipped,
+    skipped: second.skipped,
     findings: verified,
-    questions,
+    questions: second.questions,
     run,
     dependencies,
-    focus: keptFocus(focus?.answers, verified),
+    focus: keptFocus(focus?.answers, verified, findings, output.dropped),
   })
   writeJson(join(out, 'review.json'), input)
   markComplete(out, headSha)
@@ -153,14 +150,14 @@ async function review(
     ...base,
     mode,
     reasons: plan.reasons,
-    verdict: deriveVerdict(verified, questions, skipped),
+    verdict: deriveVerdict(verified, second.questions, second.skipped),
     postWarnings: outcome.warnings,
-    skipped,
+    skipped: second.skipped,
     skillSelection: skillChoice,
     pillars: judged,
     verifier: {
       model: output.ran.model,
-      output: { ...posted, findings: verified, questions },
+      output: { ...posted, findings: verified, questions: second.questions },
     },
     evidence,
     approvalCheck: second.check,
@@ -175,7 +172,7 @@ async function review(
     summary: reviewSummary({
       data,
       verified,
-      questions,
+      questions: second.questions,
       check: second.check,
       report: writeReportFiles(out, data),
       out,

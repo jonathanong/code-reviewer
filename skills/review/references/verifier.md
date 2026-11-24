@@ -29,7 +29,9 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    `prevent` only when the finding is confirmed and the named check would stop the class of
    mistake, not just this instance; drop it otherwise, or add one by the contract's rule.
    Keep what the author must read in `body` and move exact steps, file lists, commands and
-   reproduction into `fix`, which is posted collapsed.
+   reproduction into `fix`, which is posted collapsed. A finding raised for a focus point answers a
+   question the requester asked; keep it, correct it, or drop it, and when dropping it give the
+   reason in one sentence, because the reason is shown to the requester.
 3. **Settle the facts.** A finding, and equally a statement in your summary that something is
    safe, rests on facts: what a foreign key does on delete, how many runs of a job can overlap, who else calls a
    function, whether a failed job runs again. For each fact the review relies on, open the file
