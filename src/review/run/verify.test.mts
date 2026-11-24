@@ -101,6 +101,7 @@ describe('buildVerifierRunPrompt', () => {
     expect(withFocus).toContain('## Requested focus checks')
     expect(withFocus).toContain('retry is bounded')
     expect(withFocus).toContain('index 2.')
+    expect(withFocus).toContain('"findingIndex": 2')
   })
 
   it('adds the stack block with the later diffs when stack.json exists', () => {
