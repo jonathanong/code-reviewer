@@ -15,6 +15,16 @@ const ANSWER_KEYS = [
   'output',
 ]
 
+/** A run agy ended without an answer, keeping the usage it reported. */
+export class AgyDeniedError extends ReviewError {
+  readonly usage: Usage
+
+  constructor(message: string, usage: Usage) {
+    super(message)
+    this.usage = usage
+  }
+}
+
 const count = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
@@ -92,8 +102,9 @@ export function readAgyResult(stdout: string, what: string): HarnessResult {
   const structured = structuredFrom(parsed)
   const denied = deniedActions(parsed)
   if (structured === undefined && denied.length > 0) {
-    throw new ReviewError(
+    throw new AgyDeniedError(
       `${what} failed: agy denied ${denied.join(', ')}: headless mode cannot approve it.`,
+      usage,
     )
   }
   return {
@@ -108,6 +119,7 @@ export function readAgyResult(stdout: string, what: string): HarnessResult {
 
 /** The message to record for a failed run; a non-zero exit keeps the error agy printed. */
 export function describeAgyFailure(error: unknown): { message: string; usage: Usage | null } {
+  if (error instanceof AgyDeniedError) return { message: error.message, usage: error.usage }
   if (!(error instanceof ExecError)) {
     return { message: error instanceof Error ? error.message : String(error), usage: null }
   }

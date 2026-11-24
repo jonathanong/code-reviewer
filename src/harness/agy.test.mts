@@ -125,6 +125,27 @@ describe('agy harness run', () => {
     expect((await run('{"denied_actions":"x"}')).structured).toBeUndefined()
   })
 
+  it('keeps the usage of a denied run on the error and in describeFailure', async () => {
+    const usage = {
+      input_tokens: 20664,
+      output_tokens: 227,
+      thinking_tokens: 79,
+      cache_read_tokens: 16348,
+    }
+    const stdout = JSON.stringify({
+      usage,
+      denied_actions: [{ action: 'write_file', display_name: 'Edit' }],
+    })
+    const error = await run(stdout).catch((caught: unknown) => caught)
+    const described = harness.describeFailure(error)
+    expect(described.message).toBe('Step failed: agy denied Edit: headless mode cannot approve it.')
+    expect(described.usage).toMatchObject({
+      inputTokens: 20664,
+      outputTokens: 306,
+      cacheReadTokens: 16348,
+    })
+  })
+
   it('reads agy usage keys, adding thinking tokens to output', async () => {
     const usage = { input_tokens: 5, output_tokens: 2, thinking_tokens: 3, cache_read_tokens: 7 }
     const result = await run(JSON.stringify({ structured_output: {}, usage }))
