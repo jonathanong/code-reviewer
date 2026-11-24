@@ -23,6 +23,7 @@ export type Severity = (typeof SEVERITIES)[number]
 
 export const EFFORTS = ['low', 'medium', 'high'] as const
 export type Effort = (typeof EFFORTS)[number]
+export const DEFAULT_EFFORT: Effort = 'high'
 
 /** A pillar, or the approval check, that did not run, with why. */
 export type SkippedPillar = { pillar: Pillar | typeof APPROVAL_CHECK; reason: string }
@@ -160,7 +161,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
   const notes = parseNotes(raw.notes)
   const dependencies = list(raw, 'dependencies').slice(0, 15).map(parseDependency)
   const review: ReviewInput = {
-    effort: raw.effort === undefined ? 'high' : oneOf(EFFORTS, raw.effort, 'effort'),
+    effort: raw.effort === undefined ? DEFAULT_EFFORT : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
     skipped: list(raw, 'skipped').map(parseSkipped),
     findings: list(raw, 'findings').map(parseFinding),

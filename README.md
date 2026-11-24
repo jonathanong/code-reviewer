@@ -91,6 +91,7 @@ cd code-reviewer && pnpm install
 ```bash
 code-reviewer run --repo owner/name --pr N       # review and post, or hold for a human
 code-reviewer review --repo owner/name --pr N --out DIR --tree CHECKOUT   # review, stop before posting
+code-reviewer carry --repo owner/name --pr N --from-sha OLD   # carry an approval when the diff is unchanged
 code-reviewer help
 ```
 
@@ -103,6 +104,8 @@ code-reviewer help
 - [Health check](docs/doctor.md): `doctor`, what it checks and how to read its output.
 - [Posting a review](docs/posting.md): the verdict and review event, dismissals, retries,
   read-back, and text length.
+- [Carrying an approval](docs/carry.md): `carry`, re-posting an earlier approval onto a new head by
+  local diff without a model call.
 - [Pull request context](docs/pull-request-context.md): stacks, pushes that only merge the base,
   dead bases and carried commits, dependencies, and linked issues.
 - [Tracker and explainer](docs/tracker.md): the record of every review and the plain-words

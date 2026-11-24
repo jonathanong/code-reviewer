@@ -9,6 +9,8 @@ export function parse(args: string[]) {
       repo: { type: 'string', multiple: true },
       pr: { type: 'string' },
       'head-sha': { type: 'string' },
+      'from-sha': { type: 'string' },
+      'allow-delta': { type: 'boolean' },
       input: { type: 'string' },
       'dry-run': { type: 'boolean' },
       'allow-long': { type: 'boolean' },

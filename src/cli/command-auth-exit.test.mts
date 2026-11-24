@@ -32,6 +32,7 @@ describe('code-reviewer auth --owner', () => {
     ['claim', ['--repo', 'acme/w', '--pr', '1']],
     ['review', ['--repo', 'acme/w', '--pr', '1']],
     ['post', ['--repo', 'acme/w', '--pr', '1']],
+    ['carry', ['--repo', 'acme/w', '--pr', '1']],
     ['status', ['--repo', 'acme/w', '--pr', '1']],
     ['queue', ['--owner', 'acme']],
   ])('%s fails on a missing installation before doing any work', async (subcommand, flags) => {

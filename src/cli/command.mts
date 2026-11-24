@@ -5,6 +5,7 @@ import { reportCommand, reviewCommand } from './command-review.mts'
 import { contextCommand } from './command-context.mts'
 import { doctorCommand } from './command-doctor.mts'
 import { requireApp } from './command-auth.mts'
+import { carryCommand } from './command-carry.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
 import { labelsFor } from './review-settings.mts'
@@ -21,10 +22,19 @@ import { REVIEW_USAGE } from './usage.mts'
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, or bench-context'
+  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, or bench-context'
 
 /** Subcommands that call GitHub for a repository or owner; `run` checks the App in its own preflight. */
-const NEEDS_IDENTITY = new Set(['post', 'status', 'claim', 'skip', 'prepare', 'review', 'context'])
+const NEEDS_IDENTITY = new Set([
+  'post',
+  'carry',
+  'status',
+  'claim',
+  'skip',
+  'prepare',
+  'review',
+  'context',
+])
 const NEEDS_APP = new Set([
   ...NEEDS_IDENTITY,
   'diff',
@@ -131,6 +141,11 @@ async function run(
     case 'post':
       print((await postCommand(values, pull, deps)).printed)
       return 0
+    case 'carry': {
+      const result = await carryCommand(values, pull, deps)
+      process.stdout.write(result.text)
+      return result.exitCode
+    }
     case 'diff':
       process.stdout.write(numberDiff(await io.diff()))
       return 0
