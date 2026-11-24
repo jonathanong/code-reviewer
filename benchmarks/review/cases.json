@@ -722,7 +722,35 @@
         "claim": "`playwright-no-serial` silently reports nothing when a spec imports `test` from a local module that builds it through `.extend()` inside helper calls, so serial suites in such specs are missed with no warning that the binding was unresolved."
       }
     ],
-    "expectedSkills": ["jong-skills:static-analysis-checklist"]
+    "expectedSkills": ["jong-skills:static-analysis-checklist"],
+    "expectedTargets": ["untraced-name-passes"],
+    "focus": [
+      {
+        "target": "untraced-name-passes",
+        "expectedStatus": "does_not_hold",
+        "reason": "A spec that gets its test binding from a local wrapper module is treated as clean: the rule reports nothing and does not say the binding was unresolved."
+      }
+    ]
+  },
+  {
+    "id": "no-mistakes-3963-fixed",
+    "repo": "jonathanong/no-mistakes",
+    "pr": 3963,
+    "title": "Flag test retries, serial suites, and sentinel scrolls",
+    "baseSha": "e63baa7cf9dd378468b2451f5b09d4220f899d4f",
+    "headSha": "f282a5d7ee668be57f37ec10faae0a1db459b5e2",
+    "kind": "negative",
+    "reason": "The later head of the same pull request: the rule follows wrapped bindings and reports one it cannot resolve, so the target must stay quiet. Focus-only; not reviewed as a pillar negative.",
+    "expected": [],
+    "expectedTargets": ["untraced-name-passes"],
+    "focus": [
+      {
+        "target": "untraced-name-passes",
+        "expectedStatus": "holds",
+        "reason": "The rule reports an unresolved binding instead of passing it.",
+        "expectNoFindings": true
+      }
+    ]
   },
   {
     "id": "no-mistakes-4006",
