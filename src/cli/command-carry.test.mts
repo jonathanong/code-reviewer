@@ -92,7 +92,7 @@ function fakeIo(headSha: string, initialReviews: ListedReview[]): MockIo {
     listReviews: vi.fn(async () => [...posted]),
     trustedAuthors: vi.fn(async () => new Set(['bot'])),
     pullAuthor: vi.fn(async () => 'dev'),
-    changesRequested: vi.fn(async () => []),
+    standingReviews: vi.fn(async () => []),
     dismissReview: vi.fn(async () => undefined),
     hasApprovalLabel: vi.fn(async () => false),
     postReview: vi.fn(async (review) => {

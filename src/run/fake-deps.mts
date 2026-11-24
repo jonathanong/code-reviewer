@@ -53,7 +53,7 @@ export function fakeDeps(options: FakeOptions) {
     diff: vi.fn(),
     listFiles: vi.fn(async () => []),
     listReviews: vi.fn(async () => listed),
-    changesRequested: vi.fn(async () => []),
+    standingReviews: vi.fn(async () => []),
     dismissReview: vi.fn(),
     pullAuthor: vi.fn(async () => 'dev'),
     trustedAuthors: vi.fn(async () => new Set([APP])),

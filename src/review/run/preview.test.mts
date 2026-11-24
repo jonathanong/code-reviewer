@@ -5,10 +5,10 @@ import { renderPreview } from './preview.mts'
 const SHA = 'c'.repeat(40)
 
 describe('renderPreview dismissal', () => {
-  it('says which earlier requests for changes a real post would dismiss', () => {
+  it('says which earlier reviews a real post would dismiss', () => {
     const base = { verdict: 'Comment' as const, event: 'COMMENT' as const, reviews: [] }
     expect(renderPreview({ ...base, wouldDismiss: [4, 5] })).toContain(
-      "Would dismiss this reviewer's earlier request for changes: 4, 5.",
+      "Would dismiss this reviewer's earlier reviews that block or approve: 4, 5.",
     )
     expect(renderPreview({ ...base, wouldDismiss: [] })).not.toContain('Would dismiss')
     expect(renderPreview(base)).not.toContain('Would dismiss')

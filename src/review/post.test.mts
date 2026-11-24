@@ -1,57 +1,17 @@
-import { describe, expect, it, vi, type Mock } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ReviewError, type ReviewInput } from './finding.mts'
-import { ReviewRejectedError, type ListedReview, type ReviewIo } from './github.mts'
+import { ReviewRejectedError, type ListedReview } from './github.mts'
 import { postReviews } from './submit.mts'
 import { postFinalReview, revokeFinalApproval } from './post.mts'
+import { fakeIo, input, SHA } from './post-fake-io.mts'
 import { reviewStatus } from './status.mts'
 import { reviewMarker, type Verdict } from './render.mts'
 
-const SHA = 'c'.repeat(40)
 const OTHER = 'd'.repeat(40)
 
 const asReviews = (bodies: string[], author: string | null = 'bot'): ListedReview[] =>
   bodies.map((body, at) => ({ id: at + 1, url: `https://example.test/r/${at + 1}`, body, author }))
-
-type MockIo = { [K in keyof ReviewIo]: Mock<ReviewIo[K]> }
-
-/** A pull request that keeps what is posted to it, so the read-back finds it. */
-function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
-  const posted: ListedReview[] = []
-  return {
-    headSha: vi.fn(async () => SHA),
-    diff: vi.fn(async () => ''),
-    listFiles: vi.fn(async () => [{ filename: 'a.ts', patch: '@@ -1 +1 @@\n+x\n' }]),
-    listReviews: vi.fn(async () => [...posted]),
-    trustedAuthors: vi.fn(async () => new Set(['bot'])),
-    pullAuthor: vi.fn(async () => 'dev'),
-    changesRequested: vi.fn(async () => []),
-    dismissReview: vi.fn(async () => undefined),
-    hasApprovalLabel: vi.fn(async () => false),
-    postReview: vi.fn(async (review) => {
-      const id = 100 + posted.length
-      const url = `https://example.test/review/${id}`
-      posted.push({ id, url, body: review.body, author: 'bot' })
-      return url
-    }),
-    addApprovalLabel: vi.fn(async () => undefined),
-    removeApprovalLabel: vi.fn(async () => undefined),
-    ...overrides,
-  }
-}
-
-function input(severity?: 'blocking' | 'high' | 'low'): ReviewInput {
-  return {
-    effort: 'high',
-    summary: '',
-    skipped: [],
-    questions: [],
-    findings:
-      severity === undefined
-        ? []
-        : [{ pillar: 'rules', severity, title: 'T', body: 'B', path: 'a.ts', line: 1 }],
-  }
-}
 
 describe('revokeFinalApproval', () => {
   it('removes the label only when present', async () => {
@@ -231,90 +191,6 @@ describe('postFinalReview event', () => {
       confirmed: [],
       warnings: [],
     })
-  })
-})
-
-describe('postFinalReview earlier requests for changes', () => {
-  const MARK = `<!-- final-review sha=${'a'.repeat(40)} verdict=Request-Changes effort=low -->`
-  const standing = (extra: Partial<MockIo> = {}) =>
-    fakeIo({
-      changesRequested: vi.fn(async () => [
-        { id: 11, author: 'bot', body: `${MARK}\n\nOld` },
-        { id: 12, author: 'eve', body: `${MARK}\n\nForged` },
-        { id: 13, author: 'bot', body: 'unmarked' },
-      ]),
-      ...extra,
-    })
-
-  it('dismisses only its own marked request for changes after a COMMENT, once posted', async () => {
-    const io = standing()
-    const outcome = await postFinalReview(io, input('high'), SHA)
-    expect(outcome).toMatchObject({ event: 'COMMENT', dismissed: [11] })
-    expect(io.dismissReview).toHaveBeenCalledOnce()
-    expect(io.dismissReview).toHaveBeenCalledWith(
-      11,
-      expect.stringContaining('https://example.test/r'),
-    )
-    expect(io.postReview.mock.invocationCallOrder[0]).toBeLessThan(
-      io.dismissReview.mock.invocationCallOrder[0] as number,
-    )
-  })
-
-  it('dismisses nothing when the post fails, so the old block is never cleared without a new review', async () => {
-    const io = standing({
-      postReview: vi.fn(async () => {
-        throw new Error('HTTP 401: Bad credentials')
-      }),
-    })
-    await expect(postFinalReview(io, input('high'), SHA)).rejects.toThrow('HTTP 401')
-    expect(io.changesRequested).not.toHaveBeenCalled()
-    expect(io.dismissReview).not.toHaveBeenCalled()
-  })
-
-  it('dismisses nothing when the new review cannot be confirmed, and says so', async () => {
-    const io = standing({ trustedAuthors: vi.fn(async () => new Set<string>()) })
-    const outcome = await postFinalReview(io, input('high'), SHA)
-    expect(outcome).toMatchObject({ confirmed: false, dismissed: [] })
-    expect(io.dismissReview).not.toHaveBeenCalled()
-    expect(outcome.warnings).toContain(
-      'An earlier request for changes was not dismissed because the new review was not confirmed.',
-    )
-  })
-
-  it('leaves it alone for APPROVE and REQUEST_CHANGES, and when the verdict still requests changes', async () => {
-    for (const severity of ['low', 'blocking'] as const) {
-      const io = standing()
-      await expect(postFinalReview(io, input(severity), SHA)).resolves.toMatchObject({
-        dismissed: [],
-      })
-      expect(io.changesRequested).not.toHaveBeenCalled()
-    }
-    const unknown = standing({ trustedAuthors: vi.fn(async () => new Set<string>()) })
-    const outcome = await postFinalReview(unknown, input('blocking'), SHA)
-    expect(outcome).toMatchObject({ downgraded: 'identity-unknown', dismissed: [] })
-    expect(unknown.changesRequested).not.toHaveBeenCalled()
-  })
-
-  it('does not fail the post when a dismissal fails, and names the review left standing', async () => {
-    const io = standing({
-      dismissReview: vi.fn(async () => {
-        throw new Error('403')
-      }),
-    })
-    const outcome = await postFinalReview(io, input('high'), SHA)
-    expect(outcome.dismissed).toEqual([])
-    expect(outcome.warnings).toEqual([expect.stringContaining('Review 11 still requests changes')])
-    expect(io.postReview).toHaveBeenCalledOnce()
-  })
-
-  it('says what it would dismiss on a dry run, and dismisses nothing', async () => {
-    const io = standing()
-    const outcome = await postFinalReview(io, input('high'), SHA, { dryRun: true })
-    expect(outcome).toMatchObject({ dismissed: [], wouldDismiss: [11] })
-    expect(io.dismissReview).not.toHaveBeenCalled()
-    expect(io.postReview).not.toHaveBeenCalled()
-    const approve = await postFinalReview(standing(), input('low'), SHA, { dryRun: true })
-    expect(approve.wouldDismiss).toEqual([])
   })
 })
 

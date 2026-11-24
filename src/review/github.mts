@@ -21,6 +21,16 @@ export class ReviewRejectedError extends Error {
   }
 }
 
+/** A review state that still counts on the pull request until it is dismissed. */
+export type StandingState = 'CHANGES_REQUESTED' | 'APPROVED'
+
+export type StandingReview = {
+  id: number
+  body: string
+  author: string | null
+  state: StandingState
+}
+
 export type ListedReview = { id: number; url: string; body: string; author: string | null }
 
 /** The GitHub reads and writes a review needs, injectable for tests. */
@@ -31,9 +41,9 @@ export type ReviewIo = {
   listFiles(): Promise<ReviewFile[]>
   /** Reviews with their id, link, body and author login, oldest first. */
   listReviews(): Promise<ListedReview[]>
-  /** Reviews that still request changes, with their author logins, oldest first. */
-  changesRequested(): Promise<{ id: number; body: string; author: string | null }[]>
-  /** Dismisses a review that requests changes; GitHub requires a message. */
+  /** Reviews that still request changes or approve, with their author logins, oldest first. */
+  standingReviews(): Promise<StandingReview[]>
+  /** Dismisses a review that requests changes or approves; GitHub requires a message. */
   dismissReview(id: number, message: string): Promise<void>
   /** The pull request author's login; undefined when GitHub reports none. */
   pullAuthor(): Promise<string | undefined>
@@ -94,17 +104,15 @@ export function createGhReviewIo(
       ])
       return lines(out).map((line) => JSON.parse(line) as ListedReview)
     },
-    async changesRequested() {
+    async standingReviews() {
       const out = await run([
         'api',
         '--paginate',
         `${pull}/reviews?per_page=100`,
         '-q',
-        '.[] | select(.state == "CHANGES_REQUESTED") | {id, body, author: .user.login} | @json',
+        '.[] | select(.state == "CHANGES_REQUESTED" or .state == "APPROVED") | {id, body, state, author: .user.login} | @json',
       ])
-      return lines(out).map(
-        (line) => JSON.parse(line) as { id: number; body: string; author: string | null },
-      )
+      return lines(out).map((line) => JSON.parse(line) as StandingReview)
     },
     async dismissReview(id, message) {
       await run([

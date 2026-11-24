@@ -19,7 +19,7 @@ function fakeIo(): ReviewIo {
     listReviews: async () => [...posted],
     trustedAuthors: async () => new Set(['bot']),
     pullAuthor: async () => 'dev',
-    changesRequested: async () => [],
+    standingReviews: async () => [],
     hasApprovalLabel: async () => false,
     postReview: async (review: { body: string }) => {
       const url = 'https://example.test/r'
