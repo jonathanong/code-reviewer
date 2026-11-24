@@ -148,6 +148,7 @@ describe('modelTable', () => {
     expect(table.focus).toEqual([claude('opus')])
     const own = modelTable(resolveModelPlan({ steps: { pillars: 'large', focus: 'small' } }))
     expect(own.focus).toEqual([claude('haiku')])
+    expect(() => parseModelOverrides(['pillar.focus=claude:haiku'])).toThrow('unknown step')
     expect(parseModelOverrides(['focus=claude:haiku'])).toEqual({ focus: [claude('haiku')] })
   })
 

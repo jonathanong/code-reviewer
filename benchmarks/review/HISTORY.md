@@ -15,7 +15,7 @@ Not measured; no model was called.
   tier, and `focus` is a reserved name for a configured pillar.
 - **Comparability.** No existing row is affected. Without `--focus` no step is added and no prompt
   or schema changes: the pillar, verifier and approval check prompts and schemas are what they were
-  (`review-focus.test.mts` runs a review with and without points and compares them). With points,
+  (`fixtures/step-argv.json`, which pins the argv and schema of the pillar, verifier and approval check steps, did not change, and `review-focus.test.mts` runs a review with and without points and compares the prompts). With points,
   the verifier's output schema also allows `focus` as a finding's pillar. `bench` does not run the
   step, so no benchmark row measures it yet.
 

@@ -57,12 +57,17 @@ describe('parseFocus', () => {
     [
       'an empty path',
       [{ point: 'p', status: 'holds', basis: 'b', path: ' ' }],
-      'focus[0].path must be a non-empty string.',
+      'focus[0].path must be a short plain file path.',
+    ],
+    [
+      'a path with markup',
+      [{ point: 'p', status: 'holds', basis: 'b', path: 'a`</details>@x' }],
+      'focus[0].path must be a short plain file path.',
     ],
     [
       'a path that is not text',
       [{ point: 'p', status: 'holds', basis: 'b', path: 3 }],
-      'focus[0].path must be a non-empty string.',
+      'focus[0].path must be a short plain file path.',
     ],
     [
       'a line that is not positive',

@@ -66,10 +66,15 @@ function filesWith(dir: string, found: string[] = []): string[] {
   return found
 }
 
-async function run(focus: readonly string[] | undefined, answer: Answer = 'answers') {
+async function run(
+  focus: readonly string[] | undefined,
+  answer: Answer = 'answers',
+  plan: ReviewPlan = PLAN,
+) {
   const out = mkdtempSync(join(tmpdir(), 'review-focus-'))
   dirs.push(out)
   const seen: Seen[] = []
+  const skipped: string[] = []
   const exec: Exec = async (_command, args) => {
     const prompt = args[1] as string
     const schema = args[args.indexOf('--json-schema') + 1] as string
@@ -107,8 +112,9 @@ async function run(focus: readonly string[] | undefined, answer: Answer = 'answe
       writeFileSync(join(out, 'diff', 'INDEX.md'), '- a.ts')
       writeFileSync(join(out, 'diff.patch'), 'diff --git a/a.ts b/a.ts\n+x\n')
       writeFileSync(join(out, 'context.json'), JSON.stringify({ title: 'T' }))
-      return { headSha: 'd'.repeat(40), plan: PLAN }
+      return { headSha: 'd'.repeat(40), plan }
     },
+    skip: async (reason: string) => void skipped.push(reason),
     abort: async () => undefined,
     preview: async () => ({ verdict: 'Comment', reviews: [] }),
     plugins: async () => ({ enabled: [], installs: [] }),
@@ -126,8 +132,11 @@ async function run(focus: readonly string[] | undefined, answer: Answer = 'answe
     jobs: 1,
     ...(focus === undefined ? {} : { focus }),
   })
-  const review = JSON.parse(readFileSync(join(out, 'review.json'), 'utf8'))
-  return { outcome, out, seen, review }
+  const review =
+    outcome.summary.review === null
+      ? null
+      : JSON.parse(readFileSync(join(out, 'review.json'), 'utf8'))
+  return { outcome, out, seen, review, skipped }
 }
 
 const isFocus = (call: Seen) => call.prompt.includes('# Requested checks')
@@ -172,7 +181,27 @@ describe('runReview with requester focus points', () => {
       expect(call.filesWithPoints).toEqual([])
     }
     expect(seen.filter(isFocus)[0]?.prompt).toContain(POINTS[1])
-    expect(filesWith(out)).toEqual([join(out, 'focus.json'), join(out, 'review.json')].sort())
+    expect(filesWith(out)).toEqual([join(out, 'review.json')])
+  })
+
+  it('checks the points of a light review that plans one pillar', async () => {
+    const light = {
+      ...PLAN,
+      mode: 'light' as const,
+      pillars: [{ pillar: 'rules' as const, model: 'haiku' as const }],
+    }
+    const { review, seen } = await run(POINTS, 'answers', light)
+    expect(seen.filter(isFocus)).toHaveLength(1)
+    expect(review.focus).toHaveLength(2)
+  })
+
+  it('says the points were not run when the plan skips the review', async () => {
+    const skip = { ...PLAN, mode: 'skip' as const, skipReason: 'Lockfile only.', pillars: [] }
+    const { seen, skipped } = await run(POINTS, 'answers', skip)
+    expect(seen).toEqual([])
+    expect(skipped).toEqual(['Lockfile only. The requested checks were not run.'])
+    const plain = await run(undefined, 'answers', skip)
+    expect(plain.skipped).toEqual(['Lockfile only.'])
   })
 
   it('marks every point not checked and lists the step as skipped when it fails', async () => {

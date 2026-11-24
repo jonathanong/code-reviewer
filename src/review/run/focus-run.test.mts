@@ -64,7 +64,7 @@ describe('runFocus', () => {
     const call = exec.mock.calls[0]
     expect(flag(call, '--tools')).toBe('Read,Grep,Glob,Agent,Skill')
     expect(flag(call, '--add-dir')).toBe(input.run.out)
-    expect(flag(call, '--settings')).toBeDefined()
+    expect((call as unknown as [string, string[]])[1]).toContain('--settings')
   })
 
   it('runs on the focus model when one is set, then the pillars model', async () => {

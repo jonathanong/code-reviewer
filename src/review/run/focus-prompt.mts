@@ -1,4 +1,4 @@
-import { FOCUS_STATUSES, type FocusAnswer } from '../focus.mts'
+import { FOCUS_STATUSES, isSafePath, type FocusAnswer } from '../focus.mts'
 import { normalizeSpace } from '../answers.mts'
 import { buildPillarRunPrompt, type PillarPromptInput } from './pillar-prompt.mts'
 import { PILLAR_OUTPUT_SCHEMA } from './pillar-schema.mts'
@@ -31,8 +31,8 @@ export const FOCUS_OUTPUT_SCHEMA = {
   },
 } as const
 
-const NOT_CHECKED = 'Not checked: no answer was given for this point.'
-const NO_CODE = 'Not checked: the answer cited no code to support it.'
+const NOT_CHECKED = 'No answer was given for this point.'
+const NO_CODE = 'The answer cited no code to support it.'
 
 /**
  * One answer for each point supplied, in order. The model read text the requester wrote, so an
@@ -52,7 +52,7 @@ export function checkedFocus(raw: unknown, points: readonly string[]): FocusAnsw
     const entry = given.get(index)
     const status = FOCUS_STATUSES.find((candidate) => candidate === entry?.status)
     const basis = typeof entry?.basis === 'string' ? normalizeSpace(entry.basis) : ''
-    const path = typeof entry?.path === 'string' ? entry.path.trim() : ''
+    const path = typeof entry?.path === 'string' && isSafePath(entry.path) ? entry.path.trim() : ''
     const line =
       Number.isInteger(entry?.line) && (entry?.line as number) >= 1 ? entry?.line : undefined
     const base = { point }

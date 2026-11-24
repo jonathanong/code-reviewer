@@ -73,7 +73,7 @@ export const EXTRA_PILLAR_STEP = /^pillar\.[a-z][a-z0-9-]*$/u
 
 /** Whether a config or `--model` may name `step`: a fixed step, or one for a configured pillar. */
 export const isStepName = (step: string): boolean =>
-  STEP_NAMES.includes(step) || EXTRA_PILLAR_STEP.test(step)
+  STEP_NAMES.includes(step) || (EXTRA_PILLAR_STEP.test(step) && step !== 'pillar.focus')
 
 const DEFAULT_TIER_OF: Record<Model, Tier> = { haiku: 'small', sonnet: 'medium', opus: 'large' }
 

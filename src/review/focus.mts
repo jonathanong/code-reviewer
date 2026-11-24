@@ -19,6 +19,10 @@ export type FocusAnswer = {
   line?: number
 }
 
+/** A path that is safe to post in code formatting: short, one line, no markup or mention. */
+export const isSafePath = (path: string): boolean =>
+  path.trim() !== '' && path.length <= 300 && !/[`<>@\r\n]/u.test(path)
+
 export const MAX_FOCUS_POINTS = 20
 export const MAX_FOCUS_CHARS = 500
 
@@ -30,8 +34,8 @@ export function parseFocus(raw: unknown): { focus?: FocusAnswer[] } {
     const where = `focus[${index}]`
     if (!isRecord(entry)) throw new ReviewError(`${where} must be an object.`)
     const { path, line } = entry
-    if (path !== undefined && (typeof path !== 'string' || path.trim() === '')) {
-      throw new ReviewError(`${where}.path must be a non-empty string.`)
+    if (path !== undefined && (typeof path !== 'string' || !isSafePath(path))) {
+      throw new ReviewError(`${where}.path must be a short plain file path.`)
     }
     if (line !== undefined && (!Number.isInteger(line) || (line as number) < 1)) {
       throw new ReviewError(`${where}.line must be a positive integer.`)

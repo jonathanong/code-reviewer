@@ -144,10 +144,9 @@ verifier or the approval check, and never written under the run directory those 
 add work; it cannot skip a pillar, change the plan or a severity, or move the verdict other than
 through a finding. `focus` is a reserved pillar name for [`pillars.extra`](configuration.md#pillars).
 
-The answers go in `review.json` as `focus` (`point`, `status`, `basis`, optional `path` and `line`)
-and in `focus.json`, and the posted body shows them as one collapsed block, "Requested checks: 2
+The answers go in `review.json` as `focus` (`point`, `status`, `basis`, optional `path` and `line`), the posted body shows them as one collapsed block, "Requested checks: 2
 hold, 1 does not, 1 not checked", with a line for each point. A review with no `focus` shows
-nothing. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
+nothing. A plan that skips the review runs no step, and its skip reason then says the requested checks were not run; a plan with no pillar still fails the review. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
 review still completes. Its cost counts toward the cost ceiling. `bench` does not run this step.
 
 ## Findings: premise and prevention

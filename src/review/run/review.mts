@@ -14,7 +14,7 @@ import { buildAnalysis } from './analysis-prompt.mts'
 import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
-import { runPillarsAndFocus, saveFocus } from './review-focus.mts'
+import { runPillarsAndFocus } from './review-focus.mts'
 import { buildReviewContext, reportFields, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
@@ -52,7 +52,7 @@ async function review(
   const title = titleOf(out)
   const base = { repo: options.repo, pr: options.pr, title, headSha, effort: plan.effort }
   const mode = plan.mode
-  if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed)
+  if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed, options.focus)
   const { settings, skills, installs } = await loadRulePlugins(steps)
   const models = steps.models ?? DEFAULT_STEP_MODELS
   const followUp = plan.sinceSha !== null
@@ -143,7 +143,6 @@ async function review(
     dependencies,
     focus: focus?.answers,
   })
-  saveFocus(out, focus)
   writeJson(join(out, 'review.json'), input)
   markComplete(out, headSha)
   const outcome = await steps.preview(input, headSha)

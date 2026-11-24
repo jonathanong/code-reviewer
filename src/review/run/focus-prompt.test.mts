@@ -61,7 +61,7 @@ describe('checkedFocus', () => {
       {
         point: 'a',
         status: 'not_checked',
-        basis: 'Not checked: no answer was given for this point.',
+        basis: 'No answer was given for this point.',
       },
     ])
   })
@@ -73,9 +73,18 @@ describe('checkedFocus', () => {
       {
         point: 'p',
         status: 'not_checked',
-        basis: 'Not checked: the answer cited no code to support it.',
+        basis: 'The answer cited no code to support it.',
       },
     ])
+  })
+
+  it('treats a path that could break out of the posted block as no path', () => {
+    const [entry] = checkedFocus(
+      [{ index: 0, status: 'holds', basis: 'b', path: 'a`</details>@x.ts', line: 2 }],
+      ['p'],
+    )
+    expect(entry).toMatchObject({ status: 'not_checked' })
+    expect(entry).not.toHaveProperty('path')
   })
 
   it('ignores a line that is not a positive integer, and a line without a path', () => {

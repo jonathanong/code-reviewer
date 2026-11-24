@@ -65,7 +65,7 @@ export async function runFocus(input: FocusInput): Promise<FocusRun> {
     }),
   })
   if (parsed === undefined) {
-    return { result, answers: unchecked(points, 'Not checked: the step failed twice.') }
+    return { result, answers: unchecked(points, 'The step failed twice.') }
   }
   return { result, answers: parsed.answers }
 }
