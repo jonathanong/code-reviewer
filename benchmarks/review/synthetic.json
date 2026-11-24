@@ -769,7 +769,8 @@
         "reason": "nightly and exportNow both enqueue the same export id with nothing serialising them, and the queue runs 4 workers per process.",
         "expectNoFindings": true
       }
-    ]
+    ],
+    "unwantedTargets": ["untraced-name-passes"]
   },
   {
     "id": "focus-target-untraced-reported",

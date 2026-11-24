@@ -173,7 +173,7 @@ function lineOf(text, offset) {
   return text.slice(0, offset).split('\n').length
 }
 
-if (process.argv[1] === import.meta.filename) {
+if (import.meta.main) {
   const problems = listSources().flatMap((file) => checkFile(file))
   for (const problem of problems) {
     const what =

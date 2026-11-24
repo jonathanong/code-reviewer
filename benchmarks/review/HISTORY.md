@@ -8,30 +8,42 @@ Newest first. Every measured run and every change to what is measured gets an en
   check that decides by a name in the code it scans, test three shapes (re-exported from a local
   module, built by a call in a local module, the result of calling an imported function) and
   whether each is reported or reported as unresolved. Other shapes do not fail the claim.
-- **Why three shapes.** The first wording ("never treats an untraced name as clean") answered
-  `does_not_hold` on the sound fixture in 4 of 5 attempts across three fixture repairs, each time
-  for a deeper real gap (subpath imports, methods on imported objects, local aliases, nested
+- **Why three shapes.** Two earlier wordings asked that no untraced name be treated as clean. On
+  the sound fixture they answered `does_not_hold` in 5 of 7 attempts across fixture repairs, each
+  time for a deeper real gap (subpath imports, methods on imported objects, local aliases, nested
   members). A claim no check can meet is noise on every lint-rule change, so it was narrowed.
 - **Cases.** `no-mistakes-3963` gains a target focus entry (`does_not_hold`).
   `no-mistakes-3963-f282a5d` is the later head of the same pull request, focus-only: the fix
   follows wrapped bindings but still drops a receiver built by an imported factory with no
-  traceable argument (read in `ast/playwright_bindings.rs`; reported to the author's session).
-  `focus-target-untraced-reported` in `synthetic.json` is a check that reports all three shapes
-  (`holds`, no finding).
-- **Focus step, committed wording**, Sonnet 5.5, one case per command, three attempts each, same
-  session: `no-mistakes-3963` 3 of 3, `no-mistakes-3963-f282a5d` 3 of 3,
-  `focus-target-untraced-reported` 3 of 3 with no finding. Before its last repair the fixture
-  scored 2 of 3; the failing attempt named `make()()`, a real gap inside the third shape, which
-  the fixture now reports. About $0.20 a mined attempt and $0.12 a fixture attempt.
+  traceable argument. That label rests on this session's reading of
+  `ast/playwright_bindings.rs`; it was reported to the author's session and is not yet confirmed.
+  Its `body` was read one head later. `focus-target-untraced-reported` in `synthetic.json` is a
+  check meant to report all three shapes (`holds`, no finding); its own tests pass (12 of 12).
+- **Focus step, committed wording**, Sonnet 5.5, one case per command, same session:
+  `no-mistakes-3963` 3 of 3 and `no-mistakes-3963-f282a5d` 3 of 3 (`does_not_hold`).
+  `focus-target-untraced-reported`: 2 of 3 before its last repair (the failing attempt named
+  `make()()`), 3 of 3 after it, then 2 of 3 after a test-only fix to the fixture, so 5 of 6 on
+  the repaired check. The failing attempt named a real gap inside the third shape (a result held
+  by `export const`, destructuring or `await`). The fixture was not repaired again: a
+  hand-written check is rarely complete, so expect this target to raise a finding on most real
+  checks and the verifier to weigh it. About $0.20 a mined attempt and $0.12 a fixture attempt.
+- **A different implementation.** One attempt on `no-mistakes-4006` (not a committed focus entry)
+  answered `holds`: that rule falls back to matching the name `test`, so all three shapes report.
 - **No control arm.** Without the target nothing is asked, so there is no "before" status. The
   nearest baseline is the correctness pillar on `no-mistakes-3963`: 0 of 1 with skills and 0 of 1
   without (entry below).
 - **Selection** (`bench-selection`, Haiku 5.5, three attempts a case): the new target was picked
   3 of 3 on `no-mistakes-3963`, `no-mistakes-3963-f282a5d`, `no-mistakes-4006` and the fixture,
   and 0 of 3 on `no-mistakes-4008`, `vouchington-6282`, `vouchington-6254`,
-  `select-target-no-guard` and `focus-target-guard-needed`. `vouchington-6254` picked the older
-  `unneeded-concurrency-guard` in 2 of 3 though it only removes locks; not measured before this
-  change, so whether listing a second target caused it is unknown.
+  `select-target-no-guard` and `focus-target-guard-needed`, each of which lists it under
+  `unwantedTargets`. `vouchington-6254` picked the older `unneeded-concurrency-guard` in 2 of 3
+  though it only removes locks; not measured before this change, so whether listing a second
+  target caused it is unknown.
+- **Two more known misses pinned, no target yet.** `no-mistakes-3973` and `no-mistakes-4024`:
+  approved here, then rejected downstream because the change made code the base passes newly
+  report. Each carries one plain focus point (`does_not_hold` expected). Pilot, one attempt:
+  `no-mistakes-4024` correct, `no-mistakes-3973` wrong (`holds`; the description's "after"
+  output shows one new `unmatched-producer` line without comment). Not a rate.
 - **Not comparable.** The selection prompt now lists two targets, so target-selection rows from
   before this entry are not comparable. Pillar and verifier prompts are unchanged.
 - **Not measured.** A whole review with the target, the verifier's handling of its findings, and
