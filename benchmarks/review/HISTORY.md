@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: agy no longer passes `--effort` with an effort-suffixed model
+
+- **Changed**, `src/harness/agy-args.mts`, no pillar prompt or schema: when the model id ends in
+  `-low`, `-medium`, `-high` or `-xhigh`, the adapter omits `--effort`, so the id's own effort
+  applies. agy rejected the pair when they disagreed (`--model gemini-4-hydrogen-medium --effort
+  low` exited 1: "conflicts with --effort=low"). Other ids still get `--effort`.
+- **Fallback**: a step now also moves to its next candidate on a harness failure. The bench runs
+  one candidate, so this does not affect scores.
+- **Not comparable**: bench runs with `--harness agy` and a suffixed model ran at the step's
+  effort before and run at the id's effort now. No agy row was measured before this.
+
 ## 2026-11-24: first agy run, and what the adapter now does with it
 
 - **Changed**, `src/harness/agy*.mts`, no pillar prompt or schema: the adapter appends "Use only

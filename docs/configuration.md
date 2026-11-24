@@ -398,8 +398,10 @@ from the step name, so they are refused at run time and the step moves to its ne
 A step tries its candidates in order. A rate limit or an overloaded API waits (the delay the
 harness reports, else exponential backoff with a cap) and retries the same candidate until
 `retry.maxWaitSeconds` (default 600) of waiting is spent in that step, then moves to the next
-candidate. An authentication failure moves on at once. Any other failure is the step's failure,
-as without this key, and so is running out of candidates. `report.md` lists the harness and model
+candidate. An authentication failure moves on at once, and so does a failure of the harness
+itself: a timeout, a crash with no result, a rejected flag, or output that is not a result. A
+broken non-Claude harness therefore gives way to the next candidate. A failure that carries a
+model answer (a turn limit, say) is the step's failure, and so is running out of candidates. `report.md` lists the harness and model
 each step ran on and how long it waited.
 
 `--model step=harness:model` on `review` and `run` sets one step for that run and beats the

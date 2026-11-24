@@ -64,6 +64,27 @@ describe('agy harness run', () => {
     expect(args).not.toContain('max')
   })
 
+  it.each(['low', 'medium', 'high', 'xhigh'])(
+    'leaves --effort out when the model id already ends in -%s',
+    async (suffix) => {
+      const exec = okExec()
+      await harness.run(request({ model: `gemini-4-hydrogen-${suffix}`, effort: 'low' }), exec)
+      const args = exec.mock.calls[0]?.[1] ?? []
+      expect(args).toContain(`gemini-4-hydrogen-${suffix}`)
+      expect(args).not.toContain('--effort')
+    },
+  )
+
+  it('still passes --effort for a model id with no effort suffix', async () => {
+    const exec = okExec()
+    await harness.run(request({ model: 'gemini-4-hydrogen', effort: 'low' }), exec)
+    const args = exec.mock.calls[0]?.[1] ?? []
+    expect(args.slice(args.indexOf('--effort'), args.indexOf('--effort') + 2)).toEqual([
+      '--effort',
+      'low',
+    ])
+  })
+
   it.each([
     ['reads outside the checkout', { readsOutsideCheckout: false }],
     ['no-tools steps', { can: NO_TOOLS }],
