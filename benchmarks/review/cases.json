@@ -644,6 +644,14 @@
     "kind": "negative",
     "reason": "Merged PR removing redundant account cleanup prelocks because the cleanup job is already serialised by ordering key 'data_retention:cleanup' with concurrency 1.",
     "expected": [],
-    "unwantedTargets": ["unneeded-concurrency-guard"]
+    "unwantedTargets": ["unneeded-concurrency-guard"],
+    "focus": [
+      {
+        "target": "unneeded-concurrency-guard",
+        "expectedStatus": "holds",
+        "reason": "The change removes redundant locks and adds no guard, so the target has nothing to report; what is graded is that it raises no finding.",
+        "expectNoFindings": true
+      }
+    ]
   }
 ]

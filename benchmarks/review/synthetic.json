@@ -753,5 +753,22 @@
     "reason": "Selection fixture: the diff removes a redundant lock rather than adding a guard, so selection should not pick unneeded-concurrency-guard.",
     "expected": [],
     "unwantedTargets": ["unneeded-concurrency-guard"]
+  },
+  {
+    "id": "focus-target-guard-needed",
+    "fixture": "fixtures/focus-target-guard-needed",
+    "title": "fix(export): claim an export with a conditional update before running it",
+    "kind": "negative",
+    "reason": "The target must stay quiet: a schedule and a button both enqueue the same export with no job id or ordering key, on a queue with concurrency 4, so two runs can overlap and the guard is needed.",
+    "expected": [],
+    "expectedTargets": ["unneeded-concurrency-guard"],
+    "focus": [
+      {
+        "target": "unneeded-concurrency-guard",
+        "expectedStatus": "holds",
+        "reason": "nightly and exportNow both enqueue the same export id with nothing serialising them, and the queue runs 4 workers per process.",
+        "expectNoFindings": true
+      }
+    ]
   }
 ]

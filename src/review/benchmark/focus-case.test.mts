@@ -105,7 +105,7 @@ describe('parseFocusCase', () => {
     ).toThrow('target must be a non-empty string')
   })
 
-  it('parses all five synthetic focus cases and vouchington-6282 target focus case', () => {
+  it('parses the synthetic focus cases and vouchington-6282 target focus case', () => {
     const synthUrl = new URL('../../../benchmarks/review/synthetic.json', import.meta.url)
     const synth = parseEvalCases(
       JSON.parse(readFileSync(synthUrl, 'utf8')) as unknown,
@@ -118,6 +118,7 @@ describe('parseFocusCase', () => {
       'focus-unanswerable',
       'focus-plain-holds',
       'focus-plain-fails',
+      'focus-target-guard-needed',
     ])
     expect(focusCases[1]?.focus?.[0]?.expectNoFindings).toBe(true)
 
@@ -134,6 +135,9 @@ describe('parseFocusCase', () => {
           'The cleanup job is enqueued with one ordering key at concurrency 1, so two runs never overlap.',
       },
     ])
-    expect(real.find((item) => item.id === 'vouchington-6254')?.focus).toBeUndefined()
+    const quiet = real.find((item) => item.id === 'vouchington-6254')?.focus?.[0]
+    expect(quiet?.target).toBe('unneeded-concurrency-guard')
+    expect(quiet?.expectedStatus).toBe('holds')
+    expect(quiet?.expectNoFindings).toBe(true)
   })
 })

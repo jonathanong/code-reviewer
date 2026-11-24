@@ -6,7 +6,7 @@ Newest first. Every measured run and every change to what is measured gets an en
 
 - **Run.** Working tree of the targeted-checks change (the entry below), focus and selection steps
   as a review runs them, Sonnet 5.5 for focus and Haiku 5.5 for selection, no judge, one case at a
-  time. Total about $1.10.
+  time. Total about $1.40.
 - **Focus, `vouchington-6282`** (the guard is unneeded: one ordering key at concurrency 1), expected
   `does_not_hold`:
   - First target framing (the reviewer's own check, with no instruction to doubt the claim) and the
@@ -21,10 +21,17 @@ Newest first. Every measured run and every change to what is measured gets an en
   (removes redundant locks; now labelled `unwantedTargets`) selected the target in 3 of 3 with the
   first `when` and 2 of 3 after `when` gained "Not when it only removes, moves or renames an
   existing one."
+- **Where the target must stay quiet**, one attempt each, final wording:
+  - `focus-target-guard-needed` (new synthetic case: a schedule and a button enqueue the same export
+    with no job id or ordering key, at concurrency 4): `holds`, no finding. Pass.
+  - `vouchington-6254` (the unwanted selection above): `holds`, no finding. The case first expected
+    `not_checked`; the step answered `holds` with the basis "This PR removes locks rather than
+    adding a guard". Neither status leaves a trace in a posted review, so the case now expects
+    `holds` and grades that no finding is raised. Not re-run after that label change.
 - **What it showed.** The target can catch the miss the correctness pillar missed twice, but not
-  every time, and its framing decides the answer. An unwanted selection costs one focus call (about
-  $0.20) and has not produced a finding. Three attempts on one case is not a rate, and there is no
-  case yet where the guard is needed and the target must answer `holds`.
+  every time, and its framing decides the answer. On the two cases where it should stay quiet it
+  raised no finding, one attempt each, so an unwanted selection has cost one focus call (about
+  $0.20) and nothing else. One or three attempts per case is not a rate.
 
 ## 2026-11-24 (no run): targeted checks the reviewer raises itself
 
@@ -49,7 +56,7 @@ Newest first. Every measured run and every change to what is measured gets an en
 - **Benchmark changes.** `bench-focus` now accepts `{ target: "<name>", expectedStatus, reason }`
   in a case's `focus` array, reading the point text verbatim from the target file; added a
   `focus` entry with `target: "unneeded-concurrency-guard"` to `vouchington-6282` in `cases.json`
-  (`vouchington-6254` left unchanged). `bench-selection` now offers built-in targets and scores
+  (`vouchington-6254` gains `unwantedTargets` and a quiet `focus` entry, see the pilot entry above). `bench-selection` now offers built-in targets and scores
   optional `expectedTargets` and `unwantedTargets` fields; added two synthetic selection fixtures
   to `synthetic.json` (`select-target-concurrency-guard` and `select-target-no-guard`).
 - **Comparability.** The selection step's prompt and output schema changed whenever built-in
