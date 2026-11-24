@@ -162,6 +162,28 @@ describe('runStep', () => {
     expect(sleeps).toEqual([])
   })
 
+  it.each([
+    ['a crash that printed no result', new ExecError('claude exited with 1', 1, '', undefined)],
+    ['a timeout', new ExecError('claude timed out', null, '', { killed: true })],
+    ['a rejected flag', new ExecError('error: unknown option --x', 2, '', undefined)],
+    ['output that is not a result', new Error('no JSON')],
+  ])('moves %s to the next candidate', async (_what, error) => {
+    const { exec, seen } = fakeExec({ a: [error] })
+    const { runtime, sleeps } = fakeRuntime(600)
+    const run = await runStep(REQUEST, [A, B], exec, runtime)
+    expect(seen).toEqual(['a', 'b'])
+    expect(sleeps).toEqual([])
+    expect(run.ran.model).toBe('b')
+  })
+
+  it('fails a harness failure on the last candidate, naming its kind', async () => {
+    const { exec } = fakeExec({ a: [new ExecError('claude exited with 1', 1, '', undefined)] })
+    const failure = await runStep(REQUEST, [A], exec, fakeRuntime(0).runtime).catch(
+      (error: unknown) => error,
+    )
+    expect((failure as StepFailure).ran.failure).toBe('crash')
+  })
+
   it('carries what a failed run still reported', async () => {
     const usage = { type: 'result', is_error: true, api_error_status: 500, total_cost_usd: 0.5 }
     const { exec } = fakeExec({

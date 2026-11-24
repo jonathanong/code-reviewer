@@ -27,12 +27,16 @@ export function assertAgyCan(request: HarnessRun): void {
 export const AGY_TOOL_NOTE =
   'Use only your file reading and search tools; do not run shell commands.'
 
+const EFFORT_SUFFIX = /-(?:low|medium|high|xhigh)$/u
+
 /**
  * The `agy -p` argument list for one step. What stops edits and commands is headless mode, which
  * cannot prompt and auto-denies any `command` or `edit` permission; `--sandbox` restricts its
  * terminal. `--mode plan` is not passed: it has no effect while `--disable-slash-commands` is
  * set (agy warns so on stderr). Neither `--dangerously-skip-permissions` nor `--mode auto` is
- * ever passed, and `--effort` takes the step's effort, which is never `max`.
+ * ever passed. `--effort` takes the step's effort, which is never `max`, except when the model id
+ * already ends in an effort (`-low`, `-medium`, `-high`, `-xhigh`): agy rejects a flag that
+ * disagrees with the id, so the configured model's own effort wins and no flag is passed.
  */
 export function agyArgs(request: HarnessRun): string[] {
   const addDirs = request.addDirs ?? []
@@ -47,7 +51,9 @@ export function agyArgs(request: HarnessRun): string[] {
     JSON.stringify(request.schema),
     '--sandbox',
     '--disable-slash-commands',
-    ...(request.effort === undefined ? [] : ['--effort', request.effort]),
+    ...(request.effort === undefined || EFFORT_SUFFIX.test(request.model)
+      ? []
+      : ['--effort', request.effort]),
     ...addDirs.flatMap((dir) => ['--add-dir', dir]),
   ]
 }

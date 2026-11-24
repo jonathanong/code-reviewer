@@ -97,8 +97,10 @@ export type StepRun = HarnessResult & { ran: StepRan; failedUsage: Usage | null 
 /**
  * Runs a step on its first candidate. A rate limit or overload waits (the named retry-after, else
  * an exponential backoff with a cap) and retries the same candidate until the wait budget is
- * spent, then moves to the next candidate. An auth failure, or an adapter refusing the step's capabilities, moves on at once. Any other failure is
- * the step's failure, as it always was. When the candidates run out the last failure is thrown as
+ * spent, then moves to the next candidate. An auth failure, an adapter refusing the step's
+ * capabilities, or a failure of the harness itself (`harnessFailureKind`: timeout, crash, rejected
+ * flag, unparseable output) moves on at once. A failure that carries a model answer is the step's
+ * failure. When the candidates run out the last failure is thrown as
  * a `StepFailure`. The usage every failed attempt reported adds to the result's `usage` (and to
  * the `StepFailure`'s); `failedUsage` is that part alone, `reportedUsage` the last attempt's own.
  */
@@ -136,9 +138,10 @@ export async function runStep(
           waitedMs += runtime.now() - started
           continue
         }
-        const moveOn = waits || failure.kind === 'auth' || error instanceof HarnessRefusal
+        const kind = harnessFailureKind(error, failure)
+        const moveOn =
+          waits || failure.kind === 'auth' || error instanceof HarnessRefusal || kind !== undefined
         if (!moveOn || last) {
-          const kind = harnessFailureKind(error, failure)
           throw new StepFailure(
             message,
             failedUsage,
