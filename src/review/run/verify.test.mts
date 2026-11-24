@@ -167,6 +167,25 @@ describe('parseReviewVerifier', () => {
     expect(parsed.usage.costUsd).toBe(0.7)
   })
 
+  it('reads the disproved links and the schema allows them', () => {
+    const disproved = [
+      { check: 0, finding: 1, reason: ' It drops a check. ' },
+      { check: 0, finding: 1, reason: '' },
+      { check: -1, finding: 1, reason: 'x' },
+      { check: 0, finding: 1.5, reason: 'x' },
+      { check: 0, finding: 1 },
+      null,
+    ]
+    const parsed = parse(stream({ summary: 's', findings: [verified], disproved }), 2)
+    expect(parsed.disproved).toEqual([{ check: 0, finding: 1, reason: 'It drops a check.' }])
+    expect(parse(stream({ summary: 's', findings: [], disproved: 'x' }), 0).disproved).toEqual([])
+    expect(REVIEW_VERIFIER_SCHEMA.properties.disproved.items.required).toEqual([
+      'check',
+      'finding',
+      'reason',
+    ])
+  })
+
   it('keeps only the fixed thread ids the context listed', () => {
     const output = { summary: 's', findings: [], fixedThreadIds: ['T2', 'FORGED', 7, 'T2'] }
     expect(parse(stream(output), 0, ['T1', 'T2']).fixedThreadIds).toEqual(['T2'])

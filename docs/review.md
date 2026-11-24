@@ -155,6 +155,18 @@ no finding: <the step's basis>" (plus `Reason dropped: <reason>` when the verifi
 reason), keeping its `path` and `line`, so the posted `Requested checks` block shows what the focus
 step found and why it was not kept without adding a question or changing the verdict.
 
+The same block numbers each check (`check`, its position in the list, from 0). The verifier is
+told that when a finding it keeps, from any step, shows that a check answered `holds` or
+`not_checked` does not hold, it lists the check's number, the finding's `## Pillar findings` index
+and one sentence in `disproved`. Such a link turns the answer into `does_not_hold` with the
+verifier's sentence as its basis and the kept finding's `path` and `line` (none when the finding
+has none), so the posted block no longer says "ok" beside a finding that says the opposite. A link
+is ignored, without failing, when its check or finding index is out of range, its finding was
+dropped or has no kept copy (a kept finding on the same `path` and `line`; with no `path`, one of
+the same pillar and title), or its check already stands as `does_not_hold`; the first valid link
+for a check wins. The requester's text is never copied into the new basis, and the verdict is
+decided from the kept findings and questions alone, so a changed answer never changes it.
+
 A requester point (never a target point) that names another pull request of the same repository
 (`#123`, `PR 123`, `PR #123`, `pull request 123` or `pull request #123`, in any case) adds one
 computed block for it, because the step can see only the pull request under review. At most 3

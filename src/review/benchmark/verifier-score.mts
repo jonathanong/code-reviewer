@@ -4,6 +4,8 @@ import { creditedOutputs, referencing, type Graded } from './verifier-grade.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { VerifierOutput } from './verifier-run.mts'
 import type { AnswerGrade, ThreadGrade } from './verifier-answers.mts'
+import type { Disproof } from '../run/disproved.mts'
+import { gradeDisproved, type DisprovedGrade } from './verifier-disproved.mts'
 
 export type VerifierCaseScore = {
   id: string
@@ -26,6 +28,8 @@ export type VerifierCaseScore = {
   after: number
   /** The verdict on each listed note; absent for a case that lists none. */
   threads?: ThreadGrade[]
+  /** The links returned for the focus answers shown, against the expected ones; absent for a case that shows none. */
+  disproved?: DisprovedGrade
 }
 
 const RANK: Record<Severity, number> = { blocking: 0, high: 1, medium: 2, low: 3 }
@@ -36,6 +40,7 @@ export function scoreVerifierCase(
   output: VerifierOutput,
   graded: Graded,
   answers?: AnswerGrade,
+  disproved?: readonly Disproof[],
 ): VerifierCaseScore {
   const kept = input.real.filter(([index]) => {
     const copy = input.planted.find(([original]) => original === index)?.[1]
@@ -53,6 +58,7 @@ export function scoreVerifierCase(
     const label = (item.expected[index] as { severity: Severity }).severity
     if (Math.abs(strongest - RANK[label]) <= 1) severityAgreed += 1
   })
+  const links = gradeDisproved(item, disproved)
   const verdicts = graded.checks.filter((check) => check !== null)
   return {
     id: item.id,
@@ -70,6 +76,7 @@ export function scoreVerifierCase(
     before: input.findings.length - input.planted.length,
     after: output.findings.length,
     ...(answers === undefined ? {} : { threads: answers.threads }),
+    ...(links === undefined ? {} : { disproved: links }),
   }
 }
 

@@ -32,6 +32,7 @@ import type { SplitSummary } from '../context/change-shape/split.mts'
 import { checkedSplitProposal, splitLines } from './split-prompt.mts'
 import { impactLines } from './impact-prompt.mts'
 import { droppedReasons } from './verify-dropped.mts'
+import { disprovedLinks, type Disproof } from './disproved.mts'
 import type { Impact } from '../impact.mts'
 
 export { REVIEW_VERIFIER_SCHEMA }
@@ -120,6 +121,8 @@ export type ReviewVerifierOutput = VerifierOutput & {
   pullRequestSummary: string
   /** Reasons the verifier gave for input findings it dropped, by input index. */
   dropped: Map<number, string>
+  /** Focus checks the verifier says a kept finding disproves; unchecked against the lists, `keptFocus` ignores a bad link. */
+  disproved?: Disproof[]
   /** Threads of earlier findings the verifier judged fixed; only ids the context listed. */
   fixedThreadIds: string[]
   /** Dependencies the change implies that `prepare` could not read; informational. */
@@ -152,6 +155,7 @@ export function parseReviewVerifier(
   const extra = structured as {
     pullRequestSummary?: unknown
     dropped?: unknown
+    disproved?: unknown
     fixedThreadIds?: unknown
     dependencies?: unknown
     regressionPrevent?: unknown
@@ -171,6 +175,7 @@ export function parseReviewVerifier(
     findings: checkedCredits(base.findings, restate),
     pullRequestSummary: summary,
     dropped,
+    disproved: disprovedLinks(extra.disproved),
     fixedThreadIds,
     dependencies,
     ...(regressionPrevent === undefined ? {} : { regressionPrevent }),

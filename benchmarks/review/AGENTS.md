@@ -14,6 +14,7 @@
 - Check the shared context with `pnpm exec code-reviewer bench-context --cases <file>... --history <file>... --out <dir>`;
   it makes no model call and costs nothing. Give a tagged case `expectedRules` (a verbatim substring of the
   installed skill's rule line) and re-run it after a skill update or a change under `src/review/context/`.
+- Run one verifier case with `pnpm exec code-reviewer bench-verifier --cases <file> --case <id> --findings-from <dir> --prompts <references> --out <dir> --jobs 1`. A case with `verifierFocus` shows the verifier focus answers and scores its `disproved` links against `expectedDisproved`; keep `verifierFocus` apart from the `focus` points that `bench-focus` grades.
 - Run the requester-focus eval with `pnpm exec code-reviewer bench-focus --cases <file>... --out <dir>`
   (add `--case <id>` for one case, `--score-only` to re-score saved runs); it runs `runFocus` on
   every case declaring `focus` points and grades statuses deterministically without a judge model.

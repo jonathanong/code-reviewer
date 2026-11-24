@@ -11,6 +11,7 @@ import type { Usage } from './usage.mts'
 import { checkFindings, type Check } from './verifier-check.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { AnswerGrade } from './verifier-answers.mts'
+import type { Disproof } from '../run/disproved.mts'
 import type { VerifierOutput } from './verifier-run.mts'
 import { prepareVerifierSnapshot, type VerifierBenchDeps } from './verifier-snapshot.mts'
 
@@ -38,6 +39,8 @@ export type VerifierRaw =
       usage?: Usage
       /** Present for a case that lists notes to answer. */
       answers?: AnswerGrade
+      /** Present for a case that shows focus answers to the verifier. */
+      disproved?: Disproof[]
       graded?: Graded
     }
   | { input?: VerifierInput; error: string }

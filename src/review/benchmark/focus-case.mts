@@ -1,6 +1,7 @@
 import { ReviewError } from '../finding.mts'
 import { FOCUS_STATUSES, MAX_FOCUS_POINTS, type FocusStatus } from '../focus.mts'
 import { builtInTargets, type ReviewTarget } from '../targets.mts'
+import { parseVerifierFocus, type VerifierFocusFields } from './verifier-focus-case.mts'
 
 /** One expected outcome for the requester-focus step on a benchmark case. */
 export type FocusCasePoint = {
@@ -118,7 +119,7 @@ export function parseFocusRefs(
 }
 
 /** A case's focus points and the pull request heads they may name. */
-export type FocusFields = {
+export type FocusFields = VerifierFocusFields & {
   focus?: FocusCasePoint[]
   /** Pull request number to the commit used as its head when a focus point names it. */
   focusRefs?: Record<string, string>
@@ -135,7 +136,7 @@ function parseFocusOnly(raw: Json, where: string): { focusOnly?: true } {
   return { focusOnly: true }
 }
 
-/** Parses `focus`, `focusRefs` and `focusOnly` of a raw case. */
+/** Parses `focus`, `focusRefs`, `focusOnly`, `verifierFocus` and `expectedDisproved` of a raw case. */
 export const parseFocusFields = (
   raw: Json,
   where: string,
@@ -144,4 +145,5 @@ export const parseFocusFields = (
   ...parseFocusCase(raw.focus, where, targets),
   ...parseFocusRefs(raw.focusRefs, where),
   ...parseFocusOnly(raw, where),
+  ...parseVerifierFocus(raw, where),
 })

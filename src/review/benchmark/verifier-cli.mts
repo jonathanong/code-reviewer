@@ -16,7 +16,8 @@ import {
   prepareVerifierSnapshot,
   type VerifierBenchDeps,
 } from './verifier-snapshot.mts'
-import { runVerifier, verifierRunInputs, type VerifierRun } from './verifier-run.mts'
+import { runVerifier } from './verifier-run.mts'
+import { verifierRunInputs, type VerifierRun } from './verifier-key.mts'
 import { DEFAULT_RULE_PLUGINS } from '../plugins.mts'
 import { answerRules } from '../run/answers-rules.mts'
 
@@ -91,8 +92,15 @@ async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDe
       if (saved !== undefined && 'output' in saved && saved.inputs === inputs) return
       deps.log(`verify ${item.id}`)
       const done = await runVerifier(item, dir, input.findings, run, deps.exec, citable)
-      const { output, usage, answers } = done
-      raw = { input, inputs, output, usage, ...(answers === undefined ? {} : { answers }) }
+      const { output, usage, answers, disproved } = done
+      raw = {
+        input,
+        inputs,
+        output,
+        usage,
+        ...(answers === undefined ? {} : { answers }),
+        ...(disproved === undefined ? {} : { disproved }),
+      }
     } catch (error) {
       raw = { input, error: errorMessage(error) }
     }

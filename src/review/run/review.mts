@@ -131,7 +131,8 @@ async function review(
   throwIfStopped(models.watch)
   const posted = second.summary === undefined ? output : { ...output, summary: second.summary }
   const dependencies = reviewDependencies(run, output.dependencies)
-  const reviewFocus = keptFocus(focus?.answers, verified, findings, output.dropped)
+  const { dropped, disproved } = output
+  const reviewFocus = keptFocus(focus?.answers, verified, findings, dropped, disproved)
   const input = buildReviewInput({
     effort: plan.effort,
     output: posted,

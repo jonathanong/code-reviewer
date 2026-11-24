@@ -453,6 +453,21 @@ and no pillar result is verified alone, like a `congruence` case. A thread that 
 reply from the reviewer never reaches the prompt (`answerableThreads`), and a case file lists
 notes after that filter, so a unit test covers it, not a case.
 
+A case may also show the verifier focus answers, to measure whether it links a kept finding to a
+check that finding disproves. `verifierFocus` lists the answers as `review.json` holds them
+(`point`, optional `origin`, `status`, `basis`, optional `path` and `line`); it is a different list
+from the `focus` points that `bench-focus` grades, so a case can carry both. `expectedDisproved`
+lists `{ "check": <position in verifierFocus>, "finding": <index in Pillar findings> }` pairs the
+verifier should return, and is absent or empty for a case where none should be returned. The
+prompt then carries the review's focus block and the schema the review's `disproved` output. The
+raw result records the returned `disproved`, and the case's score has its own `disproved` field
+(`expected`, `returned`, `matched`), true only when the two sets of pairs are equal: a missing or an
+extra pair fails it. Other fields are scored as before, and a case without `verifierFocus` builds
+the prompt it always did. The finding index counts the findings the run collected (pillar order,
+planted copies last), so it is stable only for one `--findings-from` directory. Run one case with
+`pnpm exec code-reviewer bench-verifier --cases <file> --case <id> --findings-from <dir> --prompts
+<references> --out <dir>`.
+
 The verifier may add findings of its own, with an empty `sources` array. A correct addition is a
 win, so findings are graded on whether they are right rather than counted:
 

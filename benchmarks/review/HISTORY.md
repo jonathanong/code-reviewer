@@ -2,6 +2,22 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: the verifier can mark a check disproved by a kept finding
+
+- **Prompt and schema change**, verifier, applying only to reviews with focus answers. The focus
+  block now numbers each check (`check`) and tells the verifier to list, in a new `disproved`
+  output, a check answered `holds` or `not_checked` that a finding it keeps disproves. A link turns
+  that answer into `does_not_hold` with the verifier's reason as its basis. The verdict is unchanged.
+- **Why.** The live review of no-mistakes #3973 at `e0c9a77e` posted one check as `holds` and
+  another as `not_checked` beside a kept high finding that disproves both.
+- **Comparability.** Verifier benchmark rows are unaffected: no existing verifier case carries focus
+  answers, and a case without them builds the prompt it always did. The focus block's text changed
+  for every review with checks, so any run that read that block is not comparable with earlier ones.
+- **Benchmark support.** `bench-verifier` accepts `verifierFocus` and `expectedDisproved` on a case
+  and scores the returned pairs as `disproved` (`matched` when the sets are equal). No case uses
+  them yet.
+  Not measured yet.
+
 ## 2026-11-24: requester points are checked at full effort in a light plan; `no-mistakes-3963-eedd0e5`
 
 - **Runtime change.** The focus step ran at the plan's effort, so in a light plan (a follow-up
