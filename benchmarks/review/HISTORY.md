@@ -2,6 +2,24 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: known miss `no-mistakes-4024-7a3dc0a`, new reports on arrays that cannot be empty
+
+- **Case added**, focus-only: `no-mistakes-4024-7a3dc0a`, one requester point from the live review
+  of no-mistakes #4024 at `7a3dc0a`, expected `does_not_hold` with a `basisPattern`. No prompt,
+  schema or grader changed, so no earlier row changes.
+- **The defect.** The reworked `bash-empty-array-nounset` rule reports two shapes main passes
+  although the array cannot be empty: an array reset and refilled inside a loop (`invalidate` at
+  `do`, `flow/prefix.rs:37-43`, and again in `after_repetition`, `state.rs:167`), and a fill
+  inside `while :` (`runs_once` is set only for a literal-list `for`, `flow/prefix.rs:98`).
+  Confirmed by hand in the source; the binary was not run.
+- **Live run**, full plan at high effort, $3.67. The focus step (Sonnet 5.5) answered the point
+  `holds`, no pillar raised the defect, and the approval check kept the verdict at Approve. A
+  subagent that read each changed decision site on both branches found it, and the review was
+  posted as Comment.
+- **Measured**, Sonnet 5.5, default mode, three attempts, same session: 0 of 1 point each time
+  ($0.18, $0.15, $0.16). Every answer was `holds`, reasoned from the fixtures and the
+  description's before and after comparison; none read the loop handling.
+
 ## 2026-11-24: known miss `no-mistakes-3973-e0c9a77`, the focus step against the approval check
 
 - **Case added**, focus-only: `no-mistakes-3973-e0c9a77`, two requester points from the live review
