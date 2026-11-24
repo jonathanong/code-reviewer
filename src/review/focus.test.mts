@@ -24,17 +24,25 @@ describe('parseFocus', () => {
       parseFocus([
         {
           point: ' the  retry\nis bounded ',
+          origin: 'requester',
           status: 'holds',
           basis: ' ok ',
           path: ' a.ts ',
           line: 4,
         },
-        { point: 'p', status: 'not_checked', basis: 'b' },
+        { point: 'p', origin: 'target:check-guard', status: 'not_checked', basis: 'b' },
       ]),
     ).toEqual({
       focus: [
-        { point: 'the retry is bounded', status: 'holds', basis: 'ok', path: 'a.ts', line: 4 },
-        { point: 'p', status: 'not_checked', basis: 'b' },
+        {
+          point: 'the retry is bounded',
+          origin: 'requester',
+          status: 'holds',
+          basis: 'ok',
+          path: 'a.ts',
+          line: 4,
+        },
+        { point: 'p', origin: 'target:check-guard', status: 'not_checked', basis: 'b' },
       ],
     })
   })
@@ -83,6 +91,11 @@ describe('parseFocus', () => {
       'a line that is not a number',
       [{ point: 'p', status: 'holds', basis: 'b', line: 'x' }],
       'focus[0].line must be a positive integer.',
+    ],
+    [
+      'an invalid origin',
+      [{ point: 'p', origin: 'target:BadName', status: 'holds', basis: 'b' }],
+      'focus[0].origin must be "requester" or "target:<name>".',
     ],
   ])('rejects %s', (_name, raw, message) => {
     expect(() => parseFocus(raw)).toThrow(ReviewError)
@@ -162,5 +175,17 @@ describe('focusSection', () => {
       'a'.repeat(40),
     )
     expect(without).not.toContain('Requested checks')
+  })
+
+  it('omits target points from Requested checks completely', () => {
+    const targetOnly = answer({ origin: 'target:unneeded-concurrency-guard', point: 'target text' })
+    expect(focusSection([targetOnly])).toEqual([])
+    const [mixed] = focusSection([
+      answer({ origin: 'requester', point: 'requester text' }),
+      targetOnly,
+    ]) as [string]
+    expect(mixed).toContain('Requested checks: 1 ok')
+    expect(mixed).toContain('requester text')
+    expect(mixed).not.toContain('target text')
   })
 })

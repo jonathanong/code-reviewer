@@ -2,6 +2,71 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24: pilot of the `unneeded-concurrency-guard` target
+
+- **Run.** Working tree of the targeted-checks change (the entry below), focus and selection steps
+  as a review runs them, Sonnet 5.5 for focus and Haiku 5.5 for selection, no judge, one case at a
+  time. Total about $1.40.
+- **Focus, `vouchington-6282`** (the guard is unneeded: one ordering key at concurrency 1), expected
+  `does_not_hold`:
+  - First target framing (the reviewer's own check, with no instruction to doubt the claim) and the
+    first point text: 0 of 1. The step answered that overlap is possible and the guard is needed.
+    The same point text under the requester framing had scored 1 of 1 twice earlier in the day.
+  - Framing changed to say each target ends with a claim to test and try to disprove, and the point
+    text changed to name what already serialises callers (ordering key, fixed job id, single
+    schedule, unique constraint, existing lock): 2 of 3. The miss cited the ordering key and still
+    answered `holds`, on the ground that a stalled job can be redelivered.
+- **Selection.** `select-target-concurrency-guard` 3 of 3 selected and `select-target-no-guard`
+  0 of 3 selected, on both wordings of `when`. `vouchington-6282` 3 of 3 selected. `vouchington-6254`
+  (removes redundant locks; now labelled `unwantedTargets`) selected the target in 3 of 3 with the
+  first `when` and 2 of 3 after `when` gained "Not when it only removes, moves or renames an
+  existing one."
+- **Where the target must stay quiet**, one attempt each, final wording:
+  - `focus-target-guard-needed` (new synthetic case: a schedule and a button enqueue the same export
+    with no job id or ordering key, at concurrency 4): `holds`, no finding. Pass.
+  - `vouchington-6254` (the unwanted selection above): `holds`, no finding. The case first expected
+    `not_checked`; the step answered `holds` with the basis "This PR removes locks rather than
+    adding a guard". Neither status leaves a trace in a posted review, so the case now expects
+    `holds` and grades that no finding is raised. Not re-run after that label change.
+- **What it showed.** The target can catch the miss the correctness pillar missed twice, but not
+  every time, and its framing decides the answer. On the two cases where it should stay quiet it
+  raised no finding, one attempt each, so an unwanted selection has cost one focus call (about
+  $0.20) and nothing else. One or three attempts per case is not a rate.
+
+## 2026-11-24 (no run): targeted checks the reviewer raises itself
+
+- **What changed.** Added built-in targeted checks under `skills/review/references/targets/`
+  (starting with `unneeded-concurrency-guard.md`) that the reviewer selects and runs through the
+  existing `focus` step in `full` reviews (never in `light` or `skip` reviews). When any built-in
+  target is enabled, `selectSkills` (`src/review/run/select-skills.mts`) appends a
+  `## Targeted checks` section listing each target's `name` and `when` (never its body) and
+  switches to `SKILL_AND_TARGET_SELECTION_SCHEMA` (`{ skills: string[], targets: string[] }`), or
+  `TARGET_ONLY_SELECTION_SCHEMA` (`{ targets: string[] }`) when `rulePlugins` is `[]` (degrading
+  to no targets on failure). Unknown target names are ignored and a missing or malformed `targets`
+  field degrades to `[]`. Selected targets run in the `focus` step alongside any requester points
+  (requester first, up to 20 points; targets omitted by the cap are recorded in `report.json` as
+  `droppedTargets` and in `report.md`) with origin `target:<name>`. Target points get dedicated
+  framing as the reviewer's own standing checks in both `focusLines` and `focusVerifierLines`
+  (requester-only prompts stay byte-identical), and one sentence in
+  `skills/review/references/verifier.md` was updated so focus drop reasons cover both requester and
+  target points. Target outcomes are recorded in `review.json` and `report.json`/`report.md` after
+  all model steps finish, and omitted from the posted "Requested checks" block. Added repository
+  config `targets.disabled` (target names or `"all"`), validated against the same references
+  directory used for selection and focus.
+- **Benchmark changes.** `bench-focus` now accepts `{ target: "<name>", expectedStatus, reason }`
+  in a case's `focus` array, reading the point text verbatim from the target file; added a
+  `focus` entry with `target: "unneeded-concurrency-guard"` to `vouchington-6282` in `cases.json`
+  (`vouchington-6254` gains `unwantedTargets` and a quiet `focus` entry, see the pilot entry above). `bench-selection` now offers built-in targets and scores
+  optional `expectedTargets` and `unwantedTargets` fields; added two synthetic selection fixtures
+  to `synthetic.json` (`select-target-concurrency-guard` and `select-target-no-guard`).
+- **Comparability.** The selection step's prompt and output schema changed whenever built-in
+  targets are enabled, and `skills/review/references/verifier.md` changed one sentence on focus
+  findings, so earlier `bench-selection`, `bench-verifier`, and `--select` rows are not comparable
+  with runs after this change. Pillar prompts, the requester-only focus prompt, and `bench-context`
+  did not change, so earlier `bench` (without `--select`), `bench-context`, and requester-only
+  `bench-focus` rows remain comparable. No model calls were made in this change; the new
+  `vouchington-6282` focus entry and target selection fixtures have not been measured yet.
+
 ## 2026-11-24 (pilot): add `bench-focus` and five synthetic focus cases
 
 Pilot, one attempt per case, Sonnet 5.5, run one case at a time: 6 of 6 points correct across the

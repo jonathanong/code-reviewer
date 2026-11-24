@@ -22,7 +22,7 @@ const answer = (structured: unknown) =>
     num_turns: 2,
     structured_output: structured,
   })
-const POINTS = ['the loop is bounded']
+const POINTS = [{ point: 'the loop is bounded', origin: 'requester' as const }]
 const HOLDS = {
   points: [{ index: 0, status: 'holds', basis: 'Yes.', path: 'a.ts', line: 2 }],
   findings: [],
@@ -59,7 +59,14 @@ describe('runFocus', () => {
     expect(exec).toHaveBeenCalledOnce()
     expect(result).toMatchObject({ pillar: 'focus', model: 'sonnet', findings: [] })
     expect(answers).toEqual([
-      { point: POINTS[0], status: 'holds', basis: 'Yes.', path: 'a.ts', line: 2 },
+      {
+        point: POINTS[0]!.point,
+        origin: 'requester',
+        status: 'holds',
+        basis: 'Yes.',
+        path: 'a.ts',
+        line: 2,
+      },
     ])
     const call = exec.mock.calls[0]
     expect(flag(call, '--tools')).toBe('Read,Grep,Glob,Agent,Skill')
@@ -80,7 +87,13 @@ describe('runFocus', () => {
 
   it('retries once, and a step that fails twice leaves every point not checked', async () => {
     const exec = vi.fn(async () => 'not json')
-    const { result, answers } = await runFocus({ ...setup({ exec }), points: ['a', 'b'] })
+    const { result, answers } = await runFocus({
+      ...setup({ exec }),
+      points: [
+        { point: 'a', origin: 'requester' },
+        { point: 'b', origin: 'target:g' },
+      ],
+    })
     expect(exec).toHaveBeenCalledTimes(2)
     expect(result.error).toBeDefined()
     expect(answers.map((entry) => entry.status)).toEqual(['not_checked', 'not_checked'])
@@ -100,7 +113,7 @@ describe('runFocus', () => {
 describe('runPillarsAndFocus', () => {
   it('runs the step even when the plan dispatches no pillar', async () => {
     const exec = vi.fn(async () => answer(HOLDS))
-    const out = await runPillarsAndFocus(setup({ exec, pillars: [] }), POINTS)
+    const out = await runPillarsAndFocus(setup({ exec, pillars: [] }), [POINTS[0]!.point])
     expect(exec).toHaveBeenCalledOnce()
     expect(out.results).toEqual([])
     expect(out.judged.map((result) => result.pillar)).toEqual(['focus'])

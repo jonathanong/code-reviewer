@@ -72,6 +72,7 @@ function harness(answer: (id: string, attempt: number) => SkillChoice) {
     },
     skills: (installs) =>
       installs.map((install) => ({ name: `${install.name}:one`, description: '' })),
+    targets: () => [],
     select: async (input) => {
       selected.push(input)
       const id = input.title.replace('Title of ', '')
@@ -252,5 +253,44 @@ describe('runReviewSelectionBenchCli', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  })
+
+  it('offers built-in targets and scores expectedTargets and unwantedTargets cases', async () => {
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const h = harness((id) =>
+      id === 't1'
+        ? choice([], { targets: ['unneeded-concurrency-guard'] })
+        : choice([], { targets: [] }),
+    )
+    h.deps.targets = () => [
+      { name: 'unneeded-concurrency-guard', when: 'Adds a lock.', point: 'Body never sent.' },
+    ]
+    h.store.set(
+      'target-cases.json',
+      JSON.stringify([
+        { ...caseJson('t1'), expectedTargets: ['unneeded-concurrency-guard'] },
+        { ...caseJson('t2'), unwantedTargets: ['unneeded-concurrency-guard'] },
+      ]),
+    )
+    await expect(
+      runReviewSelectionBenchCli(
+        ['--cases', 'target-cases.json', '--out', 'o', '--attempts', '1', '--jobs', '1'],
+        h.deps,
+      ),
+    ).resolves.toBe(0)
+    expect(h.selected[0]).toMatchObject({
+      targets: [{ name: 'unneeded-concurrency-guard', when: 'Adds a lock.' }],
+    })
+    expect(JSON.stringify(h.selected[0])).not.toContain('Body never sent.')
+    const line = JSON.parse(String(out.mock.calls[0]?.[0])) as { targets: unknown }
+    expect(line.targets).toEqual({
+      cases: 2,
+      attempts: 2,
+      hits: 2,
+      hitRate: 1,
+      attemptsWithUnwanted: 0,
+      unwantedSelections: 0,
+    })
+    expect(h.store.get('o/summary.md')).toContain('## Target selection per case')
   })
 })

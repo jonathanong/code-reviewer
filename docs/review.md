@@ -156,15 +156,45 @@ step found and why it was not kept without adding a question or changing the ver
 
 The points are the requester's words, so they are untrusted: the step is told each is a claim to
 check, not an instruction, and they are given only to it (and its outcomes to the verifier), never to
-the plan, the other pillars, or the approval check, and never written under the run directory those
-read. A point can
+the plan, the other pillars, or the approval check. Nothing containing point text is written anywhere
+under the run directory while any model step is running (selection, pillars, focus, verifier,
+approval check, or evidence). Only after every model step has finished does `review` write point
+text and outcomes (with `origin`) to `review.json`, `report.json`, and `report.md`, and render the
+requester points into `preview.md`. A point can
 add work; it cannot skip a pillar, change the plan or a severity, or move the verdict other than
 through a finding. `focus` is a reserved pillar name for [`pillars.extra`](configuration.md#pillars).
 
-The answers go in `review.json` as `focus` (`point`, `status`, `basis`, optional `path` and `line`), the posted body shows them as one collapsed block, "Requested checks: 2
-ok, 1 problem, 1 not checked" (the stored statuses `holds`, `does_not_hold` and `not_checked` show as ok, problem and not checked), with a line for each point. A review with no `focus` shows
-nothing. A plan that skips the review does not run the step; its skip reason says the requested checks were not run. A plan with no pillar still fails the review. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
+The answers go in `review.json` as `focus` (`point`, `origin`, `status`, `basis`, optional `path` and `line`), and in `report.json` / `report.md` under `Focus checks`. The posted body shows requester points as one collapsed block, "Requested checks: 2
+ok, 1 problem, 1 not checked" (the stored statuses `holds`, `does_not_hold` and `not_checked` show as ok, problem and not checked), with a line for each point. A review with no requester `focus` points shows
+nothing there. A plan that skips the review does not run the step; its skip reason says the requested checks were not run. A plan with no pillar still fails the review. A step that fails twice is listed as skipped like a failed pillar, every point is `not_checked`, and the
 review still completes. Its cost counts toward the cost ceiling. `bench` does not run this step.
+
+## Targeted checks
+
+Built-in targeted checks live in `skills/review/references/targets/`, one Markdown file per target
+with YAML frontmatter (`name` in kebab-case and `when`, one sentence naming the kind of change it
+applies to) and a single-paragraph body of at most 500 characters.
+
+Targeted checks run only in `full` reviews: `light` and `skip` reviews never offer or run them
+(requester `--focus` points still run in `light` reviews). When any built-in target is enabled for
+the repository (see [`targets`](configuration.md#targets)), the selection step (`selectSkills`) is
+shown each target's `name` and `when` — never its body — and returns a `targets` array of matching
+names alongside `skills` (or `targets` alone when `rulePlugins` is `[]`, degrading to no targets if
+that call fails). Unknown names are ignored, and a missing or malformed `targets` field degrades to
+`[]`. When no target is selected and no `--focus` file is given, no focus step runs and every
+post-selection prompt and schema is unchanged.
+
+Selected targets' point texts are taken verbatim from their files and run through the `focus` step
+in the same call as any requester points (requester points first, then targets, up to the cap of
+20; any target omitted by the cap is recorded in `report.json` as `droppedTargets` and listed in
+`report.md`). In the focus prompt and verifier prompt, target points carry their own framing as the
+reviewer's own standing checks — separate from untrusted requester text — with unambiguous indexes
+and `origin` (`requester` or `target:<name>`). With no target points, both prompts are unchanged. A
+target answered `does_not_hold` produces a `focus` finding verified like any other finding. In the
+posted review, the "Requested checks" block lists requester points only: a target that `holds` or is
+`not_checked` leaves no trace in the posted review. Every outcome, with its `origin`, is saved in
+`review.json` and in `report.json` / `report.md` (`Focus checks` and `Targets selected`) after all
+model steps finish.
 
 ## Findings: premise and prevention
 

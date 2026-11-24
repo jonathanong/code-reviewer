@@ -15,7 +15,7 @@ import { applyEvidence } from './evidence-step.mts'
 import { renderPreview } from './preview.mts'
 import { requireAnswer } from './require-answer.mts'
 import { keptFocus } from './focus-kept.mts'
-import { runPillarsAndFocus } from './review-focus.mts'
+import { runPillarsAndFocus, selectedReviewTargets } from './review-focus.mts'
 import { buildReviewContext, reportFields, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
@@ -39,7 +39,6 @@ import {
   type ReviewResult,
   type ReviewSteps,
 } from './review-support.mts'
-
 export type { ReviewOptions, ReviewResult, ReviewSteps }
 
 async function review(
@@ -52,18 +51,17 @@ async function review(
   const { plan, headSha } = prepared
   const title = titleOf(out)
   const base = { repo: options.repo, pr: options.pr, title, headSha, effort: plan.effort }
-  const mode = plan.mode
+  const { mode } = plan
   if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed, options.focus)
   const { settings, skills, installs } = await loadRulePlugins(steps)
   const models = steps.models ?? DEFAULT_STEP_MODELS
-  const followUp = plan.sinceSha !== null
-  const skillChoice = await chooseSkills(steps, { out, tree, title, followUp, skills, settings })
+  const skillChoice = await chooseSkills(steps, { out, tree, title, plan, skills, settings })
   const context = await buildReviewContext({ steps, options, prepared, installs, skillChoice })
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
   const web = webReferences(steps.references, steps.webReferences)
   const analysis = steps.analysis && (await buildAnalysis(await steps.analysis()))
   const harness = { tree, settings, models, exec: steps.exec }
-  const { results, judged, focus, extraPillars } = await runPillarsAndFocus(
+  const { results, judged, focus, droppedTargets, extraPillars } = await runPillarsAndFocus(
     {
       pillars: plan.pillars,
       extra: steps.pillars?.extra ?? [],
@@ -79,6 +77,7 @@ async function review(
     },
     options.focus,
     prepared,
+    selectedReviewTargets(steps, mode, skillChoice.targets),
   )
   // A pillar the ceiling kept from starting looks like a failed one, so stop before judging them.
   throwIfStopped(models.watch)
@@ -132,6 +131,7 @@ async function review(
   throwIfStopped(models.watch)
   const posted = second.summary === undefined ? output : { ...output, summary: second.summary }
   const dependencies = reviewDependencies(run, output.dependencies)
+  const reviewFocus = keptFocus(focus?.answers, verified, findings, output.dropped)
   const input = buildReviewInput({
     effort: plan.effort,
     output: posted,
@@ -140,7 +140,7 @@ async function review(
     questions: second.questions,
     run,
     dependencies,
-    focus: keptFocus(focus?.answers, verified, findings, output.dropped),
+    focus: reviewFocus,
   })
   writeJson(join(out, 'review.json'), input)
   markComplete(out, headSha)
@@ -165,6 +165,8 @@ async function review(
     push: run.push,
     carried: run.carried,
     dependencies,
+    focus: reviewFocus,
+    droppedTargets,
     ...reportFields(context),
   })
   return {

@@ -624,7 +624,15 @@
     "expectedReads": [
       "backend/queues/psql/enqueues/schedules.mts",
       "backend/queues/psql/config.mts"
-    ]
+    ],
+    "focus": [
+      {
+        "target": "unneeded-concurrency-guard",
+        "expectedStatus": "does_not_hold",
+        "reason": "The cleanup job is enqueued with one ordering key at concurrency 1, so two runs never overlap."
+      }
+    ],
+    "expectedTargets": ["unneeded-concurrency-guard"]
   },
   {
     "id": "vouchington-6254",
@@ -635,6 +643,15 @@
     "headSha": "a7c3ac1a239a39e8ce70ec82d8d17722f8b53872",
     "kind": "negative",
     "reason": "Merged PR removing redundant account cleanup prelocks because the cleanup job is already serialised by ordering key 'data_retention:cleanup' with concurrency 1.",
-    "expected": []
+    "expected": [],
+    "unwantedTargets": ["unneeded-concurrency-guard"],
+    "focus": [
+      {
+        "target": "unneeded-concurrency-guard",
+        "expectedStatus": "holds",
+        "reason": "The change removes redundant locks and adds no guard, so the target has nothing to report; what is graded is that it raises no finding.",
+        "expectNoFindings": true
+      }
+    ]
   }
 ]

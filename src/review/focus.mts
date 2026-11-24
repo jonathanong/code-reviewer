@@ -8,10 +8,23 @@ export const FOCUS_PILLAR = extraPillar('focus')
 export const FOCUS_STATUSES = ['holds', 'does_not_hold', 'not_checked'] as const
 export type FocusStatus = (typeof FOCUS_STATUSES)[number]
 
-/** What the focus step found for one point the requester asked to be checked. */
+/** Where a focus point came from: the requester's `--focus` file or a built-in target check. */
+export type FocusOrigin = 'requester' | `target:${string}`
+
+/** One point submitted to the focus step, carrying its origin. */
+export type FocusPoint = { point: string; origin: FocusOrigin }
+
+const TARGET_ORIGIN_RE = /^target:[a-z][a-z0-9-]*$/u
+
+export const isFocusOrigin = (value: unknown): value is FocusOrigin =>
+  value === 'requester' || (typeof value === 'string' && TARGET_ORIGIN_RE.test(value))
+
+/** What the focus step found for one point. */
 export type FocusAnswer = {
-  /** The point as the requester gave it. */
+  /** The point as supplied. */
   point: string
+  /** Where the point came from; absent in older `review.json` files (treated as `requester`). */
+  origin?: FocusOrigin
   status: FocusStatus
   /** One sentence: why it holds or not, or why it could not be checked. */
   basis: string
@@ -40,7 +53,10 @@ export function parseFocus(raw: unknown): { focus?: FocusAnswer[] } {
   const focus = raw.slice(0, MAX_FOCUS_POINTS).map((entry: unknown, index): FocusAnswer => {
     const where = `focus[${index}]`
     if (!isRecord(entry)) throw new ReviewError(`${where} must be an object.`)
-    const { path, line } = entry
+    const { path, line, origin } = entry
+    if (origin !== undefined && !isFocusOrigin(origin)) {
+      throw new ReviewError(`${where}.origin must be "requester" or "target:<name>".`)
+    }
     if (path !== undefined && (typeof path !== 'string' || !isSafePath(path))) {
       throw new ReviewError(`${where}.path must be a short plain file path.`)
     }
@@ -49,6 +65,7 @@ export function parseFocus(raw: unknown): { focus?: FocusAnswer[] } {
     }
     return {
       point: sliceChars(normalizeSpace(text(entry, 'point', where)), MAX_FOCUS_CHARS),
+      ...(origin === undefined ? {} : { origin }),
       status: oneOf(FOCUS_STATUSES, entry.status, `${where}.status`),
       basis: normalizeSpace(text(entry, 'basis', where)),
       ...(path === undefined ? {} : { path: (path as string).trim() }),
@@ -82,13 +99,18 @@ const LABEL: Record<FocusStatus, string> = {
   not_checked: 'not checked',
 }
 
-/** One collapsed block with a line per requested point; empty without any, so a review without a focus is unchanged. */
+/** True for requester points (and older entries with no origin); target checks stay out of posted summaries. */
+export const isRequesterFocus = (entry: FocusAnswer): boolean =>
+  entry.origin === undefined || entry.origin === 'requester'
+
+/** One collapsed block with a line per requester point; target checks are never listed here. */
 export function focusSection(focus: readonly FocusAnswer[] | undefined): string[] {
-  if (focus === undefined || focus.length === 0) return []
-  const rows = focus.map((entry) => {
+  const requested = (focus ?? []).filter(isRequesterFocus)
+  if (requested.length === 0) return []
+  const rows = requested.map((entry) => {
     const line = entry.line === undefined ? '' : `:${entry.line}`
     const where = entry.path === undefined ? '' : ` (\`${entry.path}${line}\`)`
     return `- "${quiet(entry.point)}": ${LABEL[entry.status]}. ${quiet(entry.basis)}${where}`
   })
-  return [`<details><summary>${summaryOf(focus)}</summary>\n\n${rows.join('\n')}\n\n</details>`]
+  return [`<details><summary>${summaryOf(requested)}</summary>\n\n${rows.join('\n')}\n\n</details>`]
 }

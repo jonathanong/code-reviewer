@@ -87,8 +87,10 @@ export function createDefaultDeps(
 ): ReviewDeps {
   let auth: GhAuth | undefined
   let loaded: RepoConfigs | undefined
+  let refs: string | undefined
+  const references = () => (refs ??= join(pluginRoot(), 'skills/review/references'))
   const configDir = machineConfigDir(env)
-  const configs = () => (loaded ??= loadRepoConfigs(configDir))
+  const configs = () => (loaded ??= loadRepoConfigs(configDir, references()))
   const targets = new Map<string, Promise<TargetConfig>>()
   const targetConfig = (repo: string) => {
     const key = repo.toLowerCase()
@@ -101,6 +103,7 @@ export function createDefaultDeps(
       },
       repo,
       trustsRepoConfig(configs(), repo),
+      references(),
     )
     targets.set(key, read)
     return read
@@ -182,7 +185,7 @@ export function createDefaultDeps(
     exec: async (command, args, options) =>
       (await import('../review/benchmark/exec.mts')).defaultExec(command, args, options),
     progress: (text) => void process.stderr.write(text),
-    references: () => join(pluginRoot(), 'skills/review/references'),
+    references,
     runBench: async (args) => (await import('../review/benchmark/cli.mts')).runReviewBenchCli(args),
     runVerifierBench: async (args) =>
       (await import('../review/benchmark/verifier-cli.mts')).runReviewVerifierBenchCli(args),

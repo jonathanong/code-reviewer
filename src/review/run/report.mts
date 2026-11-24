@@ -1,6 +1,7 @@
 import type { Usage } from '../benchmark/usage.mts'
 import type { ModelTotals } from '../benchmark/usage-summary.mts'
 import type { Finding, SkippedPillar } from '../finding.mts'
+import type { FocusAnswer } from '../focus.mts'
 import type { Question } from '../question.mts'
 import type { Mode } from '../mode.mts'
 import type { Verdict } from '../render.mts'
@@ -16,6 +17,7 @@ import { reportPush, type ReportPush } from './push-report.mts'
 import { reportRegression, type ReportRegression } from './regression-report.mts'
 import { byStep, evidenceUsages } from './report-usage.mts'
 import { reportAdvice, type ReportAdvice } from './report-advice.mts'
+import { reportFocus, type ReportFocus } from './focus-report.mts'
 import { ranRows, type RanRow } from './report-models.mts'
 import { markDropped } from './report-pillars.mts'
 import { reportStack, type ReportStack } from './stack-report.mts'
@@ -74,12 +76,11 @@ export type ReportData = {
   /** The earlier review's evidence offered to the verifier as still holding; absent when none was. */
   earlierEvidence?: Array<{ source: string; commit: string; status: string }>
   /** The commits the change says it fixes or reverts, and the verifier's one-line recommendation. */
-  regression?: ReportRegression // absent without linked commits
-  /** Tokens and cost per model for the whole review, by step: selection, pillars, verifier, evidence. */
+  regression?: ReportRegression
   usageByModel: Array<{ name: string; models: ModelTotals[] }>
-  /** The harness and model that ran each step; absent in a report written before steps recorded them. */
   ran?: RanRow[]
-} & ReportAdvice
+} & ReportAdvice &
+  ReportFocus
 
 export type ReportInput = {
   repo: string
@@ -106,12 +107,13 @@ export type ReportInput = {
   earlierReviewNote?: string | undefined
   earlierEvidence?: readonly HeldEvidence[] | undefined
   regression?: readonly LinkedCommit[] | undefined
+  focus?: readonly FocusAnswer[] | undefined
+  droppedTargets?: readonly string[] | undefined
 }
 
 /** Raw findings in the order the verifier saw them, so `sources` and `dropped` index into them. */
-export function flattenFindings(pillars: readonly PillarResult[]): Finding[] {
-  return pillars.flatMap((result) => result.findings)
-}
+export const flattenFindings = (pillars: readonly PillarResult[]): Finding[] =>
+  pillars.flatMap((result) => result.findings)
 
 export function buildReport(input: ReportInput): ReportData {
   const output = input.verifier?.output
@@ -160,6 +162,7 @@ export function buildReport(input: ReportInput): ReportData {
           })),
         }),
     ...reportRegression(input.regression, output?.regressionPrevent),
+    ...reportFocus(input.focus, input.droppedTargets),
     ...reportAdvice(output),
     verifier:
       input.verifier === undefined
@@ -170,9 +173,7 @@ export function buildReport(input: ReportInput): ReportData {
   }
 }
 
-function spent(usage: Usage | null): number {
-  return usage?.costUsd ?? 0
-}
+const spent = (usage: Usage | null): number => usage?.costUsd ?? 0
 
 /** Cost of the skill selection, each pillar and the evidence run (failed attempts included), and the verifier. */
 export function costBreakdown(data: ReportData) {

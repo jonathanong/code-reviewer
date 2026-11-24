@@ -1,3 +1,6 @@
+import { existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { jsoncToJson } from './jsonc.mts'
 import { parseYamlConfig } from './yaml-config.mts'
 
@@ -70,4 +73,21 @@ export function groupConfigFiles(names: readonly string[]): Map<string, string[]
 /** The problem for one config that exists in more than one format; none of the files is used. */
 export function conflictProblem(files: readonly string[]): string {
   return `${files.join(' and ')}: more than one file for the same config; none is used`
+}
+
+/** Lists `<owner>.*` and `<owner>/<name>.*` file names under `dir`, sorted; empty when absent. */
+export function listConfigFiles(dir: string): string[] {
+  if (!existsSync(dir)) return []
+  const entries = readdirSync(dir, { withFileTypes: true })
+  const names = (kind: 'isFile' | 'isDirectory') =>
+    entries
+      .filter((entry) => entry[kind]())
+      .map((entry) => entry.name)
+      .sort()
+  const files = names('isFile')
+  for (const owner of names('isDirectory')) {
+    const inside = readdirSync(join(dir, owner)).sort()
+    files.push(...inside.map((name) => `${owner}/${name}`))
+  }
+  return files
 }

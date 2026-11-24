@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { DEFAULT_LABELS, type LabelNames } from '../review/index.mts'
 import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import { DEFAULT_MAX_COST_USD } from '../review/rules/limits-parse.mts'
+import { defaultReferencesDir } from '../review/targets.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export const BOB = { repo: 'bob/c', pr: 4 }
@@ -91,6 +92,7 @@ export function fakeDeps(mode: 'app' | 'gh' = 'app', problems: string[] = []) {
     createIo: vi.fn(() => ({ headSha: async () => 'h'.repeat(40) })),
     createPrepareIo: vi.fn(() => prepareIo),
     runner,
+    references: vi.fn(() => defaultReferencesDir()),
   } as unknown as ReviewDeps
   return { deps, labelIo, prepareIo, run, runner, createLabelIo, configs }
 }

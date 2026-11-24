@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `plan`, `models`, `limits`, `issues`, `answers`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `targets`, `plan`, `models`, `limits`, `issues`, `answers`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -338,6 +338,29 @@ that may run per mode.
 An extra's model is `pillar.<name>`, else `pillars`, else the `medium` tier, so `models.steps` and
 `--model` accept `pillar.accessibility`. Its findings appear under its name and go through the
 verifier like any other pillar's. `bench` ignores this key.
+
+## `targets`
+
+```yaml
+targets:
+  disabled: [unneeded-concurrency-guard]
+```
+
+Built-in targeted checks (see [Targeted checks](review.md#targeted-checks)) are all enabled by
+default. `disabled` lists built-in target names to skip, or `"all"` to switch every built-in target
+off:
+
+```yaml
+targets:
+  disabled: all
+```
+
+Like `pillars`, this key may be set in a machine repository file, a machine owner file, or the
+reviewed repository's own `.code-reviewer` file, and the highest layer that sets `disabled` wins
+whole (a repository's file cannot extend a machine file's list; `disabled: []` in a higher layer
+re-enables all targets). An unknown target name, duplicate name, or wrong shape is a configuration
+problem naming the file and key and stops commands before any work. `code-reviewer settings` prints
+the disabled list, enabled targets, and layer.
 
 ## `models`
 

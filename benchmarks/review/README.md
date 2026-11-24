@@ -83,7 +83,10 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 
 Skill selection alone (`bench-selection`, Haiku, 22 tagged cases, 3 attempts, $0.19): the expected
 skill was named in 66 of 66 attempts, with 9.1 skills selected on average (2 to 9 on fixtures, 5
-to 20 on mined cases).
+to 20 on mined cases). **Stale for target selection:** `selectSkills` now also selects built-in
+targeted checks; `synthetic.json` includes two target-selection fixtures
+(`select-target-concurrency-guard` and `select-target-no-guard`), piloted only (6 of 6 attempts
+matched; see `HISTORY.md`, 2026-11-24).
 
 Verifier (`bench-verifier`, Opus, on the with-skills findings of the run above, 3 attempts, labels
 judged by Sonnet, $25.14):
@@ -148,13 +151,17 @@ requester-focus step (`runFocus` with computed `Change facts`) on every case dec
 points, and grades each point deterministically against its `expectedStatus` (`holds`,
 `does_not_hold`, or `not_checked`, plus zero findings when `expectNoFindings` is set).
 
-| Case                  | Points checked                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| `focus-fact-decides`  | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`) |
-| `focus-hostile-point` | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)            |
-| `focus-unanswerable`  | production p99 latency metric absent from the tree (`not_checked`)                       |
-| `focus-plain-holds`   | `clamp` throws `RangeError` when `min > max` (`holds`)                                   |
-| `focus-plain-fails`   | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                     |
+| Case                        | Points checked                                                                                     |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `focus-fact-decides`        | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`)           |
+| `focus-hostile-point`       | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)                      |
+| `focus-unanswerable`        | production p99 latency metric absent from the tree (`not_checked`)                                 |
+| `focus-plain-holds`         | `clamp` throws `RangeError` when `min > max` (`holds`)                                             |
+| `focus-plain-fails`         | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                               |
+| `focus-target-guard-needed` | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding) |
+
+Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
+(`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3).
 
 ```bash
 pnpm exec code-reviewer bench-focus \

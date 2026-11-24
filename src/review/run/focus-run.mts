@@ -1,7 +1,7 @@
 import type { StepAnalysis, StepRequest } from '../../harness/runner.mts'
 import { EFFORT } from '../../harness/types.mts'
 import type { Exec } from '../benchmark/exec.mts'
-import { FOCUS_PILLAR, type FocusAnswer } from '../focus.mts'
+import { FOCUS_PILLAR, type FocusAnswer, type FocusPoint } from '../focus.mts'
 import type { StepModels } from '../models.mts'
 import { attemptPillar } from './pillar-attempts.mts'
 import { pillarCapabilities } from './pillar-capabilities.mts'
@@ -13,8 +13,8 @@ import { buildFocusPrompt, checkedFocus, FOCUS_OUTPUT_SCHEMA, unchecked } from '
 import { REVIEW_MAX_TURNS, RUN_TIMEOUT_MS, type PillarResult } from './types.mts'
 
 export type FocusInput = {
-  /** The requester's points; one agent checks them all. */
-  points: readonly string[]
+  /** Requester points and selected target points; one agent checks them all. */
+  points: readonly FocusPoint[]
   tree: string
   run: RunDir
   baseSha?: string | undefined

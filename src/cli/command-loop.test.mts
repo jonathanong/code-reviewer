@@ -34,9 +34,7 @@ import { BOB, BOB_LABELS, LIMIT_DEFAULTS, fakeDeps, targetConfig } from './comma
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
 
-afterEach(() => {
-  vi.clearAllMocks()
-})
+afterEach(() => void vi.clearAllMocks())
 
 const UNSET = {
   plan: { ...DEFAULT_PLAN_VALUES, authors: [{ login: 'dependabot[bot]', review: 'light' }] },
@@ -57,6 +55,7 @@ const UNSET = {
     from: { disabled: 'default', extra: 'default' },
     problems: [],
   },
+  targets: { disabled: [], enabled: ['unneeded-concurrency-guard'], from: 'default' },
   models: {
     steps: {
       select: [{ harness: 'claude', model: 'haiku' }],
@@ -287,6 +286,7 @@ describe('runLoopCommand', () => {
           from: 'machine owner',
         },
         pillars: UNSET.pillars,
+        targets: UNSET.targets,
         plan: UNSET.plan,
         models: {
           steps: {
@@ -482,9 +482,8 @@ describe('runLoopCommand', () => {
       pillars: { disabled: [], extra: [] },
       values: DEFAULT_PLAN_VALUES,
     })
-    await expect(
-      runLoopCommand('prepare', { out: '/o', effort: 'extreme' }, target, deps),
-    ).rejects.toThrow(/--effort must be one of/u)
+    const badEffort = runLoopCommand('prepare', { out: '/o', effort: 'extreme' }, target, deps)
+    await expect(badEffort).rejects.toThrow(/--effort must be one of/u)
   })
 
   it('resolves threads for the target repository', async () => {
