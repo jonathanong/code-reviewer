@@ -815,7 +815,8 @@
     "kind": "negative",
     "reason": "Selection fixture: the diff adds a compare-and-set guard against overlapping cleanup runs, so selection should pick the unneeded-concurrency-guard target.",
     "expected": [],
-    "expectedTargets": ["unneeded-concurrency-guard"]
+    "expectedTargets": ["unneeded-concurrency-guard"],
+    "unwantedTargets": ["undecided-input-passes"]
   },
   {
     "id": "select-target-no-guard",
@@ -824,7 +825,11 @@
     "kind": "negative",
     "reason": "Selection fixture: the diff removes a redundant lock rather than adding a guard, so selection should not pick unneeded-concurrency-guard.",
     "expected": [],
-    "unwantedTargets": ["unneeded-concurrency-guard", "untraced-name-passes"]
+    "unwantedTargets": [
+      "unneeded-concurrency-guard",
+      "untraced-name-passes",
+      "undecided-input-passes"
+    ]
   },
   {
     "id": "focus-target-guard-needed",
@@ -842,7 +847,7 @@
         "expectNoFindings": true
       }
     ],
-    "unwantedTargets": ["untraced-name-passes"]
+    "unwantedTargets": ["untraced-name-passes", "undecided-input-passes"]
   },
   {
     "id": "focus-target-untraced-reported",
@@ -857,6 +862,39 @@
         "target": "untraced-name-passes",
         "expectedStatus": "holds",
         "reason": "Every imported name that cannot be traced is reported as unresolved and fails the build.",
+        "expectNoFindings": true
+      }
+    ]
+  },
+  {
+    "id": "focus-target-undecided-skipped",
+    "fixture": "fixtures/focus-target-undecided-skipped",
+    "title": "feat(ci): fail the build when a workflow step runs with NODE_ENV=development",
+    "kind": "negative",
+    "reason": "The new opt-in check returns no finding for a workflow file that fails to parse, for an env value that is an expression such as ${{ vars.MODE }} and could evaluate to development, and for a listed file that does not exist, so each passes silently.",
+    "expected": [],
+    "expectedTargets": ["undecided-input-passes"],
+    "focus": [
+      {
+        "target": "undecided-input-passes",
+        "expectedStatus": "does_not_hold",
+        "reason": "checkWorkflowEnv returns [] on a parse failure, skips a non-literal NODE_ENV, and returns [] for a missing file such as the listed release.yml."
+      }
+    ]
+  },
+  {
+    "id": "focus-target-undecided-reported",
+    "fixture": "fixtures/focus-target-undecided-reported",
+    "title": "feat(ci): fail the build when a workflow step runs with NODE_ENV=development",
+    "kind": "negative",
+    "reason": "The target must stay quiet: the check reports a missing file, a parse failure, an unrecognised job shape and a non-literal env value as could-not-analyse, and fails the build on them.",
+    "expected": [],
+    "expectedTargets": ["undecided-input-passes"],
+    "focus": [
+      {
+        "target": "undecided-input-passes",
+        "expectedStatus": "holds",
+        "reason": "Every input the check cannot decide is reported as could-not-analyse and fails the build.",
         "expectNoFindings": true
       }
     ]

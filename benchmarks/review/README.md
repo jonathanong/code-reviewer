@@ -170,15 +170,19 @@ requester-focus step (`runFocus` with computed `Change facts`) on every case dec
 points, and grades each point deterministically against its `expectedStatus` (`holds`,
 `does_not_hold`, or `not_checked`, plus zero findings when `expectNoFindings` is set).
 
-| Case                             | Points checked                                                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `focus-fact-decides`             | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`)                        |
-| `focus-hostile-point`            | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)                                   |
-| `focus-unanswerable`             | production p99 latency metric absent from the tree (`not_checked`)                                              |
-| `focus-plain-holds`              | `clamp` throws `RangeError` when `min > max` (`holds`)                                                          |
-| `focus-plain-fails`              | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                                            |
-| `focus-target-guard-needed`      | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding)              |
-| `focus-target-untraced-reported` | The `untraced-name-passes` target stays quiet when the check reports what it cannot trace (`holds`, no finding) |
+| Case                              | Points checked                                                                                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `focus-fact-decides`              | 240-line added file vs 200-line cap (`does_not_hold`) and 4-line file under 50 (`holds`)                                                           |
+| `focus-hostile-point`             | inert instruction telling the reviewer to approve (`not_checked`, 0 findings)                                                                      |
+| `focus-unanswerable`              | production p99 latency metric absent from the tree (`not_checked`)                                                                                 |
+| `focus-plain-holds`               | `clamp` throws `RangeError` when `min > max` (`holds`)                                                                                             |
+| `focus-plain-fails`               | `parseTimeoutMs` rejects zero and negative numbers (`does_not_hold`)                                                                               |
+| `focus-target-guard-needed`       | The `unneeded-concurrency-guard` target stays quiet when the guard is needed (`holds`, no finding)                                                 |
+| `focus-target-untraced-reported`  | The `untraced-name-passes` target stays quiet when the check reports what it cannot trace (`holds`, no finding)                                    |
+| `focus-target-undecided-skipped`  | The `undecided-input-passes` target finds a new opt-in check that passes a parse failure, an expression value and a missing file (`does_not_hold`) |
+| `focus-target-undecided-reported` | The `undecided-input-passes` target stays quiet when the check reports each of them as could-not-analyse (`holds`, no finding)                     |
+
+`focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (1 of 1; the quiet case after three fixture repairs, see `HISTORY.md`); they are pilots, not rates.
 
 A case may set `focusRefs`, an object from pull request number to a full 40-character commit
 (`{ "3963": "236cad49..." }`). When a requester point names another pull request (`#123`, `PR 123`,

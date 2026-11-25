@@ -2,6 +2,37 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (pilot): a fifth targeted check, `undecided-input-passes`
+
+Pilot, not a measurement: one attempt per case, `bench-focus --model sonnet` (it has no `--harness`, so the agy
+harness was not used), and `bench-selection --attempts 1` on Haiku 5.5.
+
+- **Target added.** `skills/review/references/targets/undecided-input-passes.md`: for a change that adds or
+  changes a lint rule, detector, check or analyzer (including one that is off until configured), find each path
+  that returns no finding without deciding the input: a parse or read failure, a non-literal value, an
+  unrecognised shape, a missing configured file. Claim: each is reported as a finding or as could-not-analyse.
+  Four new opt-in lint rules in a reviewed repository each passed such input silently and no built-in target asked.
+  `untraced-name-passes` covers name resolution only and `clean-code-newly-reports` excludes rules that are off
+  until configured. The `when` excludes name-following checks, so the two do not overlap.
+- **Cases added (`synthetic.json`).** `focus-target-undecided-skipped` (`does_not_hold`: a parse failure, an
+  `${{ vars.MODE }}` value and a missing listed file all return no finding) and
+  `focus-target-undecided-reported` (`holds`, no finding). Both carry `expectedTargets`. `unwantedTargets`
+  now lists `undecided-input-passes` on `select-target-concurrency-guard`, `select-target-no-guard` and
+  `focus-target-guard-needed`.
+- **Focus step.** Skipped case: 1 of 1 (`does_not_hold`, 1 finding). Reported case: failed three times, passed
+  on the fourth attempt. Each failure was a real gap in the fixture, so the fixture was repaired, not the grader:
+  (1) a document without jobs, a non-mapping `env` and a missing config key; (2) workflow-level and job-level `env`
+  never inspected; (3) a YAML merge key in `env`. Treat that 1 of 4 as the honest cost of a quiet fixture and not
+  a rate; a claim this broad flags real gaps in most sound-looking checks, as `untraced-name-passes` did.
+  The skipped case also passed with `--no-rules` (1 of 1), but the target text is the point asked, so that is not
+  a control: there is no arm without the target. Cost $0.08 to $0.12 a call.
+- **Selection.** `select-target-no-guard`, `focus-target-undecided-skipped` and `focus-target-undecided-reported`,
+  one attempt each: 3 of 3 matched, no unwanted target picked.
+- **Not comparable.** Every `bench-selection` row that scores targets before this entry: selection is now offered
+  five targets, not four. Pillar, verifier and requester-only focus prompts are unchanged. Prompt hashes in
+  `step-argv.json` did not change.
+- **Not measured.** The target on a mined case, false alarms on unrelated lint-rule changes, and the agy harness.
+
 ## 2026-11-24 (pilot): undocumented behavior change severity, and a test-selection alias miss
 
 Pilot, not a measurement: one attempt per case on agy `gemini-4-hydrogen-medium`

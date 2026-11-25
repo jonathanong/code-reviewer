@@ -1,0 +1,17 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  },
+  "workflowEnv": {
+    "files": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml"
+    ]
+  }
+}
