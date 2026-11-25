@@ -85,6 +85,11 @@ describe('FYI section', () => {
     expect(section).toBe(`${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:3\` — bad thing\n- minor`)
   })
 
+  it('clips a long title to one short line', () => {
+    const [section] = preExistingSection([f({ title: 'x'.repeat(300), preExisting: true })])
+    expect(section?.split('\n').at(-1)).toBe(`- ${'x'.repeat(119)}…`)
+  })
+
   it('caps the list and counts the rest', () => {
     const many = Array.from({ length: MAX_PRE_EXISTING + 2 }, (_, at) =>
       f({ title: `t${at}`, preExisting: true }),

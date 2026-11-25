@@ -92,11 +92,12 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 11. **Dependencies.** Apply the pillar contract's Dependencies rule: list in `dependencies` each
     thing outside this checkout that must land first and the diff shows (not the ones already in the
     Known dependencies block), never as a finding, and never as a reason for Request Changes.
-12. **Pre-existing.** Check each finding marked `preExisting` against the base branch with local git
-    (`git show <base>:<path>`): keep it, still marked, only if the defect is there and this pull
-    request neither introduced it nor made it reachable; if the diff touches it or makes it
-    reachable, clear the mark and judge it as a normal finding; drop it if the base does not have
-    it. Mark a kept finding `preExisting` yourself when it meets that test and a pillar missed
+12. **Pre-existing.** Check each finding marked `preExisting` against the base: code the diff does not
+    touch is the same on the base, so read it in the checkout; for code the diff changes, read the
+    removed and context lines of the patch. Keep it, still marked, only if the defect is on the base
+    and this pull request neither introduced it nor made it reachable. If the base lacks the defect
+    or the diff touches it or makes it reachable, clear the mark and judge it as a normal finding;
+    drop it only if verification rejects the defect itself. Mark a kept finding `preExisting` yourself when it meets that test and a pillar missed
     the mark. Keep at most five, the most useful first, and drop the rest.
 13. **Impact.** Only when the run prompt has an Impact block: set `impact` as it says.
 14. **Summarize** in two to four sentences a human can act on: what the change does, whether it

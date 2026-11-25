@@ -28,15 +28,24 @@ export function savePostedFindings(
   findings: readonly Finding[],
   placements: readonly Placement[],
 ): Recorded {
+  let posted = 0
   const saved: PostedFile = {
     version: 1,
     headSha,
-    findings: findings.map((finding, index) => ({
-      id: `F${index + 1}`,
-      title: finding.title,
-      path: finding.path ?? null,
-      placement: placements[index] as Placement,
-    })),
+    // `placements` covers the findings that were posted, in order; a pre-existing one is not
+    // posted inline, but it keeps its position in `review.json` for the ids that follow it.
+    findings: findings.flatMap((finding, position) =>
+      finding.preExisting === true
+        ? []
+        : [
+            {
+              id: `F${position + 1}`,
+              title: finding.title,
+              path: finding.path ?? null,
+              placement: placements[posted++] as Placement,
+            },
+          ],
+    ),
   }
   try {
     write(join(dirname(resolve(input)), POSTED_FILE), `${JSON.stringify(saved, null, 2)}\n`)

@@ -76,7 +76,7 @@ export async function postPreparedReview(args: PreparedPost): Promise<PostResult
           (path, text) => deps.writeFile(path, text),
           inputPath,
           headSha,
-          actionable(input.findings),
+          input.findings,
           outcome.placements,
         )
   const answered = await answersFor(deps, pull, input, () => io.trustedAuthors(), outcome.confirmed)

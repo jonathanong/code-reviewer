@@ -32,6 +32,17 @@ describe('savePostedFindings', () => {
     })
   })
 
+  it('keeps ids at review.json positions and skips a pre-existing finding', () => {
+    const write = vi.fn()
+    const skipped = [{ ...findings[0]!, title: 'Old', preExisting: true as const }, ...findings]
+    savePostedFindings(write, '/run/review.json', SHA, skipped, ['inline', 'body'])
+    const saved = JSON.parse((write.mock.calls[0] as [string, string])[1])
+    expect(saved.findings).toEqual([
+      { id: 'F2', title: 'One', path: 'a.ts', placement: 'inline' },
+      { id: 'F3', title: 'Two', path: null, placement: 'body' },
+    ])
+  })
+
   it('reports a write failure instead of throwing', () => {
     const write = vi.fn(() => {
       throw new Error('read-only')
