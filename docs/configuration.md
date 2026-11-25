@@ -402,7 +402,9 @@ candidate. An authentication failure moves on at once, and so does a failure of 
 itself: a timeout, a crash with no result, a rejected flag, or output that is not a result. A
 broken non-Claude harness therefore gives way to the next candidate. A failure that carries a
 model answer (a turn limit, say) is the step's failure, and so is running out of candidates. `report.md` lists the harness and model
-each step ran on and how long it waited.
+each step ran on and how long it waited, and under the table a line for every configured candidate
+the step moved past (`skipped agy gemini-4-neon: refused (...)`) with why: refused, auth, a spent
+wait budget, or the kind of harness failure. `report.json` carries the same as `skipped`.
 
 `--model step=harness:model` on `review` and `run` sets one step for that run and beats the
 config. Repeat it for a step to give that step ordered fallbacks. A bad step, harness or value, or

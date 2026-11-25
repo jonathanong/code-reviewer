@@ -29,6 +29,7 @@ const answer = (structured: unknown) =>
   JSON.stringify({ type: 'result', total_cost_usd: 0.25, structured_output: structured })
 
 const RAN_B = { harness: 'claude', model: 'b', waitedMs: 0 }
+const SKIPPED_A = [{ harness: 'claude', model: 'a', why: 'rate limit wait budget spent' }]
 
 describe('skill selection', () => {
   const input = {
@@ -74,7 +75,7 @@ describe('skill selection', () => {
     const exec = limitedExec('', ['a', 'b'])
     const choice = await selectSkills({ ...input, models: fallbackModels('select'), exec })
     expect(choice.error).toContain('claude exited with 1')
-    expect(choice.ran).toEqual({ ...RAN_B, failure: 'rate_limited' })
+    expect(choice.ran).toEqual({ ...RAN_B, skipped: SKIPPED_A, failure: 'rate_limited' })
   })
 
   it('records the model of a run that returned no skills', async () => {
@@ -116,7 +117,7 @@ describe('pillars', () => {
       ['rules', 'sonnet'],
       ['design', 'b'],
     ])
-    expect(results[1]?.ran).toEqual(RAN_B)
+    expect(results[1]?.ran).toEqual({ ...RAN_B, skipped: SKIPPED_A })
     expect(modelsOf(exec)).toEqual(['sonnet', 'a', 'b'])
     const saved = JSON.parse(readFileSync(join(out, 'pillars', 'design.json'), 'utf8'))
     expect(saved).toMatchObject({ model: 'b', ran: RAN_B })
@@ -160,7 +161,7 @@ describe('verifier', () => {
       exec: full,
     })
     expect(modelsOf(full)).toEqual(['a', 'b'])
-    expect(out.ran).toEqual(RAN_B)
+    expect(out.ran).toEqual({ ...RAN_B, skipped: SKIPPED_A })
 
     const light = limitedExec(reply, [])
     await runReviewVerifier(input, {

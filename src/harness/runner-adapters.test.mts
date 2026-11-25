@@ -100,7 +100,12 @@ describe('runStep across harnesses', () => {
     failures.splice(0, failures.length, { kind: 'rate_limited', retryAfterSeconds: 8 })
     const second = await runStep(REQUEST, candidates, exec, clock)
     expect(sleeps).toEqual([7_000])
-    expect(second.ran).toEqual({ harness: 'steady', model: 'y', waitedMs: 0 })
+    expect(second.ran).toEqual({
+      harness: 'steady',
+      model: 'y',
+      waitedMs: 0,
+      skipped: [{ harness: 'slow', model: 'x', why: 'rate limit wait budget spent' }],
+    })
     expect(calls).toEqual(['slow:x', 'slow:x', 'slow:x', 'steady:y'])
   })
 
@@ -154,7 +159,32 @@ describe('runStep when an adapter refuses the step', () => {
     )
     expect(calls).toEqual(['picky:x', 'steady:y'])
     expect(sleeps).toEqual([])
-    expect(run.ran).toEqual({ harness: 'steady', model: 'y', waitedMs: 0 })
+    expect(run.ran).toEqual({
+      harness: 'steady',
+      model: 'y',
+      waitedMs: 0,
+      skipped: [
+        {
+          harness: 'picky',
+          model: 'x',
+          why: 'refused (picky cannot confine: shell prefixes (Step))',
+        },
+      ],
+    })
+  })
+
+  it('keeps the skipped candidates on the failed step when the last one fails too', async () => {
+    const { clock } = runtime(60)
+    const failure = await runStep(
+      REQUEST,
+      [
+        { harness: 'picky', model: 'x' },
+        { harness: 'picky', model: 'z' },
+      ],
+      exec,
+      clock,
+    ).catch((error: unknown) => error)
+    expect((failure as StepFailure).ran.skipped?.map((skip) => skip.model)).toEqual(['x'])
   })
 
   it('fails the step when the refusing candidate is the last', async () => {

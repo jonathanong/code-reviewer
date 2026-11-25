@@ -51,4 +51,21 @@ describe('renderRan', () => {
       ].join('\n'),
     )
   })
+
+  it('notes each candidate a step moved past and why', () => {
+    const skipped = [
+      {
+        harness: 'agy',
+        model: 'gemini-4-neon',
+        why: 'refused (agy cannot confine: web hosts (Verifier))',
+      },
+    ]
+    const [, table, notes] = renderRan([
+      { step: 'verifier', ...ran('sonnet'), skipped },
+    ]) as string[]
+    expect(table).toContain('| verifier | claude | sonnet | 0s |')
+    expect(notes).toBe(
+      '- verifier: skipped agy gemini-4-neon: refused (agy cannot confine: web hosts (Verifier))',
+    )
+  })
 })

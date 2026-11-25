@@ -27,6 +27,11 @@ export function ranRows(input: {
 /** The "Models" table of `report.md`; nothing when no step recorded its model. */
 export function renderRan(rows: readonly RanRow[]): string[] {
   if (rows.length === 0) return []
+  const notes = rows.flatMap((row) =>
+    (row.skipped ?? []).map(
+      (skip) => `- ${row.step}: skipped ${skip.harness} ${skip.model}: ${skip.why}`,
+    ),
+  )
   return [
     '### Models',
     [
@@ -37,5 +42,6 @@ export function renderRan(rows: readonly RanRow[]): string[] {
           `| ${row.step} | ${row.harness} | ${row.model} | ${Math.round(row.waitedMs / 1000)}s |`,
       ),
     ].join('\n'),
+    ...(notes.length > 0 ? [notes.join('\n')] : []),
   ]
 }
