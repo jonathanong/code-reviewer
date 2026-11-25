@@ -360,7 +360,7 @@ The impact is the verifier's judgment, one of `breaking`, `architectural`, `main
 breaking is a change that makes an existing caller, consumer, stored data or configuration stop
 working without a change on their side; architectural is a new dependency on a remote service or
 another repository, new persisted state or cache, a new process, queue or command family, or a
-change to how components are divided; maintenance is neither. The verifier reads the reviewed
+change to how components are divided; maintenance is neither. The verifier looks at every effect of the diff, not only its findings: exit codes, allow or config entries that become unused, changed output fields. A behavior change the description does not list is a `medium` congruence finding that asks the author to document it, never `high`; it does not block or hold by itself. The verifier reads the reviewed
 repository's root `AGENTS.md` and any document it points to for these words; when they define
 them, those definitions win and the basis quotes the sentence used. A definition the pull request
 itself adds or changes does not count, so a change cannot reclassify itself. When the verifier cannot tell it answers `unsure` and says what it would need.
