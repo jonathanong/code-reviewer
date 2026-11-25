@@ -8,7 +8,7 @@ export function impactLines(asked: boolean | undefined): string[] {
   if (asked !== true) return []
   return [
     '## Impact of the change',
-    'Set `impact` to `{ kind, basis }`, judged over the whole pull request:',
+    'Set `impact` to `{ kind, basis }`, judged over the whole pull request. Look at every effect of the diff, not only the findings: exit codes, allow or config entries that become unused, changed output fields.',
     '- `breaking`: a change that makes an existing caller, consumer, stored data or configuration stop working without a change on their side (a removed or renamed flag, field, export, route or type; a changed exit code or default; a new failure for input that passed).',
     '- `architectural`: a new dependency on a remote service or another repository, new persisted state or cache, a new process, queue or command family, or a change to how components are divided.',
     '- `maintenance`: neither.',

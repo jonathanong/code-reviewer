@@ -37,6 +37,14 @@ apply its "Show one real run" rule.
   behavior change, or descriptions that already show a run.
 - Severity is always `low`; it never blocks.
 
+## Undocumented behavior changes
+
+A behavior change the description does not list is one `medium` finding that asks the author to
+document it with a before/after run. It never blocks or holds by itself. Look past the findings to
+every effect of the diff: a config that exited 0 and now exits nonzero, a previously reported input
+now silently accepted, a config or allow entry newly failing as unused, a changed output field. A
+pre-1.0 package is expected to break: the finding asks for the note, never `high`.
+
 ## Not in scope
 
 Whether the behavior is correct or well designed. Only whether it is described truthfully.

@@ -2,6 +2,41 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (pilot): undocumented behavior change severity, and a test-selection alias miss
+
+Pilot, not a measurement: one attempt per case on agy `gemini-4-hydrogen-medium`
+(`--reads-outside-checkout`), the judge on Claude Opus, at `1667ec1` plus this change.
+
+- **Prompt change.** `skills/review/references/pillars/congruence.md` gains "Undocumented behavior
+  changes": a behavior change the description does not list is one `medium` finding that asks for a
+  before/after run, never `high`, and it does not block or hold by itself; a pre-1.0 package is
+  expected to break. `src/review/run/impact-prompt.mts` tells the verifier to judge the impact from
+  every effect of the diff (exit codes, allow or config entries that become unused, changed output
+  fields), not only the findings. Two recent live reviews rated such changes `high`.
+- **Cases added (`synthetic.json`).** `congruence-undocumented-unused-allow-failure` (positive: one
+  `medium` congruence finding naming the newly unused allow entry; exit 0 becomes 1) with the twin
+  `congruence-documented-unused-allow-failure`; `correctness-selection-alias-escapes` (positive: one
+  `high` correctness finding that an alias of the loader hides reads) with the twin
+  `correctness-selection-alias-invalidates`. Synthetic fixtures.
+- **Not comparable.** Every `congruence` row and every verifier row (`bench-verifier`) before this
+  change: the congruence prompt and the impact block changed. Pillar rows other than `congruence` are
+  unaffected. `src/review/run/fixtures/step-argv.json` prompt hashes changed with them.
+- **Pilot result.** `congruence-undocumented-unused-allow-failure`: caught (recall 100%, severity
+  agreement 100%, 2.0 findings). `congruence-documented-unused-allow-failure`: quiet (0 findings).
+  `correctness-selection-alias-escapes`: caught (recall 100%, severity 100%, 1.0 findings).
+  `correctness-selection-alias-invalidates`: the first attempt raised two real findings on the
+  fixture itself (an import alias and a concatenated pointer slipped past the scanner), so the
+  fixture was fixed, not the grader. The second raised a missing-test finding, so the twin gained a
+  test for an alias and a bare reference; the third attempt was quiet (0 findings). The positive was
+  re-run after the scanner fix and was caught again. One attempt is not a rate.
+- **No-rules control (1 attempt each, `--no-rules`).** Both positives were caught without skills
+  (`congruence-undocumented-unused-allow-failure` recall 100%, `correctness-selection-alias-escapes`
+  recall 100%). No shared rule skill states either rule (no `expectedSkills`), so these are
+  ceiling cases like the other congruence fixtures, not skill-lift cases; the keep-only-if-control-
+  misses rule applies to skill cases. After the review round the fixture scanners also escape JSON
+  pointer keys, compare array and object kinds, and ignore escaped literals; the negative twin
+  stayed quiet on the re-run.
+
 ## 2026-11-24 (pilot): known miss, a description command whose paths cannot resolve
 
 Pilot, not a measurement: one attempt per case on `congruence`, agy `gemini-4-hydrogen-medium`

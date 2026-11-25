@@ -672,6 +672,54 @@
     "expected": []
   },
   {
+    "id": "congruence-undocumented-unused-allow-failure",
+    "fixture": "fixtures/congruence-undocumented-unused-allow-failure",
+    "title": "fix(lint): skip generated files",
+    "kind": "positive",
+    "reason": "The description says the change is not breaking and only removes false positives. lintFile now returns early for src/generated/, so the allow entry src/generated/schema.ts is never marked used, and audit() reports it as an unused allow entry, which turns the repository's exit code from 0 to 1. The congruence pillar (performed by the verifier) holds the description to the whole effect of the diff: The congruence reference states: \"A behavior change the description does not list is one `medium` finding that asks the author to document it with a before/after run. It never blocks or holds by itself.\" This is reviewer policy, not a shared rule skill.",
+    "expected": [
+      {
+        "pillar": "congruence",
+        "severity": "medium",
+        "path": null,
+        "lines": null,
+        "claim": "The description calls the change non-breaking, but skipping src/generated/ means the allow entry `src/generated/schema.ts` in lint.allow.json is never used, so the unused-entry audit in src/audit.mts now fails and the exit code goes from 0 to 1. The finding must name that newly unused entry, ask the author to document the behavior change with a before/after run, and be medium (not high, not blocking)."
+      }
+    ]
+  },
+  {
+    "id": "congruence-documented-unused-allow-failure",
+    "fixture": "fixtures/congruence-documented-unused-allow-failure",
+    "title": "fix(lint): skip generated files",
+    "kind": "negative",
+    "reason": "The same change, but the description lists the effect (the audit now fails for an allow entry only generated files needed), shows a before/after run, and the diff removes the entry. Nothing should be flagged, so a reviewer that flags every exit-code change fails.",
+    "expected": []
+  },
+  {
+    "id": "correctness-selection-alias-escapes",
+    "fixture": "fixtures/correctness-selection-alias-escapes",
+    "title": "perf(ci): run only the tests that read a changed fixture pointer",
+    "kind": "positive",
+    "reason": "The soundness proof voids only a call whose callee name is `loadFixture` with a non-literal argument (proofHolds in src/select.mts). `const get = loadFixture; get(id).size` is a call with callee `get`, so the proof still holds, the test's reads are taken to be none, and the test is dropped although it reads any pointer.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/select.mts",
+        "lines": null,
+        "claim": "proofHolds checks only calls whose callee name is `loadFixture`, so an alias such as `const get = loadFixture; get(id).size` is a call named `get` that never voids the proof. The test is then judged to read only its literal pointers (none), is dropped for any changed pointer, and a break in the dynamic read goes unnoticed. The proof must be void for any non-literal call or bare reference to the loader, not only a same-name call."
+      }
+    ]
+  },
+  {
+    "id": "correctness-selection-alias-invalidates",
+    "fixture": "fixtures/correctness-selection-alias-invalidates",
+    "title": "perf(ci): run only the tests that read a changed fixture pointer",
+    "kind": "negative",
+    "reason": "The same change, but proofHolds also compares every mention of the loader with its calls, so an alias or bare reference voids the proof and the test stays selected. Nothing should be flagged.",
+    "expected": []
+  },
+  {
     "id": "focus-fact-decides",
     "fixture": "fixtures/focus-fact-decides",
     "title": "feat: add status code lookup and formatter",

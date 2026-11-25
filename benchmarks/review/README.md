@@ -121,6 +121,13 @@ judged by Sonnet, $25.14):
   config (one `medium` congruence finding); the negative's command resolves and nothing is flagged.
   Added on 2026-11-24 from a known miss; piloted once each on agy `gemini-4-hydrogen-medium` (caught,
   quiet), see `HISTORY.md`.
+- Not in the table: `congruence-undocumented-unused-allow-failure` (one `medium` congruence finding
+  when a description calls a change non-breaking but an allow entry becomes unused and the audit
+  exits 1) and its negative twin `congruence-documented-unused-allow-failure`;
+  `correctness-selection-alias-escapes` (one `high` correctness finding: a test-selection proof that
+  voids only same-name loader calls lets an alias hide reads) and its negative twin
+  `correctness-selection-alias-invalidates`. Added on 2026-11-24 from two live reviews; piloted once
+  each on agy `gemini-4-hydrogen-medium`, see `HISTORY.md`.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
   alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of
