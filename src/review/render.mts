@@ -13,17 +13,24 @@ export type Verdict = (typeof VERDICTS)[number]
 const SHORT_BODY_CHARS = 400
 const SHORT_BODY_LINES = 4
 
+/** The findings that count: those not marked pre-existing. FYI items never reach the verdict, counts or inline comments. */
+export function actionable(findings: readonly Finding[]): Finding[] {
+  return findings.filter((finding) => finding.preExisting !== true)
+}
+
 /**
  * Top-down: a blocking finding requests changes; else a high finding or an open question
  * comments; else approve. A failed pillar changes none of this: it is listed as skipped, and a
  * review where every pillar failed never reaches a verdict. An approval whose second check did not
- * complete is listed as skipped too, and is a comment: nothing double-checked it.
+ * complete is listed as skipped too, and is a comment: nothing double-checked it. A finding marked
+ * pre-existing is an FYI and is ignored here.
  */
 export function deriveVerdict(
-  findings: readonly Finding[],
+  all: readonly Finding[],
   questions: readonly Question[],
   skipped: readonly SkippedPillar[] = [],
 ): Verdict {
+  const findings = actionable(all)
   if (findings.some((finding) => finding.severity === 'blocking')) return 'Request Changes'
   if (findings.some((finding) => finding.severity === 'high')) return 'Comment'
   if (questions.length > 0) return 'Comment'
@@ -132,14 +139,15 @@ export function renderHeader(
   paths: readonly string[] = [],
 ): string {
   const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
-  const index = sortFindings(input.findings).map((finding) => {
+  const found = actionable(input.findings)
+  const index = sortFindings(found).map((finding) => {
     const where = locationText(finding)
     return `- **${severityTag(finding.severity)}** ${finding.title}${where ? ` — ${where}` : ''}`
   })
   return [
     reviewMarker(headSha, verdict, input.effort),
     `## [${verdict}] Code review`,
-    `Reviewed \`${headSha.slice(0, 12)}\` at ${input.effort} effort · ${counts(input.findings)}`,
+    `Reviewed \`${headSha.slice(0, 12)}\` at ${input.effort} effort · ${counts(found)}`,
     ...classLine(paths, input.impact),
     ...(input.summary ? [input.summary] : []),
     ...splitSection(input.splitProposal),

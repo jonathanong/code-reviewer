@@ -8,6 +8,7 @@ import {
   type ReviewInput,
   type ReviewIo,
 } from '../review/index.mts'
+import { actionable } from '../review/render.mts'
 import type { TextLimits } from '../review/concise.mts'
 import { savePostedFindings } from '../tracker/posted-file.mts'
 import { recordPosted } from '../tracker/record.mts'
@@ -65,7 +66,7 @@ export async function postPreparedReview(args: PreparedPost): Promise<PostResult
     ...pull,
     headSha,
     ...(inputPath === undefined ? {} : { input: inputPath }),
-    findings: input.findings,
+    findings: actionable(input.findings),
     outcome,
   })
   const saved =

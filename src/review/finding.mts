@@ -12,6 +12,7 @@ import {
   parseFix,
   parseNotes,
   parsePrevent,
+  parsePreExisting,
   parseAnswers,
 } from './finding-extras.mts'
 import { PILLARS, pillarOf, type Pillar } from './pillar-name.mts'
@@ -43,6 +44,8 @@ export type Finding = {
   prevent?: string
   /** Another reviewer's open thread that raised the same problem; credited and linked when posted. */
   raisedBy?: RaisedBy
+  /** The defect is on the base branch and this pull request neither introduced it nor made it reachable; an FYI that never changes the verdict. */
+  preExisting?: true
 }
 
 export type ReviewInput = {
@@ -120,6 +123,7 @@ function parseFinding(raw: unknown, index: number): Finding {
     ...parseLocation(raw, where),
     ...parseFix(raw, where),
     ...parsePrevent(raw, where),
+    ...parsePreExisting(raw, where),
     ...parseCredit(raw, where),
   }
 }

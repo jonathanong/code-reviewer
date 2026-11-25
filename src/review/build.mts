@@ -6,7 +6,14 @@ import {
   type SanitizedReview,
 } from '../review-payload/index.mts'
 import type { ReviewInput, Finding } from './finding.mts'
-import { renderBodyFinding, renderFindingBody, renderHeader, sortFindings } from './render.mts'
+import { preExistingSection } from './pre-existing.mts'
+import {
+  actionable,
+  renderBodyFinding,
+  renderFindingBody,
+  renderHeader,
+  sortFindings,
+} from './render.mts'
 
 export type BuildLimits = {
   /** Inline comments per posted review; larger reviews are split into parts. */
@@ -94,9 +101,12 @@ export function buildReviews(
   limits: BuildLimits = DEFAULT_LIMITS,
   paths: readonly string[] = [],
 ): SanitizedReview[] {
-  const { comments, offDiff } = placeFindings(input.findings, index)
+  const { comments, offDiff } = placeFindings(actionable(input.findings), index)
   const header = renderHeader(input, headSha, paths)
-  const blocks = offDiff.length === 0 ? [] : [OFF_DIFF_HEADING, ...offDiff.map(renderBodyFinding)]
+  const blocks = [
+    ...(offDiff.length === 0 ? [] : [OFF_DIFF_HEADING, ...offDiff.map(renderBodyFinding)]),
+    ...preExistingSection(input.findings),
+  ]
   const bodyMax = limits.maxBodyChars - 200
   const bodies = packBodies(header, blocks, bodyMax)
   const commentChunks = chunk(comments, limits.maxComments)

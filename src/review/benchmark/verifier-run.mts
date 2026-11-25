@@ -40,6 +40,7 @@ export const VERIFIER_OUTPUT_SCHEMA = {
           startLine: { type: 'integer', minimum: 1 },
           fix: { type: 'string' },
           prevent: { type: 'string' },
+          preExisting: { type: 'boolean' },
           sources: { type: 'array', items: { type: 'integer', minimum: 0 } },
         },
       },

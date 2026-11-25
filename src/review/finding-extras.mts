@@ -104,3 +104,10 @@ export function parseAnswers(raw: unknown): { answers?: Answer[] } {
   })
   return answers.length === 0 ? {} : { answers }
 }
+
+/** The optional pre-existing mark: only `true` is kept; `false` is the same as absent. */
+export function parsePreExisting(record: Json, where: string): Pick<Finding, 'preExisting'> {
+  if (record.preExisting === undefined || record.preExisting === false) return {}
+  if (record.preExisting !== true) throw new ReviewError(`${where}.preExisting must be a boolean.`)
+  return { preExisting: true }
+}
