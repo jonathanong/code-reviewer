@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { indexReviewFiles } from '../review-payload/index.mts'
 import { buildReviews } from './build.mts'
 import { ReviewError, parseReviewInput, type Finding, type ReviewInput } from './finding.mts'
-import { MAX_PRE_EXISTING, PRE_EXISTING_HEADING, preExistingSection } from './pre-existing.mts'
+import {
+  MAX_PRE_EXISTING,
+  MAX_REASON_CHARS,
+  PRE_EXISTING_HEADING,
+  preExistingSection,
+} from './pre-existing.mts'
 import { actionable, deriveVerdict, renderHeader } from './render.mts'
 import { countFindings } from './run/review-support.mts'
 
@@ -82,17 +87,47 @@ describe('FYI section', () => {
       f({ title: 'bad\nthing', severity: 'high', path: 'src/a.ts', line: 3, preExisting: true }),
       f({ title: 'normal' }),
     ])
-    expect(section).toBe(`${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:3\` — bad thing\n- minor`)
+    expect(section).toBe(
+      `${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:3\` — bad thing\n  <details><summary>Why</summary>\n\n  B\n\n  </details>\n- minor\n  <details><summary>Why</summary>\n\n  B\n\n  </details>`,
+    )
+  })
+
+  it('collapses a multi-line reason under its item and keeps it in the list item', () => {
+    const [section] = preExistingSection([
+      f({ body: 'first\n\nsecond </details> end', preExisting: true }),
+    ])
+    expect(section).toBe(
+      `${PRE_EXISTING_HEADING}\n\n- T\n  <details><summary>Why</summary>\n\n  first\n\n  second &lt;/details> end\n\n  </details>`,
+    )
+  })
+
+  it('escapes a closing tag with whitespace before the bracket', () => {
+    const [section] = preExistingSection([
+      f({ body: 'first </DETAILS >\n\nsecond', preExisting: true }),
+    ])
+    expect(section).toContain('first &lt;/details>\n\n  second')
+    expect(section?.match(/<\/details/giu)).toHaveLength(1)
+  })
+
+  it('cuts a long reason', () => {
+    const [section] = preExistingSection([f({ body: 'y'.repeat(2000), preExisting: true })])
+    expect(section).toContain(`  ${'y'.repeat(MAX_REASON_CHARS - 1)}…\n`)
+    expect(section).not.toContain('y'.repeat(MAX_REASON_CHARS))
+  })
+
+  it('shows just the line when there is no reason', () => {
+    const [section] = preExistingSection([f({ body: ' ', preExisting: true })])
+    expect(section).toBe(`${PRE_EXISTING_HEADING}\n\n- T`)
   })
 
   it('clips a long title to one short line', () => {
     const [section] = preExistingSection([f({ title: 'x'.repeat(300), preExisting: true })])
-    expect(section?.split('\n').at(-1)).toBe(`- ${'x'.repeat(119)}…`)
+    expect(section?.split('\n')).toContain(`- ${'x'.repeat(119)}…`)
   })
 
   it('caps the list and counts the rest', () => {
     const many = Array.from({ length: MAX_PRE_EXISTING + 2 }, (_, at) =>
-      f({ title: `t${at}`, preExisting: true }),
+      f({ title: `t${at}`, body: '', preExisting: true }),
     )
     const [section] = preExistingSection(many)
     expect(section?.split('\n').filter((line) => line.startsWith('- '))).toHaveLength(
@@ -116,7 +151,7 @@ describe('buildReviews', () => {
     expect(review?.comments).toHaveLength(1)
     expect(review?.comments[0]?.body).toContain('new')
     expect(review?.body).toContain('[Approve]')
-    expect(review?.body).toContain(`${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:2\` — old`)
+    expect(review?.body).toContain(`${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:2\` — old\n  <details>`)
     expect(review?.body.indexOf('Code review')).toBeLessThan(
       review?.body.indexOf(PRE_EXISTING_HEADING) ?? -1,
     )
