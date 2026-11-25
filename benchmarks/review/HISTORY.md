@@ -26,6 +26,19 @@ harness was not used), and `bench-selection --attempts 1` on Haiku 5.5.
   a rate; a claim this broad flags real gaps in most sound-looking checks, as `untraced-name-passes` did.
   The skipped case also passed with `--no-rules` (1 of 1), but the target text is the point asked, so that is not
   a control: there is no arm without the target. Cost $0.08 to $0.12 a call.
+- **Follow-up (review round).** The quiet fixture also checks a `<<` merge key at workflow, job and step
+  level (yaml 2.8.1 keeps `<<` as an ordinary key) with a test. One re-pilot attempt: FAIL, the focus step
+  answered `does_not_hold` for one gap, that the CLI entry depends on `import.meta.main`, which older Node lacks.
+  The reported case is now 1 of 5 attempts, passing once; not repaired further.
+- **Target-free control.** Focus points only run in `bench-focus`, but a focus case that is not `focusOnly` can
+  also run under `bench`, where it scores false alarms only (no recall). `bench --pillar correctness --case
+  focus-target-undecided-skipped --harness agy --model gemini-4-hydrogen-medium --reads-outside-checkout
+  --judge opus`, one attempt each, with rules and with `--no-rules`: 3.0 and 4.0 findings, no target involved.
+  Both arms raised a `medium` that the YAML parse failure is swallowed and treated as passing, and a finding
+  that workflow- and job-level `env` is not checked. Both noted the `${{` branch is untested, but neither
+  called the expression value, or the listed file that does not exist, a clean pass. So the control catches
+  one of the three planted gaps (the parse failure) without the target and misses two. The case is kept for
+  the owner to decide; there is no target-free control for a case's `focus` entry itself.
 - **Selection.** `select-target-no-guard`, `focus-target-undecided-skipped` and `focus-target-undecided-reported`,
   one attempt each: 3 of 3 matched, no unwanted target picked.
 - **Not comparable.** Every `bench-selection` row that scores targets before this entry: selection is now offered

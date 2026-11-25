@@ -26,6 +26,12 @@ it('reports an expression as could-not-analyse', () => {
   expect(problem.kind).toBe('could-not-analyse')
 })
 
+it('reports a merge key on a step as could-not-analyse', () => {
+  const text =
+    'jobs:\n  t:\n    steps:\n      - run: x\n        <<: {env: {NODE_ENV: development}}\n'
+  expect(checkWorkflowEnv(workflow(text))[0].kind).toBe('could-not-analyse')
+})
+
 it('reports a missing file and a parse failure as could-not-analyse', () => {
   expect(checkWorkflowEnv('/nonexistent/ci.yml')[0].kind).toBe('could-not-analyse')
   expect(checkWorkflowEnv(workflow('jobs: [unclosed'))[0].kind).toBe('could-not-analyse')

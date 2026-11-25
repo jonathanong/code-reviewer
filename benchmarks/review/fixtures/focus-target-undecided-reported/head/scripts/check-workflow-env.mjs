@@ -29,16 +29,25 @@ export function checkWorkflowEnv(file) {
     return undecided(`parse failed: ${error.message}`)
   }
   if (!isMapping(doc) || !isMapping(doc.jobs)) return undecided('no jobs mapping')
+  if ('<<' in doc) return undecided('workflow uses a merge key')
   const problems = checkEnv(doc.env, { file })
   for (const [job, body] of Object.entries(doc.jobs)) {
     if (!isMapping(body) || !Array.isArray(body.steps)) {
       problems.push(...undecided('unrecognised job shape', { job }))
       continue
     }
+    if ('<<' in body) {
+      problems.push(...undecided('job uses a merge key', { job }))
+      continue
+    }
     problems.push(...checkEnv(body.env, { file, job }))
     for (const [step, entry] of body.steps.entries()) {
       if (!isMapping(entry)) {
         problems.push(...undecided('unrecognised step shape', { job, step }))
+        continue
+      }
+      if ('<<' in entry) {
+        problems.push(...undecided('step uses a merge key', { job, step }))
         continue
       }
       problems.push(...checkEnv(entry.env, { file, job, step }))
