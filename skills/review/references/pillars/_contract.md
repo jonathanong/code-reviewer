@@ -135,7 +135,8 @@ Return only JSON:
       "line": 42,
       "side": "RIGHT",
       "startLine": 40,
-      "prevent": "optional: one line naming a check that would stop this class of mistake"
+      "prevent": "optional: one line naming a check that would stop this class of mistake",
+      "preExisting": true
     }
   ]
 }
@@ -173,6 +174,13 @@ Return only JSON:
   `prevent` that names that check, for example "an oxlint rule banning `==` on enum values".
   Omit it for a one-off, and when no check would catch the class rather than only this instance.
   It is not a second finding and never changes the severity.
+- `preExisting` is optional. When code you read has a defect or rule violation that exists on the
+  base branch and this pull request neither introduced nor made reachable, report it with
+  `"preExisting": true` instead of dropping it or rating it as a normal finding. It is an FYI: it
+  never changes the verdict, is never inline, and the rating you give it is only for ordering. Do
+  not go looking for it: report only what you came across in the files you read for this change.
+  A defect the diff introduces, touches, or makes reachable is a normal finding, even in an old
+  file.
 - Put a GitHub `suggestion` block in the body only for an exact, minimal replacement of the
   commented lines.
 - Posted text is read by the author, so write it short. Lead with the defect and its consequence.

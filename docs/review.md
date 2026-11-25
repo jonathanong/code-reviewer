@@ -230,6 +230,18 @@ the class of mistake; over 160 characters it warns like any over-long posted tex
 comment or body finding); `report.md` shows them as plain lines. With neither, no section is
 rendered. Another reviewer's credit stays visible, after the section.
 
+## Pre-existing defects (FYI)
+
+A pillar that comes across a defect or rule violation on the base branch, in code it read, that the
+pull request neither introduced nor made reachable reports it with `preExisting: true` on the
+finding instead of dropping it. The verifier checks it against the base with local git, keeps at
+most five, and clears the mark when the diff touches the code. A marked finding is an FYI: the
+verdict, the finding counts, the tracker counts and the inline comments ignore it, so a
+pre-existing `high` never turns an Approve into a Comment. The posted review lists each in one
+line under "FYI — pre-existing, not part of this review", after the findings, and shows at most
+five (the renderer drops the rest and prints "and N more"). It is a flag on the finding, not a
+second list, so it passes through the pillar, verifier and approval-check schemas unchanged.
+
 ## Other reviewers' open items
 
 Normally a finding that repeats another reviewer's open thread is dropped as already raised. `prepare`

@@ -92,8 +92,14 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 11. **Dependencies.** Apply the pillar contract's Dependencies rule: list in `dependencies` each
     thing outside this checkout that must land first and the diff shows (not the ones already in the
     Known dependencies block), never as a finding, and never as a reason for Request Changes.
-12. **Impact.** Only when the run prompt has an Impact block: set `impact` as it says.
-13. **Summarize** in two to four sentences a human can act on: what the change does, whether it
+12. **Pre-existing.** Check each finding marked `preExisting` against the base branch with local git
+    (`git show <base>:<path>`): keep it, still marked, only if the defect is there and this pull
+    request neither introduced it nor made it reachable; if the diff touches it or makes it
+    reachable, clear the mark and judge it as a normal finding; drop it if the base does not have
+    it. Mark a kept finding `preExisting` yourself when it meets that test and a pillar missed
+    the mark. Keep at most five, the most useful first, and drop the rest.
+13. **Impact.** Only when the run prompt has an Impact block: set `impact` as it says.
+14. **Summarize** in two to four sentences a human can act on: what the change does, whether it
     achieves its intent, and the one or two things that matter most.
 
 ## Severity
@@ -101,7 +107,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 Severity follows the [pillar contract](pillars/_contract.md), decided anew for each finding.
 `blocking` needs all four of its conditions: code that runs, a path someone takes, introduced or
 made reachable by this pull request, and a fix that needs a decision. Request Changes is rare. When
-a finding is real but misses a condition, rate it `high` or lower.
+a finding is real but misses a condition, rate it `high` or lower. A finding marked `preExisting`
+is outside this: it never counts toward Request Changes or Comment.
 
 ## Verdict
 
@@ -110,6 +117,9 @@ The verdict is derived top-down; do not choose it separately:
 1. A verified `blocking` finding gives Request Changes.
 2. Otherwise a `high` finding, or any open question, gives Comment.
 3. Otherwise Approve.
+
+Findings marked `preExisting` are FYIs: they are not counted in this derivation, are listed in the
+posted review as pre-existing, and never request changes.
 
 A full review that would approve then gets one more pass, the [approval check](refute.md), which
 may add findings and questions; the caller derives the verdict again. You do not run it.
@@ -146,6 +156,15 @@ Copy `skipped` from `plan.json` (plus any pillar that failed), then write `revie
       "fix": "optional",
       "path": "...",
       "line": 1
+    },
+    {
+      "pillar": "rules",
+      "severity": "medium",
+      "title": "optional: a defect already on the base, not from this pull request",
+      "body": "...",
+      "path": "...",
+      "line": 1,
+      "preExisting": true
     }
   ],
   "questions": [

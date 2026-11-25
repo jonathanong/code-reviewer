@@ -22,6 +22,7 @@ export const PILLAR_OUTPUT_SCHEMA = {
           startLine: { type: 'integer', minimum: 1 },
           fix: { type: 'string' },
           prevent: { type: 'string' },
+          preExisting: { type: 'boolean' },
         },
       },
     },

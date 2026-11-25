@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (change, not re-measured): pre-existing findings are an FYI
+
+Prompt, schema and contract change; no run was made and nothing was re-scored.
+
+- **What changed.** `finding.preExisting` (optional boolean) is now in the pillar, verifier and approval-check
+  output schemas. `_contract.md` tells a pillar to report a defect it read that the pull request neither
+  introduced nor made reachable with `preExisting: true` rather than drop it; `verifier.md` gains step 12
+  (check it on the base with local git, keep at most five, clear the mark when the diff touches it) and says a
+  marked finding is outside the verdict. `deriveVerdict` and the counts ignore marked findings, and the posted
+  review lists them as one-line FYIs.
+- **Rows made non-comparable.** Every pillar and verifier row recorded before this entry: the contract text every
+  pillar prompt embeds changed, and the verifier prompt gained a step. Compare only against rows run after it.
+- **Known grader gap (follow-up).** The grader does not know `preExisting` yet: a marked finding on a negative
+  case still counts as a false alarm, and one on a positive case can match as recall. No synthetic case for this
+  was added because it could not be graded as intended. A case where the head adds clean code next to a
+  pre-existing defect, expecting a marked finding and Approve, needs the grader to score marked findings apart.
+
 ## 2026-11-24 (pilot): a fifth targeted check, `undecided-input-passes`
 
 Pilot, not a measurement: one attempt per case, `bench-focus --model sonnet` (it has no `--harness`, so the agy

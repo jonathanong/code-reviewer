@@ -11,7 +11,7 @@ import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo, StandingState } from './github.mts'
 import { findingPlacements, type Placement } from './placements.mts'
 import { postReviews } from './submit.mts'
-import { deriveVerdict, type Verdict } from './render.mts'
+import { actionable, deriveVerdict, type Verdict } from './render.mts'
 
 export type PostOutcome = {
   verdict: Verdict
@@ -77,7 +77,7 @@ export async function postFinalReview(
   }
   const files = await io.listFiles()
   const index = indexReviewFiles(files)
-  const placements = findingPlacements(input.findings, index)
+  const placements = findingPlacements(actionable(input.findings), index)
   const verdict = deriveVerdict(input.findings, input.questions, input.skipped)
   const choice = await chooseEvent(io, verdict, options.author)
   const reviews = withEvent(
