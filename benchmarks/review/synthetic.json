@@ -648,6 +648,30 @@
     "expectedSkills": ["jong-skills:pr-description"]
   },
   {
+    "id": "congruence-description-command-paths-unresolved",
+    "fixture": "fixtures/congruence-description-command-paths-unresolved",
+    "title": "feat: add `--config` to choose the rules file",
+    "kind": "positive",
+    "reason": "The description's example command passes examples/site as --root and examples/site/strict.json as --config. resolveConfig in src/cli.mts joins a relative config to root, so the command reads examples/site/examples/site/strict.json, which does not exist, and cannot print the output the description shows. The congruence pillar (performed by the verifier) holds the description to the code: an example the code contradicts is a finding.",
+    "expected": [
+      {
+        "pillar": "congruence",
+        "severity": "medium",
+        "path": null,
+        "lines": null,
+        "claim": "The description's example command passes `--root examples/site --config examples/site/strict.json`, but resolveConfig in src/cli.mts joins a relative --config to --root, so the command reads examples/site/examples/site/strict.json, which does not exist, and cannot print `rules: 2`. The finding must name the description's example command and say that the relative --config is resolved against --root; a finding that only asks for more tests or questions the join itself does not match."
+      }
+    ]
+  },
+  {
+    "id": "congruence-description-command-paths-resolve",
+    "fixture": "fixtures/congruence-description-command-paths-resolve",
+    "title": "feat: add `--config` to choose the rules file",
+    "kind": "negative",
+    "reason": "The same change, but the description's example passes --config strict.json, which resolveConfig joins to --root examples/site and finds at examples/site/strict.json. The command works as shown; nothing should be flagged, so a reviewer that flags every example command fails.",
+    "expected": []
+  },
+  {
     "id": "focus-fact-decides",
     "fixture": "fixtures/focus-fact-decides",
     "title": "feat: add status code lookup and formatter",
