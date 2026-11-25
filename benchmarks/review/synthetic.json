@@ -676,7 +676,7 @@
     "fixture": "fixtures/congruence-undocumented-unused-allow-failure",
     "title": "fix(lint): skip generated files",
     "kind": "positive",
-    "reason": "The description says the change is not breaking and only removes false positives. lintFile now returns early for src/generated/, so the allow entry src/generated/schema.ts is never marked used, and audit() reports it as an unused allow entry, which turns the repository's exit code from 0 to 1. The congruence pillar (performed by the verifier) holds the description to the whole effect of the diff: an unlisted behavior change is a medium finding that asks the author to document it. Reviewer policy, not a skill.",
+    "reason": "The description says the change is not breaking and only removes false positives. lintFile now returns early for src/generated/, so the allow entry src/generated/schema.ts is never marked used, and audit() reports it as an unused allow entry, which turns the repository's exit code from 0 to 1. The congruence pillar (performed by the verifier) holds the description to the whole effect of the diff: The congruence reference states: \"A behavior change the description does not list is one `medium` finding that asks the author to document it with a before/after run. It never blocks or holds by itself.\" This is reviewer policy, not a shared rule skill.",
     "expected": [
       {
         "pillar": "congruence",

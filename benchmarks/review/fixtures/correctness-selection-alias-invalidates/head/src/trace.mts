@@ -14,7 +14,7 @@ export function scan(source: string, loader: string): Scan {
   const calls = [...body.matchAll(/\b([A-Za-z_]\w*)\(\s*(?:'([^']*)'\s*(?=[,)]))?[^)]*\)/g)].map(
     (m) => ({
       callee: m[1] ?? '',
-      pointer: m[2],
+      pointer: m[2]?.includes('\\') ? undefined : m[2],
     }),
   )
   const loaderMentions = [...body.matchAll(new RegExp(`\\b${loader}\\b`, 'g'))].length

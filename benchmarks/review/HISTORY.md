@@ -29,6 +29,13 @@ Pilot, not a measurement: one attempt per case on agy `gemini-4-hydrogen-medium`
   fixture was fixed, not the grader. The second raised a missing-test finding, so the twin gained a
   test for an alias and a bare reference; the third attempt was quiet (0 findings). The positive was
   re-run after the scanner fix and was caught again. One attempt is not a rate.
+- **No-rules control (1 attempt each, `--no-rules`).** Both positives were caught without skills
+  (`congruence-undocumented-unused-allow-failure` recall 100%, `correctness-selection-alias-escapes`
+  recall 100%). No shared rule skill states either rule (no `expectedSkills`), so these are
+  ceiling cases like the other congruence fixtures, not skill-lift cases; the keep-only-if-control-
+  misses rule applies to skill cases. After the review round the fixture scanners also escape JSON
+  pointer keys, compare array and object kinds, and ignore escaped literals; the negative twin
+  stayed quiet on the re-run.
 
 ## 2026-11-24 (pilot): known miss, a description command whose paths cannot resolve
 
