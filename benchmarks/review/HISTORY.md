@@ -2,6 +2,26 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (pilot): known miss, a description command whose paths cannot resolve
+
+Pilot, not a measurement: one attempt per case on `congruence`, agy `gemini-4-hydrogen-medium`
+(`--reads-outside-checkout`), at `aa02012` plus these fixtures. The judge stays on Claude. No prompt,
+schema or grader changed, so no earlier row changes.
+
+- **The miss.** no-mistakes #4015 (public) quoted four example commands that pass the fixture
+  directory in both `--root` and a relative `--config`. The CLI joins a relative `--config` to the
+  root (`config::resolve`), so the config path does not exist and the commands cannot print the
+  output shown. Two full pipeline runs on 2026-11-24 approved with no finding: agy Hydrogen pillars
+  with a Neon verifier, and the same with a Sonnet verifier.
+- **Cases added (`synthetic.json`).** `congruence-description-command-paths-unresolved` (positive,
+  one `medium` congruence finding naming the description's command and the join of `--config` to
+  `--root`) and `congruence-description-command-paths-resolve` (negative: the same change, the
+  description passes `--config strict.json`, which resolves). Synthetic fixtures; no no-mistakes
+  code is copied.
+- **Pilot result.** Positive: caught (recall 100%, severity agreement 100%, 1.0 findings). Negative:
+  quiet (0 findings, 0% false alarms). One attempt each shows the cases can be scored; it is not a
+  rate, and says nothing about the Claude pillars or the verifier.
+
 ## 2026-11-24: agy no longer passes `--effort` with an effort-suffixed model
 
 - **Changed**, `src/harness/agy-args.mts`, no pillar prompt or schema: when the model id ends in
