@@ -88,7 +88,12 @@ describe('runStep', () => {
     const run = await runStep(REQUEST, [A, B], exec, runtime)
     expect(sleeps).toEqual([5_000, 10_000])
     expect(seen).toEqual(['a', 'a', 'a', 'b'])
-    expect(run.ran).toEqual({ harness: 'claude', model: 'b', waitedMs: 15_000 })
+    expect(run.ran).toEqual({
+      harness: 'claude',
+      model: 'b',
+      waitedMs: 15_000,
+      skipped: [{ harness: 'claude', model: 'a', why: 'rate limit wait budget spent' }],
+    })
   })
 
   it('moves on at once with no budget at all', async () => {
@@ -109,6 +114,7 @@ describe('runStep', () => {
       harness: 'claude',
       model: 'b',
       waitedMs: 0,
+      skipped: [{ harness: 'claude', model: 'a', why: 'rate limit wait budget spent' }],
       failure: 'overloaded',
     })
     expect((failure as StepFailure).message).toContain('claude exited with 1')
@@ -141,6 +147,23 @@ describe('runStep', () => {
     expect(seen).toEqual(['a', 'b'])
     expect(sleeps).toEqual([])
     expect(run.ran.model).toBe('b')
+    expect(run.ran.skipped).toEqual([{ harness: 'claude', model: 'a', why: 'auth' }])
+  })
+
+  it('records why each skipped candidate was passed over: a crash, then spent overload waits', async () => {
+    const crash = new ExecError('claude exited with 1', 1, '', undefined)
+    const { exec } = fakeExec({ a: [crash], b: [apiError(529)] })
+    const run = await runStep(
+      REQUEST,
+      [A, B, { harness: 'claude', model: 'c' }],
+      exec,
+      fakeRuntime(0).runtime,
+    )
+    expect(run.ran.model).toBe('c')
+    expect(run.ran.skipped).toEqual([
+      { harness: 'claude', model: 'a', why: 'crash' },
+      { harness: 'claude', model: 'b', why: 'overload wait budget spent' },
+    ])
   })
 
   it('fails an auth failure on the last candidate', async () => {

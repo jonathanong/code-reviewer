@@ -6,11 +6,16 @@ import { HarnessRefusal } from './refusal.mts'
 import { harnessNamed } from './registry.mts'
 import type { Candidate, Harness, HarnessResult, HarnessRun } from './types.mts'
 
+/** A configured candidate the step moved past, and the short reason it never answered. */
+export type SkippedCandidate = { harness: string; model: string; why: string }
+
 /** Which harness and model ran a step, and how long it waited out rate limits first. */
 export type StepRan = {
   harness: string
   model: string
   waitedMs: number
+  /** Candidates tried before this one, in order; omitted when the first candidate ran. */
+  skipped?: SkippedCandidate[]
   /** Set only on a failed step whose failure is the harness's. */
   failure?: HarnessFailureKind
 }
@@ -113,12 +118,18 @@ export async function runStep(
   let waitedMs = 0
   // What attempts that were retried or fell back to another candidate reported; it still cost.
   let failedUsage: Usage | null = null
+  const skipped: SkippedCandidate[] = []
   const budgetMs = runtime.maxWaitSeconds * 1000
   for (const [position, candidate] of candidates.entries()) {
     const adapter = harnessNamed(candidate.harness) as Harness
     const last = position === candidates.length - 1
     for (let attempt = 0; ; attempt += 1) {
-      const ran = { harness: candidate.harness, model: candidate.model, waitedMs }
+      const ran: StepRan = {
+        harness: candidate.harness,
+        model: candidate.model,
+        waitedMs,
+        ...(skipped.length > 0 ? { skipped: [...skipped] } : {}),
+      }
       try {
         const result = await adapter.run(forAdapter(request, adapter, candidate), exec)
         return { ...result, usage: addUsage(failedUsage, result.usage) as Usage, ran, failedUsage }
@@ -149,6 +160,15 @@ export async function runStep(
             error,
           )
         }
+        const why =
+          error instanceof HarnessRefusal
+            ? `refused (${error.message})`
+            : failure.kind === 'auth'
+              ? 'auth'
+              : waits
+                ? `${failure.kind === 'rate_limited' ? 'rate limit' : 'overload'} wait budget spent`
+                : (kind as HarnessFailureKind)
+        skipped.push({ harness: candidate.harness, model: candidate.model, why })
         break
       }
     }
