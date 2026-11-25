@@ -29,7 +29,9 @@ harness was not used), and `bench-selection --attempts 1` on Haiku 5.5.
 - **Follow-up (review round).** The quiet fixture also checks a `<<` merge key at workflow, job and step
   level (yaml 2.8.1 keeps `<<` as an ordinary key) with a test. One re-pilot attempt: FAIL, the focus step
   answered `does_not_hold` for one gap, that the CLI entry depends on `import.meta.main`, which older Node lacks.
-  The reported case is now 1 of 5 attempts, passing once; not repaired further.
+  The reported case is now 1 of 5 attempts, passing once; not repaired further. That last finding is wrong:
+  Node 24, which this repo requires, supports `import.meta.main`, so it is off-claim. Treat it as a known
+  false-alarm risk of this target on quiet code, not as a fixture gap.
 - **Target-free control.** Focus points only run in `bench-focus`, but a focus case that is not `focusOnly` can
   also run under `bench`, where it scores false alarms only (no recall). `bench --pillar correctness --case
   focus-target-undecided-skipped --harness agy --model gemini-4-hydrogen-medium --reads-outside-checkout

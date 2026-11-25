@@ -182,7 +182,7 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-target-undecided-skipped`  | The `undecided-input-passes` target finds a new opt-in check that passes a parse failure, an expression value and a missing file (`does_not_hold`) |
 | `focus-target-undecided-reported` | The `undecided-input-passes` target stays quiet when the check reports each of them as could-not-analyse (`holds`, no finding)                     |
 
-`focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 4, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates.
+`focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 5, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates.
 
 A case may set `focusRefs`, an object from pull request number to a full 40-character commit
 (`{ "3963": "236cad49..." }`). When a requester point names another pull request (`#123`, `PR 123`,
