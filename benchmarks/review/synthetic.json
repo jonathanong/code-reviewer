@@ -871,14 +871,14 @@
     "fixture": "fixtures/focus-target-undecided-skipped",
     "title": "feat(ci): fail the build when a workflow step runs with NODE_ENV=development",
     "kind": "negative",
-    "reason": "The new opt-in check returns no finding for a workflow file that fails to parse, for an env value that is an expression such as ${{ vars.MODE }} and could evaluate to development, and for a listed file that does not exist, so each passes silently.",
+    "reason": "The new opt-in check reports a workflow file that fails to parse, but returns no finding for an env value that is an expression such as ${{ vars.MODE }} and could evaluate to development, and for a listed file that does not exist, so each passes silently.",
     "expected": [],
     "expectedTargets": ["undecided-input-passes"],
     "focus": [
       {
         "target": "undecided-input-passes",
         "expectedStatus": "does_not_hold",
-        "reason": "checkWorkflowEnv returns [] on a parse failure, skips a non-literal NODE_ENV, and returns [] for a missing file such as the listed release.yml."
+        "reason": "checkWorkflowEnv skips a non-literal NODE_ENV such as ${{ vars.MODE }} and returns [] for a missing file such as the listed release.yml."
       }
     ]
   },

@@ -41,6 +41,17 @@ harness was not used), and `bench-selection --attempts 1` on Haiku 5.5.
   called the expression value, or the listed file that does not exist, a clean pass. So the control catches
   one of the three planted gaps (the parse failure) without the target and misses two. The case is kept for
   the owner to decide; there is no target-free control for a case's `focus` entry itself.
+- **Skipped fixture narrowed (review round).** A target-free control had caught the parse failure, so the
+  fixture now reports a parse failure as could-not-analyse and plants two gaps: a `${{ vars.MODE }}` value
+  that passes as clean and a listed file that does not exist. It also checks workflow- and job-level `env`
+  for a literal `development`, so the control's other finding no longer applies. The case has no
+  `basisPattern`; its reason and focus reason now name only the two gaps. Re-pilot, `bench-focus --model
+  sonnet`, one attempt: PASS (`does_not_hold`, $0.10). Target-free control (`bench --pillar correctness
+  --harness agy --model gemini-4-hydrogen-medium --reads-outside-checkout --judge opus --no-rules`, one
+  attempt): 3.0 findings. It caught the missing listed file as a `low` ("Configured workflow files that do
+  not exist are silently ignored") and did not call the `${{ vars.MODE }}` skip a defect, only noting in a
+  `medium` test-gap finding that expressions are untested. So the control now catches one of the two
+  remaining gaps without the target and misses the other. Nothing was replaced; the owner decides.
 - **Selection.** `select-target-no-guard`, `focus-target-undecided-skipped` and `focus-target-undecided-reported`,
   one attempt each: 3 of 3 matched, no unwanted target picked.
 - **Not comparable.** Every `bench-selection` row that scores targets before this entry: selection is now offered
