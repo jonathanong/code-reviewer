@@ -6,7 +6,7 @@ export type Failure =
 /** The longest `retry-after` a call waits out; a longer one fails the call instead. */
 export const RETRY_AFTER_CAP_MS = 60_000
 
-const GATEWAY_STATUSES = new Set([502, 503, 504])
+const GATEWAY_STATUSES = new Set([500, 502, 503, 504])
 
 const NETWORK_PATTERNS = [
   /\bECONNRESET\b/iu,
@@ -19,6 +19,7 @@ const NETWORK_PATTERNS = [
   /Client\.Timeout/iu,
   /socket hang up/iu,
   /unexpected EOF/iu,
+  /unexpected end of JSON input/iu,
 ]
 
 /** The text a failed `gh` run left behind: the thrown message plus the child's stderr. */
@@ -39,7 +40,7 @@ function rateLimited(text: string, status: number | undefined): boolean {
 }
 
 /**
- * Sorts a failed GitHub call. Transient: a 502, 503 or 504, a dropped or timed-out connection, and
+ * Sorts a failed GitHub call. Transient: a 500, 502, 503 or 504, a dropped or timed-out connection, and
  * a secondary rate limit or 429 whose wait (when GitHub names one) fits `RETRY_AFTER_CAP_MS`.
  * Everything else is permanent, so a bad token, a missing resource, a validation error, or a
  * problem this module cannot name fails at once instead of being repeated.

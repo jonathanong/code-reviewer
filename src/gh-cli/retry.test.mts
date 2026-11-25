@@ -72,6 +72,20 @@ describe('withRetry', () => {
     expect(value.stats.retries).toBe(0)
   })
 
+  it('retries an idempotent write after a truncated response, but not a plain write', async () => {
+    const message = 'Command failed: gh api\nunexpected end of JSON input'
+    const labels = ['api', '--method', 'POST', 'repos/o/r/issues/1/labels', '-f', 'labels[]=x']
+    const idempotent = flaky([message])
+    await expect(withRetry(idempotent, retrier().value)(labels)).resolves.toBe('ok')
+    expect(idempotent).toHaveBeenCalledTimes(2)
+    const plain = flaky([message])
+    await expect(withRetry(plain, retrier().value)(REVIEW_POST)).rejects.toThrow('end of JSON')
+    expect(plain).toHaveBeenCalledTimes(1)
+    const plain500 = flaky(['gh: HTTP 500: Internal Server Error'])
+    await expect(withRetry(plain500, retrier().value)(REVIEW_POST)).rejects.toThrow('HTTP 500')
+    expect(plain500).toHaveBeenCalledTimes(1)
+  })
+
   it('retries an idempotent write', async () => {
     const { value } = retrier()
     const run = flaky(['HTTP 502: Bad Gateway'])
