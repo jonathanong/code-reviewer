@@ -81,6 +81,9 @@ describe('withRetry', () => {
     const plain = flaky([message])
     await expect(withRetry(plain, retrier().value)(REVIEW_POST)).rejects.toThrow('end of JSON')
     expect(plain).toHaveBeenCalledTimes(1)
+    const plain500 = flaky(['gh: HTTP 500: Internal Server Error'])
+    await expect(withRetry(plain500, retrier().value)(REVIEW_POST)).rejects.toThrow('HTTP 500')
+    expect(plain500).toHaveBeenCalledTimes(1)
   })
 
   it('retries an idempotent write', async () => {

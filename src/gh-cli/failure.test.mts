@@ -7,12 +7,12 @@ function ghError(message: string, stderr?: string): Error {
 }
 
 describe('classifyFailure', () => {
-  it.each([502, 503, 504])('treats HTTP %i as transient', (status) => {
+  it.each([500, 502, 503, 504])('treats HTTP %i as transient', (status) => {
     const error = ghError(`gh: HTTP ${status}: Bad Gateway (https://api.github.com/x)`)
     expect(classifyFailure(error)).toEqual({ kind: 'transient', reason: `HTTP ${status}` })
   })
 
-  it.each([400, 401, 403, 404, 422, 500, 501])('treats HTTP %i as permanent', (status) => {
+  it.each([400, 401, 403, 404, 422, 501])('treats HTTP %i as permanent', (status) => {
     expect(classifyFailure(ghError(`gh: Something (HTTP ${status})`)).kind).toBe('permanent')
   })
 
