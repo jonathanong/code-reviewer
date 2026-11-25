@@ -237,9 +237,10 @@ pull request neither introduced nor made reachable reports it with `preExisting:
 finding instead of dropping it. The verifier checks it against the base with local git, keeps at
 most five, and clears the mark when the diff touches the code. A marked finding is an FYI: the
 verdict, the finding counts, the tracker counts and the inline comments ignore it, so a
-pre-existing `high` never turns an Approve into a Comment. The posted review lists each in one
-line under "FYI — pre-existing, not part of this review", after the findings, and shows at most
-five (the renderer drops the rest and prints "and N more"). It is a flag on the finding, not a
+pre-existing `high` never turns an Approve into a Comment. The posted review lists each as one
+line under "FYI — pre-existing, not part of this review", after the findings, with the finding's
+body collapsed under a "Why" summary (cut at 600 characters) so the author can see the reason, and
+shows at most five (the renderer drops the rest and prints "and N more"). It is a flag on the finding, not a
 second list, so it passes through the pillar, verifier and approval-check schemas unchanged.
 
 ## Other reviewers' open items
