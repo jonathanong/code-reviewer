@@ -2,6 +2,63 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-24 (pilot): a fifth targeted check, `undecided-input-passes`
+
+Pilot, not a measurement: one attempt per case, `bench-focus --model sonnet` (it has no `--harness`, so the agy
+harness was not used), and `bench-selection --attempts 1` on Haiku 5.5.
+
+- **Target added.** `skills/review/references/targets/undecided-input-passes.md`: for a change that adds or
+  changes a lint rule, detector, check or analyzer (including one that is off until configured), find each path
+  that returns no finding without deciding the input: a parse or read failure, a non-literal value, an
+  unrecognised shape, a missing configured file. Claim: each is reported as a finding or as could-not-analyse.
+  Four new opt-in lint rules in a reviewed repository each passed such input silently and no built-in target asked.
+  `untraced-name-passes` covers name resolution only and `clean-code-newly-reports` excludes rules that are off
+  until configured. The `when` excludes name-following checks, so the two do not overlap.
+- **Cases added (`synthetic.json`).** `focus-target-undecided-skipped` (`does_not_hold`: a parse failure, an
+  `${{ vars.MODE }}` value and a missing listed file all return no finding) and
+  `focus-target-undecided-reported` (`holds`, no finding). Both carry `expectedTargets`. `unwantedTargets`
+  now lists `undecided-input-passes` on `select-target-concurrency-guard`, `select-target-no-guard` and
+  `focus-target-guard-needed`.
+- **Focus step.** Skipped case: 1 of 1 (`does_not_hold`, 1 finding). Reported case: failed three times, passed
+  on the fourth attempt. Each failure was a real gap in the fixture, so the fixture was repaired, not the grader:
+  (1) a document without jobs, a non-mapping `env` and a missing config key; (2) workflow-level and job-level `env`
+  never inspected; (3) a YAML merge key in `env`. Treat that 1 of 4 as the honest cost of a quiet fixture and not
+  a rate; a claim this broad flags real gaps in most sound-looking checks, as `untraced-name-passes` did.
+  The skipped case also passed with `--no-rules` (1 of 1), but the target text is the point asked, so that is not
+  a control: there is no arm without the target. Cost $0.08 to $0.12 a call.
+- **Follow-up (review round).** The quiet fixture also checks a `<<` merge key at workflow, job and step
+  level (yaml 2.8.1 keeps `<<` as an ordinary key) with a test. One re-pilot attempt: FAIL, the focus step
+  answered `does_not_hold` for one gap, that the CLI entry depends on `import.meta.main`, which older Node lacks.
+  The reported case is now 1 of 5 attempts, passing once; not repaired further. That last finding is wrong:
+  Node 24, which this repo requires, supports `import.meta.main`, so it is off-claim. Treat it as a known
+  false-alarm risk of this target on quiet code, not as a fixture gap.
+- **Target-free control.** Focus points only run in `bench-focus`, but a focus case that is not `focusOnly` can
+  also run under `bench`, where it scores false alarms only (no recall). `bench --pillar correctness --case
+  focus-target-undecided-skipped --harness agy --model gemini-4-hydrogen-medium --reads-outside-checkout
+  --judge opus`, one attempt each, with rules and with `--no-rules`: 3.0 and 4.0 findings, no target involved.
+  Both arms raised a `medium` that the YAML parse failure is swallowed and treated as passing, and a finding
+  that workflow- and job-level `env` is not checked. Both noted the `${{` branch is untested, but neither
+  called the expression value, or the listed file that does not exist, a clean pass. So the control catches
+  one of the three planted gaps (the parse failure) without the target and misses two. The case is kept for
+  the owner to decide; there is no target-free control for a case's `focus` entry itself.
+- **Skipped fixture narrowed (review round).** A target-free control had caught the parse failure, so the
+  fixture now reports a parse failure as could-not-analyse and plants two gaps: a `${{ vars.MODE }}` value
+  that passes as clean and a listed file that does not exist. It also checks workflow- and job-level `env`
+  for a literal `development`, so the control's other finding no longer applies. The case has no
+  `basisPattern`; its reason and focus reason now name only the two gaps. Re-pilot, `bench-focus --model
+  sonnet`, one attempt: PASS (`does_not_hold`, $0.10). Target-free control (`bench --pillar correctness
+  --harness agy --model gemini-4-hydrogen-medium --reads-outside-checkout --judge opus --no-rules`, one
+  attempt): 3.0 findings. It caught the missing listed file as a `low` ("Configured workflow files that do
+  not exist are silently ignored") and did not call the `${{ vars.MODE }}` skip a defect, only noting in a
+  `medium` test-gap finding that expressions are untested. So the control now catches one of the two
+  remaining gaps without the target and misses the other. Nothing was replaced; the owner decides.
+- **Selection.** `select-target-no-guard`, `focus-target-undecided-skipped` and `focus-target-undecided-reported`,
+  one attempt each: 3 of 3 matched, no unwanted target picked.
+- **Not comparable.** Every `bench-selection` row that scores targets before this entry: selection is now offered
+  five targets, not four. Pillar, verifier and requester-only focus prompts are unchanged. Prompt hashes in
+  `step-argv.json` did not change.
+- **Not measured.** The target on a mined case, false alarms on unrelated lint-rule changes, and the agy harness.
+
 ## 2026-11-24 (pilot): undocumented behavior change severity, and a test-selection alias miss
 
 Pilot, not a measurement: one attempt per case on agy `gemini-4-hydrogen-medium`

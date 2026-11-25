@@ -1,0 +1,11 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "vitest": "5.1.0"
+  }
+}
