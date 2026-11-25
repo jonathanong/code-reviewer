@@ -20,7 +20,7 @@ function clip(title: string): string {
 }
 
 function reason(body: string): string {
-  const text = body.trim().replace(/<\/details>/giu, '&lt;/details>')
+  const text = body.trim().replace(/<\/details\s*>/giu, '&lt;/details>')
   const clipped = text.length <= MAX_REASON_CHARS ? text : `${text.slice(0, MAX_REASON_CHARS - 1)}…`
   return clipped
     .split('\n')

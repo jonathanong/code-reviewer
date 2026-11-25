@@ -101,6 +101,14 @@ describe('FYI section', () => {
     )
   })
 
+  it('escapes a closing tag with whitespace before the bracket', () => {
+    const [section] = preExistingSection([
+      f({ body: 'first </DETAILS >\n\nsecond', preExisting: true }),
+    ])
+    expect(section).toContain('first &lt;/details>\n\n  second')
+    expect(section?.match(/<\/details/giu)).toHaveLength(1)
+  })
+
   it('cuts a long reason', () => {
     const [section] = preExistingSection([f({ body: 'y'.repeat(2000), preExisting: true })])
     expect(section).toContain(`  ${'y'.repeat(MAX_REASON_CHARS - 1)}…\n`)
