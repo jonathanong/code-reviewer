@@ -19,6 +19,7 @@ const NETWORK_PATTERNS = [
   /Client\.Timeout/iu,
   /socket hang up/iu,
   /unexpected EOF/iu,
+  /unexpected end of JSON input/iu,
 ]
 
 /** The text a failed `gh` run left behind: the thrown message plus the child's stderr. */

@@ -24,6 +24,7 @@ describe('classifyFailure', () => {
     'read ECONNRESET',
     'Post "x": context deadline exceeded (Client.Timeout exceeded)',
     'unexpected EOF',
+    'unexpected end of JSON input',
   ])('treats a network failure as transient: %s', (stderr) => {
     expect(classifyFailure(ghError('Command failed: gh api x', stderr))).toEqual({
       kind: 'transient',
