@@ -1,9 +1,8 @@
-import { VERDICT_EVENTS } from '../review/event.mts'
 import type { Severity } from '../review/finding.mts'
-import type { Verdict } from '../review/render.mts'
 import { APPROVAL_CHECK } from '../review/skipped.mts'
 import type { ExplainFinding, ExplainQuestion, Explained } from './load.mts'
 import type { ExplainFlag } from './notes.mts'
+import { posted } from './posted.mts'
 
 const ORDER: Severity[] = ['blocking', 'high', 'medium', 'low']
 
@@ -95,24 +94,6 @@ function reason(
             ? 'No blocking or high-severity problem was found, and no question is open, but the second check on the approval did not finish. That means Comment: an approval nobody double-checked is not given.'
             : 'No blocking or high-severity problem was found, and no question is open. That means Approve.'
   return `${why}\n\n${RULES}`
-}
-
-function posted(run: Explained): string[] {
-  if (run.event === null) return []
-  const own = VERDICT_EVENTS[run.verdict as Verdict] as string | undefined
-  if (run.event === own) return []
-  const because: Record<string, string> = {
-    'self-review':
-      "the pull request is the reviewer's own, and GitHub does not let an account approve or request changes on its own pull request",
-    'identity-unknown':
-      'the reviewer could not confirm who wrote the pull request, so it posted the safe form',
-    rejected: 'GitHub refused the verdict as a review event',
-  }
-  const reason =
-    run.downgraded === null ? '' : ` because ${because[run.downgraded] ?? run.downgraded}`
-  return [
-    `On GitHub this was posted as ${run.event === 'COMMENT' ? 'a plain comment' : run.event}${reason}. The verdict above is still the reviewer's real conclusion.`,
-  ]
 }
 
 function checked(run: Explained): string[] {

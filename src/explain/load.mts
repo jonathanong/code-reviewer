@@ -4,9 +4,9 @@ import { SEVERITIES, type Finding, type Severity } from '../review/finding.mts'
 import { deriveVerdict } from '../review/render.mts'
 import { APPROVAL_CHECK } from '../review/skipped.mts'
 import { findingId } from '../review/run/evidence-run.mts'
-import { costBreakdown, type ReportData } from '../review/run/report.mts'
 import { reportStack, type ReportStack } from '../review/run/stack-report.mts'
 import type { StackFile } from '../review/stack-file.mts'
+import { cost } from './cost.mts'
 import { dependenciesOf, flagOf, notesOf, stackView, type ExplainFlag } from './notes.mts'
 import { asNumber, asRecord, asString, readJson, type Json } from '../tracker/json.mts'
 
@@ -98,14 +98,6 @@ function listOf(value: unknown): Json[] {
 function modeOf(sinceSha: string | null, mode: string | null): Explained['mode'] {
   if (sinceSha !== null) return 'follow-up'
   return mode === 'full' || mode === 'light' ? mode : null
-}
-
-function cost(report: Json): number | null {
-  try {
-    return costBreakdown(report as unknown as ReportData).total
-  } catch {
-    return null
-  }
 }
 
 /** Reads the run's files, each optional, into what the explainer needs. */
