@@ -45,7 +45,7 @@ export function holdRules(facts: HoldFacts, settings: RunSettings): Held[] {
     [
       'large-change',
       facts.files > largeChange.files || facts.lines > largeChange.lines
-        ? `${facts.files} files and ${facts.lines} changed lines, over ${largeChange.files} files or ${largeChange.lines} lines`
+        ? `${facts.files} changed files and ${facts.lines} changed lines, over ${largeChange.files} files or ${largeChange.lines} lines`
         : facts.truncated.length > 0
           ? `cut short: ${facts.truncated.join('; ')}`
           : undefined,
