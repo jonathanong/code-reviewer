@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import type { StepModels } from '../models.mts'
 import type { ReferenceSource } from '../rules/references-parse.mts'
 
 /**
@@ -21,6 +22,14 @@ export function webReferences(
 /** Every host the references allow, once each. */
 export function referenceDomains(web: WebReferences | undefined): string[] {
   return [...new Set((web?.sources ?? []).flatMap((source) => source.domains))]
+}
+
+/** The step models with the review's reference hosts, which every step's request then carries. */
+export function withReferenceDomains(
+  models: StepModels,
+  web: WebReferences | undefined,
+): StepModels {
+  return { ...models, referenceDomains: referenceDomains(web) }
 }
 
 /** The "References" block of a correctness or verifier prompt; empty without references. */

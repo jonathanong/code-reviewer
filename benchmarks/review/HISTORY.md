@@ -6,10 +6,12 @@ Newest first. Every measured run and every change to what is measured gets an en
 
 Prompt and harness change; no run was made and nothing was re-scored.
 
-- **What changed.** Every agy step now gets a session-only `--settings` network allowlist (one `read_url(<host>)`
-  per granted web host, or a placeholder that allows nothing). A step granted web hosts is no longer refused by agy:
-  its prompt gains a sentence allowing `curl -sL` on https URLs at those hosts only. Steps without web hosts keep
-  the old note.
+- **What changed.** Every agy step now gets a session-only `--settings` network allowlist: one `read_url(<host>)`
+  per host in the review's configured references (`references[].domains`) plus the step's own web hosts, or a
+  placeholder that allows nothing when there are none. A step granted web hosts is no longer refused by agy: its
+  prompt note becomes "Use your file reading and search tools. To read documentation you may run
+  `curl -sL <https URL>` for these hosts only: ... Run no other shell command." Steps without web hosts keep the old
+  file-tools-only note, though their allowlist is the same.
 - **Rows made non-comparable.** Every agy-harness row, and every row whose correctness, security or verifier step
   used to fall back from agy to another harness because it was granted web hosts. Compare only against rows run
   after this entry.
