@@ -70,7 +70,8 @@ export function runFacts(out: string): RunFacts {
 }
 
 /**
- * The size of the change and the paths a human should read the review for (see `riskyPaths`). A Dependabot
+ * The size of the change (`files` counts files with changed lines, so a pure rename does not; a binary or
+ * mode-only change also reports 0 lines) and the paths a human should read the review for (see `riskyPaths`). A Dependabot
  * pull request edits manifests and workflows by design, so those paths do not count for it; GraphQL
  * reports its login without the `[bot]` suffix, which is why the author is taken as a bot here.
  */
@@ -84,7 +85,7 @@ export function changeFacts(
     riskyPatterns,
   )
   return {
-    files: files.length,
+    files: files.filter((file) => file.lines > 0).length,
     lines: reviewableLines(files),
     riskyPaths: isDependabot(author, true) ? hits.filter((p) => !isDependencyFile(p)) : hits,
   }

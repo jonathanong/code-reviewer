@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { changeFacts, runFacts } from './facts.mts'
+import { DEFAULT_RUN } from '../review/rules/run-parse.mts'
+import { holdRules } from './hold.mts'
 import { stageRun, type RunOverrides } from './fixture-run.mts'
 
 const dirs: string[] = []
@@ -90,6 +92,38 @@ describe('changeFacts', () => {
       lines: 32,
       riskyPaths: ['src/auth/login.ts'],
     })
+  })
+
+  it('does not count pure renames toward files, and still lists their paths as risky', () => {
+    const moved = [
+      { path: 'src/auth/moved.ts', lines: 0 },
+      { path: 'a.ts', lines: 4 },
+    ]
+    expect(changeFacts(moved, 'octocat')).toEqual({
+      files: 1,
+      lines: 4,
+      riskyPaths: ['src/auth/moved.ts'],
+    })
+  })
+
+  it('holds a rename-only move of many files only when edits go over the file limit', () => {
+    const renames = Array.from({ length: 921 }, (_, i) => ({ path: `moved/f${i}.ts`, lines: 0 }))
+    const edits = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ path: `e${i}.ts`, lines: 1 }))
+    const held = (list: typeof renames) =>
+      holdRules(
+        {
+          ...changeFacts(list, 'octocat'),
+          questions: 0,
+          truncated: [],
+          partial: [],
+          authMode: 'app',
+          tooLong: [],
+        },
+        DEFAULT_RUN,
+      ).map((h) => h.rule)
+    expect(held([...renames, ...edits(90)])).toEqual(['large-change'])
+    expect(held([...renames, ...edits(50)])).toEqual([])
   })
 
   it('does not count the workflow files a Dependabot pull request edits', () => {
