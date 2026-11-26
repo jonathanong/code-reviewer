@@ -60,6 +60,15 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
   to how the change uses it. A declared dependency has no import to follow: check each call the
   change makes against that repository's code. A consumer's rules explain its code; they do not
   govern this diff.
+- A finding that cites a repository rule (an `AGENTS.md`, a skill, a doc), a convention, or a past
+  revert must show that this diff produces the effect the rule exists to prevent. Matching the
+  rule's wording, or resembling the reverted change, is not enough. Read the rule's purpose from its
+  text, its linked doc, and the change that added it; when the rule is terse ("never X"), apply it to
+  what it was written against, not to every literal instance of X. When the pull request's own
+  evidence (measurements, timings, the description) shows the effect does not occur, drop the
+  finding; when that evidence is doubtful, ask one question instead. Example: a "never serialize
+  parallel work" rule does not apply to a change that reduces the parallel shard count or merges
+  short jobs without lengthening the slowest chain.
 - Stay inside your pillar's scope. Another pillar owns everything listed under "Not in scope".
 - Prefer few, real findings. An empty list is a good result when nothing meets the bar.
 - Use the `explorer` subagent for broad searches (finding callers, consumers, or where something is
