@@ -14,7 +14,7 @@ async function listRepos(deps: ReviewDeps, repos: readonly string[]): Promise<Qu
   for (const [index, repo] of repos.entries()) {
     const { owner } = splitRepo(repo)
     const labels = resolved[index] as LabelNames
-    const key = JSON.stringify([owner, labels.requested, labels.processing])
+    const key = JSON.stringify([owner, labels.requested, labels.processing, labels.held])
     const group = groups.get(key) ?? { owner, labels, repos: [] }
     groups.set(key, { ...group, repos: [...group.repos, repo] })
   }
@@ -29,7 +29,7 @@ async function listRepos(deps: ReviewDeps, repos: readonly string[]): Promise<Qu
 
 /**
  * The review queue for `--repo` entries, or for every repository of `owner`. An owner search uses
- * the owner's labels, so repositories whose own file changes `requested` or `processing` are
+ * the owner's labels, so repositories whose own file changes `requested`, `processing` or `held` are
  * searched separately with their labels and left out of the owner-wide results. Only repositories
  * with a machine config are checked for overrides; a repository's own file is read when it is
  * named with `--repo`.
@@ -47,7 +47,11 @@ async function queueEntries(
   const configuredLabels = await Promise.all(configured.map((repo) => labelsFor(deps, repo)))
   const overridden = configured.filter((_repo, index) => {
     const labels = configuredLabels[index] as LabelNames
-    return labels.requested !== base.requested || labels.processing !== base.processing
+    return (
+      labels.requested !== base.requested ||
+      labels.processing !== base.processing ||
+      labels.held !== base.held
+    )
   })
   const [ownerWide, scoped] = await Promise.all([
     listQueue(deps.runner(owner), owner, [], base),

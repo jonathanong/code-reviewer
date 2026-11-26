@@ -56,18 +56,28 @@ export type ClaimOutcome =
  * the request label, so a replayed or stale event is ignored, and it declines a head the newest
  * review already covers (`headReviewed`) once posting finished: the marker rides on the first
  * review part, so only `complete` (set after every part and the approval label) proves that. A
- * requeued retry of a partial post is therefore claimed and finishes publication.
+ * requeued retry of a partial post is therefore claimed and finishes publication. A pull request
+ * carrying the held label is declined: a person has to post, skip or abort it (or `force`).
  */
 export async function claimReview(
   io: LabelIo,
   names: LabelNames,
-  options: { force?: boolean; headReviewed?: boolean } = {},
+  options: {
+    force?: boolean
+    headReviewed?: boolean
+    /** True when a review of this head was posted since the claim began; only asked of a first claim. */
+    reviewedSince?: () => Promise<boolean>
+  } = {},
 ) {
   const labels = await io.labels()
   if (options.force !== true && options.headReviewed === true && labels.includes(names.completed)) {
     // The newest review covers this head: answer the request without touching the verdict.
     await swap(io, labels.includes(names.requested) ? [names.completed] : [], [names.requested])
     return { claimed: false, reason: 'head already reviewed', labels } satisfies ClaimOutcome
+  }
+  if (options.force !== true && labels.includes(names.held)) {
+    // A person re-requesting does not undo a hold; only `force`, `post`, `skip` or `abort` does.
+    return { claimed: false, reason: 'held for a person', labels } satisfies ClaimOutcome
   }
   if (options.force !== true && !labels.includes(names.requested)) {
     const reason = labels.includes(names.processing)
@@ -78,9 +88,39 @@ export async function claimReview(
   const outcome = await swap(
     io,
     [names.processing],
-    [names.requested, names.completed, names.approval],
+    [names.requested, names.completed, names.held, names.approval],
   )
+  if (options.force !== true && (await claimLost(io, names, options))) {
+    // Leave the labels as the other claimant left them; removing its in-progress would unclaim it.
+    return {
+      claimed: false,
+      reason: 'claim lost',
+      labels: await io.labels(),
+    } satisfies ClaimOutcome
+  }
   return { claimed: true, ...outcome } satisfies ClaimOutcome
+}
+
+/**
+ * Re-reads after the swap. Reading and claiming are separate calls and labels have no
+ * compare-and-set, so two machines can both pass the first read. This catches the ones that left a
+ * trace by now: a request, hold or completion that appeared after our swap, our own in-progress
+ * label gone, or (`reviewedSince`) a review of this head posted since the claim began. It narrows
+ * the window; two claims whose writes interleave without either seeing the other's still both win.
+ */
+async function claimLost(
+  io: LabelIo,
+  names: LabelNames,
+  options: { reviewedSince?: (() => Promise<boolean>) | undefined },
+): Promise<boolean> {
+  const after = await io.labels()
+  if (
+    !after.includes(names.processing) ||
+    [names.requested, names.held, names.completed].some((name) => after.includes(name))
+  ) {
+    return true
+  }
+  return (await options.reviewedSince?.()) === true
 }
 
 /**
@@ -89,19 +129,22 @@ export async function claimReview(
  * still present is the one this review answers.
  */
 export async function completeReview(io: LabelIo, names: LabelNames) {
-  return swap(io, [names.completed], [names.processing, names.requested])
+  return swap(io, [names.completed], [names.processing, names.requested, names.held])
 }
 
 /**
  * Drops an in-progress review without posting. `requeue` asks again, for a failure worth retrying
- * once; never requeue automatically in a loop.
+ * once; never requeue automatically in a loop. `hold` is for a finished review that waits for a
+ * person: it sets the held label, which no machine claims, instead of the request label, which any
+ * machine would. Without either it clears a standing hold too.
  */
 export async function abortReview(
   io: LabelIo,
   names: LabelNames,
-  options: { requeue?: boolean } = {},
+  options: { requeue?: boolean; hold?: boolean } = {},
 ) {
-  return swap(io, options.requeue === true ? [names.requested] : [], [names.processing])
+  if (options.hold === true) return swap(io, [names.held], [names.processing])
+  return swap(io, options.requeue === true ? [names.requested] : [], [names.processing, names.held])
 }
 
 /**
@@ -109,5 +152,5 @@ export async function abortReview(
  * review, but with no approval label added or removed, and nothing posted.
  */
 export async function skipReview(io: LabelIo, names: LabelNames) {
-  return swap(io, [names.completed], [names.processing, names.requested])
+  return swap(io, [names.completed], [names.processing, names.requested, names.held])
 }

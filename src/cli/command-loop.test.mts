@@ -172,6 +172,7 @@ describe('runLoopCommand', () => {
     expect(claimReview).toHaveBeenLastCalledWith(labelIo, DEFAULT_LABELS, {
       force: false,
       headReviewed: false,
+      reviewedSince: expect.any(Function),
     })
     vi.mocked(reviewStatus).mockClear()
     await runLoopCommand('claim', { force: true }, target, deps)
@@ -267,6 +268,7 @@ describe('runLoopCommand', () => {
             requested: 'machine owner',
             processing: 'default',
             completed: 'default',
+            held: 'default',
             approval: 'default',
           },
           checkRun: 'machine owner',
@@ -312,6 +314,7 @@ describe('runLoopCommand', () => {
               requested: 'default',
               processing: 'machine repo',
               completed: 'default',
+              held: 'default',
               approval: 'default',
             },
             checkRun: null,
@@ -363,6 +366,7 @@ describe('runLoopCommand', () => {
               requested: 'repository file',
               processing: 'default',
               completed: 'default',
+              held: 'default',
               approval: 'default',
             },
             checkRun: 'repository file',

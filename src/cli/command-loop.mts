@@ -40,6 +40,8 @@ export type LoopValues = {
   repo?: string[] | undefined
   force?: boolean | undefined
   requeue?: boolean | undefined
+  /** Internal to `run`: release the claim as a hold for a person. */
+  hold?: boolean | undefined
   reason?: string | undefined
   out?: string | undefined
   effort?: string | undefined
@@ -106,13 +108,20 @@ export async function claimCommand(values: LoopValues, target: () => PullTarget,
     {
       force,
       headReviewed: status?.current === true,
+      // A first claim of a head nothing covered yet backs off when a review of it appeared since.
+      ...(force || status?.current === true
+        ? {}
+        : {
+            reviewedSince: async () =>
+              (await reviewStatus(deps.createIo(target()))).current === true,
+          }),
     },
   )
   if (!outcome.claimed) return status === undefined ? outcome : { ...outcome, status }
   return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED, status?.headSha) }
 }
 
-/** Drops the in-progress label; `--requeue` asks again. */
+/** Drops the in-progress label; `--requeue` asks again, and `run` holds a review for a person. */
 export async function abortCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
   await requireValidConfig(deps, target().repo)
   const labels = await abortReview(
@@ -120,6 +129,7 @@ export async function abortCommand(values: LoopValues, target: () => PullTarget,
     await labelsFor(deps, target().repo),
     {
       requeue: values.requeue === true,
+      ...(values.hold === true ? { hold: true } : {}),
     },
   )
   return { ...labels, checkRun: await checkRunFor(deps, target(), abortedStep()) }

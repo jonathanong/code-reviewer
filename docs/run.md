@@ -77,14 +77,20 @@ is named for auth or secrets (`auth`, `session`, `permission`, `crypto`, `secret
 `action.yml`, a migration or `.sql` file, or infrastructure (Terraform or OpenTofu, a Dockerfile,
 `iam`). Manifests, lockfiles and shell scripts do not count. `run.riskyPaths` replaces that list.
 
-A held run releases the claim and puts the request label back, so the pull request stays visible
-in `queue`. It leaves the review in `runDir` and the tracker row at `reviewed`, which makes a
+A held run releases the claim and sets the `held` label (default `final-review:held`) instead of the
+request label, so the pull request stays visible in `queue` but another machine's loop, which would
+read a request label as a fresh request, does not claim it. A person who adds the request label again
+does not undo the hold: `claim` declines it, and only `run --force`, `claim --force`, `post`, `skip` or
+`abort` clears it. It leaves the review in `runDir` and the tracker row at `reviewed`, which makes a
 later `run` of the same head a no-op rather than a loop. `queue` reports such a pull request as
-`held`, with its `runDir`, instead of `requested`, so a loop can tell it from a fresh request; it
-is `held` only while the head is the one reviewed and `review.json` is still there. With `--post auto`, a held review is
+`held`, with its `runDir`, instead of `requested`, so a loop can tell it from a fresh request. Two
+facts make an entry `held`: the `held` label (set by any machine, so it covers a hold made by
+another machine, and has no `runDir` there) and this machine's own tracker, which finds an unposted
+review of the same head with `review.json` still there (it also covers a hold made before the label
+existed). With `--post auto`, a held review is
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
-(`code-reviewer post ... --input RUNDIR/review.json`), which clears the request label along with
-the in-progress one. Running that command again for a review already posted is a no-op
+(`code-reviewer post ... --input RUNDIR/review.json`), which clears the held and request labels
+along with the in-progress one. Running that command again for a review already posted is a no-op
 ([posting](posting.md#read-back)). `run --force` reviews the head again.
 
 ## When the cost ceiling stops a review
@@ -92,9 +98,9 @@ the in-progress one. Running that command again for a review already posted is a
 A review that reaches [the cost ceiling](configuration.md#limits) has nothing to post, so `run`
 holds the pull request instead of failing it: exit 10, `outcome` `held`, `held: ["cost-ceiling"]`,
 `reason` and `attention` carrying the `cost ceiling reached ($X of $Y)` message, `costUsd` the
-spend so far, and no `postCommand` or `explainPath`. The claim is released and the request label
-put back, so the pull request stays in `queue`. The tracker row is `failed` with the same reason
-and the cost, and a later `run` of that head is a no-op (11) that says so, so nothing retries it at
+spend so far, and no `postCommand` or `explainPath`. The claim is released and the held label
+set, so the pull request stays in `queue` and no other machine claims it. The tracker row is
+`failed` with the same reason and the cost, and a later `run` of that head is a no-op (11) that says so, so nothing retries it at
 the same cost. A human raises the ceiling or looks at the pull request, then reviews again with
 `--force`. It is not a harness failure and adds nothing to `harness-failures.jsonl`.
 
@@ -138,6 +144,11 @@ puts `code-reviewer` on the session's `PATH`, and a session without the plugin h
 `code-reviewer` command. A session on the standing loop dispatches `run` as a background command
 per label event, at most three at once, and reads only the JSON line and the exit code. `run` is
 safe to call concurrently for the same pull request: the label claim lets one win and the rest
-exit 11. Two calls that read the labels in the same instant can both try to claim; the loser's
-claim fails and exits 11 too. See
+exit 11. Labels have no compare-and-set, so two calls that read them in the same instant can both
+pass the first check. After swapping the labels, `claim` therefore reads them again, and backs off
+with `claim lost` (exit 11, labels left as the other claimant left them) when a request, hold or
+completion appeared after its swap, its own in-progress label is gone, or a review of this head was
+posted since it began. This narrows the race, it does not close it: two claims whose writes
+interleave without either seeing the other's still both succeed, because both act as the same
+identity and there is no per-claimant fact to tell them apart. See
 [`skills/review-loop/SKILL.md`](../skills/review-loop/SKILL.md).

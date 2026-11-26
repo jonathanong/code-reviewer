@@ -1,14 +1,16 @@
-/** The four labels the review lifecycle uses on a pull request. */
+/** The five labels the review lifecycle uses on a pull request. */
 export type LabelNames = {
   requested: string
   processing: string
   completed: string
+  /** A review finished and waiting for a person to post it. */
+  held: string
   approval: string
 }
 
 export type CheckRunSettings = { name: string }
 
-const LABEL_KEYS = ['requested', 'processing', 'completed', 'approval'] as const
+const LABEL_KEYS = ['requested', 'processing', 'completed', 'held', 'approval'] as const
 
 export type Json = Record<string, unknown>
 

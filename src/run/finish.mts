@@ -19,16 +19,17 @@ export function postText(pull: PullTarget, headSha: string, runDir: string): str
 }
 
 /**
- * Drops the in-progress label. `requeue` puts the request label back, which is how a held review
- * stays visible without passing `status`. Returns a problem when the labels could not be changed.
+ * Drops the in-progress label. `hold` sets the held label, so a review waiting for a person stays
+ * visible in `queue` but no machine claims it; a request label would be read as a fresh request.
+ * Returns a problem when the labels could not be changed.
  */
 export async function release(
   pull: PullTarget,
   deps: ReviewDeps,
-  requeue: boolean,
+  how: 'hold' | 'drop',
 ): Promise<string | undefined> {
   try {
-    await abortCommand({ requeue }, () => pull, deps)
+    await abortCommand({ hold: how === 'hold' }, () => pull, deps)
     return undefined
   } catch (error) {
     return `could not release the claim: ${message(error)}`

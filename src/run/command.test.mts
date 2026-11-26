@@ -158,7 +158,7 @@ describe('runCommand holding', () => {
       `code-reviewer post --repo acme/widgets --pr 4 --head-sha ${HEAD} --input ${line.runDir}/review.json`,
     )
     expect(fake.io.postReview).not.toHaveBeenCalled()
-    expect(fake.labels).toEqual(['final-review:requested'])
+    expect(fake.labels).toEqual(['final-review:held'])
     expect(existsSync(line.explainPath as string)).toBe(true)
     noTreeLeft()
   })
@@ -266,6 +266,16 @@ describe('runCommand doing nothing', () => {
     expect(code).toBe(11)
     expect(line.reason).toBe('already in progress')
     expect(fake.labels).toEqual(['final-review:in-progress'])
+    stdout.length = 0
+    expect((await run(fake, { ...PULL, force: true })).code).toBe(0)
+  })
+
+  it('declines a pull request another machine holds for a person, and takes it with force', async () => {
+    const fake = setup({ labels: ['final-review:held', 'final-review:requested'] })
+    const { code, line } = await run(fake)
+    expect(code).toBe(11)
+    expect(line.reason).toBe('held for a person')
+    expect(fake.labels).toEqual(['final-review:held', 'final-review:requested'])
     stdout.length = 0
     expect((await run(fake, { ...PULL, force: true })).code).toBe(0)
   })

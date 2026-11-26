@@ -57,7 +57,7 @@ describe('runCommand when the cost ceiling stops the review', () => {
     })
     expect(line.attention).toEqual([STOPPED])
     expect(fake.io.postReview).not.toHaveBeenCalled()
-    expect(fake.labels).toEqual(['final-review:requested'])
+    expect(fake.labels).toEqual(['final-review:held'])
   })
 
   it('records the cost on the tracker row and no harness failure', async () => {

@@ -35,18 +35,20 @@ describe('postText', () => {
 describe('release', () => {
   it('reports nothing when the labels change', async () => {
     const fake = fakeDeps({ stateDir: root, labels: ['final-review:in-progress'] })
-    await expect(release(PULL, fake.deps, true)).resolves.toBeUndefined()
-    expect(fake.labels).toEqual(['final-review:requested'])
+    await expect(release(PULL, fake.deps, 'hold')).resolves.toBeUndefined()
+    expect(fake.labels).toEqual(['final-review:held'])
   })
 
   it('reports a problem, for an error or for something else thrown', async () => {
     const fake = fakeDeps({ stateDir: root, labels: ['final-review:in-progress'] })
     fake.labelIo.labels.mockRejectedValueOnce(new Error('labels are down'))
-    await expect(release(PULL, fake.deps, false)).resolves.toBe(
+    await expect(release(PULL, fake.deps, 'drop')).resolves.toBe(
       'could not release the claim: labels are down',
     )
     fake.labelIo.labels.mockRejectedValueOnce('gone')
-    await expect(release(PULL, fake.deps, false)).resolves.toBe('could not release the claim: gone')
+    await expect(release(PULL, fake.deps, 'drop')).resolves.toBe(
+      'could not release the claim: gone',
+    )
   })
 })
 

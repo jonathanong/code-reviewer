@@ -152,7 +152,7 @@ requests changes; otherwise a high finding or any open question comments; otherw
 
 - Post: `code-reviewer post --repo <repo> --pr <n> --head-sha <headSha> --input "$run/review.json"`,
   then mark the document section "posted" with the review link.
-- Drop: `code-reviewer abort --repo <repo> --pr <n>` (add `--requeue` to ask again later).
+- Drop: `code-reviewer abort --repo <repo> --pr <n>` (add `--requeue` to ask again later; it also clears a `held` label).
 
 `post` renders and posts the review:
 
