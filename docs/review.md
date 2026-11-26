@@ -243,6 +243,10 @@ body collapsed under a "Why" summary (cut at 600 characters) so the author can s
 shows at most five (the renderer drops the rest and prints "and N more"). It is a flag on the finding, not a
 second list, so it passes through the pillar, verifier and approval-check schemas unchanged.
 
+An approval that lists at least one non-pre-existing finding (not only FYI items) adds one line
+under the index saying none blocks the merge and each is to be resolved before merging: fixed,
+answered with why it stays, or linked to a follow-up issue.
+
 ## Other reviewers' open items
 
 Normally a finding that repeats another reviewer's open thread is dropped as already raised. `prepare`

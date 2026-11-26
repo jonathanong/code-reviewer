@@ -62,6 +62,9 @@ The verdict is derived from the verified findings, never chosen:
 | Comment         | A high finding, an open question, or an approval whose second check did not complete. |
 | Approve         | Neither.                                                                              |
 
+An approval that still lists medium or low findings asks the author to resolve each before merging:
+fix it, reply with why it stays, or link a follow-up issue.
+
 An unattended run ends one of three ways: the review is posted, it is held for a human with the
 command that posts it, or there was nothing to do. See [Unattended runs](docs/run.md).
 
