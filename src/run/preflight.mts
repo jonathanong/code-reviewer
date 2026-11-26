@@ -130,7 +130,7 @@ export type Preflight =
 /**
  * Reads only: whether another session already holds the pull request or a review already covers
  * its head. A held or unposted review of this head is not reviewed again, which also keeps the
- * request label a hold puts back from starting a loop.
+ * request label a hold put back (before the held label) from starting a loop.
  */
 export async function preflight(
   deps: ReviewDeps,
@@ -159,5 +159,7 @@ export async function preflight(
       noop: `an earlier review of this head stopped: ${stopped}; --force reviews it again`,
     }
   }
+  // Another machine's hold has no tracker row here; the label is what says a person has it.
+  if (labels.includes(names.held)) return { headSha, noop: 'held for a person' }
   return { headSha, names, labels }
 }

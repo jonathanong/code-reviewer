@@ -9,10 +9,15 @@ const SHA = 'a'.repeat(40)
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 
 function fakeDeps(head: string) {
+  const labels = new Set(['final-review:requested', 'final-review:complete'])
   const labelIo = {
-    labels: vi.fn(async () => ['final-review:requested', 'final-review:complete']),
-    add: vi.fn(async () => undefined),
-    remove: vi.fn(async () => undefined),
+    labels: vi.fn(async () => [...labels]),
+    add: vi.fn(async (names: string[]) => {
+      names.forEach((name) => labels.add(name))
+    }),
+    remove: vi.fn(async (name: string) => {
+      labels.delete(name)
+    }),
   }
   const deps = {
     authMode: () => 'gh' as const,

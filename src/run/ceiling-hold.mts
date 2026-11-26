@@ -8,8 +8,8 @@ export const COST_CEILING_HOLD = 'cost-ceiling'
 
 /**
  * A review the cost ceiling stopped produced nothing to post. Holds the pull request for a human
- * the way a held review is held: the claim is released with the request label put back, so it
- * stays in `queue`. The tracker row says `failed` with the ceiling reason, which `preflight`
+ * the way a held review is held: the claim is released with the held label set, so it stays in
+ * `queue` and no other machine claims it. The tracker row says `failed` with the ceiling reason, which `preflight`
  * reads, so a later `run` of this head is a no-op and nothing retries it at the same cost.
  */
 export async function holdAtCeiling(
@@ -21,7 +21,7 @@ export async function holdAtCeiling(
   const reason = summary.error as string
   const leftover = [
     summary.abortError as string | undefined,
-    await release(pull, deps, true),
+    await release(pull, deps, 'hold'),
   ].filter((problem) => problem !== undefined)
   return runLine('held', RUN_EXIT.held, {
     ...base,

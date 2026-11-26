@@ -14,6 +14,7 @@ const {
   requested: REQUESTED_LABEL,
   processing: IN_PROGRESS_LABEL,
   completed: COMPLETE_LABEL,
+  held: HELD_LABEL,
   approval: APPROVAL_LABEL,
 } = DEFAULT_LABELS
 
@@ -143,9 +144,169 @@ describe('claimReview', () => {
       removed: [],
     })
   })
+
+  it('declines a held review, even when a person re-requested it', async () => {
+    const io = fakeIo([HELD_LABEL, REQUESTED_LABEL])
+    expect(await claimReview(io, DEFAULT_LABELS)).toMatchObject({
+      claimed: false,
+      reason: 'held for a person',
+    })
+    expect(io.calls).toEqual([])
+  })
+
+  it('claims a held review with force and clears the hold', async () => {
+    const io = fakeIo([HELD_LABEL])
+    await claimReview(io, DEFAULT_LABELS, { force: true })
+    expect([...io.set]).toEqual([IN_PROGRESS_LABEL])
+  })
+
+  it('backs off without touching labels when a request reappears after the swap', async () => {
+    const io = fakeIo([REQUESTED_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 3) io.set.add(REQUESTED_LABEL)
+      return original()
+    }
+    const outcome = await claimReview(io, DEFAULT_LABELS)
+    expect(outcome).toMatchObject({ claimed: false, reason: 'claim lost' })
+    expect(io.set.has(IN_PROGRESS_LABEL)).toBe(true)
+    expect(io.calls.filter((call) => call.startsWith('remove:'))).toEqual([
+      `remove:${REQUESTED_LABEL}`,
+    ])
+  })
+
+  it('backs off when another machine completed or held it after the swap', async () => {
+    for (const taken of [COMPLETE_LABEL, HELD_LABEL]) {
+      const io = fakeIo([REQUESTED_LABEL])
+      const original = io.labels.bind(io)
+      let reads = 0
+      io.labels = async () => {
+        reads += 1
+        if (reads === 3) io.set.add(taken)
+        return original()
+      }
+      expect(await claimReview(io, DEFAULT_LABELS)).toMatchObject({ reason: 'claim lost' })
+    }
+  })
+
+  it('keeps a hold another machine set between our read and our swap', async () => {
+    const io = fakeIo([REQUESTED_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 2) io.set.add(HELD_LABEL)
+      return original()
+    }
+    expect(await claimReview(io, DEFAULT_LABELS)).toMatchObject({ reason: 'claim lost' })
+    expect(io.set.has(HELD_LABEL)).toBe(true)
+  })
+
+  it('clears a hold on a forced claim', async () => {
+    const io = fakeIo([HELD_LABEL])
+    expect(await claimReview(io, DEFAULT_LABELS, { force: true })).toMatchObject({ claimed: true })
+    expect(io.set.has(HELD_LABEL)).toBe(false)
+  })
+
+  it('undoes its claim and rethrows when a post-swap read fails', async () => {
+    const failure = new Error('rate limited')
+    for (const failing of ['labels', 'reviewedSince']) {
+      const io = fakeIo([REQUESTED_LABEL])
+      const original = io.labels.bind(io)
+      let reads = 0
+      io.labels = async () => {
+        reads += 1
+        if (failing === 'labels' && reads === 3) throw failure
+        return original()
+      }
+      const reviewedSince = async () => {
+        throw failure
+      }
+      await expect(claimReview(io, DEFAULT_LABELS, { reviewedSince })).rejects.toBe(failure)
+      expect([...io.set]).toEqual([REQUESTED_LABEL])
+    }
+  })
+
+  it('leaves an in-progress label it did not add when the undo runs', async () => {
+    const failure = new Error('post-swap')
+    const io = fakeIo([REQUESTED_LABEL, IN_PROGRESS_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 3) throw failure
+      return original()
+    }
+    await expect(claimReview(io, DEFAULT_LABELS)).rejects.toBe(failure)
+    expect([...io.set].sort()).toEqual([IN_PROGRESS_LABEL, REQUESTED_LABEL].sort())
+  })
+
+  it('still rethrows the original failure when the undo itself fails', async () => {
+    const failure = new Error('post-swap')
+    const io = fakeIo([REQUESTED_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 3) throw failure
+      return original()
+    }
+    const add = io.add.bind(io)
+    let adds = 0
+    io.add = async (names) => {
+      adds += 1
+      if (adds > 1) throw new Error('undo failed')
+      await add(names)
+    }
+    await expect(claimReview(io, DEFAULT_LABELS)).rejects.toBe(failure)
+  })
+
+  it('backs off when our in-progress label is gone after the swap', async () => {
+    const io = fakeIo([REQUESTED_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 3) io.set.delete(IN_PROGRESS_LABEL)
+      return original()
+    }
+    expect(await claimReview(io, DEFAULT_LABELS)).toMatchObject({ reason: 'claim lost' })
+  })
+
+  it('backs off when a review of this head was posted since the claim began', async () => {
+    const io = fakeIo([REQUESTED_LABEL])
+    const reviewedSince = vi.fn(async () => true)
+    expect(await claimReview(io, DEFAULT_LABELS, { reviewedSince })).toMatchObject({
+      claimed: false,
+      reason: 'claim lost',
+    })
+    expect(reviewedSince).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the claim when no review appeared, and skips the recheck with force', async () => {
+    const reviewedSince = vi.fn(async () => false)
+    expect(
+      await claimReview(fakeIo([REQUESTED_LABEL]), DEFAULT_LABELS, { reviewedSince }),
+    ).toMatchObject({ claimed: true })
+    const forced = vi.fn(async () => true)
+    expect(
+      await claimReview(fakeIo([]), DEFAULT_LABELS, { force: true, reviewedSince: forced }),
+    ).toMatchObject({ claimed: true })
+    expect(forced).not.toHaveBeenCalled()
+  })
 })
 
 describe('completeReview', () => {
+  it('clears a hold when a person posts the held review', async () => {
+    const io = fakeIo([HELD_LABEL])
+    expect(await completeReview(io, DEFAULT_LABELS)).toEqual({
+      added: [COMPLETE_LABEL],
+      removed: [HELD_LABEL],
+    })
+  })
+
   it('adds complete then removes in-progress', async () => {
     const io = fakeIo([IN_PROGRESS_LABEL])
     expect(await completeReview(io, DEFAULT_LABELS)).toEqual({
@@ -183,6 +344,24 @@ describe('abortReview', () => {
     })
     expect(io.calls).toEqual([`add:${REQUESTED_LABEL}`, `remove:${IN_PROGRESS_LABEL}`])
   })
+
+  it('holds by adding held, never requested, before removing in-progress', async () => {
+    const io = fakeIo([IN_PROGRESS_LABEL])
+    expect(await abortReview(io, DEFAULT_LABELS, { hold: true })).toEqual({
+      added: [HELD_LABEL],
+      removed: [IN_PROGRESS_LABEL],
+    })
+    expect(io.calls).toEqual([`add:${HELD_LABEL}`, `remove:${IN_PROGRESS_LABEL}`])
+  })
+
+  it('clears a standing hold when aborting, with or without a requeue', async () => {
+    const dropped = fakeIo([HELD_LABEL])
+    await abortReview(dropped, DEFAULT_LABELS)
+    expect([...dropped.set]).toEqual([])
+    const requeued = fakeIo([IN_PROGRESS_LABEL, HELD_LABEL])
+    await abortReview(requeued, DEFAULT_LABELS, { requeue: true })
+    expect([...requeued.set]).toEqual([REQUESTED_LABEL])
+  })
 })
 
 describe('claimReview when the head is already reviewed', () => {
@@ -217,6 +396,7 @@ describe('custom label names', () => {
     requested: 'review me',
     processing: 'reviewing',
     completed: 'reviewed',
+    held: 'on hold',
     approval: 'lgtm',
   }
 
@@ -247,5 +427,11 @@ describe('skipReview', () => {
       removed: [IN_PROGRESS_LABEL, REQUESTED_LABEL],
     })
     expect([...io.set].sort()).toEqual([APPROVAL_LABEL, COMPLETE_LABEL, 'other'])
+  })
+
+  it('clears a hold', async () => {
+    const io = fakeIo([HELD_LABEL])
+    await skipReview(io, DEFAULT_LABELS)
+    expect([...io.set]).toEqual([COMPLETE_LABEL])
   })
 })

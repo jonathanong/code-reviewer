@@ -13,6 +13,8 @@ export const DEFAULT_LABELS: LabelNames = {
   processing: 'final-review:in-progress',
   /** Set when the review is posted or skipped; the verdict lives in the review and approval. */
   completed: 'final-review:complete',
+  /** Set while a finished review waits for a person; no machine claims it until it is posted, skipped or aborted. */
+  held: 'final-review:held',
   /** Label a final approval carries; removed before any re-review. */
   approval: 'final approval',
 }
@@ -79,6 +81,7 @@ export function settingLayers(
       requested: labelLayer('requested'),
       processing: labelLayer('processing'),
       completed: labelLayer('completed'),
+      held: labelLayer('held'),
       approval: labelLayer('approval'),
     },
     checkRun: layers.find(([, config]) => config?.checkRun !== undefined)?.[0] ?? null,

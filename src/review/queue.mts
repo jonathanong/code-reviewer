@@ -10,7 +10,7 @@ export type QueueEntry = {
   isDraft: boolean
   updatedAt: string
   url: string
-  /** Set on a `held` entry: the run directory of this machine's unposted review of this head. */
+  /** Set on a `held` entry that this machine's tracker also knows: the run directory of its unposted review of this head. */
   runDir?: string
   /** Set when the pull request is in a stack: the bottom pull request, its place, the stack size. */
   stack?: { root: number; position: number; size: number }
@@ -57,7 +57,7 @@ async function search(
   run: RunTextCommand,
   scope: string,
   label: string,
-  state: 'requested' | 'in-progress',
+  state: 'requested' | 'in-progress' | 'held',
 ): Promise<QueueEntry[]> {
   const q = `${scope} is:pr is:open label:"${label}" sort:updated-asc`
   const out = await run(['api', 'graphql', '-f', `query=${QUERY}`, '-f', `q=${q}`])
@@ -88,12 +88,18 @@ export async function listQueue(
   run: RunTextCommand,
   owner: string,
   repos: readonly string[],
-  labels: Pick<LabelNames, 'requested' | 'processing'>,
+  labels: Pick<LabelNames, 'requested' | 'processing' | 'held'>,
 ): Promise<QueueEntry[]> {
   const scope = scopeQualifier(owner, repos)
-  const [requested, inProgress] = await Promise.all([
+  const [requested, inProgress, held] = await Promise.all([
     search(run, scope, labels.requested, 'requested'),
     search(run, scope, labels.processing, 'in-progress'),
+    search(run, scope, labels.held, 'held'),
   ])
-  return groupStacks(run, [...inProgress, ...requested])
+  // A pull request carrying `held` is held whatever else it carries: a person's re-request does not
+  // make it claimable, and another machine's hold has no run directory here.
+  const key = (entry: QueueEntry) => `${entry.repo}#${entry.pr}`
+  const heldKeys = new Set(held.map(key))
+  const rest = [...inProgress, ...requested].filter((entry) => !heldKeys.has(key(entry)))
+  return groupStacks(run, [...rest, ...held])
 }

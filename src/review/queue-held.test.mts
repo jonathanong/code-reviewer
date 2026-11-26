@@ -71,6 +71,15 @@ describe('markHeld', () => {
     expect(markHeld([running], io)).toEqual([running])
   })
 
+  it("names the run directory of a held-labelled entry this machine holds, and leaves another machine's hold without one", () => {
+    const io = memoryTracker([row({ state: 'reviewed' })])
+    expect(markHeld([entry({ state: 'held' })], io)).toEqual([
+      entry({ state: 'held', runDir: RUN_DIR }),
+    ])
+    const elsewhere = entry({ state: 'held', headSha: 'a'.repeat(40) })
+    expect(markHeld([elsewhere], io)).toEqual([elsewhere])
+  })
+
   it('keeps the order of the entries', () => {
     const io = memoryTracker([row({ state: 'reviewed' })])
     expect(markHeld([entry({ pr: 9 }), entry()], io).map((each) => each.pr)).toEqual([9, 7])

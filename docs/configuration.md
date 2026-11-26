@@ -500,6 +500,7 @@ format of `<owner>.json`; the same keys work in YAML.
     "requested": "final-review:requested",
     "processing": "final-review:in-progress",
     "completed": "final-review:complete",
+    "held": "final-review:held",
     "approval": "final approval"
   },
   "checkRun": { "name": "Code review" }
@@ -507,8 +508,12 @@ format of `<owner>.json`; the same keys work in YAML.
 ```
 
 - `labels`: each key is optional and defaults to the value shown. `requested` asks for a review,
-  `processing` marks one running, `completed` marks it posted or skipped, `approval` marks an
-  approved head.
+  `processing` marks one running, `completed` marks it posted or skipped, `held` marks a finished
+  review waiting for a person to post it, `approval` marks an approved head. `held` is what keeps
+  another machine, which sees only labels, from claiming a pull request whose review is waiting:
+  `claim` declines it (`held for a person`) even when a person adds the request label again, and
+  `claim --force` clears it. `post`, `skip` and `abort` clear it too. `abort --requeue` is the only
+  path that puts `requested` back, for a failure worth one retry.
 - `checkRun`: absent means no check run. When set, and calls use the GitHub App, `claim` opens a
   check run at the head, `post` completes it from the verdict, and `abort` and `skip` cancel or
   skip it. Under the local `gh` login the same states are written as a commit status whose

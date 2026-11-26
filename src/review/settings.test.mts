@@ -43,6 +43,7 @@ describe('reviewSettings', () => {
       requested: 'final-review:requested',
       processing: 'final-review:in-progress',
       completed: 'final-review:complete',
+      held: 'final-review:held',
       approval: 'final approval',
     })
   })
@@ -88,6 +89,7 @@ describe('the repository file layer', () => {
         requested: 'machine owner',
         processing: 'repository file',
         completed: 'default',
+        held: 'default',
         approval: 'machine repo',
       },
       checkRun: 'machine repo',
