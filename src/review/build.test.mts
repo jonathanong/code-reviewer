@@ -78,6 +78,19 @@ describe('buildReviews', () => {
     expect(review?.body).not.toContain('Not on a diff line')
   })
 
+  it('puts the review id marker in every part, and none when there is no id', () => {
+    const findings = [2, 3, 4].map((line) => f({ path: 'src/a.ts', line, title: `L${line}` }))
+    const limits = { ...DEFAULT_LIMITS, maxComments: 2 }
+    const marked = buildReviews({ ...input(findings), reviewId: 'abcdefgh-1' }, SHA, index, limits)
+    for (const review of marked) {
+      expect(review.body).toContain('<!-- final-review-id abcdefgh-1 -->')
+    }
+    expect(marked[0]?.body).toContain('<!-- final-review sha=')
+    for (const review of buildReviews(input(findings), SHA, index, limits)) {
+      expect(review.body).not.toContain('final-review-id')
+    }
+  })
+
   it('splits inline comments across parts', () => {
     const findings = [2, 3, 4].map((line) => f({ path: 'src/a.ts', line, title: `L${line}` }))
     const reviews = buildReviews(input(findings), SHA, index, {

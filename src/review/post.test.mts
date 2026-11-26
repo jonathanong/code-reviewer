@@ -13,6 +13,14 @@ const OTHER = 'd'.repeat(40)
 const asReviews = (bodies: string[], author: string | null = 'bot'): ListedReview[] =>
   bodies.map((body, at) => ({ id: at + 1, url: `https://example.test/r/${at + 1}`, body, author }))
 
+/** A pull request that already holds `seed`, plus whatever is posted to it. */
+function withSeed(seed: ListedReview[]) {
+  const io = fakeIo()
+  const kept = io.listReviews.getMockImplementation() as () => Promise<ListedReview[]>
+  io.listReviews.mockImplementation(async () => [...seed, ...(await kept())])
+  return io
+}
+
 describe('revokeFinalApproval', () => {
   it('removes the label only when present', async () => {
     const absent = fakeIo()
@@ -51,6 +59,76 @@ describe('postFinalReview', () => {
       label: 'added',
     })
     expect(io.addApprovalLabel).toHaveBeenCalledOnce()
+  })
+
+  it('submits nothing when this reviewer already posted this review', async () => {
+    const io = fakeIo()
+    const first = await postFinalReview(io, input('low'), SHA)
+    expect(io.postReview.mock.calls[0]?.[0].body).toContain(
+      '<!-- final-review-id review-id-0001 -->',
+    )
+    const again = await postFinalReview(io, input('low'), SHA)
+    expect(io.postReview).toHaveBeenCalledOnce()
+    expect(again).toMatchObject({
+      alreadyPosted: true,
+      confirmed: true,
+      reviewIds: first.reviewIds,
+      urls: first.urls,
+      label: 'unchanged',
+    })
+    expect(io.addApprovalLabel).toHaveBeenCalledOnce()
+  })
+
+  it('posts a new review of the same head, as a forced re-review makes', async () => {
+    const io = fakeIo()
+    await postFinalReview(io, input('low'), SHA)
+    const again = await postFinalReview(io, { ...input('low'), reviewId: 'review-id-0002' }, SHA)
+    expect(io.postReview).toHaveBeenCalledTimes(2)
+    expect(again.alreadyPosted).toBeUndefined()
+  })
+
+  it('does not count a copy of the marker by another author, or on another head', async () => {
+    const mark = `<!-- final-review-id review-id-0001 -->\n${reviewMarker(SHA, 'Approve', 'high')}`
+    const forged = withSeed(asReviews([mark], 'mallory'))
+    await postFinalReview(forged, input('low'), SHA)
+    expect(forged.postReview).toHaveBeenCalledOnce()
+    const older = withSeed(asReviews([mark.replaceAll(SHA, OTHER)]))
+    await postFinalReview(older, input('low'), SHA)
+    expect(older.postReview).toHaveBeenCalledOnce()
+  })
+
+  it('posts a review with no id, and says a repeat of it cannot be detected', async () => {
+    const { reviewId: _id, ...bare } = input('low')
+    const io = fakeIo()
+    const first = await postFinalReview(io, bare, SHA)
+    expect(first.warnings.join('\n')).toContain('no reviewId')
+    await postFinalReview(io, bare, SHA)
+    expect(io.postReview).toHaveBeenCalledTimes(2)
+    const ids = io.postReview.mock.calls.map(
+      ([review]) => /final-review-id (\S+) -->/u.exec(review.body)?.[1],
+    )
+    expect(ids[0]).toBeDefined()
+    expect(ids[0]).not.toBe(ids[1])
+  })
+
+  it('warns that the already-posted check could not run, and posts', async () => {
+    const unreadable = fakeIo({ listReviews: vi.fn(async () => Promise.reject(new Error('down'))) })
+    const outcome = await postFinalReview(unreadable, input('low'), SHA)
+    expect(unreadable.postReview).toHaveBeenCalledOnce()
+    expect(outcome.warnings).toContain(
+      'Could not check whether this review was already posted: reading the reviews failed; posting anyway.',
+    )
+    const anonymous = fakeIo({ trustedAuthors: vi.fn(async () => new Set<string>()) })
+    const second = await postFinalReview(anonymous, input('low'), SHA)
+    expect(second.warnings.join('\n')).toContain('the reviewer identity was unreadable')
+  })
+
+  it('still posts on a dry run', async () => {
+    const io = fakeIo()
+    await postFinalReview(io, input('low'), SHA)
+    const dry = await postFinalReview(io, input('low'), SHA, { dryRun: true })
+    expect(dry.alreadyPosted).toBeUndefined()
+    expect(io.postReview).toHaveBeenCalledOnce()
   })
 
   it('posts a non-approval, removing a stale label when present', async () => {
@@ -173,6 +251,7 @@ describe('postFinalReview event', () => {
     const outcome = await postFinalReview(blind, input('low'), SHA)
     expect(outcome).toMatchObject({ reviewIds: [], confirmed: false, label: 'added' })
     expect(outcome.warnings).toEqual([
+      expect.stringContaining('Could not check whether this review was already posted'),
       expect.stringContaining('could not be confirmed'),
       expect.stringContaining('was not dismissed'),
     ])

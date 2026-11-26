@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import type { Dependency } from '../dependency.mts'
 import type { Effort, Finding, ReviewInput, SkippedPillar } from '../finding.mts'
 import type { FocusAnswer } from '../focus.mts'
@@ -20,6 +22,7 @@ export function buildReviewInput(parts: {
 }): ReviewInput {
   const { effort, output, skipped, findings, questions, run, dependencies, focus } = parts
   return {
+    reviewId: randomUUID(),
     effort,
     summary: output.summary,
     skipped,

@@ -34,6 +34,12 @@ describe('parseReviewInput', () => {
     })
   })
 
+  it('keeps a well-formed reviewId and rejects one that cannot sit in a marker', () => {
+    expect(parseReviewInput({ reviewId: 'abcdefgh-12' }).reviewId).toBe('abcdefgh-12')
+    expect(() => parseReviewInput({ reviewId: 'a b' })).toThrow(/reviewId/u)
+    expect(() => parseReviewInput({ reviewId: 7 })).toThrow(/reviewId/u)
+  })
+
   it('parses effort, summary, skipped pillars, and trimmed findings', () => {
     expect(
       parseReviewInput({

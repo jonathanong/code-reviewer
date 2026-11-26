@@ -292,10 +292,29 @@ describe('runReviewCommand', () => {
     out.length = 0
     run.mockRejectedValueOnce(new Error('403'))
     io.headSha.mockResolvedValueOnce(SHA)
+    // The first post is on the pull request now; hide it from the already-posted check so this one runs.
+    io.listReviews.mockResolvedValueOnce([])
     await expect(runReviewCommand(argv, d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({
       label: 'added',
       checkRun: { status: 'failed', error: '403' },
+    })
+  })
+
+  it('reports a second post of the same review as a no-op and still closes the labels', async () => {
+    const { out } = capture()
+    const io = fakeIo()
+    const d = deps(io, JSON.stringify({ reviewId: 'review-id-0001', findings: [] }))
+    const argv = ['post', ...PR, '--head-sha', SHA, '--input', 'f.json']
+    await expect(runReviewCommand(argv, d)).resolves.toBe(0)
+    out.length = 0
+    await expect(runReviewCommand(argv, d)).resolves.toBe(0)
+    expect(io.postReview).toHaveBeenCalledOnce()
+    expect(JSON.parse(out.join(''))).toMatchObject({
+      outcome: 'noop',
+      reason: 'review already posted',
+      urls: ['https://example.test/r'],
+      lifecycle: expect.any(Object),
     })
   })
 

@@ -110,6 +110,7 @@ describe('runReview with carried commits', () => {
       'effort',
       'findings',
       'questions',
+      'reviewId',
       'skipped',
       'summary',
     ])

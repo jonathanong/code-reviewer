@@ -61,6 +61,21 @@ export async function postPreparedReview(args: PreparedPost): Promise<PostResult
   })
   if (dryRun) return { outcome, printed: withoutPlacements(outcome) }
   const lifecycle = await completeReview(deps.createLabelIo(pull), await labelsFor(deps, pull.repo))
+  if (outcome.alreadyPosted === true) {
+    // This head was posted before (here or on another machine): nothing was submitted, so there
+    // is no new tracker row, check run or thread reply; only the labels are closed out.
+    return {
+      outcome,
+      printed: {
+        outcome: 'noop',
+        reason: 'review already posted',
+        verdict: outcome.verdict,
+        urls: outcome.urls,
+        reviewIds: outcome.reviewIds,
+        lifecycle,
+      },
+    }
+  }
   const checkRun = await checkRunFor(deps, pull, postedStep(outcome.verdict, outcome.urls), headSha)
   const tracked = recordPosted(deps.tracker(), {
     ...pull,

@@ -34,6 +34,7 @@ export function fakeIo(overrides: Partial<MockIo> = {}): MockIo {
 
 export function input(severity?: 'blocking' | 'high' | 'low'): ReviewInput {
   return {
+    reviewId: 'review-id-0001',
     effort: 'high',
     summary: '',
     skipped: [],

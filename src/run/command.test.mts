@@ -176,6 +176,15 @@ describe('runCommand holding', () => {
     expect(vi.mocked(reviewCommand)).toHaveBeenCalledTimes(2)
   })
 
+  it('posts a forced re-review of a head this reviewer already posted', async () => {
+    const fake = setup()
+    expect((await run(fake)).code).toBe(0)
+    expect(fake.io.postReview).toHaveBeenCalledOnce()
+    stdout.length = 0
+    expect((await run(fake, { ...PULL, force: true })).code).toBe(0)
+    expect(fake.io.postReview).toHaveBeenCalledTimes(2)
+  })
+
   it('holds on --post hold, whatever the review says', async () => {
     const fake = setup()
     const { code, line } = await run(fake, { ...PULL, post: 'hold' })

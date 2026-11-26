@@ -6,6 +6,7 @@ import {
   type SanitizedReview,
 } from '../review-payload/index.mts'
 import type { ReviewInput, Finding } from './finding.mts'
+import { idMarker } from './markers.mts'
 import { preExistingSection } from './pre-existing.mts'
 import {
   actionable,
@@ -115,10 +116,11 @@ export function buildReviews(
   for (let part = 0; part < total; part += 1) {
     const body = bodies[part]
     const prefix = part === 0 ? '' : `${partHeader(headSha, part + 1, total)}\n\n`
+    const marker = input.reviewId === undefined ? '' : `${idMarker(input.reviewId)}\n`
     reviews.push({
       event: 'COMMENT',
       commit_id: headSha,
-      body: `${prefix}${body ?? 'Inline findings continued.'}`,
+      body: `${marker}${prefix}${body ?? 'Inline findings continued.'}`,
       comments: commentChunks[part] ?? [],
     })
   }

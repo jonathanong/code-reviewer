@@ -77,7 +77,9 @@ rule skills for the changed files (the review stops there, with nothing posted, 
 twice or no rule skill is installed), builds the [pillar context](context.md#in-a-review) when it can, runs the pillars the plan chose (`--jobs` at a time, default 3,
 each retried once), runs the verifier, and writes:
 
-- `review.json`: the input `post` accepts. Post it after reading `preview.md`:
+- `review.json`: the input `post` accepts, with a `reviewId` made once for this review (a random
+  UUID, never derived from content) that `post` writes into every part so it does not post the same
+  review twice ([Posting](posting.md#read-back)). Post it after reading `preview.md`:
   `code-reviewer post --repo owner/name --pr N --head-sha SHA --input DIR/review.json`.
 - `preview.md`: the reviews `post --dry-run` would send.
 - `report.md` and `report.json`: the pull request, mode and effort, what it does, the verdict, the
