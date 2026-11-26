@@ -108,6 +108,13 @@ describe('createGhPrepareIo', () => {
     expect(await setup(run).io.files()).toEqual([{ path: 'a.ts', lines: 5 }])
   })
 
+  it('marks a renamed file', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify([{ filename: 'b.ts', status: 'renamed', additions: 1, deletions: 1 }]),
+    )
+    expect(await setup(run).io.files()).toEqual([{ path: 'b.ts', lines: 2, renamed: true }])
+  })
+
   it('defaults missing compare fields', async () => {
     const { io } = setup(vi.fn(async (_args: readonly string[]) => '{}'))
     expect(await io.compare('x', 'y')).toEqual({ status: 'missing', paths: [], lines: 0 })

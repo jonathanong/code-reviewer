@@ -99,7 +99,7 @@ describe('changeFacts', () => {
 
   it('does not count pure renames toward files, and still lists their paths as risky', () => {
     const moved = [
-      { path: 'src/auth/moved.ts', lines: 0 },
+      { path: 'src/auth/moved.ts', lines: 0, renamed: true },
       { path: 'a.ts', lines: 4 },
     ]
     expect(changeFacts(moved, 'octocat')).toEqual({
@@ -107,6 +107,14 @@ describe('changeFacts', () => {
       lines: 4,
       riskyPaths: ['src/auth/moved.ts'],
     })
+  })
+
+  it('counts an edited rename by its lines only, and a non-rename edit as a file', () => {
+    const list = [
+      { path: 'moved.ts', lines: 6, renamed: true },
+      { path: 'edited.ts', lines: 4 },
+    ]
+    expect(changeFacts(list, 'octocat')).toMatchObject({ files: 1, lines: 10 })
   })
 
   it('holds a rename-only move of many files only when edits go over the file limit', () => {
