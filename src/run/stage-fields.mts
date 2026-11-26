@@ -11,6 +11,7 @@ export function reviewFields(
     verdict: summary.verdict as string,
     findings: summary.findings as Counts,
     questions: facts.questions,
+    flags: facts.flags,
     costUsd: summary.costUsd as number,
     tokens: facts.tokens,
     mode: summary.mode as string,

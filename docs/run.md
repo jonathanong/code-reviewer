@@ -41,7 +41,7 @@ commands use.
 ## The JSON line
 
 `repo`, `pr`, `headSha`, `outcome`, `exitCode`, `verdict`, `event` (the posted review event),
-`held` (the rules that matched), `findings` (counts by severity), `questions`, `reviewUrl`,
+`held` (the rules that matched), `findings` (counts by severity), `questions`, `flags` (the kind of each flag the review raised), `reviewUrl`,
 `reviewIds` (the reviews `post` read back, one per part), `approvalCheck` (`upheld`, `changed` or
 `failed`, when the review ran the second check on an approval), `costUsd`, `tokens`, `mode`, `tree` (`worktree` or `clone`), `runDir`, `explainPath`,
 `postCommand`, `attention`, `problems` and `reason`. Fields that do not apply are `null`, or `[]`
@@ -63,6 +63,7 @@ switched off in machine config. `--post hold` holds every run (`held` lists `pos
 | Rule               | Holds when                                                                                                                    |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | `unclear-intent`   | The review has open questions.                                                                                                |
+| `flagged`          | The review raised a flag: a concern only a person can settle (see [Flags](review.md#flags)). Posted text does not change.     |
 | `large-change`     | The change is over `largeChange.files` files or `largeChange.lines` changed lines, or the diff or conversation was cut short. |
 | `risky-change`     | The change touches a risky path (below).                                                                                      |
 | `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked, or the approval's second check did not complete.            |

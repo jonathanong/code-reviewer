@@ -1,17 +1,16 @@
-import { createHash } from 'node:crypto'
-
 import { runFixedModel } from '../../harness/runner.mts'
 import { READ_ONLY, type HarnessRun } from '../../harness/types.mts'
 import { ReviewError, SEVERITIES, parseReviewInput, type Finding } from '../finding.mts'
 import { PILLARS } from '../pillar-name.mts'
+import { FLAGS_SCHEMA, type Flag } from '../flag.mts'
 import { QUESTIONS_SCHEMA, type Question } from '../question.mts'
 import { NUMBERED_DIFF_LEGEND } from '../numbered-diff.mts'
 import type { EvalCase } from './cases.mts'
 import type { Usage } from './usage.mts'
-import { caseRevision, describeCase } from './fixture.mts'
+import { describeCase } from './fixture.mts'
 import { SKILL_READER } from '../run/pillar-capabilities.mts'
 import { CONTEXT_DIR, hasRulesIndex, relatedDocs, type Exec } from './snapshot.mts'
-import type { VerifierInput } from './verifier-input.mts'
+import type { VerifierRun } from './verifier-input.mts'
 import { answerLines, withAnswers, type AnswerRules } from '../run/answers-prompt.mts'
 import type { Answerable } from '../context/answerable.mts'
 import { gradeAnswers, notesOf, type AnswerGrade } from './verifier-answers.mts'
@@ -23,6 +22,7 @@ export const VERIFIER_OUTPUT_SCHEMA = {
   properties: {
     summary: { type: 'string' },
     questions: QUESTIONS_SCHEMA,
+    flags: FLAGS_SCHEMA,
     findings: {
       type: 'array',
       items: {
@@ -52,6 +52,8 @@ export type VerifierOutput = {
   summary: string
   findings: Finding[]
   questions: Question[]
+  /** Concerns only a person can settle; absent when there are none. */
+  flags?: Flag[]
   sources: number[][]
 }
 
@@ -120,7 +122,7 @@ export function verifierRequest(
 /** Validates a verifier's structured output object; shared by the benchmark and `review`. */
 export function validateVerifierOutput(value: unknown, inputCount: number): VerifierOutput {
   const structured = value as
-    | { summary?: unknown; findings?: unknown; questions?: unknown }
+    | { summary?: unknown; findings?: unknown; questions?: unknown; flags?: unknown }
     | undefined
     | null
   if (structured === undefined || structured === null || !Array.isArray(structured.findings)) {
@@ -139,38 +141,15 @@ export function validateVerifierOutput(value: unknown, inputCount: number): Veri
     summary: structured.summary,
     findings: raw,
     questions: structured.questions,
+    flags: structured.flags,
   })
   return {
     summary: review.summary,
     findings: review.findings,
     questions: review.questions,
+    ...(review.flags === undefined ? {} : { flags: review.flags }),
     sources,
   }
-}
-
-export type VerifierRun = {
-  verifierPrompt: string
-  model: string
-  maxTurns: number
-  /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
-  settings?: object
-}
-
-/** Identifies everything a verifier output depends on, including the staged rules' digest. */
-export function verifierRunInputs(
-  item: EvalCase,
-  input: VerifierInput,
-  run: VerifierRun,
-  rules: string,
-): string {
-  const payload = JSON.stringify({
-    ...caseRevision(item),
-    input,
-    run,
-    rules,
-    answerable: item.answerable,
-  })
-  return createHash('sha256').update(payload).digest('hex')
 }
 
 /** Runs the verifier once in the snapshot directory with read-only tools. */

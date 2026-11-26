@@ -2,6 +2,19 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-26 (change, not re-measured): verifier: `flags` output
+
+Prompt and schema change; no run was made and nothing was re-scored.
+
+- **What changed.** `verifier.md` gains a Flags section (eleven kinds, each with a one-line definition, and a
+  list of what is not a flag, including an investigation or experiment whose goal is not yet shown to be
+  met) and a `flags` example in the output. The verifier output schema (`VERIFIER_OUTPUT_SCHEMA`, shared by
+  the benchmark and `review`) gains an optional `flags` array of `{ kind, concern, where? }`. Flags never
+  change the verdict or the posted body; `run` holds on them (`flagged` rule).
+- **Rows made non-comparable.** Every verifier row (verifier-only and end-to-end), because the prompt and
+  output schema changed; the verifier may now spend output on flags. Compare only against rows run after
+  this entry. Pillar rows are unchanged.
+
 ## 2026-11-25 (change, not re-measured): agy: network allowlist on every step; web-granted steps run on agy (unmeasured)
 
 Prompt and harness change; no run was made and nothing was re-scored.

@@ -25,8 +25,8 @@ GitHub review. It runs on your machine, for the repositories you pick.
   is a comment or a question.
 - **Short text.** Posted text leads with the defect and its consequence and does not narrate the
   review. Detail that only an agent fixing the issue needs sits in a collapsed section.
-- **When unsure, a human reads it first.** A large or risky change, an open question, or a
-  partial failure holds the review instead of posting it.
+- **When unsure, a human reads it first.** A large or risky change, a flag (a concern only a person can settle), an open
+  question, or a partial failure holds the review instead of posting it.
 - **Fail closed, degrade gracefully.** A config problem stops the run before anything changes. A
   review whose checks all failed never approves. Without a GitHub App, the same features work
   under the local `gh` login.

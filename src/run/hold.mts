@@ -4,6 +4,8 @@ import type { HoldRule, RunSettings } from '../review/rules/run-parse.mts'
 export type HoldFacts = {
   /** Open questions in the review. */
   questions: number
+  /** The kind of each flag the review raised. */
+  flags: string[]
   files: number
   /** Changed lines outside generated files. */
   lines: number
@@ -33,6 +35,12 @@ export function holdRules(facts: HoldFacts, settings: RunSettings): Held[] {
     [
       'unclear-intent',
       facts.questions > 0 ? `${facts.questions} open question(s) need an answer` : undefined,
+    ],
+    [
+      'flagged',
+      facts.flags.length > 0
+        ? `${facts.flags.length} flag(s): ${[...new Set(facts.flags)].join(', ')}`
+        : undefined,
     ],
     [
       'large-change',

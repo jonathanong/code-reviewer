@@ -70,6 +70,16 @@ describe('run reading the post outcome', () => {
     expect(fake.io.postReview).not.toHaveBeenCalled()
   })
 
+  it('holds a review with a flag, reports it in the JSON line, and does not post', async () => {
+    const flags = [{ kind: 'irreversible', concern: 'Drops a column.' }]
+    const fake = setup({}, { overrides: { review: { flags } } })
+    const { code, lines } = await runWith(fake, stdout)
+    expect(code).toBe(10)
+    expect(lines[0]).toMatchObject({ outcome: 'held', held: ['flagged'], flags: ['irreversible'] })
+    expect(lines[0]?.attention).toEqual(['flagged: 1 flag(s): irreversible'])
+    expect(fake.io.postReview).not.toHaveBeenCalled()
+  })
+
   it('reports a review whose read-back failed as posted, with the warnings to look at', async () => {
     const fake = setup()
     vi.mocked(fake.io.postReview).mockImplementation(async () => {

@@ -10,13 +10,18 @@ import { judgeAll } from './judge-all.mts'
 import { benchPlugins } from './plugin-settings.mts'
 import { gradeAll, type VerifierRaw } from './verifier-grade.mts'
 import { readRaw, scoreAll } from './verifier-summary.mts'
-import { collectVerifierInput, type VerifierInput } from './verifier-input.mts'
+import {
+  collectVerifierInput,
+  verifierRunInputs,
+  type VerifierInput,
+  type VerifierRun,
+} from './verifier-input.mts'
 import {
   defaultVerifierDeps,
   prepareVerifierSnapshot,
   type VerifierBenchDeps,
 } from './verifier-snapshot.mts'
-import { runVerifier, verifierRunInputs, type VerifierRun } from './verifier-run.mts'
+import { runVerifier } from './verifier-run.mts'
 import { DEFAULT_RULE_PLUGINS } from '../plugins.mts'
 import { answerRules } from '../run/answers-rules.mts'
 

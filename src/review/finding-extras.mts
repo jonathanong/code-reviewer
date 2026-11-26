@@ -1,6 +1,7 @@
 import { MAX_ANSWERS, readAnswer, type Answer } from './answers.mts'
 import { DEPENDENCY_KINDS, DEPENDENCY_STATES, type Dependency } from './dependency.mts'
 import { readImpact, type Impact } from './impact.mts'
+import { FLAG_KINDS, type Flag } from './flag.mts'
 import { isRecord, oneOf, ReviewError, text, type Finding } from './finding.mts'
 
 type Json = Record<string, unknown>
@@ -110,4 +111,15 @@ export function parsePreExisting(record: Json, where: string): Pick<Finding, 'pr
   if (record.preExisting === undefined || record.preExisting === false) return {}
   if (record.preExisting !== true) throw new ReviewError(`${where}.preExisting must be a boolean.`)
   return { preExisting: true }
+}
+
+export function parseFlag(raw: unknown, index: number): Flag {
+  const where = `flags[${index}]`
+  if (!isRecord(raw)) throw new ReviewError(`${where} must be an object.`)
+  const at = typeof raw.where === 'string' ? raw.where.trim() : ''
+  return {
+    kind: oneOf(FLAG_KINDS, raw.kind, `${where}.kind`),
+    concern: text(raw, 'concern', where).trim(),
+    ...(at === '' ? {} : { where: at }),
+  }
 }

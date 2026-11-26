@@ -25,6 +25,7 @@ export function buildReviewInput(parts: {
     skipped,
     findings,
     questions,
+    ...(output.flags === undefined ? {} : { flags: output.flags }),
     ...noteFields(run),
     ...(dependencies.length === 0 ? {} : { dependencies }),
     ...(output.regressionPrevent === undefined

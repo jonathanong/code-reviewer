@@ -265,6 +265,19 @@ and the login is the listed one. The posted finding ends with `Also raised by [l
 text without `@`, so nobody is notified). The verdict follows the finding's severity like any other,
 so a restated blocking item gives Request Changes. With no items the prompt and schema are unchanged.
 
+## Flags
+
+The verifier may return `flags`: concerns only a person can settle, each `{ kind, concern, where? }`.
+`kind` is one of `architecture`, `acceptance-criteria`, `feature-sense`, `wrong-intent`, `design`,
+`broken-workflow`, `safeguard-weakened`, `irreversible`, `undeclared-breaking`, `new-service` and
+`rule-workaround`; their definitions are in `skills/review/references/verifier.md`. An unintentional
+bug that is easy to fix, a large or renamed change, touching a migration or workflow by itself, a bug
+check phrased as a question, and an investigation or experiment whose goal is not yet shown to be met
+are not flags. A flag never changes the verdict and is not in the posted review body. It is in
+`review.json` and `report.json` (`flags`), in `explain.md` under "Flags", and in the `run` JSON line,
+and the `flagged` [hold rule](run.md#hold-rules) holds the review for it. Flags are not carried into a
+follow-up review.
+
 ## Answering other reviewers
 
 With `answers` on ([configuration](configuration.md#answers)), the verifier can reply to another

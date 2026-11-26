@@ -23,6 +23,7 @@ describe('runFacts', () => {
   it('reports a clean run with its questions, author and token totals', () => {
     expect(facts()).toEqual({
       questions: 0,
+      flags: [],
       partial: [],
       truncated: [],
       author: 'octocat',
@@ -33,6 +34,14 @@ describe('runFacts', () => {
   it('counts the open questions of the review', () => {
     const questions = [{ question: 'Who clears it?', askOf: 'author', why: 'Sets the TTL.' }]
     expect(facts({ review: { questions } }).questions).toBe(1)
+  })
+
+  it('lists the kind of each flag of the review', () => {
+    const flags = [
+      { kind: 'irreversible', concern: 'Drops a column.' },
+      { kind: 'design', concern: 'Odd.', where: 'a.ts:1' },
+    ]
+    expect(facts({ review: { flags } }).flags).toEqual(['irreversible', 'design'])
   })
 
   it('names a failed pillar, a failed or blocked evidence source and a verifier that did not run', () => {

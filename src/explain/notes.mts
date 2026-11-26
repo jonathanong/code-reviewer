@@ -1,3 +1,4 @@
+import { FLAG_KINDS, type Flag } from '../review/flag.mts'
 import type { ReportStack } from '../review/run/stack-report.mts'
 import { asRecord, asString } from '../tracker/json.mts'
 
@@ -27,4 +28,17 @@ export function stackView(stack: ReportStack | undefined) {
         staleBase: stack.staleBase,
         rootBase: stack.rootBase,
       }
+}
+
+/** A concern only a person can settle, as the review recorded it. */
+export type ExplainFlag = Pick<Flag, 'kind' | 'concern'> & { where: string | null }
+
+/** The flags a review recorded; an unknown kind or one without a concern is dropped. */
+export function flagOf(entry: unknown): ExplainFlag[] {
+  const record = asRecord(entry)
+  const kind = FLAG_KINDS.find((candidate) => candidate === record.kind)
+  const concern = asString(record.concern)
+  return kind === undefined || concern === null
+    ? []
+    : [{ kind, concern, where: asString(record.where) }]
 }

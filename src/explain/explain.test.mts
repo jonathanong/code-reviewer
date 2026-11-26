@@ -75,6 +75,30 @@ describe('explainRun', () => {
     )
   })
 
+  it('shows flags as their own section, and none when there are none', () => {
+    const render = (review: object) =>
+      explainRun(
+        {
+          ...io,
+          read: (path) => (path === '/run/review.json' ? JSON.stringify(review) : undefined),
+        },
+        '/run',
+      )
+    const text = render({
+      findings: [],
+      flags: [
+        { kind: 'irreversible', concern: 'Drops the column.', where: 'db/0042.sql:3' },
+        { kind: 'design', concern: 'Odd layering.' },
+        { kind: 'not-a-kind', concern: 'ignored' },
+      ],
+    })
+    expect(text).toContain(
+      '## Flags\n\nA flag is a concern only a person can settle; `run --post auto` holds the review for it.\n\n- `irreversible` (db/0042.sql:3): Drops the column.\n- `design`: Odd layering.\n\n',
+    )
+    expect(text).not.toContain('not-a-kind')
+    expect(render({ findings: [] })).not.toContain('## Flags')
+  })
+
   it('names the blocking problem, and a high one with a question, as the reason', () => {
     expect(explain('full')).toContain('A blocking problem means Request Changes.')
     const files: Record<string, string> = {

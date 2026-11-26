@@ -5,6 +5,7 @@ import { holdRules, type HoldFacts } from './hold.mts'
 
 const CLEAN: HoldFacts = {
   questions: 0,
+  flags: [],
   files: 3,
   lines: 40,
   truncated: [],
@@ -24,6 +25,23 @@ describe('holdRules', () => {
 
   it('holds on an open question', () => {
     expect(names({ questions: 2 })).toEqual(['unclear-intent'])
+  })
+
+  it('holds on a flag, naming each kind once, and not without one', () => {
+    expect(names({ flags: [] })).toEqual([])
+    expect(
+      holdRules({ ...CLEAN, flags: ['irreversible', 'design', 'design'] }, DEFAULT_RUN),
+    ).toEqual([{ rule: 'flagged', why: '3 flag(s): irreversible, design' }])
+  })
+
+  it('keeps unclear-intent as it was, and flagged separate from it', () => {
+    expect(DEFAULT_RUN.rules['unclear-intent']).toBe(true)
+    expect(names({ questions: 1, flags: ['design'] })).toEqual(['unclear-intent', 'flagged'])
+    const off = { ...DEFAULT_RUN, rules: { ...DEFAULT_RUN.rules, 'unclear-intent': false } }
+    expect(names({ questions: 1 }, off)).toEqual([])
+    expect(names({ questions: 1, flags: ['design'] }, off)).toEqual(['flagged'])
+    const unflagged = { ...DEFAULT_RUN, rules: { ...DEFAULT_RUN.rules, flagged: false } }
+    expect(names({ flags: ['design'] }, unflagged)).toEqual([])
   })
 
   it('holds on more files or more lines than the limits, and not at the limit', () => {
