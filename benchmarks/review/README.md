@@ -131,6 +131,9 @@ judged by Sonnet, $25.14):
   `correctness-unanalyzable-skip-swallows` (positive, `medium`). Piloted once each on agy
   `gemini-4-hydrogen-medium`; the pre-existing negative is a known miss on severity (rated `medium`,
   marked `preExisting`), see `HISTORY.md`.
+- Not in the table: `correctness-stated-purpose-human-gate` (positive, `high`: a check meant to force
+  human review accepts a rule with no human seat, so the pull request fails its own stated purpose).
+  Added 2026-11-26 with the contract's stated-purpose rule; not run yet, see `HISTORY.md`.
 - Not in the table: `congruence-undocumented-unused-allow-failure` (one `medium` congruence finding
   when a description calls a change non-breaking but an allow entry becomes unused and the audit
   exits 1) and its negative twin `congruence-documented-unused-allow-failure`;

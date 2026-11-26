@@ -2,6 +2,25 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-26 (change, not re-measured): contract: a stated purpose that fails is at least `high` (unmeasured)
+
+Prompt change; no run was made and nothing was re-scored.
+
+- **What changed.** `skills/review/references/pillars/_contract.md` gains one rule: a finding that shows the
+  pull request does not achieve its own stated purpose (the guarantee, check, fix or protection its title or
+  description says it adds can be bypassed, or does not hold on a path it covers) is `high` or `blocking`, never
+  lower; `blocking` when it also meets the four conditions. An unrelated defect, and an experiment still being
+  measured, keep the normal scale. `verifier.md` "Severity" gains one sentence pointing at it. Why: a live review
+  rated two such gaps `medium` (a human-review check that a rule with no human seat satisfied), so the pull
+  request was approved; the owner decided they must be `high` or `blocking`.
+- **Rows made non-comparable.** Every pillar row (the contract is part of every pillar prompt, the `rules`
+  pillar included), and every verifier or end-to-end row whose score depends on a finding's severity or the
+  verdict. Recall-only rows shift least but are still not comparable. Compare only against rows run after this
+  entry. `bench-context`, `bench-focus` and `bench-selection` rows are unaffected.
+- **Case added.** `correctness-stated-purpose-human-gate` in `synthetic.json` (positive, `high` at
+  `src/always-human.mts`: `sendsToPerson` accepts `claude: 'comments'` with `seats: []`, so the check does not
+  guarantee human review of a protected path). Not run, so there is no pilot result and no no-rules control.
+
 ## 2026-11-26 (change, not re-measured): verifier: `flags` output
 
 Prompt and schema change; no run was made and nothing was re-scored.
