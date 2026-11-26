@@ -111,7 +111,7 @@ function checked(run: Explained): string[] {
     lines.push(`Findings were checked against ${run.checkedSources} source(s) of real data.`)
   }
   if (run.olderSkipped) {
-    lines.push('Older resolved or hidden review history was not read; open threads were.')
+    lines.push('Older resolved or hidden review history was not read.')
   }
   if (run.stack !== null) {
     lines.push(

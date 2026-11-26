@@ -121,6 +121,37 @@ describe('fetchConversation', () => {
       expect(pull.reviewThreads.unread).toBe(0)
     })
 
+    it('counts an open thread whose review was not read as unread', async () => {
+      const owned = (id: string, reviewId: string) =>
+        thread(id, {
+          comments: {
+            nodes: [
+              { author: null, body: 'x', createdAt: 't', pullRequestReview: { id: reviewId } },
+            ],
+          },
+        })
+      const run = vi.fn(async () =>
+        JSON.stringify({
+          data: {
+            repository: {
+              pullRequest: {
+                reviews: {
+                  nodes: [review('R2', reviewMarker('a'.repeat(40), 'Approve', 'low'))],
+                  pageInfo: { hasPreviousPage: true },
+                },
+                reviewThreads: {
+                  nodes: [owned('T1', 'R2'), owned('T2', 'R1'), thread('T3')],
+                  pageInfo: { hasPreviousPage: false },
+                },
+              },
+            },
+          },
+        }),
+      )
+      const pull = await fetchConversation(target, run, { trusted: own })
+      expect(pull.reviewThreads.unread).toBe(1)
+    })
+
     it('throws when an older page reports no pull request', async () => {
       const first = fake('reviewThreads', { nodes: [thread('T1')], hasPrevious: true }, {})
       const run = vi.fn(async (args: readonly string[]) =>

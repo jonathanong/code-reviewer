@@ -256,7 +256,8 @@ answered with why it stays, or linked to a follow-up issue.
   first comment not hidden), up to `MAX_OLDER_THREAD_PAGES` (5, so at most 600 threads are looked at);
   `reviewThreads` cannot be filtered on `isResolved` server-side. Older resolved or hidden threads
   are not read. If the walk reaches the cap with pages left, `context.json` records
-  `unread.threads` (how many were not looked at) and `run` holds the review as `large-change`
+  `unread.threads` (how many were not looked at, plus open threads whose review was not read, so
+  their author cannot be told) and `run` holds the review as `large-change`
   ("N older review threads were not read"): an open thread may have been missed.
 - **Reviews.** The newest 60 are read. The follow-up needs this reviewer's last real review (its SHA,
   verdict, effort, questions), so older pages are read back until one is found, up to

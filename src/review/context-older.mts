@@ -65,7 +65,8 @@ export async function walkOlder(
   const threadsLeft = threadsPage?.hasPreviousPage === true
   reviewThreads.nodes = [...kept, ...reviewThreads.nodes]
   reviewThreads.pageInfo = { hasPreviousPage: threadsLeft }
-  reviewThreads.unread = threadsLeft ? Math.max(1, (reviewThreads.totalCount ?? 0) - scanned) : 0
+  const notReached = threadsLeft ? Math.max(1, (reviewThreads.totalCount ?? 0) - scanned) : 0
+  reviewThreads.unread = notReached
 
   if (trusted === undefined) return
   let reviewsPage = reviews.pageInfo
@@ -78,4 +79,13 @@ export async function walkOlder(
     reviewsPage = page.pageInfo
   }
   reviews.pageInfo = { hasPreviousPage: reviewsPage?.hasPreviousPage === true }
+
+  // An open thread whose review was not read cannot be told from this reviewer's own finding, and
+  // the follow-up drops it; count it as unread so the loss is signalled, not silent.
+  const loaded = new Set(reviews.nodes.map((review) => review.id))
+  const orphaned = reviewThreads.nodes.filter((thread) => {
+    const parent = thread.comments.nodes[0]?.pullRequestReview?.id
+    return isOpen(thread) && parent !== undefined && !loaded.has(parent)
+  }).length
+  reviewThreads.unread = notReached + orphaned
 }
