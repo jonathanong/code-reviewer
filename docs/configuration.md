@@ -512,7 +512,11 @@ format of `<owner>.json`; the same keys work in YAML.
   review waiting for a person to post it, `approval` marks an approved head. `held` is what keeps
   another machine, which sees only labels, from claiming a pull request whose review is waiting:
   `claim` declines it (`held for a person`) even when a person adds the request label again, and
-  `claim --force` clears it. `post`, `skip` and `abort` clear it too. `abort --requeue` is the only
+  `claim --force` clears it. The hold covers only the head it was placed on: when a commit or
+  force-push reached the pull request after the `held` label, `claim` and `run` review the new head
+  and clear the stale label. The held head is read from the pull request timeline (GitHub's own
+  event order, not commit dates a pusher controls); when it cannot be read, the hold stands and the
+  reason says so. `post`, `skip` and `abort` clear it too. `abort --requeue` is the only
   path that puts `requested` back, for a failure worth one retry.
 - `checkRun`: absent means no check run. When set, and calls use the GitHub App, `claim` opens a
   check run at the head (`in_progress`), and `post`, `abort` and `skip` complete that same run:

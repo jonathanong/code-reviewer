@@ -1,12 +1,15 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 import type { LabelNames } from './settings.mts'
+import { heldHeadFrom, holdStatus, parseTimelineRows } from './held-head.mts'
 
 /** Label reads and writes for one pull request, injectable for tests. */
 export type LabelIo = {
   labels(): Promise<string[]>
   add(names: readonly string[]): Promise<void>
   remove(name: string): Promise<void>
+  /** The head the current hold was placed on; undefined when the timeline does not say. */
+  heldHead(heldLabel: string): Promise<string | undefined>
 }
 
 export function createGhLabelIo(target: PullTarget, run: RunTextCommand): LabelIo {
@@ -33,6 +36,16 @@ export function createGhLabelIo(target: PullTarget, run: RunTextCommand): LabelI
     async remove(name) {
       await run(['api', '--method', 'DELETE', `${issue}/${encodeURIComponent(name)}`, '--silent'])
     },
+    async heldHead(heldLabel) {
+      const out = await run([
+        'api',
+        '--paginate',
+        `repos/${target.repo}/issues/${target.pr}/timeline?per_page=100`,
+        '-q',
+        '.[] | select(.event == "committed" or .event == "head_ref_force_pushed" or .event == "labeled" or .event == "unlabeled") | [.event, (.sha // .commit_id // .label.name // "")] | @tsv',
+      ])
+      return heldHeadFrom(parseTimelineRows(out), heldLabel)
+    },
   }
 }
 
@@ -57,7 +70,9 @@ export type ClaimOutcome =
  * review already covers (`headReviewed`) once posting finished: the marker rides on the first
  * review part, so only `complete` (set after every part and the approval label) proves that. A
  * requeued retry of a partial post is therefore claimed and finishes publication. A pull request
- * carrying the held label is declined: a person has to post, skip or abort it (or `force`).
+ * carrying the held label is declined while the hold is on the current head (`headSha`): a person
+ * has to post, skip or abort it (or `force`). A hold on an older head is stale, so the new head is
+ * claimed and the swap clears the stale hold.
  */
 export async function claimReview(
   io: LabelIo,
@@ -65,6 +80,8 @@ export async function claimReview(
   options: {
     force?: boolean
     headReviewed?: boolean
+    /** The pull request's current head, to tell a stale hold from a current one. */
+    headSha?: string | undefined
     /** True when a review of this head was posted since the claim began; only asked of a first claim. */
     reviewedSince?: () => Promise<boolean>
   } = {},
@@ -75,9 +92,13 @@ export async function claimReview(
     await swap(io, labels.includes(names.requested) ? [names.completed] : [], [names.requested])
     return { claimed: false, reason: 'head already reviewed', labels } satisfies ClaimOutcome
   }
+  let staleHold = false
   if (options.force !== true && labels.includes(names.held)) {
-    // A person re-requesting does not undo a hold; only `force`, `post`, `skip` or `abort` does.
-    return { claimed: false, reason: 'held for a person', labels } satisfies ClaimOutcome
+    // A person re-requesting does not undo a hold on this head; only `force`, `post`, `skip` or
+    // `abort` does. A hold on an older head is stale and gives way to the new head.
+    const hold = await holdStatus(io, names, options.headSha)
+    if (!hold.stale) return { claimed: false, reason: hold.reason, labels } satisfies ClaimOutcome
+    staleHold = true
   }
   if (options.force !== true && !labels.includes(names.requested)) {
     const reason = labels.includes(names.processing)
@@ -85,8 +106,8 @@ export async function claimReview(
       : `no ${names.requested} label`
     return { claimed: false, reason, labels } satisfies ClaimOutcome
   }
-  // A forced claim clears a hold. An unforced one keeps it, so the re-read below still sees a hold
-  // another machine set after our first read.
+  // A forced claim or a stale hold is cleared. Otherwise the hold stays, so the re-read below still
+  // sees a hold another machine set after our first read.
   const outcome = await swap(
     io,
     [names.processing],
@@ -94,7 +115,7 @@ export async function claimReview(
       names.requested,
       names.completed,
       names.approval,
-      ...(options.force === true ? [names.held] : []),
+      ...(options.force === true || staleHold ? [names.held] : []),
     ],
   )
   if (options.force === true) return { claimed: true, ...outcome } satisfies ClaimOutcome

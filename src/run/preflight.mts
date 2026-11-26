@@ -11,6 +11,7 @@ import { CEILING_REACHED } from '../review/step-watch.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/grant-settings.mts'
 import { heldReview } from '../review/earlier-lookup.mts'
+import { holdStatus } from '../review/held-head.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
 import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
@@ -160,6 +161,10 @@ export async function preflight(
     }
   }
   // Another machine's hold has no tracker row here; the label is what says a person has it.
-  if (labels.includes(names.held)) return { headSha, noop: 'held for a person' }
+  // A hold on an older head is stale: the new head is reviewed and the claim clears the label.
+  if (labels.includes(names.held)) {
+    const hold = await holdStatus(deps.createLabelIo(pull), names, headSha)
+    if (!hold.stale) return { headSha, noop: hold.reason }
+  }
   return { headSha, names, labels }
 }
