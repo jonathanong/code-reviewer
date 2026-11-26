@@ -115,6 +115,7 @@ describe('changeFacts', () => {
         {
           ...changeFacts(list, 'octocat'),
           questions: 0,
+          flags: [],
           truncated: [],
           partial: [],
           authMode: 'app',
