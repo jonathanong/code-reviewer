@@ -2,6 +2,24 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-26 (change, not re-measured): finding `suggestion` field
+
+Prompt and schema change; no run was made and nothing was re-scored.
+
+- **What changed.** Findings gain an optional `suggestion` string (the exact replacement of the commented lines,
+  no fence) in the pillar, verifier and approval-check output schemas. `_contract.md` replaces the one-line
+  "put a `suggestion` block in the body" rule with a rule to give an exact replacement of only the commented
+  lines in `suggestion`, keep `body` to the defect, use `fix` for multi-place or multi-step fixes, and never put
+  a suggestion block in `body`. `verifier.md` step 2 tells the verifier to keep, add or drop it and to correct
+  `line`/`startLine` to the replaced lines. Code renders the GitHub `suggestion` block (visible, before the
+  collapsed `For the fix` section) and drops it for non-inline, `LEFT`, pre-existing and snapped comments.
+  Motivating case: jonathanong/pr-shepherd#833 put its exact replacement in `fix` prose with no button.
+- **Rows made non-comparable.** Every pillar row (all pillars read the contract and the output schema) and every
+  verifier or end-to-end row, so compare only against rows run after this entry. `bench-context`, `bench-focus`
+  and `bench-selection` rows are unaffected.
+- **No case added.** The case format's `expected` entries carry a claim, not a rendered comment, so a case cannot
+  assert that a finding carries a suggestion without a grader change; none was made.
+
 ## 2026-11-26 (change, not re-measured): contract: a cited rule must show its effect on the diff
 
 Prompt change; no run was made and nothing was re-scored.

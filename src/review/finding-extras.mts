@@ -90,6 +90,19 @@ export function parsePrevent(record: Json, where: string): Pick<Finding, 'preven
   return prevent === '' ? {} : { prevent }
 }
 
+/**
+ * The optional exact replacement of the commented lines. Indentation is kept; one trailing newline
+ * is dropped. Absent when blank, because a blank replacement is indistinguishable from none.
+ */
+export function parseSuggestion(record: Json, where: string): Pick<Finding, 'suggestion'> {
+  if (record.suggestion === undefined) return {}
+  if (typeof record.suggestion !== 'string') {
+    throw new ReviewError(`${where}.suggestion must be a string.`)
+  }
+  const suggestion = record.suggestion.replace(/\r\n/gu, '\n').replace(/\n$/u, '')
+  return suggestion.trim() === '' ? {} : { suggestion }
+}
+
 /** The optional fixer-only detail: trimmed, absent when blank. */
 export function parseFix(record: Json, where: string): Pick<Finding, 'fix'> {
   if (record.fix === undefined) return {}

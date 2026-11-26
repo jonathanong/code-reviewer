@@ -224,10 +224,16 @@ rules in the pillar contract, with no code check. In the congruence pillar, the 
 `low` finding (never blocking) when the description does not show one realistic input, command or
 call, and real output under its "Show one real run" rule.
 
-A finding's `body` is for the human reading the review: what is wrong and why it matters. Two
-optional fields hold what only whoever fixes it needs. `fix` is exact steps, file lists, commands
+A finding's `body` is for the human reading the review: what is wrong and why it matters. Three
+optional fields hold what only whoever fixes it needs. `suggestion` is the exact replacement of
+the commented lines (`line`, or `startLine` through `line`), without a fence; the code renders it as
+a GitHub `suggestion` block in the visible part of an inline comment, after the body and before the
+`For the fix` section, using a longer fence when the text holds backticks. It is dropped for a
+finding with no inline anchor, on a deleted (`LEFT`) line, or marked pre-existing, and a comment
+that snaps to another line, or loses its range, has the block turned into a plain code fence so
+the button never replaces the wrong lines (`report.md` does not show it). `fix` is exact steps, file lists, commands
 and reproduction. `prevent` is one line naming a lint rule, type, test or CI guard that would stop
-the class of mistake; over 160 characters it warns like any over-long posted text. Both are kept in
+the class of mistake; over 160 characters it warns like any over-long posted text. `fix` and `prevent` are kept in
 `review.json` and posted together in one collapsed `For the fix` section under the finding (inline
 comment or body finding); `report.md` shows them as plain lines. With neither, no section is
 rendered. Another reviewer's credit stays visible, after the section.

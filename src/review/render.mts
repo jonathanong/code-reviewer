@@ -74,11 +74,28 @@ function fixSection(finding: Finding): string {
   return parts.length === 0 ? '' : `\n\n${detail(FIX_SUMMARY, parts.join('\n\n'))}`
 }
 
+/** A fence longer than any run of backticks in `text`, so the text cannot close it early. */
+function fenceFor(text: string): string {
+  const longest = Math.max(0, ...(text.match(/`+/gu) ?? []).map((run) => run.length))
+  return '`'.repeat(Math.max(3, longest + 1))
+}
+
+/**
+ * The GitHub suggestion block for an inline comment, empty when the finding cannot carry one: no
+ * line to anchor to, a deleted (`LEFT`) line, or a pre-existing FYI.
+ */
+function suggestionSection(finding: Finding): string {
+  if (finding.suggestion === undefined || finding.preExisting === true) return ''
+  if (finding.path === undefined || finding.line === undefined || finding.side === 'LEFT') return ''
+  const fence = fenceFor(finding.suggestion)
+  return `\n\n${fence}suggestion\n${finding.suggestion}\n${fence}`
+}
+
 /** Renders a finding: tag and title up front, short bodies inline, long bodies collapsed. */
 export function renderFindingBody(finding: Finding): string {
   const head = `**${findingTag(finding)}** ${finding.title}`
   const body = isShort(finding.body) ? finding.body : detail('Details', finding.body)
-  return `${head}\n\n${body}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`
+  return `${head}\n\n${body}${suggestionSection(finding)}${fixSection(finding)}${raisedByLine(finding.raisedBy)}`
 }
 
 /** Renders a finding that has no commentable diff line, for the review body. */

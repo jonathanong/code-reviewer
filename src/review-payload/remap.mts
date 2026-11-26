@@ -39,11 +39,12 @@ function withSnap(
 }
 
 function withoutRange(comment: ReviewComment): ReviewComment {
+  // A suggestion replaces the whole range; on one line it would replace the wrong lines.
   return {
     path: comment.path,
     line: comment.line,
     side: comment.side,
-    body: comment.body,
+    body: rewriteSnappedSuggestion(comment.body),
   }
 }
 

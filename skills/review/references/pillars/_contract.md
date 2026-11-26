@@ -202,8 +202,13 @@ Return only JSON:
   not go looking for it: report only what you came across in the files you read for this change.
   A defect the diff introduces, touches, or makes reachable is a normal finding, even in an old
   file.
-- Put a GitHub `suggestion` block in the body only for an exact, minimal replacement of the
-  commented lines.
+- `suggestion` is optional. When the fix is an exact, minimal replacement of only the commented
+  lines (`line`, or `startLine` through `line`), put the replacement text in `suggestion`: exactly
+  the lines that should stand there, with the same indentation, and no code fence. The reviewer
+  posts it as a GitHub "apply suggestion" block, so keep `body` to the defect and its consequence.
+  Use `fix` instead when the fix spans several files or places, needs several steps, or changes
+  lines outside the commented ones. Never put a `suggestion` block in `body` or `fix`. Omit it
+  when the finding has no `path` and `line`, or sits on a deleted (`LEFT`) line.
 - Posted text is read by the author, so write it short. Lead with the defect and its consequence.
   One finding per comment. Do not narrate the review: no pillar, no list of what was checked, no
   tool names, no "the verifier". No praise. Do not restate the diff. When an open thread already
