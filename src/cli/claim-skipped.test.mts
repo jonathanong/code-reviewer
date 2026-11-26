@@ -12,8 +12,12 @@ function fakeDeps(head: string) {
   const labels = new Set(['final-review:requested', 'final-review:complete'])
   const labelIo = {
     labels: vi.fn(async () => [...labels]),
-    add: vi.fn(async (names: string[]) => void names.forEach((name) => labels.add(name))),
-    remove: vi.fn(async (name: string) => void labels.delete(name)),
+    add: vi.fn(async (names: string[]) => {
+      names.forEach((name) => labels.add(name))
+    }),
+    remove: vi.fn(async (name: string) => {
+      labels.delete(name)
+    }),
   }
   const deps = {
     authMode: () => 'gh' as const,

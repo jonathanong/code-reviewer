@@ -162,7 +162,7 @@ describe('claimReview', () => {
 
   it('backs off without touching labels when a request reappears after the swap', async () => {
     const io = fakeIo([REQUESTED_LABEL])
-    const original = io.labels
+    const original = io.labels.bind(io)
     let reads = 0
     io.labels = async () => {
       reads += 1
@@ -180,7 +180,7 @@ describe('claimReview', () => {
   it('backs off when another machine completed or held it after the swap', async () => {
     for (const taken of [COMPLETE_LABEL, HELD_LABEL]) {
       const io = fakeIo([REQUESTED_LABEL])
-      const original = io.labels
+      const original = io.labels.bind(io)
       let reads = 0
       io.labels = async () => {
         reads += 1
@@ -193,7 +193,7 @@ describe('claimReview', () => {
 
   it('backs off when our in-progress label is gone after the swap', async () => {
     const io = fakeIo([REQUESTED_LABEL])
-    const original = io.labels
+    const original = io.labels.bind(io)
     let reads = 0
     io.labels = async () => {
       reads += 1

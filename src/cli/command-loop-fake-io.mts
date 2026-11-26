@@ -15,7 +15,7 @@ function config(file: string, json: unknown, scope?: 'owner') {
   return parseRepoConfig(JSON.stringify(json), file, scope)
 }
 
-/** bob.json relabels and adds a check run for bob; acme/b relabels its own processing label. */
+/** bob.json relabels and adds a check run for bob; acme/b relabels its own processing label and acme/h its held label. */
 const CONFIGS: RepoConfigs = {
   byOwner: new Map([
     [
@@ -58,7 +58,10 @@ const CONFIGS: RepoConfigs = {
       ),
     ],
   ]),
-  byRepo: new Map([['acme/b', config('acme/b.json', { labels: { processing: 'busy' } })]]),
+  byRepo: new Map([
+    ['acme/b', config('acme/b.json', { labels: { processing: 'busy' } })],
+    ['acme/h', config('acme/h.json', { labels: { held: 'parked' } })],
+  ]),
   problems: [],
 }
 
