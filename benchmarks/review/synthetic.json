@@ -672,6 +672,78 @@
     "expected": []
   },
   {
+    "id": "correctness-preexisting-sibling-gap",
+    "fixture": "fixtures/correctness-preexisting-sibling-gap",
+    "title": "fix(check): report an abstained diagnostic when a flow's queue is ambiguous",
+    "kind": "negative",
+    "reason": "The change adds the abstained diagnostic for `flow` bindings only. A `scheduler` binding on an ambiguous queue was silently skipped on the base and still is, so this pull request neither introduced nor made reachable that gap. The reviewer may mention it as a `preExisting` FYI or at most `low`; it must not be rated medium or high and must not change the verdict (Approve). The grader cannot express a maximum severity or `preExisting`, so the case is negative: it fails on a high or blocking finding. The pillar contract states: \"A defect the diff introduces, touches, or makes reachable is a normal finding, even in an old file.\" The verifier reference (step 12) states: \"Keep it, still marked, only if the defect is on the base and this pull request neither introduced it nor made it reachable.\" This is reviewer policy, not a shared rule skill.",
+    "expected": []
+  },
+  {
+    "id": "correctness-introduced-sibling-gap",
+    "fixture": "fixtures/correctness-introduced-sibling-gap",
+    "title": "fix(check): word the abstained diagnostic for flows",
+    "kind": "positive",
+    "reason": "The base reported `abstained` for every binding kind on an ambiguous queue. The change moves the diagnostic inside `if (binding.kind === 'flow')`, so a `scheduler` binding on an ambiguous queue is now silently skipped. The pull request introduced the gap, so it is a normal finding, not a pre-existing FYI. The pillar contract states: \"A defect the diff introduces, touches, or makes reachable is a normal finding, even in an old file.\" The verifier reference (step 12) states: \"Keep it, still marked, only if the defect is on the base and this pull request neither introduced it nor made it reachable.\" This is reviewer policy, not a shared rule skill.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "src/check.mts",
+        "lines": null,
+        "claim": "The change moves the `abstained` diagnostic inside `binding.kind === 'flow'`, so a scheduler (or any non-flow) binding on an ambiguous queue is now silently skipped where the base reported it. The finding must say the pull request introduced the silent skip for non-flow bindings and must not mark it as pre-existing; medium or higher."
+      }
+    ]
+  },
+  {
+    "id": "correctness-eslint-destructure-crash",
+    "fixture": "fixtures/correctness-eslint-destructure-crash",
+    "title": "feat(eslint): add no-unawaited-run",
+    "kind": "positive",
+    "reason": "boundKey in src/rules/no-unawaited-run.mts uses `pattern.properties.find(...)` and then reads `match.computed` with no guard. For `const { a: { run } } = x; run()` the property's value is an ObjectPattern, and for `const { ...rest } = x; rest()` the member is a RestElement, so `find` returns undefined and the read throws a TypeError inside the lint rule. The correctness reference lists as in scope: \"Bugs: wrong logic, unhandled failure paths, off-by-one errors, races, resource leaks, wrong error handling, broken edge cases (empty, null, unicode, large input, timeouts, retries).\" Its blocking bar states: \"A concrete input or state produces a wrong result, a crash, data loss, or a hang, and you can state that scenario.\" This is reviewer policy, not a shared rule skill.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/rules/no-unawaited-run.mts",
+        "lines": null,
+        "claim": "boundKey reads `match.computed` where `match` comes from `pattern.properties.find(...)` and is undefined for nested destructuring (`const { a: { run } } = x`) or rest destructuring (`const { ...rest } = x`), so the rule throws a TypeError and aborts linting of the file. The finding must name the unguarded `match` read and one of the nested or rest forms; high."
+      }
+    ]
+  },
+  {
+    "id": "correctness-eslint-destructure-guarded",
+    "fixture": "fixtures/correctness-eslint-destructure-guarded",
+    "title": "feat(eslint): add no-unawaited-run",
+    "kind": "negative",
+    "reason": "The same rule, but boundKey returns null when `find` returns undefined (`if (!match) return null`) and the tests cover nested and rest destructuring. Nothing crashes; a reviewer that flags every `find` result fails. The correctness reference lists as in scope: \"Bugs: wrong logic, unhandled failure paths, off-by-one errors, races, resource leaks, wrong error handling, broken edge cases (empty, null, unicode, large input, timeouts, retries).\" Its blocking bar states: \"A concrete input or state produces a wrong result, a crash, data loss, or a hang, and you can state that scenario.\" This is reviewer policy, not a shared rule skill.",
+    "expected": []
+  },
+  {
+    "id": "correctness-unanalyzable-conditional-skip",
+    "fixture": "fixtures/correctness-unanalyzable-conditional-skip",
+    "title": "feat(coverage): report tests whose callback cannot be resolved",
+    "kind": "negative",
+    "reason": "classify deliberately returns null for `test.skip(condition, 'reason')`, the framework's conditional-skip form, with a first argument that is not static and a string second argument. The code comment and docs/rules/unanalyzable-test.md both say so, so the silent pass is intended and must not be reported. The correctness reference lists as in scope: \"Bugs: wrong logic, unhandled failure paths, off-by-one errors, races, resource leaks, wrong error handling, broken edge cases (empty, null, unicode, large input, timeouts, retries).\" This is reviewer policy, not a shared rule skill.",
+    "expected": []
+  },
+  {
+    "id": "correctness-unanalyzable-skip-swallows",
+    "fixture": "fixtures/correctness-unanalyzable-skip-swallows",
+    "title": "feat(coverage): report tests whose callback cannot be resolved",
+    "kind": "positive",
+    "reason": "docs/rules/unanalyzable-test.md promises that every unresolved callback is reported, but classify returns null for any `test.skip` whose first argument is not static, including `test.skip(cond, someCallbackVariable)` whose callback cannot be resolved. That call is silently dropped, against the rule's own contract. The correctness reference lists as in scope: \"Bugs: wrong logic, unhandled failure paths, off-by-one errors, races, resource leaks, wrong error handling, broken edge cases (empty, null, unicode, large input, timeouts, retries).\" This is reviewer policy, not a shared rule skill.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "src/classify.mts",
+        "lines": null,
+        "claim": "classify returns null for every `test.skip` with a non-static first argument, so `test.skip(cond, someCallbackVariable)` with an unresolvable callback is never reported as unanalyzable, although docs/rules/unanalyzable-test.md says every unresolved callback is reported. The finding must name the skip branch and the second argument that is not a reason string."
+      }
+    ]
+  },
+  {
     "id": "congruence-undocumented-unused-allow-failure",
     "fixture": "fixtures/congruence-undocumented-unused-allow-failure",
     "title": "fix(lint): skip generated files",
