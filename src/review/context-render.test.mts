@@ -18,7 +18,8 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     verdict: null,
     effort: null,
     commitsSince: null,
-    truncated: false,
+    unread: { threads: 0, ownReview: false },
+    olderSkipped: false,
     unresolved: [],
     priorQuestions: [],
     others: [],
@@ -104,9 +105,17 @@ describe('renderFollowUpContext', () => {
     expect(renderFollowUpContext(context())).not.toContain('Open questions')
   })
 
-  it('notes a truncated conversation', () => {
-    expect(renderFollowUpContext(context({ truncated: true }))).toContain('longer than the newest')
-    expect(renderFollowUpContext(context())).not.toContain('longer than the newest')
+  it('notes what the conversation read left out', () => {
+    expect(renderFollowUpContext(context())).not.toContain('not read')
+    expect(renderFollowUpContext(context({ olderSkipped: true }))).toContain(
+      'Older resolved or hidden threads and older reviews were not read.',
+    )
+    expect(renderFollowUpContext(context({ unread: { threads: 7, ownReview: false } }))).toContain(
+      '7 older review threads were not read; an open one may be missing.',
+    )
+    expect(renderFollowUpContext(context({ unread: { threads: 0, ownReview: true } }))).toContain(
+      'This reviewer may have reviewed earlier',
+    )
   })
 
   it('notes a reviewed sha missing from history', () => {

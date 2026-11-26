@@ -15,6 +15,20 @@ Prompt and schema change; no run was made and nothing was re-scored.
   output schema changed; the verifier may now spend output on flags. Compare only against rows run after
   this entry. Pillar rows are unchanged.
 
+## 2026-11-26 (change, not re-measured): follow-up context states what the conversation read left out
+
+Prompt change to the verifier's follow-up context; no run was made and nothing was re-scored.
+
+- **What changed.** The one line "The conversation is longer than the newest 60 reviews or 100 threads read
+  here." is replaced by up to three lines, each present only when it applies: this reviewer's own earlier
+  review was not among the reviews read; N older review threads were not read (open ones may be missing);
+  older resolved or hidden threads and reviews were not read. The reader now also gets older open threads
+  (an older page of threads is walked back for unresolved ones), so a long conversation gives it more open
+  items than before.
+- **Rows made non-comparable.** None: no benchmark case carries a follow-up context with a long
+  conversation, so no row's input changed. A future case that does would not compare with the earlier
+  wording.
+
 ## 2026-11-25 (change, not re-measured): agy: network allowlist on every step; web-granted steps run on agy (unmeasured)
 
 Prompt and harness change; no run was made and nothing was re-scored.

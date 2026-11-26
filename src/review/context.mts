@@ -34,8 +34,14 @@ export type FollowUpContext = {
   effort: string | null
   /** Headlines of commits after the reviewed SHA; null when it is not in the recent history. */
   commitsSince: string[] | null
-  /** The conversation exceeded one query page, so older reviews or threads may be missing. */
-  truncated: boolean
+  /**
+   * What the conversation read left out. `threads` counts older review threads the walk back did not
+   * reach (open ones may be missed); `ownReview` is set when older reviews were not read and none of
+   * this reviewer's real reviews was among those read, so an earlier review may exist unseen.
+   */
+  unread: { threads: number; ownReview: boolean }
+  /** Older resolved or hidden history was not read; nothing open was missed because of it. */
+  olderSkipped: boolean
   unresolved: PriorFinding[]
   /** Questions the last review asked, so a follow-up does not ask an answered one again. */
   priorQuestions: Question[]
@@ -115,9 +121,14 @@ export function buildFollowUpContext(
       index === -1
         ? null
         : pull.commits.nodes.slice(index + 1).map((node) => node.commit.messageHeadline),
-    truncated:
-      pull.reviews.pageInfo?.hasPreviousPage === true ||
-      pull.reviewThreads.pageInfo?.hasPreviousPage === true,
+    unread: {
+      threads: pull.reviewThreads.unread ?? (pull.reviewThreads.pageInfo?.hasPreviousPage ? 1 : 0),
+      ownReview: latest === undefined && pull.reviews.pageInfo?.hasPreviousPage === true,
+    },
+    olderSkipped:
+      pull.olderSkipped ??
+      (pull.reviews.pageInfo?.hasPreviousPage === true ||
+        pull.reviewThreads.pageInfo?.hasPreviousPage === true),
     unresolved: [...unresolved, ...bodyFindings],
     priorQuestions: lastReviews.flatMap((review) => parseQuestions(review.body)),
     others: others.notes,

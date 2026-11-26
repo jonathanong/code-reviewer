@@ -68,8 +68,11 @@ describe('runFacts', () => {
 
   it('names a cut-short conversation and a stack member whose diff was skipped', () => {
     const stack = { members: [{ number: 3 }, { number: 4, diffSkipped: 'over 20 MB' }] }
-    expect(facts({ context: { truncated: true }, stack }).truncated).toEqual([
-      'the conversation is longer than the digest reads',
+    expect(
+      facts({ context: { unread: { threads: 12, ownReview: true } }, stack }).truncated,
+    ).toEqual([
+      '12 older review threads were not read',
+      "this reviewer's earlier review was not among the reviews read",
       'diff of stack member #4 was skipped',
     ])
   })

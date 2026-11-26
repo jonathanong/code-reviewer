@@ -48,7 +48,10 @@ function partialFailures(report: ReportData): string[] {
 export function runFacts(out: string): RunFacts {
   const review = json<ReviewInput>(out, 'review.json')
   const report = json<ReportData>(out, 'report.json')
-  const context = json<{ truncated?: boolean; author?: string | null }>(out, 'context.json')
+  const context = json<{
+    unread?: { threads: number; ownReview: boolean }
+    author?: string | null
+  }>(out, 'context.json')
   const skipped = (readStackFile(out)?.members ?? []).filter(
     (member) => member.diffSkipped !== undefined,
   )
@@ -58,7 +61,12 @@ export function runFacts(out: string): RunFacts {
     flags: (review.flags ?? []).map((flag) => flag.kind),
     partial: partialFailures(report),
     truncated: [
-      ...(context.truncated === true ? ['the conversation is longer than the digest reads'] : []),
+      ...(context.unread !== undefined && context.unread.threads > 0
+        ? [`${context.unread.threads} older review threads were not read`]
+        : []),
+      ...(context.unread?.ownReview === true
+        ? ["this reviewer's earlier review was not among the reviews read"]
+        : []),
       ...skipped.map((member) => `diff of stack member #${member.number} was skipped`),
     ],
     author: context.author ?? null,

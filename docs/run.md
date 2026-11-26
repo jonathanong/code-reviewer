@@ -60,15 +60,15 @@ service.
 A hold rule keeps a finished review from being posted. Every rule is on by default and can be
 switched off in machine config. `--post hold` holds every run (`held` lists `post-hold`).
 
-| Rule               | Holds when                                                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `unclear-intent`   | The review has open questions.                                                                                                                                                  |
-| `flagged`          | The review raised a flag: a concern only a person can settle (see [Flags](review.md#flags)). Posted text does not change.                                                       |
-| `large-change`     | The change is over `largeChange.files` files with changed lines (a pure rename does not count) or `largeChange.lines` changed lines, or the diff or conversation was cut short. |
-| `risky-change`     | The change touches a risky path (below).                                                                                                                                        |
-| `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked, or the approval's second check did not complete.                                                              |
-| `not-app-identity` | Calls use the local `gh` login and not the GitHub App.                                                                                                                          |
-| `text-too-long`    | Posted text is over three times its target, which `post` would refuse.                                                                                                          |
+| Rule               | Holds when                                                                                                                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unclear-intent`   | The review has open questions.                                                                                                                                                                                                                                                  |
+| `flagged`          | The review raised a flag: a concern only a person can settle (see [Flags](review.md#flags)). Posted text does not change.                                                                                                                                                       |
+| `large-change`     | The change is over `largeChange.files` files with changed lines (a pure rename does not count) or `largeChange.lines` changed lines, or the diff was cut short, or the conversation was (see [what the conversation read covers](review.md#what-the-conversation-read-covers)). |
+| `risky-change`     | The change touches a risky path (below).                                                                                                                                                                                                                                        |
+| `partial-failure`  | A pillar, the evidence run or the verifier failed or was blocked, or the approval's second check did not complete.                                                                                                                                                              |
+| `not-app-identity` | Calls use the local `gh` login and not the GitHub App.                                                                                                                                                                                                                          |
+| `text-too-long`    | Posted text is over three times its target, which `post` would refuse.                                                                                                                                                                                                          |
 
 A risky path is one a human should read the review for, which is narrower than what sends the
 change to the security pillar. By default it is a source file that is not a test or a doc and that

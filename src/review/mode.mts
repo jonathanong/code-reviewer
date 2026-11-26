@@ -46,12 +46,11 @@ function pushLight(kind: LightPush, reasons: string[]): ModeChoice {
 }
 
 function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): ModeChoice {
-  const { context, since } = input
+  const { since } = input
   const escalate = (reason: string) => {
     reasons.push(`${reason} high effort.`)
     return full('high')
   }
-  if (context.truncated) return escalate('The review conversation is longer than the digest reads:')
   if (input.push !== undefined) return pushLight(input.push.kind, reasons)
   if (since === undefined || since.status !== 'ahead') {
     return escalate('The reviewed SHA is not an ancestor of the head:')

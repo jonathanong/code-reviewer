@@ -97,8 +97,11 @@ export function describeOthers(pull: PrConversation, own: TrustedAuthors): Conte
       'Severity is read only from a marker the reviewer states; otherwise it is unstated.'
     parts.push(`### Unresolved threads\n\n${note}\n\n${threads.map((t) => t.text).join('\n')}`)
   }
-  if (pull.reviewThreads.pageInfo?.hasPreviousPage || pull.reviews.pageInfo?.hasPreviousPage) {
-    parts.push('Only the newest 60 reviews and 100 threads were read; older ones may be missing.')
+  if (pull.reviewThreads.pageInfo?.hasPreviousPage) {
+    parts.push('Older review threads were not read; an open one may be missing.')
+  }
+  if (pull.reviews.pageInfo?.hasPreviousPage) {
+    parts.push('Only the newest reviews were read; an older change request may be missing.')
   }
   return { title: 'Other reviewers', body: parts.join('\n\n') }
 }

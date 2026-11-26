@@ -100,7 +100,8 @@ describe('buildFollowUpContext', () => {
       verdict: null,
       effort: null,
       commitsSince: null,
-      truncated: false,
+      unread: { threads: 0, ownReview: false },
+      olderSkipped: false,
       unresolved: [],
       priorQuestions: [],
       others: [],
@@ -484,13 +485,5 @@ describe('buildFollowUpContext', () => {
     expect(
       build(pull({ reviews: { nodes: [review({ body })] } }), new Set()).reviewedSha,
     ).toBeNull()
-  })
-
-  it('flags a truncated conversation', () => {
-    const more = { hasPreviousPage: true }
-    const none = { hasPreviousPage: false }
-    expect(build(pull({ reviews: { nodes: [], pageInfo: more } })).truncated).toBe(true)
-    expect(build(pull({ reviewThreads: { nodes: [], pageInfo: more } })).truncated).toBe(true)
-    expect(build(pull({ reviews: { nodes: [], pageInfo: none } })).truncated).toBe(false)
   })
 })

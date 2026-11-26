@@ -20,7 +20,8 @@ function context(overrides: Partial<FollowUpContext> = {}): FollowUpContext {
     verdict: null,
     effort: null,
     commitsSince: null,
-    truncated: false,
+    unread: { threads: 0, ownReview: false },
+    olderSkipped: false,
     unresolved: [],
     priorQuestions: [],
     others: [],
@@ -178,12 +179,12 @@ describe('planReview follow-ups', () => {
     ])
   })
 
-  it('escalates when the conversation was truncated', () => {
-    const result = plan({ context: reviewed({ truncated: true }), since })
-    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
-    expect(result.reasons).toEqual([
-      'The review conversation is longer than the digest reads: high effort.',
-    ])
+  it('does not escalate for older conversation that was not read', () => {
+    const result = plan({
+      context: reviewed({ unread: { threads: 40, ownReview: false }, olderSkipped: true }),
+      since,
+    })
+    expect(result).toMatchObject({ mode: 'light' })
   })
 
   it('escalates when the compare API truncated the since diff', () => {

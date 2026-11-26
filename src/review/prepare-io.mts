@@ -99,7 +99,8 @@ export function createGhPrepareIo(
       }
     },
     files: async () => (await io.listFiles()).map(changedFile),
-    conversation: () => fetchConversation(target, run),
+    conversation: async () =>
+      fetchConversation(target, run, { trusted: await io.trustedAuthors() }),
     async compare(base, head, generatedPaths) {
       let parsed: CompareJson
       try {

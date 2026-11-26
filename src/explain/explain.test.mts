@@ -195,6 +195,7 @@ describe('explainRun', () => {
     expect(text).toContain('- Could not check against metrics: No credentials were configured.')
     expect(text).toContain('- Could not check against tickets\n')
     expect(text).toContain('- Findings were checked against 1 source(s) of real data.')
+    expect(text).toContain('- Older resolved or hidden review history was not read.')
     expect(text).toContain('- This is pull request 2 of 3 in a stack')
     expect(text).toContain('$3.01 to produce this review.')
   })

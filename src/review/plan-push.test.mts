@@ -17,7 +17,8 @@ const context = (overrides: Partial<FollowUpContext> = {}): FollowUpContext => (
   verdict: null,
   effort: null,
   commitsSince: null,
-  truncated: false,
+  unread: { threads: 0, ownReview: false },
+  olderSkipped: false,
   unresolved: [],
   priorQuestions: [],
   others: [],
@@ -94,10 +95,7 @@ describe('planReview for a push that only merges the base or rewrites history', 
     expect(result.pillars).toEqual([{ pillar: 'correctness', model: 'sonnet' }])
   })
 
-  it('still escalates a truncated review conversation and honors --effort', () => {
-    const truncated = plan({ push: merges, context: context({ truncated: true }) })
-    expect(truncated).toMatchObject({ mode: 'full', effort: 'high' })
-    expect(truncated.push).toBeUndefined()
+  it('honors --effort over a push', () => {
     const forced = plan({ push: merges, requested: 'medium' })
     expect(forced).toMatchObject({ mode: 'full', effort: 'medium' })
     expect(forced.push).toBeUndefined()

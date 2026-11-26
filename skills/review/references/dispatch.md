@@ -39,7 +39,7 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
   the security pillar.
 - A skip plan has no pillars and a `skipReason`; do not review. With `--effort` (any value) a skip
   case is reviewed instead.
-- Escalations of a follow-up to full: the review conversation was truncated, the last reviewed SHA
+- Escalations of a follow-up to full: the last reviewed SHA
   is not an ancestor of the head (force-push or rebase), the diff since it is too large to list, or
   the new commits change more than half of the pull request's lines.
 - A push is classified in `prepare` with git in the `--tree` checkout and written to `push.json`.
@@ -50,8 +50,7 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
   case git cannot answer (no checkout, commit missing, git older than 2.36, more than 20 merges, a
   resolution too large to list), is `substantive` with the reason in `problems`.
 - A light push (rule 3a) is exempt from the escalations below: the size of what came in from the
-  base and an unreachable reviewed SHA do not make it full. The truncated-conversation escalation
-  and `--effort` still apply. It has two jobs: judge each merge resolution (`git show
+  base and an unreachable reviewed SHA do not make it full. `--effort` still applies. It has two jobs: judge each merge resolution (`git show
   --remerge-diff`, the part of the merge a person had to write) or the range-diff of a rewrite,
   and decide whether what came in from the base breaks the pull request's own change. A clean
   merge with nothing resolved has only the second job. A non-empty resolution is never skipped. It

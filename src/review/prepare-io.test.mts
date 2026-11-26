@@ -59,12 +59,16 @@ describe('createGhPrepareIo', () => {
   })
 
   it('reads the conversation through graphql', async () => {
-    const pull = { title: 'T' }
+    const pull = {
+      title: 'T',
+      reviews: { nodes: [], pageInfo: { hasPreviousPage: false } },
+      reviewThreads: { nodes: [], pageInfo: { hasPreviousPage: false } },
+    }
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: pull } } }),
     )
     const { io } = setup(run)
-    expect(await io.conversation()).toEqual(pull)
+    expect(await io.conversation()).toMatchObject({ title: 'T' })
     expect(run.mock.calls[0]?.[0].slice(0, 2)).toEqual(['api', 'graphql'])
   })
 
