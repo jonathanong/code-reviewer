@@ -4,9 +4,10 @@ import type { HarnessRun } from './types.mts'
 /**
  * Throws before anything runs when the step needs what agy cannot confine. It has no flag that
  * names the tools a step may use or the directories it may read, so it cannot offer "no tools",
- * allow only some shell prefixes or web hosts, or keep reads inside the checkout. A step runs
- * only on a candidate the machine config marks `readsOutsideCheckout`. All of these are refused,
- * never loosened.
+ * allow only some shell prefixes, or keep reads inside the checkout. A step runs only on a
+ * candidate the machine config marks `readsOutsideCheckout`. Those are refused, never loosened.
+ * Web hosts are allowed: `agyArgs` confines the network to them. A host that is not a plain
+ * hostname is refused, since it would otherwise be written into a permission rule.
  */
 export function assertAgyCan(request: HarnessRun): void {
   if (request.readsOutsideCheckout !== true) {
@@ -18,21 +19,50 @@ export function assertAgyCan(request: HarnessRun): void {
   if (request.can.shell.length > 0) {
     throw new HarnessRefusal(`agy cannot confine: shell prefixes (${request.label})`)
   }
-  if (request.can.web.length > 0) {
-    throw new HarnessRefusal(`agy cannot confine: web hosts (${request.label})`)
+  for (const host of request.can.web) {
+    if (!PLAIN_HOSTNAME.test(host)) {
+      throw new HarnessRefusal(
+        `agy cannot confine: web host ${JSON.stringify(host)} (${request.label})`,
+      )
+    }
   }
 }
+
+/** A dotted hostname: no wildcard, scheme, port, path, space or parenthesis. */
+const PLAIN_HOSTNAME =
+  /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/iu
+
+/**
+ * Turns on agy's outbound allowlist while allowing nothing. Any `read_url` rule enables the
+ * allowlist; `.invalid` is a reserved TLD that never resolves. Checked by hand with agy 1.5.17:
+ * with only this rule, `curl https://example.com` is blocked.
+ */
+const PLACEHOLDER_RULE = 'read_url(invalid)'
 
 /** Appended to every prompt: agy has no tool allowlist, and a shell attempt ends its turn empty. */
 export const AGY_TOOL_NOTE =
   'Use only your file reading and search tools; do not run shell commands.'
 
+/** The note for a step granted web hosts: curl on those hosts is the one shell use allowed. */
+export function agyToolNote(web: readonly string[]): string {
+  return web.length === 0
+    ? AGY_TOOL_NOTE
+    : `${AGY_TOOL_NOTE} To read documentation you may run \`curl -sL\` on https URLs at these hosts only: ${web.join(', ')}. Run no other shell command.`
+}
+
+/** The session-only `--settings` JSON: one `read_url` allow rule per granted host. */
+function agySettings(web: readonly string[]): string {
+  const allow = web.length === 0 ? [PLACEHOLDER_RULE] : web.map((host) => `read_url(${host})`)
+  return JSON.stringify({ permissions: { allow } })
+}
+
 const EFFORT_SUFFIX = /-(?:low|medium|high|xhigh)$/u
 
 /**
- * The `agy -p` argument list for one step. What stops edits and commands is headless mode, which
- * cannot prompt and auto-denies any `command` or `edit` permission; `--sandbox` restricts its
- * terminal. `--mode plan` is not passed: it has no effect while `--disable-slash-commands` is
+ * The `agy -p` argument list for one step. Headless mode does not deny commands. What confines
+ * agy is `--sandbox`, which limits the filesystem, plus the network allowlist that `--settings`
+ * turns on for every step (see `PLACEHOLDER_RULE`), so a step reaches only its granted web hosts.
+ * `--mode plan` is not passed: it has no effect while `--disable-slash-commands` is
  * set (agy warns so on stderr). Neither `--dangerously-skip-permissions` nor `--mode auto` is
  * ever passed. `--effort` takes the step's effort, which is never `max`, except when the model id
  * already ends in an effort (`-low`, `-medium`, `-high`, `-xhigh`): agy rejects a flag that
@@ -42,7 +72,7 @@ export function agyArgs(request: HarnessRun): string[] {
   const addDirs = request.addDirs ?? []
   return [
     '-p',
-    `${request.prompt}\n\n${AGY_TOOL_NOTE}`,
+    `${request.prompt}\n\n${agyToolNote(request.can.web)}`,
     '--model',
     request.model,
     '--output-format',
@@ -50,6 +80,8 @@ export function agyArgs(request: HarnessRun): string[] {
     '--json-schema',
     JSON.stringify(request.schema),
     '--sandbox',
+    '--settings',
+    agySettings(request.can.web),
     '--disable-slash-commands',
     ...(request.effort === undefined || EFFORT_SUFFIX.test(request.model)
       ? []

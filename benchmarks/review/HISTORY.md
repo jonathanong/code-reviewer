@@ -2,6 +2,18 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-25 (change, not re-measured): agy: network allowlist on every step; web-granted steps run on agy (unmeasured)
+
+Prompt and harness change; no run was made and nothing was re-scored.
+
+- **What changed.** Every agy step now gets a session-only `--settings` network allowlist (one `read_url(<host>)`
+  per granted web host, or a placeholder that allows nothing). A step granted web hosts is no longer refused by agy:
+  its prompt gains a sentence allowing `curl -sL` on https URLs at those hosts only. Steps without web hosts keep
+  the old note.
+- **Rows made non-comparable.** Every agy-harness row, and every row whose correctness, security or verifier step
+  used to fall back from agy to another harness because it was granted web hosts. Compare only against rows run
+  after this entry.
+
 ## 2026-11-25 (change, not re-measured): Verifier: documented limits, base severity, convention claims (unmeasured)
 
 Prompt change; no run was made and nothing was re-scored. The commit is this change.
