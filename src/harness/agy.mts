@@ -6,9 +6,10 @@ const BINARY = 'agy'
 const NOT_LOGGED_IN = 'not logged into Antigravity'
 
 /**
- * Google's Antigravity CLI, run headless with `agy -p` and `--sandbox`; headless mode auto-denies edits and commands. It
- * runs read-only steps on a candidate marked `readsOutsideCheckout`, and refuses no-tools steps
- * and shell and web grants it cannot confine. It ignores `explorer`, `skills`, `settings`,
+ * Google's Antigravity CLI, run headless with `agy -p`. Headless mode does not deny commands;
+ * `--sandbox` limits the filesystem and a `read_url` allowlist limits the network to the step's
+ * web hosts. It runs read-only steps on a candidate marked `readsOutsideCheckout`, and refuses
+ * no-tools steps and shell grants it cannot confine. It ignores `explorer`, `skills`, `settings`,
  * `transcript` and `maxTurns`.
  */
 export const harness: Harness = {

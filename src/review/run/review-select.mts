@@ -2,6 +2,7 @@ import { join } from 'node:path'
 
 import { diffExcerpt, splitDiff } from '../diff-files.mts'
 import { ReviewError } from '../finding.mts'
+import type { StepModels } from '../models.mts'
 import type { ReviewPlan } from '../plan.mts'
 import { saveFailedSteps } from './failed-steps.mts'
 import { enabledReviewTargets } from './review-focus.mts'
@@ -17,6 +18,7 @@ import type { SkillChoice } from './types.mts'
 export async function chooseSkills(
   steps: ReviewSteps,
   run: {
+    models: StepModels
     out: string
     tree: string
     title: string
@@ -41,7 +43,7 @@ export async function chooseSkills(
     ...(offers.length === 0 ? {} : { targets: offers }),
     rulePlugins: steps.rulePlugins,
     settings: run.settings,
-    ...(steps.models === undefined ? {} : { models: steps.models }),
+    models: run.models,
     exec: steps.exec,
     cwd: run.tree,
   })

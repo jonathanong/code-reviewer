@@ -19,7 +19,7 @@ import { runPillarsAndFocus, selectedReviewTargets } from './review-focus.mts'
 import { buildReviewContext, reportFields, verifierContextFields } from './review-context.mts'
 import { buildReviewInput } from './review-input.mts'
 import { reviewSummary } from './review-summary.mts'
-import { webReferences } from './references-prompt.mts'
+import { webReferences, withReferenceDomains } from './references-prompt.mts'
 import { chooseSkills } from './review-select.mts'
 import { runReviewVerifier } from './verify-run.mts'
 import { verifierContext } from './verifier-context.mts'
@@ -54,11 +54,12 @@ async function review(
   const { mode } = plan
   if (mode === 'skip') return skipReview(steps, plan, { ...base, mode }, out, closed, options.focus)
   const { settings, skills, installs } = await loadRulePlugins(steps)
-  const models = steps.models ?? DEFAULT_STEP_MODELS
-  const skillChoice = await chooseSkills(steps, { out, tree, title, plan, skills, settings })
+  const web = webReferences(steps.references, steps.webReferences)
+  const models = withReferenceDomains(steps.models ?? DEFAULT_STEP_MODELS, web)
+  const picked = { out, tree, title, plan, skills, settings, models }
+  const skillChoice = await chooseSkills(steps, picked)
   const context = await buildReviewContext({ steps, options, prepared, installs, skillChoice })
   const run = runDir(out, plan.sinceSha, steps.rulePlugins)
-  const web = webReferences(steps.references, steps.webReferences)
   const analysis = steps.analysis && (await buildAnalysis(await steps.analysis()))
   const harness = { tree, settings, models, exec: steps.exec }
   const { results, judged, focus, droppedTargets, extraPillars } = await runPillarsAndFocus(

@@ -50,6 +50,11 @@ export type HarnessRun = {
   settings?: object
   /** The machine config accepts that this candidate's harness may read outside the checkout and run directory. */
   readsOutsideCheckout?: boolean
+  /**
+   * Every host the review's configured references allow, whatever this step may use (`can.web`).
+   * A harness that confines the network with an allowlist (agy) allows these on every step.
+   */
+  referenceDomains?: readonly string[]
   /** Read the step's transcript, so the result lists the skills it loaded. */
   transcript?: boolean
 }

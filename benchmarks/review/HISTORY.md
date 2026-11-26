@@ -2,6 +2,20 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-25 (change, not re-measured): agy: network allowlist on every step; web-granted steps run on agy (unmeasured)
+
+Prompt and harness change; no run was made and nothing was re-scored.
+
+- **What changed.** Every agy step now gets a session-only `--settings` network allowlist: one `read_url(<host>)`
+  per host in the review's configured references (`references[].domains`) plus the step's own web hosts, or a
+  placeholder that allows nothing when there are none. A step granted web hosts is no longer refused by agy: its
+  prompt note becomes "Use your file reading and search tools. To read documentation you may run
+  `curl -sL <https URL>` for these hosts only: ... Run no other shell command." Steps without web hosts keep the old
+  file-tools-only note, though their allowlist is the same.
+- **Rows made non-comparable.** Every agy-harness row, and every row whose correctness, security or verifier step
+  used to fall back from agy to another harness because it was granted web hosts. Compare only against rows run
+  after this entry.
+
 ## 2026-11-25 (pilot): three live review outcomes as cases
 
 Pilot, not a measurement: one attempt per case on `correctness`, agy `gemini-4-hydrogen-medium`
@@ -43,6 +57,8 @@ case (agy could not authenticate); the runs below are the re-run outside it.
   neighbouring branches); none reports the intentional silent pass. One attempt each is not a rate.
   These six runs finished before the owner asked to spend no more usage; no run was repeated and
   none is planned until a later measurement.
+
+> > > > > > > origin/main
 
 ## 2026-11-25 (change, not re-measured): Verifier: documented limits, base severity, convention claims (unmeasured)
 

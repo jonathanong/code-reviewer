@@ -164,6 +164,8 @@ export type StepModels = {
   /** Progress lines and the cost ceiling of one review; steps run without them when absent. */
   watch?: StepWatch
   limits?: StepLimits
+  /** Every host the review's configured references allow; each step's request carries them. */
+  referenceDomains?: readonly string[]
 }
 
 export const DEFAULT_STEP_MODELS: StepModels = { plan: DEFAULT_MODEL_PLAN }
@@ -177,7 +179,12 @@ export function runModelStep(
 ): Promise<StepRun> {
   const timeoutMs =
     step.keys[0] === 'select' ? models.limits?.selectTimeoutMs : models.limits?.runTimeoutMs
-  const request = timeoutMs === undefined ? asked : { ...asked, timeoutMs }
+  const hosts = models.referenceDomains ?? []
+  const request = {
+    ...asked,
+    ...(timeoutMs === undefined ? {} : { timeoutMs }),
+    ...(hosts.length === 0 ? {} : { referenceDomains: hosts }),
+  }
   const runtime = { ...realRuntime(models.plan.retry.maxWaitSeconds), ...models.clock }
   const candidates = candidatesFor(models.plan, step.keys, step.fallback)
   const { watch } = models

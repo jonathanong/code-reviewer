@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { ExecError } from '../review/benchmark/exec.mts'
 import { ReviewError } from '../review/finding.mts'
-import { AGY_TOOL_NOTE } from './agy-args.mts'
+import { AGY_TOOL_NOTE, agyToolNote } from './agy-args.mts'
 import { harness } from './agy.mts'
 import { NO_TOOLS, READ_ONLY, type HarnessRun } from './types.mts'
 
@@ -37,8 +37,11 @@ const BASE = [
   '--json-schema',
   '{"type":"object"}',
   '--sandbox',
+  '--settings',
+  '{"permissions":{"allow":["read_url(invalid)"]}}',
   '--disable-slash-commands',
 ]
+const withWeb = (web: string[]) => ({ can: { ...READ_ONLY, web } })
 
 describe('agy harness run', () => {
   it('runs a read-only step with exactly these arguments', async () => {
@@ -89,11 +92,87 @@ describe('agy harness run', () => {
     ['reads outside the checkout', { readsOutsideCheckout: false }],
     ['no-tools steps', { can: NO_TOOLS }],
     ['shell prefixes', { can: { ...READ_ONLY, shell: ['git log'] } }],
-    ['web hosts', { can: { ...READ_ONLY, web: ['a.test'] } }],
   ])('refuses %s before running anything', async (what, overrides) => {
     const exec = okExec()
     const attempt = harness.run(request(overrides), exec)
     await expect(attempt).rejects.toThrow(`agy cannot confine: ${what}`)
+    expect(exec).not.toHaveBeenCalled()
+  })
+
+  it('allows only the granted hosts: one read_url rule each, and a note naming them', async () => {
+    const exec = okExec()
+    await harness.run(request(withWeb(['docs.a.test', 'b.test'])), exec)
+    const args = exec.mock.calls[0]?.[1] ?? []
+    const settings = args[args.indexOf('--settings') + 1] ?? ''
+    expect(JSON.parse(settings)).toStrictEqual({
+      permissions: { allow: ['read_url(docs.a.test)', 'read_url(b.test)'] },
+    })
+    expect(args[1]).toBe(`P\n\n${agyToolNote(['docs.a.test', 'b.test'])}`)
+    expect(args[1]).toContain('curl -sL <https URL>')
+    expect(args[1]).not.toContain('do not run shell commands')
+    expect(args[1]).toContain('docs.a.test, b.test')
+    expect(args.at(-1)).toBe('--disable-slash-commands')
+  })
+
+  it('allows the review reference hosts on a step that grants no web, with the plain note', async () => {
+    const exec = okExec()
+    await harness.run(request({ referenceDomains: ['docs.aws.amazon.com'] }), exec)
+    expect(exec.mock.calls[0]?.[1]).toStrictEqual([
+      ...BASE.slice(0, 1),
+      `P\n\n${AGY_TOOL_NOTE}`,
+      ...BASE.slice(2, 10),
+      '{"permissions":{"allow":["read_url(docs.aws.amazon.com)"]}}',
+      '--disable-slash-commands',
+    ])
+  })
+
+  it('allows reference hosts and the step hosts together, once each, and notes the step hosts', async () => {
+    const exec = okExec()
+    await harness.run(
+      request({ ...withWeb(['a.test']), referenceDomains: ['b.test', 'a.test'] }),
+      exec,
+    )
+    const args = exec.mock.calls[0]?.[1] ?? []
+    expect(JSON.parse(args[args.indexOf('--settings') + 1] ?? '')).toStrictEqual({
+      permissions: { allow: ['read_url(b.test)', 'read_url(a.test)'] },
+    })
+    expect(args[1]).toBe(`P\n\n${agyToolNote(['a.test'])}`)
+  })
+
+  it.each(['*.a.test', 'https://a.test', 'a b.test'])(
+    'refuses the reference host %j before running anything',
+    async (host) => {
+      const exec = okExec()
+      await expect(harness.run(request({ referenceDomains: [host] }), exec)).rejects.toThrow(
+        'agy cannot confine: web host',
+      )
+      expect(exec).not.toHaveBeenCalled()
+    },
+  )
+
+  it('allows one host with a single rule and keeps the note plain without hosts', async () => {
+    const exec = okExec()
+    await harness.run(request(withWeb(['a.test'])), exec)
+    const args = exec.mock.calls[0]?.[1] ?? []
+    expect(args).toContain('{"permissions":{"allow":["read_url(a.test)"]}}')
+    expect(agyToolNote([])).toBe(AGY_TOOL_NOTE)
+    expect(AGY_TOOL_NOTE).not.toContain('curl')
+  })
+
+  it.each([
+    '*.a.test',
+    'https://a.test',
+    'a.test:443',
+    'a.test/x',
+    'a b.test',
+    'a.test)',
+    '(a.test',
+    '',
+  ])('refuses the web host %j before running anything', async (host) => {
+    const exec = okExec()
+    await expect(harness.run(request(withWeb([host])), exec)).rejects.toThrow(
+      'agy cannot confine: web host',
+    )
     expect(exec).not.toHaveBeenCalled()
   })
 

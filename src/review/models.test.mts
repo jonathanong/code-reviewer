@@ -192,4 +192,26 @@ describe('runModelStep', () => {
     )
     expect(other.ran.model).toBe('haiku')
   })
+
+  it('hands the review reference hosts to the harness on every step, only when there are some', async () => {
+    const seen: object[] = []
+    const exec = async (_command: string, args: string[]) => {
+      seen.push(args)
+      return JSON.stringify({ type: 'result', structured_output: 1 })
+    }
+    const request = { prompt: 'P', label: 'S', maxTurns: 1, schema: {}, can: READ_ONLY }
+    const step = { keys: ['select'], fallback: 'small' } as const
+    const plan = resolveModelPlan({
+      steps: { select: [{ harness: 'agy', model: 'm', readsOutsideCheckout: true }] },
+    })
+    await runModelStep({ plan, referenceDomains: ['docs.a.test'] }, step, request, exec)
+    await runModelStep({ plan, referenceDomains: [] }, step, request, exec)
+    const settings = seen.map(
+      (args) => (args as string[])[(args as string[]).indexOf('--settings') + 1],
+    )
+    expect(settings).toStrictEqual([
+      '{"permissions":{"allow":["read_url(docs.a.test)"]}}',
+      '{"permissions":{"allow":["read_url(invalid)"]}}',
+    ])
+  })
 })
