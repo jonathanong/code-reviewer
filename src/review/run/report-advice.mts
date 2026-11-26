@@ -1,4 +1,5 @@
 import type { Answer } from '../answers.mts'
+import type { Flag } from '../flag.mts'
 import type { Impact } from '../impact.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
 
@@ -8,6 +9,8 @@ export type ReportAdvice = {
   splitProposal?: string
   /** The verifier's judgment of the change's kind, with its basis; only a full review asks for it. */
   impact?: Impact
+  /** Concerns only a person can settle; the `flagged` hold rule reads them. */
+  flags?: Flag[]
   /** Replies the review will post to other reviewers' threads. */
   answers?: Answer[]
   /** Why an answer the verifier gave was dropped. */
@@ -16,6 +19,7 @@ export type ReportAdvice = {
 
 export function reportAdvice(output: ReviewVerifierOutput | undefined): ReportAdvice {
   return {
+    ...(output?.flags === undefined ? {} : { flags: output.flags }),
     ...(output?.splitProposal === undefined ? {} : { splitProposal: output.splitProposal }),
     ...(output?.impact === undefined ? {} : { impact: output.impact }),
     ...(output?.answers === undefined || output.answers.length === 0

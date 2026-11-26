@@ -28,6 +28,8 @@ export type RunLine = {
   held: string[]
   findings: Counts | null
   questions: number | null
+  /** The kind of each flag the review raised (hold rule `flagged`). */
+  flags: string[] | null
   reviewUrl: string | null
   /** The ids of the reviews `post` read back from the pull request, one per part. */
   reviewIds: number[]
@@ -58,6 +60,7 @@ const BLANK: Omit<RunLine, 'outcome' | 'exitCode'> = {
   held: [],
   findings: null,
   questions: null,
+  flags: null,
   reviewUrl: null,
   reviewIds: [],
   approvalCheck: null,

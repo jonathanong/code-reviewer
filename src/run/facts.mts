@@ -12,6 +12,8 @@ import type { ReportData } from '../review/run/report.mts'
 /** What the finished run's files say about how far to trust the review. */
 export type RunFacts = {
   questions: number
+  /** The kind of each flag the review raised. */
+  flags: string[]
   partial: string[]
   truncated: string[]
   author: string | null
@@ -53,6 +55,7 @@ export function runFacts(out: string): RunFacts {
   const totals = report.usageByModel.flatMap((step) => step.models)
   return {
     questions: review.questions.length,
+    flags: (review.flags ?? []).map((flag) => flag.kind),
     partial: partialFailures(report),
     truncated: [
       ...(context.truncated === true ? ['the conversation is longer than the digest reads'] : []),

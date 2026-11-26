@@ -7,7 +7,7 @@ import { findingId } from '../review/run/evidence-run.mts'
 import { costBreakdown, type ReportData } from '../review/run/report.mts'
 import { reportStack, type ReportStack } from '../review/run/stack-report.mts'
 import type { StackFile } from '../review/stack-file.mts'
-import { dependenciesOf, notesOf, stackView } from './notes.mts'
+import { dependenciesOf, flagOf, notesOf, stackView, type ExplainFlag } from './notes.mts'
 import { asNumber, asRecord, asString, readJson, type Json } from '../tracker/json.mts'
 
 export type ExplainFinding = {
@@ -45,6 +45,8 @@ export type Explained = {
   skipReason: string | null
   findings: ExplainFinding[]
   questions: ExplainQuestion[]
+  /** The flags that hold the review for a person; empty when none or not recorded. */
+  flags: ExplainFlag[]
   /** The GitHub review event it was posted as, from the tracker; null when not known. */
   event: string | null
   /** Why that event is a COMMENT instead of the verdict's own event. */
@@ -173,6 +175,7 @@ export function loadRun(
       }
     }),
     questions,
+    flags: (Array.isArray(review.flags) ? review.flags : []).flatMap(flagOf),
     event: null,
     downgraded: null,
     dependencies: dependenciesOf(review.dependencies),

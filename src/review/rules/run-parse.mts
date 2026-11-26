@@ -3,6 +3,7 @@ import { isRecord, unknownKeys } from './settings-parse.mts'
 /** The reasons `run` holds a finished review for a human instead of posting it. */
 export const HOLD_RULES = [
   'unclear-intent',
+  'flagged',
   'large-change',
   'risky-change',
   'partial-failure',
@@ -26,6 +27,7 @@ export type RunSettings = {
 export const DEFAULT_RUN: RunSettings = {
   rules: {
     'unclear-intent': true,
+    flagged: true,
     'large-change': true,
     'risky-change': true,
     'partial-failure': true,

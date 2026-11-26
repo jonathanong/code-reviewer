@@ -1,4 +1,5 @@
 import type { ReviewSide } from '../review-payload/index.mts'
+import type { Flag } from './flag.mts'
 import { ASK_OF, type Question } from './question.mts'
 import { deriveVerdict, VERDICTS } from './render.mts'
 import { APPROVAL_CHECK } from './skipped.mts'
@@ -8,6 +9,7 @@ import type { Answer } from './answers.mts'
 import { parseFocus, type FocusAnswer } from './focus.mts'
 import {
   parseAdvice,
+  parseFlag,
   parseDependency,
   parseFix,
   parseNotes,
@@ -54,6 +56,8 @@ export type ReviewInput = {
   skipped: SkippedPillar[]
   findings: Finding[]
   questions: Question[]
+  /** Concerns only a person can settle; absent when there are none. They never change the verdict. */
+  flags?: Flag[]
   /** Informational notes about the pull request itself; they never change the verdict. */
   notes?: string[]
   /** What this pull request needs first; informational, never part of the verdict. */
@@ -164,12 +168,14 @@ export function parseReviewInput(raw: unknown): ReviewInput {
   if (!isRecord(raw)) throw new ReviewError('Input must be a JSON object.')
   const notes = parseNotes(raw.notes)
   const dependencies = list(raw, 'dependencies').slice(0, 15).map(parseDependency)
+  const flags = list(raw, 'flags').map(parseFlag)
   const review: ReviewInput = {
     effort: raw.effort === undefined ? DEFAULT_EFFORT : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
     skipped: list(raw, 'skipped').map(parseSkipped),
     findings: list(raw, 'findings').map(parseFinding),
     questions: list(raw, 'questions').map(parseQuestion),
+    ...(flags.length === 0 ? {} : { flags }),
     ...(notes.length === 0 ? {} : { notes }),
     ...(dependencies.length === 0 ? {} : { dependencies }),
     ...parseAdvice(raw),

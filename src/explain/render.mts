@@ -3,6 +3,7 @@ import type { Severity } from '../review/finding.mts'
 import type { Verdict } from '../review/render.mts'
 import { APPROVAL_CHECK } from '../review/skipped.mts'
 import type { ExplainFinding, ExplainQuestion, Explained } from './load.mts'
+import type { ExplainFlag } from './notes.mts'
 
 const ORDER: Severity[] = ['blocking', 'high', 'medium', 'low']
 
@@ -65,6 +66,10 @@ function question(entry: ExplainQuestion): string {
   const who = entry.askOf === null ? '' : `For ${ASKED[entry.askOf]}: `
   const why = entry.why === null || entry.why === '' ? '' : `\n  Why it matters: ${entry.why}`
   return `- ${who}${entry.text}${why}`
+}
+
+function flag(entry: ExplainFlag): string {
+  return `- \`${entry.kind}\`${entry.where === null ? '' : ` (${entry.where})`}: ${entry.concern}`
 }
 
 const RULES =
@@ -167,6 +172,13 @@ export function renderExplained(run: Explained): string {
     sorted.length === 0 ? 'None.' : sorted.map(finding).join('\n\n'),
     '## Open questions',
     run.questions.length === 0 ? 'None.' : run.questions.map(question).join('\n'),
+    ...(run.flags.length === 0
+      ? []
+      : [
+          '## Flags',
+          'A flag is a concern only a person can settle; `run --post auto` holds the review for it.',
+          run.flags.map(flag).join('\n'),
+        ]),
     ...(run.notes.length === 0
       ? []
       : ['## Notes', run.notes.map((note) => `- ${note}`).join('\n')]),

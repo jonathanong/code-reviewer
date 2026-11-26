@@ -122,6 +122,40 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 14. **Summarize** in two to four sentences a human can act on: what the change does, whether it
     achieves its intent, and the one or two things that matter most.
 
+## Flags
+
+A flag is a concern only a person can settle: the review may still be right, but nobody should act
+on it unattended. List each in `flags` with `kind` (one of the ids below), `concern` (one or two
+sentences: what is wrong and why a person must decide) and, optionally, `where` (`path:line`, left
+out for the pull request as a whole). Raise one only when the diff, the description or `context.md`
+shows it. Flags never change the verdict and never appear in the posted review; `run` holds the
+review for a person when there is at least one.
+
+- `architecture`: a large architectural change made without discussion.
+- `acceptance-criteria`: the acceptance criteria are questionable, or the change does not follow them.
+- `feature-sense`: the feature does not make sense.
+- `wrong-intent`: the change does not do what was meant.
+- `design`: a design concern.
+- `broken-workflow`: the agent that made the change clearly did something wrong, such as a broken
+  process, the wrong branch or junk committed.
+- `safeguard-weakened`: tests skipped or deleted, checks or thresholds lowered, or permissions
+  broadened to make the change pass.
+- `irreversible`: data deletion, a dropped table or column, a one-way migration or a destructive
+  script.
+- `undeclared-breaking`: a public API, CLI, config shape or published package changes
+  incompatibly and the description does not say so.
+- `new-service`: adds an external service, vendor, paid resource or infrastructure that was not
+  discussed.
+- `rule-workaround`: the agent hacked around a rule, so the process needs updating.
+
+These are not flags: an unintentional bug that is easy to fix, even a `blocking` or `high` one
+(that is a finding); the size of the change; a rename; touching a migration or a workflow by
+itself; a question that is only a bug check (that stays a question under step 9). A pull request
+whose stated goal is not yet shown to be met, such as a performance change whose latest
+measurement is missing or worse, is not a flag when the pull request is an investigation or an
+experiment: ask the author as an ordinary question. `acceptance-criteria` and `feature-sense` are
+for criteria that are questionable or ignored, not for results still being measured.
+
 ## Severity
 
 Severity follows the [pillar contract](pillars/_contract.md), decided anew for each finding.
@@ -192,6 +226,13 @@ Copy `skipped` from `plan.json` (plus any pillar that failed), then write `revie
       "question": "Is the v1 client still deployed?",
       "askOf": "product",
       "why": "A live v1 client makes the removed field a breaking change."
+    }
+  ],
+  "flags": [
+    {
+      "kind": "irreversible",
+      "concern": "The migration drops the orders.legacy_id column with no backup step.",
+      "where": "db/migrations/0042.sql:3"
     }
   ]
 }

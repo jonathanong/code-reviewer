@@ -27,7 +27,7 @@ const PLAN: ReviewPlan = {
 const result = (structured: unknown) =>
   JSON.stringify({ type: 'result', total_cost_usd: 0, num_turns: 1, structured_output: structured })
 
-async function run(questions: unknown[], warnings: string[] = []) {
+async function run(questions: unknown[], warnings: string[] = [], flags: unknown[] = []) {
   const out = mkdtempSync(join(tmpdir(), 'review-questions-'))
   dirs.push(out)
   const exec: Exec = async (_command, args) => {
@@ -35,7 +35,7 @@ async function run(questions: unknown[], warnings: string[] = []) {
       return result({ skills: ['jong-skills:documentation'] })
     }
     if ((args[1] as string).includes('VERIFIER prompt text')) {
-      return result({ summary: 's', pullRequestSummary: 'p', findings: [], questions })
+      return result({ summary: 's', pullRequestSummary: 'p', findings: [], questions, flags })
     }
     return result({ findings: [] })
   }
@@ -68,6 +68,22 @@ async function run(questions: unknown[], warnings: string[] = []) {
   })
   return { outcome, out }
 }
+
+describe('runReview flags', () => {
+  it('writes the verifier flags to review.json and report.json without changing the verdict', async () => {
+    const flags = [{ kind: 'irreversible', concern: 'Drops the column.', where: 'db/1.sql:3' }]
+    const { outcome, out } = await run([], [], flags)
+    expect(outcome.summary).toMatchObject({ verdict: 'Approve' })
+    expect(JSON.parse(readFileSync(join(out, 'review.json'), 'utf8')).flags).toEqual(flags)
+    expect(JSON.parse(readFileSync(join(out, 'report.json'), 'utf8')).flags).toEqual(flags)
+  })
+
+  it('leaves flags out when there are none', async () => {
+    const { out } = await run([])
+    expect(JSON.parse(readFileSync(join(out, 'review.json'), 'utf8'))).not.toHaveProperty('flags')
+    expect(JSON.parse(readFileSync(join(out, 'report.json'), 'utf8'))).not.toHaveProperty('flags')
+  })
+})
 
 describe('runReview questions', () => {
   it('turns an open question into a Comment verdict with no findings', async () => {

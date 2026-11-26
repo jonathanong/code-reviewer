@@ -1,8 +1,10 @@
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
 import { ReviewError, type Finding } from '../finding.mts'
 import { PILLARS, type Pillar } from '../pillar-name.mts'
 import type { EvalCase } from './cases.mts'
+import { caseRevision } from './fixture.mts'
 import { currentAssignment, type RawResult } from './judge-all.mts'
 
 /** Pillar findings handed to the verifier, plus the labels derived from the pillar judge. */
@@ -72,4 +74,29 @@ export function collectVerifierInput(
     return [index, findings.length - 1]
   })
   return { findings, real, planted }
+}
+
+export type VerifierRun = {
+  verifierPrompt: string
+  model: string
+  maxTurns: number
+  /** The `pluginSettings` object limiting the run to the rule plugins; omitted when unknown. */
+  settings?: object
+}
+
+/** Identifies everything a verifier output depends on, including the staged rules' digest. */
+export function verifierRunInputs(
+  item: EvalCase,
+  input: VerifierInput,
+  run: VerifierRun,
+  rules: string,
+): string {
+  const payload = JSON.stringify({
+    ...caseRevision(item),
+    input,
+    run,
+    rules,
+    answerable: item.answerable,
+  })
+  return createHash('sha256').update(payload).digest('hex')
 }

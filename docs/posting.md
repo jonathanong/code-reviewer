@@ -14,7 +14,8 @@ The verifier may return `questions` (`question`, `askOf` `author` or `product`, 
 not a softened finding and not a request to explain code. Questions appear in `report.md` and under
 a "Questions" heading in the posted review body, and the next review of the pull request reads them
 as context so an answered one is not asked again. `post` recomputes the verdict from the findings
-and questions; a `verdict` field in `review.json` that disagrees fails the review.
+and questions; a `verdict` field in `review.json` that disagrees fails the review. `flags` do not
+enter the verdict or the posted body (see [Flags](review.md#flags)).
 
 ## Review event and dismissals
 
