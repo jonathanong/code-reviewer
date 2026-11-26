@@ -1,6 +1,6 @@
 import type { Exec } from './benchmark/exec.mts'
 import { HARNESS_NAMES } from '../harness/registry.mts'
-import { watchStep, type StepWatch } from './step-watch.mts'
+import { watchStep, type StepLimits, type StepWatch } from './step-watch.mts'
 import {
   DEFAULT_MAX_WAIT_SECONDS,
   describeStepFailure,
@@ -11,6 +11,7 @@ import {
   type StepRuntime,
 } from '../harness/runner.mts'
 import type { Candidate } from '../harness/types.mts'
+import { explorerModelFor } from './explorer-model.mts'
 import { PILLARS } from './pillar-name.mts'
 import { stepProblems } from './step-check.mts'
 import type { Model } from './plan.mts'
@@ -150,13 +151,6 @@ export function modelTable(plan: ModelPlan): Record<string, Candidate[]> {
   )
 }
 
-/** Wall-clock limits from the machine's `limits` key; a step without one keeps its built-in value. */
-export type StepLimits = {
-  runTimeoutMs?: number
-  selectTimeoutMs?: number
-  contextDeadlineMs?: number
-}
-
 /** The plan, and the sleep and clock its waits use; tests replace the clock. */
 export type StepModels = {
   plan: ModelPlan
@@ -181,6 +175,7 @@ export function runModelStep(
     step.keys[0] === 'select' ? models.limits?.selectTimeoutMs : models.limits?.runTimeoutMs
   const hosts = models.referenceDomains ?? []
   const request = {
+    explorerModel: explorerModelFor(models.plan),
     ...asked,
     ...(timeoutMs === undefined ? {} : { timeoutMs }),
     ...(hosts.length === 0 ? {} : { referenceDomains: hosts }),

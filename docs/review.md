@@ -453,7 +453,7 @@ cost. `review` prints the line above on stderr, then the JSON summary on stdout 
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the configured rule
 plugins (`rulePlugins`; by default `no-mistakes-rules` and `jong-skills`, and none for `[]`). That keeps fixed context near 17k tokens instead of
-about 139k. Pillar runs also get a read-only Haiku `explorer` subagent and no other, because Claude Code's built-in agent types
+about 139k. Pillar runs also get a read-only `explorer` subagent and no other (Haiku by default, else the `small` tier's first Claude model), because Claude Code's built-in agent types
 are denied. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.
 

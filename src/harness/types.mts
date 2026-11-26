@@ -55,6 +55,8 @@ export type HarnessRun = {
    * A harness that confines the network with an allowlist (agy) allows these on every step.
    */
   referenceDomains?: readonly string[]
+  /** The model of the `explorer` subagent when `can.explorer`; Claude only, and `haiku` when absent. */
+  explorerModel?: string
   /** Read the step's transcript, so the result lists the skills it loaded. */
   transcript?: boolean
 }

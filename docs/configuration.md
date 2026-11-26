@@ -385,7 +385,7 @@ ordered list of `{harness, model}` candidates (a Codex or agy candidate also nee
 `pillars`, `focus` (the [requester focus](review.md#requester-focus) step), `pillar.<name>` (for a built-in or a configured pillar), `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
 pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; `focus` uses itself, else `pillars`, else the `medium` tier; light reviews
 use only `verifier.light`. A step that is not set runs exactly as it would without this key, and
-a set key replaces only that key. The explorer subagent's model is not configurable. The harnesses
+a set key replaces only that key. The pillars' `explorer` subagent runs on the `small` tier: the model of its first `claude` candidate, else Haiku. It has no step of its own. The harnesses
 are `claude`, `grok`, `opencode`, `codex` and `agy`; a name that is not registered is a problem. Selecting
 `grok`, `opencode`, `codex` or `agy` sends the pull request's diff and files to that provider. OpenCode at its free usage
 limit hangs until the step timeout and is then treated as rate limited, so the step moves on.

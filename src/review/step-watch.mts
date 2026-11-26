@@ -2,6 +2,13 @@ import type { StepRan } from '../harness/runner.mts'
 import type { Candidate } from '../harness/types.mts'
 import { ReviewError } from './finding.mts'
 
+/** Wall-clock limits from the machine's `limits` key; a step without one keeps its built-in value. */
+export type StepLimits = {
+  runTimeoutMs?: number
+  selectTimeoutMs?: number
+  contextDeadlineMs?: number
+}
+
 /** The start of the message of a review stopped because its steps had spent the ceiling. */
 export const CEILING_REACHED = 'cost ceiling reached'
 

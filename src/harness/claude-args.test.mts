@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { BUILT_IN_AGENTS, EXPLORER_AGENTS, claudeArgs, isolationArgs } from './claude-args.mts'
+import { BUILT_IN_AGENTS, explorerAgents, claudeArgs, isolationArgs } from './claude-args.mts'
 import { READ_ONLY, type Capabilities, type HarnessRun } from './types.mts'
 
 const value = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
@@ -49,14 +49,20 @@ describe('claudeArgs', () => {
     expect(value(web, '--permission-mode')).toBe('dontAsk')
   })
 
-  it('defines the haiku explorer subagent with read-only tools, only when allowed', () => {
-    expect(JSON.parse(value(args, '--agents') as string)).toEqual(EXPLORER_AGENTS)
-    expect(EXPLORER_AGENTS.explorer.model).toBe('haiku')
-    expect(EXPLORER_AGENTS.explorer.tools).toEqual(['Read', 'Grep', 'Glob'])
+  it('defines the explorer subagent with read-only tools, only when allowed', () => {
+    expect(JSON.parse(value(args, '--agents') as string)).toEqual(explorerAgents('haiku'))
+    expect(explorerAgents('haiku').explorer.tools).toEqual(['Read', 'Grep', 'Glob'])
     const without = claudeArgs(run({ can: READ_ONLY }))
     expect(without).not.toContain('--agents')
     expect(without).not.toContain('--disallowedTools')
     expect(value(without, '--tools')).toBe('Read,Grep,Glob')
+  })
+
+  it('runs the explorer on the requested model, haiku by default', () => {
+    const agents = (request: HarnessRun) =>
+      JSON.parse(value(claudeArgs(request), '--agents') as string)
+    expect(agents(run()).explorer.model).toBe('haiku')
+    expect(agents(run({ explorerModel: 'sonnet' })).explorer.model).toBe('sonnet')
   })
 
   it('denies every built-in agent type so Agent reaches only the explorer', () => {
