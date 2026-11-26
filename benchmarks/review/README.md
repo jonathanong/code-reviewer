@@ -15,7 +15,7 @@ $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
 **Every row below is stale.** The pillar contract, the pillar and verifier output schemas, the
-verifier prompt (which since 2026-11-23 may carry a list of document lines), the congruence pillar the verifier performs and the mined-case snapshots have
+verifier prompt (which since 2026-11-23 may carry a list of document lines), the congruence pillar the verifier performs, the verifier's step 2 (documented limits, base severity, convention claims; 2026-11-25, unmeasured) and the mined-case snapshots have
 all changed since this run, so no row is comparable with a run made now. The
 "(no run)" entries in [HISTORY.md](HISTORY.md) list each change and the rows it affects.
 
@@ -150,7 +150,7 @@ Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3
 - It does not measure whether a pillar uses the excerpt, only that the text is there to use.
   Rule text is checked against the plugin versions installed when it ran.
 
-Answer cases (`answers.json`, `bench-verifier` only), not re-measured since the answer's quote became optional (2026-11-23); last measured 2026-11-23, Sonnet as the verifier, three attempts per arm: `answers-like-row-lock` 3 of 3 with rules and 0 of 3 without (the answers without rules lack the rule citation the case expects); `answers-floating-promise` 3 of 3 in both arms, a ceiling case ([history](HISTORY.md)). Each lists another
+Answer cases (`answers.json`, `bench-verifier` only), not re-measured since the answer's quote became optional (2026-11-23) or the verifier's step 2 changed (2026-11-25); last measured 2026-11-23, Sonnet as the verifier, three attempts per arm: `answers-like-row-lock` 3 of 3 with rules and 0 of 3 without (the answers without rules lack the rule citation the case expects); `answers-floating-promise` 3 of 3 in both arms, a ceiling case ([history](HISTORY.md)). Each lists another
 reviewer's open note, as the verifier prompt renders it, and the outcome expected for that note,
 graded by code and reported per thread. The pillar benches do not run this file.
 

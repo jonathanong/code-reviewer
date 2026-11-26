@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-25 (change, not re-measured): Verifier: documented limits, base severity, convention claims (unmeasured)
+
+Prompt change; no run was made and nothing was re-scored. The commit is this change.
+
+- **What changed.** Step 2 of `verifier.md` now tells the verifier to drop a finding that the change's own
+  documentation names as an intended limit, to check the base before rating a finding `medium` or higher (a gap
+  the base already had is pre-existing, and at most `low` in a branch the diff edits), and to keep a repository
+  convention claim only when a search of the head tree supports it.
+- **Rows made non-comparable.** Every row graded by the verifier's output: all review cases, and every
+  `bench-verifier` row. Compare only against rows run after this entry.
+
 ## 2026-11-24 (change, not re-measured): pre-existing findings are an FYI
 
 Prompt, schema and contract change; no run was made and nothing was re-scored.
