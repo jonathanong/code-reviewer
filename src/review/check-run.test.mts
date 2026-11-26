@@ -129,10 +129,11 @@ describe('reportCheckRun', () => {
       ])
     })
 
-    it('takes the newest run of the name when the App login is unknown', async () => {
+    it('creates a run instead of patching another App run when the App login is unknown', async () => {
       const run = lookupThen(`${LOOKUP(3)}${LOOKUP(12, 'other-app')}`)
-      await report(abortedStep('boom'), { run }).result
-      expect(lastArgs(run)).toContain('repos/acme/widgets/check-runs/12')
+      await report(abortedStep('boom'), { run, appLogin: async () => undefined }).result
+      expect(lastArgs(run)).toContain('POST')
+      expect(lastArgs(run)).not.toContain('repos/acme/widgets/check-runs/12')
       expect(fields(run)).toContain('output[summary]=boom')
     })
 
@@ -162,7 +163,10 @@ describe('reportCheckRun', () => {
 
     it('completes a held review as action_required, linking the pull request', async () => {
       const run = lookupThen(LOOKUP(4))
-      await report(heldStep('flagged: 1 flag(s)', 'https://pr/4'), { run }).result
+      await report(heldStep('flagged: 1 flag(s)', 'https://pr/4'), {
+        run,
+        appLogin: async () => 'my-app[bot]',
+      }).result
       expect(lastArgs(run)).toContain('repos/acme/widgets/check-runs/4')
       expect(fields(run)).toEqual([
         'status=completed',
