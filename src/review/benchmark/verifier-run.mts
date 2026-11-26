@@ -39,6 +39,7 @@ export const VERIFIER_OUTPUT_SCHEMA = {
           side: { type: 'string', enum: ['LEFT', 'RIGHT'] },
           startLine: { type: 'integer', minimum: 1 },
           fix: { type: 'string' },
+          suggestion: { type: 'string' },
           prevent: { type: 'string' },
           preExisting: { type: 'boolean' },
           sources: { type: 'array', items: { type: 'integer', minimum: 0 } },

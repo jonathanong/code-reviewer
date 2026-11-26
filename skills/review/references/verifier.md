@@ -29,7 +29,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    `prevent` only when the finding is confirmed and the named check would stop the class of
    mistake, not just this instance; drop it otherwise, or add one by the contract's rule.
    Keep what the author must read in `body` and move exact steps, file lists, commands and
-   reproduction into `fix`, which is posted collapsed. A finding raised for a focus point checks
+   reproduction into `fix`, which is posted collapsed. When the fix is an exact replacement of
+   only the commented lines, keep or add it as `suggestion` by the contract's rule, and correct
+   `line` and `startLine` so they cover exactly the lines it replaces; drop `suggestion` when you
+   cannot make it exact. A finding raised for a focus point checks
    either a question the requester asked or one of the reviewer's own targeted checks; keep it,
    correct it, or drop it, and when dropping it give the reason in one sentence, because the reason
    is shown to the requester or recorded in the report.

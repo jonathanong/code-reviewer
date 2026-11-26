@@ -13,6 +13,7 @@ import {
   parseReviewId,
   parseDependency,
   parseFix,
+  parseSuggestion,
   parseNotes,
   parsePrevent,
   parsePreExisting,
@@ -43,6 +44,8 @@ export type Finding = {
   startLine?: number
   /** What only whoever fixes this needs: exact steps, files, commands, reproduction. Posted collapsed. */
   fix?: string
+  /** Exact replacement text for the commented lines, no fence; posted as a suggestion block on an inline comment only. */
+  suggestion?: string
   /** One line naming a mechanical check (lint rule, type, test, CI guard) that would stop this class of mistake. */
   prevent?: string
   /** Another reviewer's open thread that raised the same problem; credited and linked when posted. */
@@ -129,6 +132,7 @@ function parseFinding(raw: unknown, index: number): Finding {
     body: text(raw, 'body', where).trim(),
     ...parseLocation(raw, where),
     ...parseFix(raw, where),
+    ...parseSuggestion(raw, where),
     ...parsePrevent(raw, where),
     ...parsePreExisting(raw, where),
     ...parseCredit(raw, where),
@@ -189,11 +193,8 @@ export function parseReviewInput(raw: unknown): ReviewInput {
   if (raw.verdict !== undefined) {
     const given = oneOf(VERDICTS, raw.verdict, 'verdict')
     const derived = deriveVerdict(review.findings, review.questions, review.skipped)
-    if (given !== derived) {
-      throw new ReviewError(
-        `verdict ${given} does not match the findings and questions (${derived}); remove it to recompute.`,
-      )
-    }
+    const mismatch = `verdict ${given} does not match the findings and questions (${derived})`
+    if (given !== derived) throw new ReviewError(`${mismatch}; remove it to recompute.`)
   }
   return review
 }

@@ -38,6 +38,7 @@ export const APPROVAL_CHECK_SCHEMA = {
           side: { type: 'string', enum: ['LEFT', 'RIGHT'] },
           startLine: { type: 'integer', minimum: 1 },
           fix: { type: 'string' },
+          suggestion: { type: 'string' },
           prevent: { type: 'string' },
           preExisting: { type: 'boolean' },
         },
