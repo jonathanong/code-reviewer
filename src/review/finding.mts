@@ -52,11 +52,7 @@ export type Finding = {
 }
 
 export type ReviewInput = {
-  /**
-   * Names this one produced review, made when the review is produced (never derived from its
-   * content, so two reviews of one head differ). Every posted part carries it as a hidden marker,
-   * and `post` skips a review whose id is already on the pull request. Absent in older files.
-   */
+  /** Names this one produced review, never derived from content; each posted part carries it as a hidden marker so `post` skips a review already on the pull request. Absent in older files. */
   reviewId?: string
   effort: Effort
   summary: string
@@ -176,9 +172,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
   const notes = parseNotes(raw.notes)
   const dependencies = list(raw, 'dependencies').slice(0, 15).map(parseDependency)
   const flags = list(raw, 'flags').map(parseFlag)
-  const reviewId = parseReviewId(raw.reviewId)
   const review: ReviewInput = {
-    ...(reviewId === undefined ? {} : { reviewId }),
     effort: raw.effort === undefined ? DEFAULT_EFFORT : oneOf(EFFORTS, raw.effort, 'effort'),
     summary: typeof raw.summary === 'string' ? raw.summary.trim() : '',
     skipped: list(raw, 'skipped').map(parseSkipped),
@@ -187,6 +181,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
     ...(flags.length === 0 ? {} : { flags }),
     ...(notes.length === 0 ? {} : { notes }),
     ...(dependencies.length === 0 ? {} : { dependencies }),
+    ...parseReviewId(raw.reviewId),
     ...parseAdvice(raw),
     ...parseAnswers(raw.answers),
     ...parseFocus(raw.focus),

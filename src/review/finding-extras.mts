@@ -11,12 +11,12 @@ const MAX_NOTES = 10
 const MAX_NOTE_CHARS = 600
 
 /** The optional per-review id the post step marks its review with, validated. */
-export function parseReviewId(raw: unknown): string | undefined {
-  if (raw === undefined) return undefined
+export function parseReviewId(raw: unknown): { reviewId?: string } {
+  if (raw === undefined) return {}
   if (typeof raw !== 'string' || !REVIEW_ID_RE.test(raw)) {
     throw new ReviewError('reviewId must be 8 to 64 letters, digits, "-" or "_".')
   }
-  return raw
+  return { reviewId: raw }
 }
 
 /** The informational notes of a `review.json`: bounded, trimmed, never empty strings. */

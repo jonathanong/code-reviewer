@@ -52,6 +52,15 @@ describe('run reading the post outcome', () => {
     })
   })
 
+  it('posts a forced re-review of a head this reviewer already posted', async () => {
+    const fake = setup()
+    expect((await runWith(fake, stdout)).code).toBe(0)
+    expect(fake.io.postReview).toHaveBeenCalledOnce()
+    stdout.length = 0
+    expect((await runWith(fake, stdout, { ...PULL, force: true })).code).toBe(0)
+    expect(fake.io.postReview).toHaveBeenCalledTimes(2)
+  })
+
   it('has no approval check when the review ran none', async () => {
     const { lines } = await runWith(setup(), stdout)
     expect(lines[0]).toMatchObject({ approvalCheck: null })

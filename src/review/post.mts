@@ -12,7 +12,8 @@ import { dismissRequests, staleRequests } from './dismiss.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo, StandingState } from './github.mts'
 import { findingPlacements, type Placement } from './placements.mts'
-import { postedParts, postReviews } from './submit.mts'
+import { postedParts } from './posted-parts.mts'
+import { postReviews } from './submit.mts'
 import { actionable, deriveVerdict, type Verdict } from './render.mts'
 
 export type PostOutcome = {
