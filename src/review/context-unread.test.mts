@@ -79,4 +79,15 @@ describe('what the conversation read left out', () => {
     const own = review({ body: reviewMarker(A, 'Approve', 'low') })
     expect(build(pull({ reviews: { nodes: [own], pageInfo: more } })).unread.ownReview).toBe(false)
   })
+
+  it('falls back to the page info when the walk did not run', () => {
+    const open = build(pull({ reviewThreads: { nodes: [], pageInfo: more } }))
+    expect(open.unread.threads).toBe(1)
+    expect(open.olderSkipped).toBe(true)
+    const reviews = build(pull({ reviews: { nodes: [], pageInfo: more } }))
+    expect(reviews.olderSkipped).toBe(true)
+    const noInfo = build(pull({ reviewThreads: { nodes: [] } }))
+    expect(noInfo.unread.threads).toBe(0)
+    expect(noInfo.olderSkipped).toBe(false)
+  })
 })

@@ -121,6 +121,16 @@ describe('fetchConversation', () => {
       expect(pull.reviewThreads.unread).toBe(0)
     })
 
+    it('throws when an older page reports no pull request', async () => {
+      const first = fake('reviewThreads', { nodes: [thread('T1')], hasPrevious: true }, {})
+      const run = vi.fn(async (args: readonly string[]) =>
+        args.some((arg) => arg.startsWith('before='))
+          ? JSON.stringify({ data: { repository: { pullRequest: null } } })
+          : first.run(args),
+      )
+      await expect(fetchConversation(target, run, { trusted: own })).rejects.toThrow('not found')
+    })
+
     it('keeps only open threads of older pages, so resolved history costs nothing', async () => {
       const { run } = fake(
         'reviewThreads',
