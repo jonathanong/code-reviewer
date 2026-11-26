@@ -2,6 +2,48 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-25 (pilot): three live review outcomes as cases
+
+Pilot, not a measurement: one attempt per case on `correctness`, agy `gemini-4-hydrogen-medium`
+(`--reads-outside-checkout`), judge Opus, at `8ed31a9` plus these fixtures. No prompt, schema or
+grader changed, so no earlier row changes. The first attempt inside the sandbox failed for every
+case (agy could not authenticate); the runs below are the re-run outside it.
+
+- **Why.** Three outcomes from one run on 2026-11-25: a pre-existing gap rated above `low`, a `high`
+  crash in a new ESLint rule that the pipeline caught, and a false positive on an intentional silent
+  pass. Synthetic fixtures; no code is copied from a project.
+- **Cases added (`synthetic.json`).** `correctness-preexisting-sibling-gap` (negative: the change
+  reports `abstained` for `flow` bindings only; the `scheduler` skip on an ambiguous queue is on the
+  base and unchanged) and its twin `correctness-introduced-sibling-gap` (positive, `medium` at
+  `src/check.mts`: the change moves the diagnostic inside a `flow` branch, so the base's `scheduler`
+  report becomes a silent skip). `correctness-eslint-destructure-crash` (positive, `high` at
+  `src/rules/no-unawaited-run.mts`: an unguarded `match.computed` after `properties.find`, which
+  throws for nested or rest destructuring) and `correctness-eslint-destructure-guarded` (negative:
+  `if (!match) return null`). `correctness-unanalyzable-conditional-skip` (negative: `test.skip(cond,
+  'reason')` deliberately returns null, as the comment and doc say) and
+  `correctness-unanalyzable-skip-swallows` (positive, `medium` at `src/classify.mts`: the doc promises
+  every unresolved callback is reported, but any `test.skip` with a non-static first argument returns
+  null).
+- **Grader limit.** A case has a kind and expected findings (pillar, severity, path, claim); it cannot
+  state a maximum severity or `preExisting`, and a negative counts only `high` or `blocking`
+  findings. So the pre-existing case is a negative: it fails if the reviewer reports any `high` or
+  `blocking` finding, including one unrelated to the sibling gap. A `medium` finding passes it, with
+  or without `preExisting`, which the owner's rule (at most `low`, or `preExisting`) would not. Read the raw `preExisting` and `severity` for that.
+- **Pilot result.** `correctness-introduced-sibling-gap`: caught (recall 100%, severity 100%; the
+  finding was `high`, not `medium`). `correctness-eslint-destructure-crash`: caught (recall 100%,
+  severity 100%; rated `blocking`). `correctness-unanalyzable-skip-swallows`: caught (recall 100%,
+  severity 100%; rated `high`; the finding named the non-static first argument of `test.skip`).
+  `correctness-preexisting-sibling-gap`: 0 false alarms (1.0 finding), but the reviewer rated the
+  sibling gap `medium` while marking it `preExisting: true`. It passes the grader and misses the
+  rating the case is meant to hold, so treat it as a known miss on severity; marked pre-existing, the
+  finding would not have affected the verdict. `correctness-eslint-destructure-guarded`: 0 false
+  alarms, 3.0 findings (an awaited `run?.()`, a default-value property and a string-literal key are
+  real gaps in the fixture's `boundKey`); none concerns the guard. `correctness-unanalyzable-
+  conditional-skip`: 0 false alarms, 2.0 findings (a boolean-literal condition, and untested
+  neighbouring branches); none reports the intentional silent pass. One attempt each is not a rate.
+  These six runs finished before the owner asked to spend no more usage; no run was repeated and
+  none is planned until a later measurement.
+
 ## 2026-11-25 (change, not re-measured): Verifier: documented limits, base severity, convention claims (unmeasured)
 
 Prompt change; no run was made and nothing was re-scored. The commit is this change.

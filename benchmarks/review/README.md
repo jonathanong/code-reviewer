@@ -121,6 +121,16 @@ judged by Sonnet, $25.14):
   config (one `medium` congruence finding); the negative's command resolves and nothing is flagged.
   Added on 2026-11-24 from a known miss; piloted once each on agy `gemini-4-hydrogen-medium` (caught,
   quiet), see `HISTORY.md`.
+- Not in the table: three pairs from live review outcomes of 2026-11-25, `correctness` pillar.
+  `correctness-preexisting-sibling-gap` (negative: a gap on the base that the change leaves
+  alone must be rated at most `low` or be `preExisting`; the grader can only fail it on `high`
+  or `blocking`) and `correctness-introduced-sibling-gap` (positive, `medium`);
+  `correctness-eslint-destructure-crash` (positive, `high`: an unguarded `match.computed`) and
+  `correctness-eslint-destructure-guarded` (negative); `correctness-unanalyzable-conditional-skip`
+  (negative: an intentional silent pass documented in code and doc) and
+  `correctness-unanalyzable-skip-swallows` (positive, `medium`). Piloted once each on agy
+  `gemini-4-hydrogen-medium`; the pre-existing negative is a known miss on severity (rated `medium`,
+  marked `preExisting`), see `HISTORY.md`.
 - Not in the table: `congruence-undocumented-unused-allow-failure` (one `medium` congruence finding
   when a description calls a change non-breaking but an allow entry becomes unused and the audit
   exits 1) and its negative twin `congruence-documented-unused-allow-failure`;
