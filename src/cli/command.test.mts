@@ -292,6 +292,7 @@ describe('runReviewCommand', () => {
     out.length = 0
     run.mockRejectedValueOnce(new Error('403'))
     io.headSha.mockResolvedValueOnce(SHA)
+    io.listReviews.mockResolvedValueOnce([])
     await expect(runReviewCommand(argv, d)).resolves.toBe(0)
     expect(JSON.parse(out.join(''))).toMatchObject({
       label: 'added',

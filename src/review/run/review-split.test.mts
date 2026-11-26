@@ -100,8 +100,10 @@ describe('runReview with a large change that mixes mechanical and other changes'
     expect(declined.review).not.toHaveProperty('splitProposal')
     expect(declined.call.prompt).toContain('## Large change with a mechanical part')
     expect(proposed.report.verdict).toBe('Approve')
-    const { splitProposal: _kept, ...rest } = proposed.review
-    expect(rest).toEqual(declined.review)
+    // Each review has its own id, so the two differ in that and the proposal only.
+    const { splitProposal: _kept, reviewId: _id, ...rest } = proposed.review
+    const { reviewId: _other, ...bare } = declined.review
+    expect(rest).toEqual(bare)
     expect(proposed.report.findings).toEqual(declined.report.findings)
   })
 })

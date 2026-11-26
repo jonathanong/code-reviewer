@@ -10,6 +10,7 @@ import { parseFocus, type FocusAnswer } from './focus.mts'
 import {
   parseAdvice,
   parseFlag,
+  parseReviewId,
   parseDependency,
   parseFix,
   parseNotes,
@@ -51,6 +52,8 @@ export type Finding = {
 }
 
 export type ReviewInput = {
+  /** Names this one produced review, never derived from content; each posted part carries it as a hidden marker so `post` skips a review already on the pull request. Absent in older files. */
+  reviewId?: string
   effort: Effort
   summary: string
   skipped: SkippedPillar[]
@@ -178,6 +181,7 @@ export function parseReviewInput(raw: unknown): ReviewInput {
     ...(flags.length === 0 ? {} : { flags }),
     ...(notes.length === 0 ? {} : { notes }),
     ...(dependencies.length === 0 ? {} : { dependencies }),
+    ...parseReviewId(raw.reviewId),
     ...parseAdvice(raw),
     ...parseAnswers(raw.answers),
     ...parseFocus(raw.focus),

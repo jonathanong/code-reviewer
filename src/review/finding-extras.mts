@@ -2,12 +2,22 @@ import { MAX_ANSWERS, readAnswer, type Answer } from './answers.mts'
 import { DEPENDENCY_KINDS, DEPENDENCY_STATES, type Dependency } from './dependency.mts'
 import { readImpact, type Impact } from './impact.mts'
 import { FLAG_KINDS, type Flag } from './flag.mts'
+import { REVIEW_ID_RE } from './markers.mts'
 import { isRecord, oneOf, ReviewError, text, type Finding } from './finding.mts'
 
 type Json = Record<string, unknown>
 
 const MAX_NOTES = 10
 const MAX_NOTE_CHARS = 600
+
+/** The optional per-review id the post step marks its review with, validated. */
+export function parseReviewId(raw: unknown): { reviewId?: string } {
+  if (raw === undefined) return {}
+  if (typeof raw !== 'string' || !REVIEW_ID_RE.test(raw)) {
+    throw new ReviewError('reviewId must be 8 to 64 letters, digits, "-" or "_".')
+  }
+  return { reviewId: raw }
+}
 
 /** The informational notes of a `review.json`: bounded, trimmed, never empty strings. */
 export function parseNotes(raw: unknown): string[] {

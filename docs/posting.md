@@ -56,6 +56,19 @@ retried after transient failures`.
 
 ## Read-back
 
+Every review that `review` produces gets its own `reviewId` (a random UUID, made once and saved in
+`review.json`), and every posted part carries it as a hidden `<!-- final-review-id ... -->` marker
+beside the verdict and part markers. Before submitting anything, a real `post` looks for reviews by the
+reviewer's own identity (only those count, since anyone can copy a marker) that carry this id and
+this head for every part. If they are all there it submits nothing and succeeds: it prints
+`outcome: "noop"`, `reason: "review already posted"` and the existing `urls` and `reviewIds`, and
+still closes the request and in-progress labels. A review of the same head with a new id, such as
+`run --force` makes, posts normally. A review with only some parts posted is not a no-op; `post`
+posts all its parts again. A `review.json` without a `reviewId` (an older run directory, or one
+written by hand) is given one at post time, so it posts, and the output warns that a repeat of that
+file cannot be detected. If the identity or the reviews cannot be read, the check is skipped with a
+warning and the post goes ahead.
+
 `post` confirms what it posted. Before submitting, it records which reviews already exist; after,
 it reads the pull request's reviews back and looks for the reviews that are new, written by the
 reviewer's own identity (the same one that decides whose markers count), and carry this head's

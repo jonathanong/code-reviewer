@@ -267,8 +267,11 @@ describe('runReview', () => {
     const { out, steps, options } = setup()
     await runReview(steps, options)
     const raw = readJson(out, 'review.json')
-    expect(Object.keys(raw).sort().join()).toBe('effort,findings,questions,skipped,summary')
+    expect(Object.keys(raw).sort().join()).toBe(
+      'effort,findings,questions,reviewId,skipped,summary',
+    )
     expect(raw.effort).toBe('high')
+    expect(raw.reviewId).toMatch(/^[0-9a-f-]{36}$/u)
     const parsed = parseReviewInput(raw)
     expect(parsed.findings).toHaveLength(1)
     expect(parsed.skipped).toEqual(PLAN.skipped)

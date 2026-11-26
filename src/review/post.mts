@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import {
   indexReviewFiles,
   type ReviewEvent,
@@ -10,6 +12,7 @@ import { dismissRequests, staleRequests } from './dismiss.mts'
 import { ReviewError, type ReviewInput } from './finding.mts'
 import type { ReviewIo, StandingState } from './github.mts'
 import { findingPlacements, type Placement } from './placements.mts'
+import { postedParts } from './posted-parts.mts'
 import { postReviews } from './submit.mts'
 import { actionable, deriveVerdict, type Verdict } from './render.mts'
 
@@ -34,6 +37,8 @@ export type PostOutcome = {
   textWarnings: string[]
   /** The warnings over three times the target, which a real post refuses without `allowLong`. */
   tooLong: string[]
+  /** Set when this reviewer had already posted every part of this review; nothing was submitted. */
+  alreadyPosted?: true
   /** Earlier requests for changes or approvals of this reviewer's own that a COMMENT review dismissed. */
   dismissed: number[]
   /** On a dry run, the earlier requests for changes or approvals a real post would dismiss. */
@@ -75,6 +80,14 @@ export async function postFinalReview(
       `Pull request head is ${current}, not the reviewed ${headSha}; re-review the new head.`,
     )
   }
+  const given = input.reviewId
+  const reviewId = given ?? randomUUID()
+  // Without an id of its own (an older run directory or a hand-written input) the review gets one
+  // now, which no earlier post can carry, so a repeat of this same file cannot be detected.
+  const noId =
+    given === undefined
+      ? ['review.json has no reviewId, so a repeated post of it cannot be detected as a duplicate.']
+      : []
   const files = await io.listFiles()
   const index = indexReviewFiles(files)
   const placements = findingPlacements(actionable(input.findings), index)
@@ -82,7 +95,7 @@ export async function postFinalReview(
   const choice = await chooseEvent(io, verdict, options.author)
   const reviews = withEvent(
     buildReviews(
-      input,
+      { ...input, reviewId },
       headSha,
       index,
       options.limits ?? DEFAULT_LIMITS,
@@ -109,7 +122,7 @@ export async function postFinalReview(
       reviews,
       placements,
       tooLong,
-      warnings: [...warnings, ...stale.warnings],
+      warnings: [...warnings, ...noId, ...stale.warnings],
       textWarnings: warnings,
       dismissed: [],
       wouldDismiss: stale.reviews.map(({ id }) => id),
@@ -124,6 +137,25 @@ export async function postFinalReview(
     throw new ReviewError(
       `Posted text is over three times its target (${tooLong.join('; ')}); shorten it or pass --allow-long.`,
     )
+  }
+  const { parts: existing, warning: unchecked } =
+    given === undefined ? {} : await postedParts(io, reviews, headSha, given)
+  if (existing !== undefined) {
+    return {
+      verdict,
+      reviews,
+      placements,
+      tooLong,
+      warnings,
+      textWarnings: warnings,
+      dismissed: [],
+      urls: existing.map(({ url }) => url),
+      reviewIds: existing.map(({ id }) => id),
+      confirmed: true,
+      label: 'unchanged',
+      alreadyPosted: true,
+      ...choice,
+    }
   }
   const { urls, confirmed, warnings: confirmation, ...posted } = await postReviews(io, reviews)
   const sent = { ...choice, ...posted }
@@ -146,6 +178,8 @@ export async function postFinalReview(
     tooLong,
     warnings: [
       ...warnings,
+      ...noId,
+      ...(unchecked === undefined ? [] : [unchecked]),
       ...confirmation,
       ...unconfirmed,
       ...stale.warnings,

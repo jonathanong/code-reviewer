@@ -84,7 +84,8 @@ later `run` of the same head a no-op rather than a loop. `queue` reports such a 
 is `held` only while the head is the one reviewed and `review.json` is still there. With `--post auto`, a held review is
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
 (`code-reviewer post ... --input RUNDIR/review.json`), which clears the request label along with
-the in-progress one. `run --force` reviews the head again.
+the in-progress one. Running that command again for a review already posted is a no-op
+([posting](posting.md#read-back)). `run --force` reviews the head again.
 
 ## When the cost ceiling stops a review
 
