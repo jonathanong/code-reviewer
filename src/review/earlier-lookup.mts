@@ -47,14 +47,17 @@ export function unpostedReview(
 
 /**
  * The run directory of this machine's unposted review of exactly this head, left by a held run or a
- * manual `review`; undefined when the tracker has none or its review file is gone.
+ * manual `review`, found among already folded tracker rows; undefined when there is none or its
+ * review file is gone or unreadable. An unreadable file leaves the entry as not held, so one
+ * entry's read failure never ends a listing of the others.
  */
-export function heldReview(
+export function heldReviewIn(
+  rows: readonly TrackerRow[],
   io: TrackerIo,
   at: { repo: string; pr: number; headSha: string },
 ): string | undefined {
   const repo = at.repo.toLowerCase()
-  const row = foldRows(readRows(io).rows).find(
+  const row = rows.find(
     (candidate) =>
       candidate.repo.toLowerCase() === repo &&
       candidate.pr === at.pr &&
@@ -63,5 +66,17 @@ export function heldReview(
   )
   const dir = row?.runDir
   if (dir === null || dir === undefined) return undefined
-  return io.read(join(dir, 'review.json')) === undefined ? undefined : dir
+  try {
+    return io.read(join(dir, 'review.json')) === undefined ? undefined : dir
+  } catch {
+    return undefined
+  }
+}
+
+/** The same lookup, reading and folding the tracker itself. */
+export function heldReview(
+  io: TrackerIo,
+  at: { repo: string; pr: number; headSha: string },
+): string | undefined {
+  return heldReviewIn(foldRows(readRows(io).rows), io, at)
 }

@@ -37,6 +37,28 @@ describe('markHeld', () => {
     expect(markHeld([entry()], io)).toEqual([entry()])
   })
 
+  it('leaves an entry whose review.json cannot be read as requested and still lists the others', () => {
+    const base = memoryTracker(
+      [
+        row({ state: 'reviewed', pr: 7 }),
+        row({ state: 'reviewed', pr: 8, runDir: '/state/runs/o/r/8-bbbbbbbbbbbb' }),
+      ],
+      {
+        [RUN_DIR]: savedRun(),
+        '/state/runs/o/r/8-bbbbbbbbbbbb': savedRun(),
+      },
+    )
+    const io = {
+      ...base,
+      read: (path: string) => {
+        if (path.startsWith(RUN_DIR) && path.endsWith('review.json')) throw new Error('EACCES')
+        return base.read(path)
+      },
+    }
+    const result = markHeld([entry(), entry({ pr: 8 })], io)
+    expect(result.map((each) => each.state)).toEqual(['requested', 'held'])
+  })
+
   it('leaves a requested entry whose row was posted or failed', () => {
     for (const state of ['posted', 'failed'] as const) {
       expect(markHeld([entry()], memoryTracker([row({ state })]))).toEqual([entry()])
