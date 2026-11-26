@@ -6,10 +6,12 @@ export type QueueEntry = {
   repo: string
   pr: number
   headSha: string
-  state: 'requested' | 'in-progress'
+  state: 'requested' | 'in-progress' | 'held'
   isDraft: boolean
   updatedAt: string
   url: string
+  /** Set on a `held` entry: the run directory of this machine's unposted review of this head. */
+  runDir?: string
   /** Set when the pull request is in a stack: the bottom pull request, its place, the stack size. */
   stack?: { root: number; position: number; size: number }
 }
@@ -55,7 +57,7 @@ async function search(
   run: RunTextCommand,
   scope: string,
   label: string,
-  state: QueueEntry['state'],
+  state: 'requested' | 'in-progress',
 ): Promise<QueueEntry[]> {
   const q = `${scope} is:pr is:open label:"${label}" sort:updated-asc`
   const out = await run(['api', 'graphql', '-f', `query=${QUERY}`, '-f', `q=${q}`])

@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 
+import { memoryTracker } from '../review/earlier-fake-io.mts'
 import { DEFAULT_LABELS, type LabelNames } from '../review/index.mts'
 import { parseRepoConfig, type RepoConfigs } from '../review/rules/config.mts'
 import { DEFAULT_MAX_COST_USD } from '../review/rules/limits-parse.mts'
@@ -93,6 +94,7 @@ export function fakeDeps(mode: 'app' | 'gh' = 'app', problems: string[] = []) {
     createPrepareIo: vi.fn(() => prepareIo),
     runner,
     references: vi.fn(() => defaultReferencesDir()),
+    tracker: vi.fn(() => memoryTracker([])),
   } as unknown as ReviewDeps
   return { deps, labelIo, prepareIo, run, runner, createLabelIo, configs }
 }
