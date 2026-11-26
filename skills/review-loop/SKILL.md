@@ -67,7 +67,7 @@ change to how you queue, review or post; `report.md` says which kind of push it 
 3. Entries in state `in-progress` were abandoned by an earlier session: review them with
    `claim --force`. Entries in state `requested` are queued in the order listed. Entries in state
    `held` carry the `final-review:held` label (or have a finished review waiting in this machine's
-   `runDir`) for the human to post: skip them, and do not claim, rerun or `--force` them. A person
+   `runDir`) and need a human's attention; a review may not exist (a cost-ceiling hold has none): skip them, and do not claim, rerun or `--force` them. A person
    who adds the request label to a held pull request does not release it; `claim` declines it with
    `held for a person`. An entry `claim` answers with `claim lost` was taken by another claimant: leave it.
 

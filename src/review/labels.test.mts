@@ -191,6 +191,78 @@ describe('claimReview', () => {
     }
   })
 
+  it('keeps a hold another machine set between our read and our swap', async () => {
+    const io = fakeIo([REQUESTED_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 2) io.set.add(HELD_LABEL)
+      return original()
+    }
+    expect(await claimReview(io, DEFAULT_LABELS)).toMatchObject({ reason: 'claim lost' })
+    expect(io.set.has(HELD_LABEL)).toBe(true)
+  })
+
+  it('clears a hold on a forced claim', async () => {
+    const io = fakeIo([HELD_LABEL])
+    expect(await claimReview(io, DEFAULT_LABELS, { force: true })).toMatchObject({ claimed: true })
+    expect(io.set.has(HELD_LABEL)).toBe(false)
+  })
+
+  it('undoes its claim and rethrows when a post-swap read fails', async () => {
+    const failure = new Error('rate limited')
+    for (const failing of ['labels', 'reviewedSince']) {
+      const io = fakeIo([REQUESTED_LABEL])
+      const original = io.labels.bind(io)
+      let reads = 0
+      io.labels = async () => {
+        reads += 1
+        if (failing === 'labels' && reads === 3) throw failure
+        return original()
+      }
+      const reviewedSince = async () => {
+        throw failure
+      }
+      await expect(claimReview(io, DEFAULT_LABELS, { reviewedSince })).rejects.toBe(failure)
+      expect([...io.set]).toEqual([REQUESTED_LABEL])
+    }
+  })
+
+  it('leaves an in-progress label it did not add when the undo runs', async () => {
+    const failure = new Error('post-swap')
+    const io = fakeIo([REQUESTED_LABEL, IN_PROGRESS_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 3) throw failure
+      return original()
+    }
+    await expect(claimReview(io, DEFAULT_LABELS)).rejects.toBe(failure)
+    expect([...io.set].sort()).toEqual([IN_PROGRESS_LABEL, REQUESTED_LABEL].sort())
+  })
+
+  it('still rethrows the original failure when the undo itself fails', async () => {
+    const failure = new Error('post-swap')
+    const io = fakeIo([REQUESTED_LABEL])
+    const original = io.labels.bind(io)
+    let reads = 0
+    io.labels = async () => {
+      reads += 1
+      if (reads === 3) throw failure
+      return original()
+    }
+    const add = io.add.bind(io)
+    let adds = 0
+    io.add = async (names) => {
+      adds += 1
+      if (adds > 1) throw new Error('undo failed')
+      await add(names)
+    }
+    await expect(claimReview(io, DEFAULT_LABELS)).rejects.toBe(failure)
+  })
+
   it('backs off when our in-progress label is gone after the swap', async () => {
     const io = fakeIo([REQUESTED_LABEL])
     const original = io.labels.bind(io)

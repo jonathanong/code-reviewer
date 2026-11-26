@@ -85,12 +85,29 @@ export async function claimReview(
       : `no ${names.requested} label`
     return { claimed: false, reason, labels } satisfies ClaimOutcome
   }
+  // A forced claim clears a hold. An unforced one keeps it, so the re-read below still sees a hold
+  // another machine set after our first read.
   const outcome = await swap(
     io,
     [names.processing],
-    [names.requested, names.completed, names.held, names.approval],
+    [
+      names.requested,
+      names.completed,
+      names.approval,
+      ...(options.force === true ? [names.held] : []),
+    ],
   )
-  if (options.force !== true && (await claimLost(io, names, options))) {
+  if (options.force === true) return { claimed: true, ...outcome } satisfies ClaimOutcome
+  let lost: boolean
+  try {
+    lost = await claimLost(io, names, options)
+  } catch (error) {
+    // Best effort, like `abort --requeue`: drop the in-progress label this claim added and ask
+    // again, so the pull request is not stuck. The original failure is the one to report.
+    await undoClaim(io, names, outcome).catch(() => undefined)
+    throw error
+  }
+  if (lost) {
     // Leave the labels as the other claimant left them; removing its in-progress would unclaim it.
     return {
       claimed: false,
@@ -99,6 +116,12 @@ export async function claimReview(
     } satisfies ClaimOutcome
   }
   return { claimed: true, ...outcome } satisfies ClaimOutcome
+}
+
+async function undoClaim(io: LabelIo, names: LabelNames, outcome: { added: string[] }) {
+  // An unforced claim only gets here with the request label present, and the swap removed it.
+  await io.add([names.requested])
+  if (outcome.added.includes(names.processing)) await io.remove(names.processing)
 }
 
 /**
