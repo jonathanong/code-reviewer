@@ -40,7 +40,7 @@ export type ReviewSteps = {
   /** Posts the skip review on `headSha`, the head `prepare` saw, and closes the labels. */
   skip(reason: string, headSha: string): Promise<unknown>
   /** Drops the in-progress label without requeueing. */
-  abort(): Promise<unknown>
+  abort(reason?: string): Promise<unknown>
   /** Renders what `post` would send for `input`, without posting. */
   preview(input: ReviewInput, headSha: string): Promise<PostOutcome>
   plugins(): Promise<PluginInfo>

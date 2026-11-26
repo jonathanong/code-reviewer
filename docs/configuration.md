@@ -515,9 +515,15 @@ format of `<owner>.json`; the same keys work in YAML.
   `claim --force` clears it. `post`, `skip` and `abort` clear it too. `abort --requeue` is the only
   path that puts `requested` back, for a failure worth one retry.
 - `checkRun`: absent means no check run. When set, and calls use the GitHub App, `claim` opens a
-  check run at the head, `post` completes it from the verdict, and `abort` and `skip` cancel or
-  skip it. Under the local `gh` login the same states are written as a commit status whose
-  context is the configured name (`via` in the result says which).
+  check run at the head (`in_progress`), and `post`, `abort` and `skip` complete that same run:
+  success, failure or neutral from the verdict with `details_url` set to the first review;
+  `cancelled` with a reason for `abort`; `skipped` for `skip`; and `action_required`, titled
+  `Held for a person: <reasons>` and linking the pull request, for a review `run` holds. A later
+  process finds the run by name and head SHA (the newest of this App) and completes it, creating
+  one only when none exists. `run` writes all of these (see [run](run.md#the-check-run)). Under the
+  local `gh` login the same states are written as a commit status whose context is the configured
+  name, with `target_url` set to the review (a held review is `pending`); `via` in the result says
+  which.
 - `consumes` is valid only in a repository file.
 
 `code-reviewer settings --repo owner/name` (or `--owner LOGIN`) prints the resolved settings, including the names of the evidence sources and analysis tools and the layer they came from.

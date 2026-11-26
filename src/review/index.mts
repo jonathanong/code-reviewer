@@ -44,7 +44,14 @@ export {
 export type { EvidenceSettings, ReferenceSettings } from './grant-settings.mts'
 export type { CheckRunSettings, LabelNames, ReviewSettings, SettingLayers } from './settings.mts'
 export type { TargetConfig } from './rules/target-config.mts'
-export { STARTED, abortedStep, postedStep, reportCheckRun, skippedStep } from './check-run.mts'
+export {
+  STARTED,
+  abortedStep,
+  heldStep,
+  postedStep,
+  reportCheckRun,
+  skippedStep,
+} from './check-run.mts'
 export type { CheckRunResult, CheckRunStep } from './check-run.mts'
 export type { ClaimOutcome, LabelIo } from './labels.mts'
 export { assertOwner, listQueue, scopeQualifier } from './queue.mts'

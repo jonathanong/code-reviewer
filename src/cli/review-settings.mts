@@ -54,6 +54,7 @@ export async function checkRunFor(
     mode: deps.authMode(),
     run: deps.runner(owner, name),
     repo: target.repo,
+    appLogin: async () => (await deps.authIdentity()).login,
     headSha: () =>
       headSha === undefined ? deps.createIo(target).headSha() : Promise.resolve(headSha),
     step,

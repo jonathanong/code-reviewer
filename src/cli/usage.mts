@@ -39,10 +39,11 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   layer each came from, the harness and model of every step (models), the names of the evidence sources (never commands or env), and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
   not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,
   then swaps processing and requested for completed and leaves the approval label alone. With
-  checkRun configured and GitHub App auth, claim opens a check run, post completes it (success,
-  failure, neutral for Approve, Request Changes, Comment), and abort and skip complete it as
-  cancelled and skipped; under the gh login the same states are written as a commit status
-  (pending, success, failure, error) with the check run name as its context. A check-run or
+  checkRun configured and GitHub App auth, claim opens a check run, and post, abort and skip
+  complete that same run, found by name and head (success, failure, neutral for Approve, Request
+  Changes, Comment; cancelled; skipped; action_required for a review run holds, linking the pull
+  request); under the gh login the same states are written as a commit status (pending, success,
+  failure, error) with the check run name as its context and the review as its target_url. A check-run or
   status error is reported in the result without losing the review.
   claim swaps requested for processing (and clears completed and approval); it declines a head the
   newest review covers unless --force. prepare writes the

@@ -38,6 +38,18 @@ commands use.
 | 12   | `error`   | A precondition or a flag failed before any label changed.                           |
 | 13   | `error`   | The run failed after starting; the claim was released.                              |
 
+## The check run
+
+When [`checkRun`](configuration.md#labels-and-checkrun) is configured, `run` shows the review as a
+check on the head it claimed: in progress from the claim, then completed on that same check run.
+A posted review completes it as success, failure or neutral (Approve, Request Changes, Comment)
+and links the first review URL. A held review (a hold rule, `--post hold` or the cost ceiling)
+completes it as `action_required`, titled `Held for a person: <reasons>`, linking the pull request;
+`post` completes the same run later. A run that fails after the claim completes it as `cancelled`
+with the reason, also when the head moved. A `noop` writes nothing. Under the `gh` login the same
+states are commit statuses (a held review is `pending`). A check-run error never loses or blocks
+the review.
+
 ## The JSON line
 
 `repo`, `pr`, `headSha`, `outcome`, `exitCode`, `verdict`, `event` (the posted review event),

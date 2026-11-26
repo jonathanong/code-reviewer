@@ -16,7 +16,7 @@ export async function failureSummary(
     summary.costUsd = error.spentUsd
   }
   try {
-    await steps?.abort()
+    await steps?.abort(message(error))
   } catch (abortError) {
     summary.abortError = message(abortError)
   }

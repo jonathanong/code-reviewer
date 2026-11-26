@@ -208,7 +208,7 @@ describe('runLoopCommand', () => {
       'docs only',
       'p'.repeat(40),
     )
-    expect(run.mock.calls[0]?.[0]).toContain(`head_sha=${'h'.repeat(40)}`)
+    expect(run.mock.calls.at(-1)?.[0]).toContain(`head_sha=${'h'.repeat(40)}`)
   })
 
   it('leaves the labels and check run alone when the skip review is refused', async () => {

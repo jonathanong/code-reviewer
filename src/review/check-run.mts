@@ -1,15 +1,22 @@
 import type { GhAuth, RunTextCommand } from '../gh-cli/index.mts'
 import type { Verdict } from './render.mts'
+import { findCheckRun } from './check-run-find.mts'
 import type { ReviewSettings } from './settings.mts'
 
-export type CheckRunConclusion = 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped'
+export type CheckRunConclusion =
+  | 'success'
+  | 'failure'
+  | 'neutral'
+  | 'cancelled'
+  | 'skipped'
+  | 'action_required'
 
 /** `conclusion` absent starts the check run; present completes it. */
 export type CheckRunStep = {
   conclusion?: CheckRunConclusion
   title: string
   summary: string
-  /** The first posted review, which a commit status links to. */
+  /** Where the check links: the first posted review, or the pull request for a held one. */
   url?: string
 }
 
@@ -30,6 +37,7 @@ const COMMIT_STATES: Record<CheckRunConclusion, CommitState> = {
   skipped: 'success',
   failure: 'failure',
   cancelled: 'error',
+  action_required: 'pending',
 }
 
 /** GitHub rejects a commit status description over 140 characters. */
@@ -55,11 +63,24 @@ export function postedStep(verdict: Verdict, urls: readonly string[]): CheckRunS
   }
 }
 
-export function abortedStep(): CheckRunStep {
+export function abortedStep(reason?: string): CheckRunStep {
   return {
     conclusion: 'cancelled',
     title: 'Code review cancelled',
-    summary: 'The review was dropped without a verdict.',
+    summary: reason ?? 'The review was dropped without a verdict.',
+  }
+}
+
+/**
+ * A finished review waiting for a person is not a pass, so it completes as `action_required` and
+ * links the pull request, where the person acts (GitHub needs a details URL for this conclusion).
+ */
+export function heldStep(reason: string, url: string): CheckRunStep {
+  return {
+    conclusion: 'action_required',
+    title: `Held for a person: ${reason}`,
+    summary: reason,
+    url,
   }
 }
 
@@ -79,27 +100,37 @@ type Report = {
   repo: string
   headSha: () => Promise<string>
   step: CheckRunStep
+  /** The App's `<slug>[bot]` login, to find its own check run among others of the same name. */
+  appLogin?: () => Promise<string | undefined>
+}
+
+/** The `-f` fields a create or an update of a check run share. */
+function stepFields(step: CheckRunStep): string[] {
+  return [
+    '-f',
+    `status=${step.conclusion === undefined ? 'in_progress' : 'completed'}`,
+    ...(step.conclusion === undefined ? [] : ['-f', `conclusion=${step.conclusion}`]),
+    ...(step.url === undefined ? [] : ['-f', `details_url=${step.url}`]),
+    '-f',
+    `output[title]=${step.title}`,
+    '-f',
+    `output[summary]=${step.summary}`,
+  ]
 }
 
 async function writeCheckRun(input: Report, name: string): Promise<CheckRunResult> {
   const { step } = input
   const completed = step.conclusion !== undefined
+  const sha = await input.headSha()
+  // Only the start step creates a run; a later step completes that run when it can be found.
+  const id = completed ? await findCheckRun(input, name, sha) : undefined
   const out = await input.run([
     'api',
     '--method',
-    'POST',
-    `repos/${input.repo}/check-runs`,
-    '-f',
-    `name=${name}`,
-    '-f',
-    `head_sha=${await input.headSha()}`,
-    '-f',
-    `status=${completed ? 'completed' : 'in_progress'}`,
-    ...(step.conclusion === undefined ? [] : ['-f', `conclusion=${step.conclusion}`]),
-    '-f',
-    `output[title]=${step.title}`,
-    '-f',
-    `output[summary]=${step.summary}`,
+    id === undefined ? 'POST' : 'PATCH',
+    id === undefined ? `repos/${input.repo}/check-runs` : `repos/${input.repo}/check-runs/${id}`,
+    ...(id === undefined ? ['-f', `name=${name}`, '-f', `head_sha=${sha}`] : []),
+    ...stepFields(step),
     '-q',
     '.html_url',
   ])
@@ -131,8 +162,8 @@ async function writeCommitStatus(input: Report, context: string): Promise<CheckR
 }
 
 /**
- * Writes the configured check run for `step` as a new check run of the same name at the head,
- * which GitHub shows in place of the earlier one; without App auth it writes a commit status with
+ * Writes the configured check run for `step`: the start step creates it, later steps complete the
+ * run found by name and head (a new one only when none exists); without App auth it writes a commit status with
  * the same name as its context. Returns nothing when none is configured. A failure is reported,
  * not thrown, so a posted review is never lost to a check-run error.
  */

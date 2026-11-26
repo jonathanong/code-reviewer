@@ -3,6 +3,7 @@ import {
   abortReview,
   abortedStep,
   claimReview,
+  heldStep,
   reviewStatus,
   prepareReview,
   resolveThreads,
@@ -26,6 +27,9 @@ export type LoopValues = {
   requeue?: boolean | undefined
   /** Internal to `run`: release the claim as a hold for a person. */
   hold?: boolean | undefined
+  /** Internal to `run`: the head the claim covers, so the check run is never written on a moved head. */
+  headSha?: string | undefined
+  /** Why `skip` skips, or why `abort` drops or holds a review; the check run says it. */
   reason?: string | undefined
   out?: string | undefined
   effort?: string | undefined
@@ -33,6 +37,8 @@ export type LoopValues = {
   clones?: string | undefined
   thread?: string[] | undefined
 }
+
+const pullUrl = (target: PullTarget) => `https://github.com/${target.repo}/pull/${target.pr}`
 
 /** Takes a requested review; the outcome says whether it was claimed. */
 export async function claimCommand(values: LoopValues, target: () => PullTarget, deps: ReviewDeps) {
@@ -55,7 +61,10 @@ export async function claimCommand(values: LoopValues, target: () => PullTarget,
     },
   )
   if (!outcome.claimed) return status === undefined ? outcome : { ...outcome, status }
-  return { ...outcome, checkRun: await checkRunFor(deps, target(), STARTED, status?.headSha) }
+  return {
+    ...outcome,
+    checkRun: await checkRunFor(deps, target(), STARTED, values.headSha ?? status?.headSha),
+  }
 }
 
 /** Drops the in-progress label; `--requeue` asks again, and `run` holds a review for a person. */
@@ -69,7 +78,11 @@ export async function abortCommand(values: LoopValues, target: () => PullTarget,
       ...(values.hold === true ? { hold: true } : {}),
     },
   )
-  return { ...labels, checkRun: await checkRunFor(deps, target(), abortedStep()) }
+  const step =
+    values.hold === true
+      ? heldStep(values.reason ?? 'a person must post it', pullUrl(target()))
+      : abortedStep(values.reason)
+  return { ...labels, checkRun: await checkRunFor(deps, target(), step, values.headSha) }
 }
 
 /**
