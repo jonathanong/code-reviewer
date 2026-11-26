@@ -108,7 +108,8 @@ describe('agy harness run', () => {
       permissions: { allow: ['read_url(docs.a.test)', 'read_url(b.test)'] },
     })
     expect(args[1]).toBe(`P\n\n${agyToolNote(['docs.a.test', 'b.test'])}`)
-    expect(args[1]).toContain('curl -sL')
+    expect(args[1]).toContain('curl -sL <https URL>')
+    expect(args[1]).not.toContain('do not run shell commands')
     expect(args[1]).toContain('docs.a.test, b.test')
     expect(args.at(-1)).toBe('--disable-slash-commands')
   })

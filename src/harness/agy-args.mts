@@ -47,7 +47,7 @@ export const AGY_TOOL_NOTE =
 export function agyToolNote(web: readonly string[]): string {
   return web.length === 0
     ? AGY_TOOL_NOTE
-    : `${AGY_TOOL_NOTE} To read documentation you may run \`curl -sL\` on https URLs at these hosts only: ${web.join(', ')}. Run no other shell command.`
+    : `Use your file reading and search tools. To read documentation you may run \`curl -sL <https URL>\` for these hosts only: ${web.join(', ')}. Run no other shell command.`
 }
 
 /** The session-only `--settings` JSON: one `read_url` allow rule per granted host. */
