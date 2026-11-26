@@ -21,15 +21,25 @@ export function postText(pull: PullTarget, headSha: string, runDir: string): str
 /**
  * Drops the in-progress label. `hold` sets the held label, so a review waiting for a person stays
  * visible in `queue` but no machine claims it; a request label would be read as a fresh request.
- * Returns a problem when the labels could not be changed.
+ * `why` is what the check run says, on the head the run claimed. Returns a problem when the labels
+ * could not be changed.
  */
 export async function release(
   pull: PullTarget,
   deps: ReviewDeps,
   how: 'hold' | 'drop',
+  why: { reason: string; headSha: string | null | undefined },
 ): Promise<string | undefined> {
   try {
-    await abortCommand({ hold: how === 'hold' }, () => pull, deps)
+    await abortCommand(
+      {
+        hold: how === 'hold',
+        reason: why.reason,
+        ...(why.headSha == null ? {} : { headSha: why.headSha }),
+      },
+      () => pull,
+      deps,
+    )
     return undefined
   } catch (error) {
     return `could not release the claim: ${message(error)}`

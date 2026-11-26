@@ -29,6 +29,7 @@ describe('review index', () => {
       'createGhReviewIo',
       'deriveVerdict',
       'fetchConversation',
+      'heldStep',
       'listQueue',
       'numberDiff',
       'packBodies',

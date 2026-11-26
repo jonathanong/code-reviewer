@@ -21,7 +21,7 @@ export async function holdAtCeiling(
   const reason = summary.error as string
   const leftover = [
     summary.abortError as string | undefined,
-    await release(pull, deps, 'hold'),
+    await release(pull, deps, 'hold', { reason, headSha: base.headSha }),
   ].filter((problem) => problem !== undefined)
   return runLine('held', RUN_EXIT.held, {
     ...base,

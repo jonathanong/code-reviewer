@@ -76,10 +76,13 @@ export async function finish(
     const fields = reviewFields(stage.base, summary, facts)
     const problems = [...facts.partial, ...facts.truncated]
     if (held.length > 0) {
-      const leftover = await release(pull, deps, 'hold')
+      const why = held.map(({ rule, why }) => `${rule}: ${why}`)
+      const leftover = await release(pull, deps, 'hold', {
+        reason: why.join('; '),
+        headSha: pre.headSha,
+      })
       const explain = writeExplain(deps, out)
       const extra = [leftover, explain.problem].filter((p) => p !== undefined)
-      const why = held.map(({ rule, why }) => `${rule}: ${why}`)
       return runLine('held', RUN_EXIT.held, {
         ...fields,
         held: held.map(({ rule }) => rule),
@@ -110,7 +113,10 @@ export async function finish(
       attention: [...new Set([...problems, ...extra, ...worthALook(outcome)])],
     })
   } catch (error) {
-    const leftover = await release(pull, deps, 'drop')
+    const leftover = await release(pull, deps, 'drop', {
+      reason: message(error),
+      headSha: pre.headSha,
+    })
     // `post` throws this when a part may have landed and the read-back could not say. The claim
     // is still released, without a requeue; the unposted review in `runDir` keeps a later run a
     // no-op, so nothing reviews this head again. The post command is withheld until a human looks.
@@ -151,6 +157,7 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
       out,
       tree: tree.path,
       force: flags.force,
+      headSha: pre.headSha,
       ...(stage.clones === undefined ? {} : { clones: stage.clones }),
       ...(stage.jobs === undefined ? {} : { jobs: stage.jobs }),
       ...(stage.model === undefined ? {} : { model: stage.model }),

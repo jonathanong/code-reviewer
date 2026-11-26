@@ -279,7 +279,7 @@ describe('runReviewCommand', () => {
     expect(JSON.parse(out.join(''))).toMatchObject({
       checkRun: { status: 'completed', url: 'https://example.test/check' },
     })
-    expect(run.mock.calls[0]?.[0]).toEqual(
+    expect(run.mock.calls.at(-1)?.[0]).toEqual(
       expect.arrayContaining([
         `head_sha=${SHA}`,
         'repos/acme/widgets/check-runs',
@@ -290,7 +290,7 @@ describe('runReviewCommand', () => {
     )
     expect(io.headSha).toHaveBeenCalledOnce()
     out.length = 0
-    run.mockRejectedValueOnce(new Error('403'))
+    run.mockRejectedValue(new Error('403'))
     io.headSha.mockResolvedValueOnce(SHA)
     io.listReviews.mockResolvedValueOnce([])
     await expect(runReviewCommand(argv, d)).resolves.toBe(0)

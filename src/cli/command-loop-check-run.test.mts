@@ -23,10 +23,11 @@ afterEach(() => {
 
 describe('runLoopCommand', () => {
   describe('check run', () => {
+    /** The writes only: a completing step first looks its run up with a GET. */
+    const writes = (run: { mock: { calls: unknown[][] } }) =>
+      run.mock.calls.map(([args]) => args as string[]).filter((args) => args.includes('--method'))
     const posts = (run: { mock: { calls: unknown[][] } }) =>
-      run.mock.calls.map(([args]) =>
-        (args as string[]).filter((a) => /^(status|conclusion)=/u.test(a)),
-      )
+      writes(run).map((args) => args.filter((a) => /^(status|conclusion)=/u.test(a)))
 
     it('starts on a claim and completes on abort and skip', async () => {
       const { deps, run } = fakeDeps()
@@ -53,8 +54,36 @@ describe('runLoopCommand', () => {
       } as never)
       await runLoopCommand('claim', {}, () => BOB, deps)
       await runLoopCommand('abort', {}, () => BOB, deps)
-      const heads = run.mock.calls.map(([args]) => args.find((a) => a.startsWith('head_sha=')))
+      const heads = writes(run).map((args) => args.find((a) => a.startsWith('head_sha=')))
       expect(heads).toEqual([`head_sha=${claimHead}`, `head_sha=${'h'.repeat(40)}`])
+    })
+
+    it('uses the head run passes for the claim and the abort, never the live head', async () => {
+      const claimed = 'r'.repeat(40)
+      const { deps, run } = fakeDeps()
+      await runLoopCommand('claim', { force: true, headSha: claimed }, () => BOB, deps)
+      await runLoopCommand('abort', { reason: 'boom', headSha: claimed }, () => BOB, deps)
+      expect(run.mock.calls[1]?.[0]).toContain(
+        `repos/bob/c/commits/${claimed}/check-runs?check_name=Code%20review&per_page=100`,
+      )
+      const [, abort] = writes(run)
+      expect(abort).toContain('conclusion=cancelled')
+      expect(abort).toContain('output[summary]=boom')
+    })
+
+    it('completes a held abort as action_required, linking the pull request', async () => {
+      const { deps, run } = fakeDeps()
+      await runLoopCommand('abort', { hold: true, reason: 'flagged: 1 flag(s)' }, () => BOB, deps)
+      const [held] = writes(run)
+      expect(held).toContain('conclusion=action_required')
+      expect(held).toContain('details_url=https://github.com/bob/c/pull/4')
+      expect(held).toContain('output[title]=Held for a person: flagged: 1 flag(s)')
+    })
+
+    it('says a person must post it when a hold gives no reason', async () => {
+      const { deps, run } = fakeDeps()
+      await runLoopCommand('abort', { hold: true }, () => BOB, deps)
+      expect(writes(run)[0]).toContain('output[title]=Held for a person: a person must post it')
     })
 
     it('does not start one for a declined claim', async () => {
