@@ -51,7 +51,8 @@ describe('otherReviewers', () => {
     expect(body).not.toContain('src/d.ts')
     expect(body).not.toContain('my own')
     expect(body).not.toContain('src/f.ts')
-    expect(body).toContain('older ones may be missing')
+    expect(body).toContain('Older review threads were not read')
+    expect(body).toContain('Only the newest reviews were read')
   })
 
   it('lists a change request only while it stands, and not the reviewer own', async () => {

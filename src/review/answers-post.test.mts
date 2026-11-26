@@ -128,7 +128,16 @@ describe('createGhAnswerIo', () => {
 
   it('reads the conversation of its pull request', async () => {
     const run = vi.fn(async (_args: readonly string[]) =>
-      JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: { nodes: [] } } } } }),
+      JSON.stringify({
+        data: {
+          repository: {
+            pullRequest: {
+              reviews: { nodes: [], pageInfo: { hasPreviousPage: false } },
+              reviewThreads: { nodes: [], pageInfo: { hasPreviousPage: false } },
+            },
+          },
+        },
+      }),
     )
     const pull = await createGhAnswerIo({ repo: 'acme/widgets', pr: 4 }, run).conversation()
     expect(pull.reviewThreads.nodes).toEqual([])

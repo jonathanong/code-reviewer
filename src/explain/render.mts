@@ -129,6 +129,9 @@ function checked(run: Explained): string[] {
   else if (run.checkedSources > 0) {
     lines.push(`Findings were checked against ${run.checkedSources} source(s) of real data.`)
   }
+  if (run.olderSkipped) {
+    lines.push('Older resolved or hidden review history was not read; open threads were.')
+  }
   if (run.stack !== null) {
     lines.push(
       `This is pull request ${run.stack.position} of ${run.stack.total} in a stack, reviewed in the context of the others.${run.stack.staleBase ? ` Its base branch \`${run.stack.rootBase}\` is not the default branch and no open pull request has it as head, so the base may be stale.` : ''}`,

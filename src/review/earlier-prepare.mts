@@ -25,7 +25,7 @@ export async function prepareEarlier(
 ): Promise<{ push: PushFile | undefined; earlier: EarlierFile | undefined }> {
   const { tree, context, headSha } = args
   const local =
-    context.reviewedSha === null && !context.truncated ? args.earlier?.(headSha) : undefined
+    context.reviewedSha === null && !context.unread.ownReview ? args.earlier?.(headSha) : undefined
   const push = await preparePush(io, out, write, {
     ...(tree === undefined ? {} : { tree }),
     reviewedSha: context.reviewedSha ?? local?.sha ?? null,

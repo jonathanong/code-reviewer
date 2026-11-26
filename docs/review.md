@@ -247,6 +247,25 @@ An approval that lists at least one non-pre-existing finding (not only FYI items
 under the index saying none blocks the merge and each is to be resolved before merging: fixed,
 answered with why it stays, or linked to a follow-up issue.
 
+## What the conversation read covers
+
+`prepare` reads a pull request's review conversation with a fixed bound, not the whole history
+(`src/review/context-query.mts`). A long conversation is not a cut-short review.
+
+- **Threads.** The newest 100 are read whole. Older pages are walked back for open ones (unresolved,
+  first comment not hidden), up to `MAX_OLDER_THREAD_PAGES` (5, so at most 600 threads are looked at);
+  `reviewThreads` cannot be filtered on `isResolved` server-side. Older resolved or hidden threads
+  are not read. If the walk reaches the cap with pages left, `context.json` records
+  `unread.threads` (how many were not looked at) and `run` holds the review as `large-change`
+  ("N older review threads were not read"): an open thread may have been missed.
+- **Reviews.** The newest 60 are read. The follow-up needs this reviewer's last real review (its SHA,
+  verdict, effort, questions), so older pages are read back until one is found, up to
+  `MAX_OLDER_REVIEW_PAGES` (5). If older reviews remain and none is this reviewer's, `unread.ownReview`
+  is set and `run` holds the review: it may be treating a follow-up as a first review.
+- **Not holding.** When older history exists but nothing open or needed was missed, `olderSkipped` is
+  set in `context.json`, the verifier's context notes it, and `explain` lists it under "What was
+  checked". The mode is not escalated and nothing is held.
+
 ## Other reviewers' open items
 
 Normally a finding that repeats another reviewer's open thread is dropped as already raised. `prepare`

@@ -36,8 +36,18 @@ export function renderFollowUpContext(
       for (const headline of context.commitsSince) lines.push(`  - ${headline}`)
     }
   }
-  if (context.truncated) {
-    lines.push('- The conversation is longer than the newest 60 reviews or 100 threads read here.')
+  if (context.unread.ownReview) {
+    lines.push(
+      '- This reviewer may have reviewed earlier: its reviews are not among the newest reviews read here.',
+    )
+  }
+  if (context.unread.threads > 0) {
+    lines.push(
+      `- ${context.unread.threads} older review threads were not read; an open one may be missing.`,
+    )
+  }
+  if (context.olderSkipped) {
+    lines.push('- Older resolved or hidden threads and older reviews were not read.')
   }
   lines.push('', '## Intent (untrusted)', '', `Title: ${context.title}`, '', 'Description:')
   lines.push(...quote(context.intent.body))

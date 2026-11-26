@@ -218,11 +218,13 @@ describe('runCommand holding', () => {
     const report = {
       pillars: [{ pillar: 'security', error: 'x', failedAttempts: [], findings: [] }],
     }
-    const { line } = await run(setup({}, { overrides: { report, context: { truncated: true } } }))
+    const { line } = await run(
+      setup({}, { overrides: { report, context: { unread: { threads: 3, ownReview: false } } } }),
+    )
     expect(line.held).toEqual(['large-change', 'partial-failure'])
     expect(line.problems).toEqual([
       'pillar security failed',
-      'the conversation is longer than the digest reads',
+      '3 older review threads were not read',
     ])
   })
 

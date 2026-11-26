@@ -60,6 +60,8 @@ export type Explained = {
   /** Sources of real data the review could not use, with why. */
   blockedSources: { name: string; reason: string }[]
   checkedSources: number
+  /** Older resolved or hidden conversation was not read; nothing open was missed because of it. */
+  olderSkipped: boolean
   evidenceError: string | null
   stack: { position: number; total: number; staleBase: boolean; rootBase: string } | null
   costUsd: number | null
@@ -193,6 +195,7 @@ export function loadRun(
         : [],
     ),
     checkedSources: sources.filter((source) => source.status === 'checked').length,
+    olderSkipped: context.olderSkipped === true,
     evidenceError: asString(evidence.error),
     stack: stackView(stack),
     costUsd: Object.keys(report).length === 0 ? null : cost(report),
