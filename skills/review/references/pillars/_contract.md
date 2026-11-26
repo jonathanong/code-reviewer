@@ -162,6 +162,18 @@ Return only JSON:
   money-moving action that fails open can be blocking: it still has to meet all four conditions
   above, which it usually does, so it is not a shortcut around them. Code that looks correct but has no test is not
   blocking. A title or description problem is `medium` at most.
+- A stated purpose that fails is at least `high`. When a finding shows the pull request does not
+  achieve its own stated purpose, rate it `high` or `blocking`, never lower. The purpose is what
+  the title or description says the change adds: a guarantee, check, fix or protection. It fails
+  when that guarantee can be bypassed, or does not hold on a path it covers. It is `blocking` when
+  it also meets the four conditions above, which it usually does when the gap is in code that runs,
+  on a path someone takes, introduced by this pull request, and closing it needs a decision. When
+  unsure whether it is `blocking`, rate it `high`. This is about the change's own stated goal, not
+  any bug in it: an unrelated defect keeps the normal scale, and so does a change that states no
+  goal it can fail (an investigation or experiment whose results are still being measured).
+  It overrides the `medium` cap on a title or description problem only when the code fails the
+  stated purpose, not when only the wording is off.
+  Example: a check meant to force a human review that a configuration can satisfy without a human.
 - A declared use is a path someone takes. An option, parameter, or field the API accepts but
   ignores produces a wrong result for every caller who sets it, even when the default path works.
   A pre-release or unpublished version does not lower severity: a wrong boundary or contract costs

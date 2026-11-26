@@ -163,6 +163,8 @@ Severity follows the [pillar contract](pillars/_contract.md), decided anew for e
 made reachable by this pull request, and a fix that needs a decision. Request Changes is rare. When
 a finding is real but misses a condition, rate it `high` or lower. A finding marked `preExisting`
 is outside this: it never counts toward Request Changes or Comment.
+A finding that shows the pull request fails its own stated purpose keeps the floor the contract gives it:
+rate it anew by that rule, not lower.
 
 ## Verdict
 

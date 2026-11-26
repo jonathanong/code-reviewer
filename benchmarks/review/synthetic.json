@@ -970,5 +970,21 @@
         "expectNoFindings": true
       }
     ]
+  },
+  {
+    "id": "correctness-stated-purpose-human-gate",
+    "fixture": "fixtures/correctness-stated-purpose-human-gate",
+    "title": "feat(policy): refuse a policy that lets a protected path skip human review",
+    "kind": "positive",
+    "reason": "The description says the check guarantees no protected path reaches merge without a human review. `sendsToPerson` in src/always-human.mts also accepts a rule with `claude: 'comments'` and `seats: []`, which sends nothing to a person, so a policy passes the check while a protected path gets no human review. The pull request fails its own stated purpose. The contract (`skills/review/references/pillars/_contract.md`) states: \"A stated purpose that fails is at least `high`.\" This is reviewer policy, not a shared rule skill.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/always-human.mts",
+        "lines": null,
+        "claim": "sendsToPerson returns true for a rule with `claude: 'comments'` (or `off`) and an empty `seats` list, because it treats any `claude` value other than `approve` as a person, so checkAlwaysHuman accepts a policy under which a protected path (`deploy/`, `secrets/`) is reviewed by no human. This defeats the check's stated guarantee that no protected path reaches merge without a human review. The finding must name the empty `seats` with a non-`approve` `claude` value; rated `high` or `blocking`, not `medium` or `low`."
+      }
+    ]
   }
 ]
