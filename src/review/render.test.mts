@@ -119,6 +119,26 @@ describe('renderHeader', () => {
     )
   })
 
+  it('asks an approval with findings to resolve each before merging', () => {
+    const out = renderHeader(input({ findings: [f({ severity: 'medium', title: 'Soft' })] }), SHA)
+    expect(out).toContain('## [Approve] Code review')
+    expect(out).toContain(
+      '- **[medium]** Soft\n\nNone of these blocks the merge. Resolve each before merging: fix it, reply with why it stays, or link a follow-up issue.',
+    )
+  })
+
+  it('omits the ask for other verdicts, no findings, and FYI items only', () => {
+    const note = 'None of these blocks the merge'
+    expect(renderHeader(input(), SHA)).not.toContain(note)
+    expect(renderHeader(input({ findings: [f({ preExisting: true })] }), SHA)).not.toContain(note)
+    expect(renderHeader(input({ findings: [f({ severity: 'high' })] }), SHA)).not.toContain(note)
+    expect(renderHeader(input({ findings: [f({ severity: 'blocking' })] }), SHA)).not.toContain(
+      note,
+    )
+    const ask = [{ question: 'Q?', askOf: 'author' as const, why: 'W' }]
+    expect(renderHeader(input({ findings: [f()], questions: ask }), SHA)).not.toContain(note)
+  })
+
   it('renders summary, counts, index, and skipped pillars', () => {
     const out = renderHeader(
       input({

@@ -132,6 +132,10 @@ function skippedSection(skipped: readonly SkippedPillar[]): string[] {
   return [detail(`Skipped pillars (${skipped.length})`, rows)]
 }
 
+/** The ask under the index of an approval that still lists findings: none blocks, each is resolved before merge. */
+export const RESOLVE_NOTE =
+  'None of these blocks the merge. Resolve each before merging: fix it, reply with why it stays, or link a follow-up issue.'
+
 /** Renders the review's top section: verdict, reviewed SHA, class, summary, and the finding index. */
 export function renderHeader(
   input: ReviewInput,
@@ -152,6 +156,7 @@ export function renderHeader(
     ...(input.summary ? [input.summary] : []),
     ...splitSection(input.splitProposal),
     ...(index.length > 0 ? [index.join('\n')] : []),
+    ...(verdict === 'Approve' && found.length > 0 ? [RESOLVE_NOTE] : []),
     ...renderQuestions(input.questions),
     ...focusSection(input.focus),
     ...notesSection(input.notes),
