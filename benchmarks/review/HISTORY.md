@@ -2,6 +2,20 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-26 (change, not re-measured): contract: a cited rule must show its effect on the diff
+
+Prompt change; no run was made and nothing was re-scored.
+
+- **What changed.** `_contract.md` (Method) gains a rule: a finding that cites a repository rule, a convention or a
+  past revert must show that the diff produces the effect the rule exists to prevent; matching the wording or
+  resembling a reverted change is not enough, and evidence in the pull request that the effect does not occur drops
+  the finding (or becomes one question when doubtful). `verifier.md` step 2 points to it beside the convention check.
+  Added the negative synthetic case `rules-rule-effect-absent` (a "Never serialize parallel work" rule, a shard
+  matrix halved, a 13-second step folded into a job, measurements in the description); not run.
+- **Rows made non-comparable.** Every pillar row (all pillars read the contract) and every verifier row, so compare
+  only against rows run after this entry. `synthetic.json` grows from 48 to 49 cases; table totals that count
+  synthetic cases are not comparable with earlier ones.
+
 ## 2026-11-26 (change, not re-measured): contract: a stated purpose that fails is at least `high` (unmeasured)
 
 Prompt change; no run was made and nothing was re-scored.

@@ -134,6 +134,10 @@ judged by Sonnet, $25.14):
 - Not in the table: `correctness-stated-purpose-human-gate` (positive, `high`: a check meant to force
   human review accepts a rule with no human seat, so the pull request fails its own stated purpose).
   Added 2026-11-26 with the contract's stated-purpose rule; not run yet, see `HISTORY.md`.
+- Not in the table: `rules-rule-effect-absent` (negative: a repository rule "Never serialize parallel work" and a
+  change that halves parallel shards and folds a 13-second step into a job, with measurements showing a shorter
+  longest chain; the rules pillar must not cite the rule). Added 2026-11-26 with the contract's rule on citing a
+  repository rule; not run yet, see `HISTORY.md`.
 - Not in the table: `congruence-undocumented-unused-allow-failure` (one `medium` congruence finding
   when a description calls a change non-breaking but an allow entry becomes unused and the audit
   exits 1) and its negative twin `congruence-documented-unused-allow-failure`;

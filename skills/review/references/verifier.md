@@ -50,7 +50,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    Check a convention claim against the head tree. A finding that says the change breaks a
    repository convention ("this repository does not use X", "other modules do Y") must rest on
    what the head tree shows: search it, and keep the finding only when the search supports the
-   claim. Cite what you found in the body. Drop it otherwise.
+   claim. Cite what you found in the body. Drop it otherwise. That check settles whether the
+   convention exists; whether the diff produces the effect it guards against is the pillar
+   contract's rule on citing a repository rule, a convention or a past revert, and you apply it to
+   every such finding.
 
 3. **Settle the facts.** A finding, and equally a statement in your summary that something is
    safe, rests on facts: what a foreign key does on delete, how many runs of a job can overlap, who else calls a
