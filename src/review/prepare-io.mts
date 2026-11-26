@@ -64,14 +64,20 @@ export type PrepareIo = {
 
 type CompareJson = {
   status?: string
-  files?: { filename: string; additions?: number; deletions?: number }[]
+  files?: { filename: string; status?: string; additions?: number; deletions?: number }[]
 }
 
 const MAX_COMPARE_FILES = 300
 
-const changedFile = (file: { filename: string; additions?: number; deletions?: number }) => ({
+const changedFile = (file: {
+  filename: string
+  status?: string
+  additions?: number
+  deletions?: number
+}): ChangedFile => ({
   path: file.filename,
   lines: (file.additions ?? 0) + (file.deletions ?? 0),
+  ...(file.status === 'renamed' ? { renamed: true } : {}),
 })
 
 export function createGhPrepareIo(

@@ -87,7 +87,8 @@ export function isDependencyFile(path: string): boolean {
   )
 }
 
-export type ChangedFile = { path: string; lines: number }
+/** A changed file; `renamed` is set when GitHub reports the file moved from another path. */
+export type ChangedFile = { path: string; lines: number; renamed?: boolean }
 
 /** Changed lines outside generated files. */
 export function reviewableLines(
