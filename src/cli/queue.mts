@@ -1,3 +1,4 @@
+import { markHeld } from '../review/queue-held.mts'
 import { listQueue, type LabelNames, type QueueEntry } from '../review/index.mts'
 import { splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from './deps.mts'
@@ -33,7 +34,7 @@ async function listRepos(deps: ReviewDeps, repos: readonly string[]): Promise<Qu
  * with a machine config are checked for overrides; a repository's own file is read when it is
  * named with `--repo`.
  */
-export async function listQueueFor(
+async function queueEntries(
   deps: ReviewDeps,
   owner: string | undefined,
   repos: readonly string[],
@@ -62,4 +63,13 @@ export async function listQueueFor(
     seen.add(key)
     return true
   })
+}
+
+/** The review queue, with a requested pull request that has a held review on this machine marked `held`. */
+export async function listQueueFor(
+  deps: ReviewDeps,
+  owner: string | undefined,
+  repos: readonly string[],
+): Promise<QueueEntry[]> {
+  return markHeld(await queueEntries(deps, owner, repos), deps.tracker())
 }

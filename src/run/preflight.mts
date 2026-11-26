@@ -1,6 +1,3 @@
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
-
 import {
   EFFORTS,
   assertPullTarget,
@@ -13,6 +10,7 @@ import { parseMaxCost } from '../review/limits-settings.mts'
 import { CEILING_REACHED } from '../review/step-watch.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/grant-settings.mts'
+import { heldReview } from '../review/earlier-lookup.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
 import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import type { ReviewDeps } from '../cli/deps.mts'
@@ -112,19 +110,6 @@ export async function checkPreconditions(deps: ReviewDeps, repo: string): Promis
   if (reason !== undefined) throw new Precondition(reason)
 }
 
-/** The run directory of an unposted review of this head, left by a held run or a manual `review`. */
-function unposted(deps: ReviewDeps, pull: PullTarget, headSha: string): string | undefined {
-  const row = foldRows(readRows(deps.tracker()).rows).find(
-    (candidate) =>
-      candidate.repo.toLowerCase() === pull.repo.toLowerCase() &&
-      candidate.pr === pull.pr &&
-      candidate.head === headSha &&
-      candidate.state === 'reviewed',
-  )
-  const dir = row?.runDir
-  return dir !== null && dir !== undefined && existsSync(join(dir, 'review.json')) ? dir : undefined
-}
-
 /** The tracked reason a review of this head stopped at the cost ceiling; only `--force` retries it. */
 function stoppedAtCeiling(deps: ReviewDeps, pull: PullTarget, headSha: string): string | undefined {
   const row = foldRows(readRows(deps.tracker()).rows).find(
@@ -163,7 +148,7 @@ export async function preflight(
     return { headSha, noop: `head already reviewed (verdict ${String(status.verdict)})` }
   }
   if (labels.includes(names.processing)) return { headSha, noop: 'already in progress' }
-  const waiting = unposted(deps, pull, headSha)
+  const waiting = heldReview(deps.tracker(), { repo: pull.repo, pr: pull.pr, headSha })
   if (waiting !== undefined) {
     return { headSha, noop: `an unposted review of this head waits in ${waiting}` }
   }

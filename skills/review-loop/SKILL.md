@@ -65,7 +65,9 @@ change to how you queue, review or post; `report.md` says which kind of push it 
    (`claude plugin update <plugin>@<marketplace>`); an update needs a session restart.
 2. `code-reviewer auth` (App or `gh`) and `code-reviewer queue --owner <owner>`.
 3. Entries in state `in-progress` were abandoned by an earlier session: review them with
-   `claim --force`. Entries in state `requested` are queued in the order listed.
+   `claim --force`. Entries in state `requested` are queued in the order listed. Entries in state
+   `held` already have a finished review waiting in their `runDir` for the human to post: skip
+   them, and do not claim, rerun or `--force` them.
 
 Keep nothing that a restart would lose. GitHub is the source of truth: the labels hold the queue,
 and the newest review's hidden marker holds the reviewed SHA, verdict, and effort.
@@ -92,12 +94,12 @@ Keep exactly one wait running, and pass its cursor back each time:
 
 For each event: ignore it when `issue` is set (an issue, not a pull request). Events replay for a
 day, so the label is the truth: `claim` re-reads it and ignores a request that is gone. On
-`gap: true`, run `queue` to sweep what was missed. Your own label changes also produce events;
+`gap: true`, run `queue` to sweep what was missed, skipping `held` entries. Your own label changes also produce events;
 only `labeled` with a request label matters, so they are filtered out.
 
 ## Step 3 - Review
 
-For each queued pull request, follow the [review](../review/SKILL.md) skill: check out the head,
+For each queued pull request (state `requested` or `in-progress`, never `held`), follow the [review](../review/SKILL.md) skill: check out the head,
 then run `code-reviewer review` as a background command. Run at most three at once. Each is a
 separate headless run, not a subagent, so the session keeps only the one JSON line each prints:
 never paste diffs, pillar output, or review bodies into the session.

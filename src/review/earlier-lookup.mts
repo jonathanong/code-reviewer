@@ -44,3 +44,24 @@ export function unpostedReview(
   }
   return undefined
 }
+
+/**
+ * The run directory of this machine's unposted review of exactly this head, left by a held run or a
+ * manual `review`; undefined when the tracker has none or its review file is gone.
+ */
+export function heldReview(
+  io: TrackerIo,
+  at: { repo: string; pr: number; headSha: string },
+): string | undefined {
+  const repo = at.repo.toLowerCase()
+  const row = foldRows(readRows(io).rows).find(
+    (candidate) =>
+      candidate.repo.toLowerCase() === repo &&
+      candidate.pr === at.pr &&
+      candidate.head === at.headSha &&
+      candidate.state === 'reviewed',
+  )
+  const dir = row?.runDir
+  if (dir === null || dir === undefined) return undefined
+  return io.read(join(dir, 'review.json')) === undefined ? undefined : dir
+}

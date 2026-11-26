@@ -79,7 +79,9 @@ is named for auth or secrets (`auth`, `session`, `permission`, `crypto`, `secret
 
 A held run releases the claim and puts the request label back, so the pull request stays visible
 in `queue`. It leaves the review in `runDir` and the tracker row at `reviewed`, which makes a
-later `run` of the same head a no-op rather than a loop. With `--post auto`, a held review is
+later `run` of the same head a no-op rather than a loop. `queue` reports such a pull request as
+`held`, with its `runDir`, instead of `requested`, so a loop can tell it from a fresh request; it
+is `held` only while the head is the one reviewed and `review.json` is still there. With `--post auto`, a held review is
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
 (`code-reviewer post ... --input RUNDIR/review.json`), which clears the request label along with
 the in-progress one. `run --force` reviews the head again.
