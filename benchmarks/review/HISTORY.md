@@ -13,7 +13,6 @@ Prompt and harness change; no run was made and nothing was re-scored.
 - **Rows made non-comparable.** Every agy-harness row, and every row whose correctness, security or verifier step
   used to fall back from agy to another harness because it was granted web hosts. Compare only against rows run
   after this entry.
-  \=======
 
 ## 2026-11-25 (pilot): three live review outcomes as cases
 
