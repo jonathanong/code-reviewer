@@ -33,6 +33,25 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    either a question the requester asked or one of the reviewer's own targeted checks; keep it,
    correct it, or drop it, and when dropping it give the reason in one sentence, because the reason
    is shown to the requester or recorded in the report.
+
+   Drop a finding that the change's own documentation answers. When a finding says the change
+   misses an input shape, passes it silently, or leaves a case unhandled, read the documentation
+   the change ships or updates for that behaviour: a rule doc, a README, a "limits" or "by design"
+   section, or a code comment at that branch. If it names that shape as an intended limit, drop
+   the finding: the change does what it says.
+
+   Rate a finding against the base. Before rating it `medium` or higher, check how the base
+   behaves for the input the finding names: the removed and context lines of the patch, or the
+   unchanged file in the checkout. If the base behaves the same and the diff neither changes nor
+   makes reachable that path, the finding is pre-existing: mark it under step 12. A gap beside the
+   fix that the base already had is pre-existing, even when the pull request fixes a neighbouring
+   case. A gap in a branch the diff edits is at most `low` when the base had the same gap there.
+
+   Check a convention claim against the head tree. A finding that says the change breaks a
+   repository convention ("this repository does not use X", "other modules do Y") must rest on
+   what the head tree shows: search it, and keep the finding only when the search supports the
+   claim. Cite what you found in the body. Drop it otherwise.
+
 3. **Settle the facts.** A finding, and equally a statement in your summary that something is
    safe, rests on facts: what a foreign key does on delete, how many runs of a job can overlap, who else calls a
    function, whether a failed job runs again. For each fact the review relies on, open the file
