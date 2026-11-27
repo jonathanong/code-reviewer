@@ -2,3 +2,7 @@ minimumReleaseAgeExclude:
   - eslint-plugin-no-mistakes@0.109.38
 allowBuilds:
   esbuild: false
+overrides:
+  github-actionlint>adm-zip: '>=0.6.1'
+  eslint>minimatch: '>=11.0.1'
+  '@eslint/config-array>minimatch': '>=11.0.1'
