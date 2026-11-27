@@ -11,6 +11,7 @@ import { CEILING_REACHED } from '../review/step-watch.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'
 import { resolveRulePlugins } from '../review/grant-settings.mts'
 import { heldReview } from '../review/earlier-lookup.mts'
+import { swap } from '../review/label-claim-steps.mts'
 import { holdStatus } from '../review/held-head.mts'
 import { foldRows, readRows } from '../tracker/store.mts'
 import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
@@ -146,6 +147,17 @@ export async function preflight(
   const { headSha } = status
   if (force) return { headSha, names, labels }
   if (status.current) {
+    // A re-request on a head already reviewed is answered by restoring what the review left:
+    // the completed label and, for an approval, the approval label. A hold or a run in progress
+    // is left alone.
+    if (
+      labels.includes(names.requested) &&
+      !labels.includes(names.processing) &&
+      !labels.includes(names.held)
+    ) {
+      const restore = [names.completed, ...(status.verdict === 'Approve' ? [names.approval] : [])]
+      await swap(deps.createLabelIo(pull), restore, [names.requested])
+    }
     return { headSha, noop: `head already reviewed (verdict ${String(status.verdict)})` }
   }
   if (labels.includes(names.processing)) return { headSha, noop: 'already in progress' }

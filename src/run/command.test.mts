@@ -259,6 +259,33 @@ describe('runCommand doing nothing', () => {
     expect((await run(fake, { ...PULL, force: true })).code).toBe(0)
   })
 
+  it.each([
+    ['Approve', ['final-review:complete', 'final-review:approved']],
+    ['Comment', ['final-review:complete']],
+  ])(
+    'answers a re-request on a reviewed head (%s) by restoring its labels',
+    async (verdict, expected) => {
+      const fake = setup({ reviews: [marker(verdict)], labels: ['docs', 'final-review:requested'] })
+      const { code, line } = await run(fake)
+      expect(code).toBe(11)
+      expect(line).toMatchObject({ outcome: 'noop' })
+      expect(fake.labels).toEqual(['docs', ...expected])
+    },
+  )
+
+  it('leaves a re-request alone while the pull request is in progress or held', async () => {
+    for (const label of ['final-review:in-progress', 'final-review:held']) {
+      const fake = setup({
+        reviews: [marker('Approve')],
+        labels: ['final-review:requested', label],
+      })
+      await run(fake)
+      expect(fake.labelIo.add).not.toHaveBeenCalled()
+      expect(fake.labelIo.remove).not.toHaveBeenCalled()
+      stdout.length = 0
+    }
+  })
+
   it('declines a pull request another session is reviewing, and takes it over with force', async () => {
     const fake = setup({ labels: ['final-review:in-progress'] })
     const { code, line } = await run(fake)
