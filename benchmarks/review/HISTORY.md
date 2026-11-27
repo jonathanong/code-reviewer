@@ -22,25 +22,22 @@ cost about $2 (cap $5; `bench` has no cost flag, so the cap was held by hand fro
   marked every such finding as an FYI). Without a claim of that scope the finding stays an FYI.
 - **Prompt change.** `verifier.md` step 2 ("Rate a finding against the base"): the neighbouring-case sentence gains
   "unless the title or description says the fix covers that shape or class". Not re-measured.
-- **Cases added.** `synthetic.json`: `focus-target-sibling-remains` (`does_not_hold`) and `focus-target-sibling-fixed`
-  (`holds`, no finding), both `kind: negative` with no expected pillar finding, as for #186. `cases.json`:
+- **Cases added.** `synthetic.json`: `focus-target-sibling-fixed` (`holds`, no finding; `kind: negative`) as the false-alarm
+  check. The planted-sibling case `focus-target-sibling-remains` was removed in review (see Control). `cases.json`:
   `vouchington-6656-12fe22b`, a mined positive at the first commit of the pull request (base `197ae97`, head
   `12fe22bf0e`) with `body` recovered from the edit history, correctness, expecting the sibling in
   `merge-aliases-snapshot.mts`. The head the miss was reported at (`43bb47dd2f`) is no longer in the repository (the
   branch was force-pushed), so the first commit stands in; it has the same gap. `expectedSkills` is absent: no
   installed skill states the rule. `select-target-no-guard` also lists the new target in `unwantedTargets`.
-- **Focus step.** `focus-target-sibling-remains` 2 of 2 and `focus-target-sibling-fixed` 2 of 2 on the final
-  fixtures (an earlier, smaller fixture passed once each, then was hardened, see below); `vouchington-6656-12fe22b`
+- **Focus step.** `focus-target-sibling-fixed` 2 of 2 (and the removed `focus-target-sibling-remains` 2 of 2 before removal); `vouchington-6656-12fe22b`
   1 of 1 (`does_not_hold`, 1 finding). About $0.12 a case.
-- **Control.** Synthetic: `bench --pillar correctness --model sonnet --judge opus --no-rules` on
-  `focus-target-sibling-remains`: 100% recall, 6 of 6 runs, three fixture revisions. The control found the sibling
-  every time, even after the sibling moved to a caller in another directory, the description stopped quoting the old
-  shape, and the sibling's SQL was lowercased in a CTE. A fixture this small cannot hide a sibling from Sonnet. Per the
-  case rules it should be replaced; it is kept as a target check only, with expected `[]`, because the target's
-  `does_not_hold`/`holds` behaviour needs a pair and no cheaper gap was found. Mined: the same control on
+- **Control.** Synthetic: `bench --pillar correctness --model sonnet --judge opus --no-rules` on the planted
+  `focus-target-sibling-remains`: 100% recall, 6 of 6 runs, three fixture revisions (sibling moved to a caller in
+  another directory, description no longer quoting the old shape, SQL lowercased in a CTE). The control catches it, so
+  per the case rules the case and its fixture were removed; no gap the control misses was found at fixture size. Mined: the same control on
   `vouchington-6656-12fe22b` found nothing (0 of 2 runs; neither opened `merge-aliases-snapshot.mts`), and a skills
   run (`--select`) 0 of 1. The real miss is the case the control misses.
-- **Selection.** `bench-selection --attempts 1` on the three new cases and `select-target-no-guard`: 4 of 4 matched,
+- **Selection.** `bench-selection --attempts 1` on the three new cases (one since removed) and `select-target-no-guard`: 4 of 4 matched,
   no unwanted target picked ($0.02).
 - **Not comparable.** Every `bench-selection` row that scores targets before this entry (six targets are now offered,
   not five). Every verifier and end-to-end row (the `verifier.md` clause). Pillar prompts are unchanged.

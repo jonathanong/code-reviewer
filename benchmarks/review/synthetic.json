@@ -997,22 +997,6 @@
     "expected": []
   },
   {
-    "id": "focus-target-sibling-remains",
-    "fixture": "fixtures/focus-target-sibling-remains",
-    "title": "fix(exports): seek invoice export pages from the cursor",
-    "kind": "negative",
-    "reason": "The fix rewrites the optional-cursor condition in listInvoicePage, but snapshotInvoiceIds, which the same export job imports and runs first, keeps `($2::text is null or id > $2)`. The description says a continuation page seeks from the cursor, so the remaining instance is a finding, not a pre-existing note. A no-rules control also finds it (see HISTORY.md), so this case checks the target, not a gap the control misses.",
-    "expected": [],
-    "focus": [
-      {
-        "target": "sibling-keeps-old-shape",
-        "expectedStatus": "does_not_hold",
-        "reason": "snapshotInvoiceIds still filters with ($2::text IS NULL OR id > $2), the shape the fix removes from listInvoicePage, and the fix does not cover it."
-      }
-    ],
-    "expectedTargets": ["sibling-keeps-old-shape"]
-  },
-  {
     "id": "focus-target-sibling-fixed",
     "fixture": "fixtures/focus-target-sibling-fixed",
     "title": "fix(exports): seek invoice export pages from the cursor",

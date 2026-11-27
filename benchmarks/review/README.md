@@ -198,10 +198,9 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-target-untraced-reported`  | The `untraced-name-passes` target stays quiet when the check reports what it cannot trace (`holds`, no finding)                                    |
 | `focus-target-undecided-skipped`  | The `undecided-input-passes` target finds a new opt-in check that passes a parse failure, an expression value and a missing file (`does_not_hold`) |
 | `focus-target-undecided-reported` | The `undecided-input-passes` target stays quiet when the check reports each of them as could-not-analyse (`holds`, no finding)                     |
-| `focus-target-sibling-remains`    | The `sibling-keeps-old-shape` target finds a sibling query that keeps the optional-cursor shape the fix removes (`does_not_hold`)                  |
 | `focus-target-sibling-fixed`      | The `sibling-keeps-old-shape` target stays quiet when every query in the export is fixed (`holds`, no finding)                                     |
 
-`focus-target-sibling-remains` and `focus-target-sibling-fixed` (`sibling-keeps-old-shape`) were piloted on Claude Sonnet: 2 of 2 attempts each, and the mined case below 1 of 1 (see `HISTORY.md`); pilots, not rates. A no-rules control also finds the synthetic sibling (6 of 6 runs), so that pair checks the target, not a gap a control misses.
+`focus-target-sibling-fixed` (`sibling-keeps-old-shape`) is the false-alarm check, piloted on Claude Sonnet 2 of 2 attempts, and the mined case below 1 of 1 (see `HISTORY.md`); pilots, not rates. A synthetic positive was dropped because a no-rules control found its sibling in 6 of 6 runs.
 
 `focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 5, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates.
 
