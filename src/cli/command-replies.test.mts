@@ -122,14 +122,6 @@ describe('replies', () => {
     expect(fake.io.postReview).not.toHaveBeenCalled()
   })
 
-  it('does nothing when the head moved since the review, naming why', async () => {
-    const fake = setup({ pull: conversation({ head: 'c'.repeat(40) }) })
-    const line = await run(fake)
-    expect(line).toMatchObject({ outcome: 'noop', exitCode: 11 })
-    expect(line.reason).toContain('head moved')
-    expect(fake.deps.exec).not.toHaveBeenCalled()
-  })
-
   it('does nothing when the head moves while the replies are judged', async () => {
     const fake = setup({ newHead: 'c'.repeat(40) })
     const line = await run(fake)

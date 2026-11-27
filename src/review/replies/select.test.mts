@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest'
 import type { PrConversation, PrReview, ReviewThread, ThreadComment } from '../context-query.mts'
 import { renderBodyFinding, reviewMarker } from '../render.mts'
 import { replyMarker } from './marker.mts'
-import { MAX_CANDIDATES, newestOwnReview, planReplies, type ReplyPlan } from './select.mts'
+import {
+  MAX_CANDIDATES,
+  headMoved,
+  newestOwnReview,
+  planReplies,
+  type ReplyPlan,
+} from './select.mts'
 
 const HEAD = 'a'.repeat(40)
 const OLD = 'b'.repeat(40)
@@ -87,9 +93,30 @@ describe('planReplies', () => {
     expect(plan.standing).toEqual([expect.objectContaining({ thread: 'T1', severity: 'high' })])
   })
 
-  it('does nothing when the head moved since the last review', () => {
-    const plan = planReplies(pull({ headRefOid: OLD }), TRUSTED)
-    expect(plan).toEqual({ noop: expect.stringContaining('head moved') })
+  it('keeps a thread with a new reply as a candidate when the head moved, marking the plan moved', () => {
+    const plan = planned(pull({ headRefOid: OLD }))
+    expect(plan).toMatchObject({ headSha: OLD, reviewedSha: HEAD, posted: 'Request Changes' })
+    expect(headMoved(plan)).toBe(true)
+    expect(plan.candidates.map((item) => item.thread)).toEqual(['T1'])
+    expect(plan.candidates[0]?.sinceDiff).toBeUndefined()
+  })
+
+  it('leaves a thread without a new reply untouched when the head moved', () => {
+    const answered = thread('T1', [comment('dev', 'Fixed in abc123.')])
+    const quiet = thread('T2', [])
+    const plan = planned(pull({ headRefOid: OLD, reviewThreads: { nodes: [answered, quiet] } }))
+    expect(plan.candidates.map((item) => item.thread)).toEqual(['T1'])
+    expect(plan.standing.map((item) => item.thread)).toEqual(['T1', 'T2'])
+    expect(
+      planReplies(pull({ headRefOid: OLD, reviewThreads: { nodes: [quiet] } }), TRUSTED),
+    ).toEqual({
+      noop: expect.stringContaining('no thread has a new reply'),
+    })
+  })
+
+  it('is not moved on the reviewed head', () => {
+    expect(planned(pull()).reviewedSha).toBe(HEAD)
+    expect(headMoved(planned(pull()))).toBe(false)
   })
 
   it('does nothing without a review by this reviewer, or after a skip', () => {

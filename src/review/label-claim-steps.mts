@@ -85,10 +85,11 @@ export async function claimReplies(
 /**
  * Gives a re-assessment's claim back: the in-progress label goes off and the completion goes back
  * on. A request or hold placed meanwhile stays, and then the completion is left off so the next
- * review claims it.
+ * review claims it. With `restoreCompleted: false` the completion is not put back, for a pull request
+ * that did not carry it when claimed.
  */
-export async function releaseReplies(io: LabelIo, names: LabelNames) {
+export async function releaseReplies(io: LabelIo, names: LabelNames, restoreCompleted = true) {
   const labels = await io.labels()
   const waiting = labels.includes(names.requested) || labels.includes(names.held)
-  return swap(io, waiting ? [] : [names.completed], [names.processing])
+  return swap(io, waiting || !restoreCompleted ? [] : [names.completed], [names.processing])
 }

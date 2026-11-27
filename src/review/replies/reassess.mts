@@ -12,7 +12,7 @@ import type { Pillar } from '../pillar-name.mts'
 import { deriveVerdict, type Verdict } from '../render.mts'
 import { APPROVAL_CHECK } from '../skipped.mts'
 import type { Judgment } from './judge.mts'
-import type { ReplyPlan, StandingFinding } from './select.mts'
+import { headMoved, type ReplyPlan, type StandingFinding } from './select.mts'
 
 const STRICTNESS: readonly Verdict[] = ['Approve', 'Comment', 'Request Changes']
 
@@ -88,6 +88,19 @@ export function reassess(
     if (judged?.outcome === 'settled') return []
     return [judged?.outcome === 'downgraded' ? { ...item, severity: judged.severity } : item]
   })
+  if (headMoved(plan)) {
+    // The commits since the review were not reviewed as a whole, so no verdict, approval or label
+    // may follow from replies about them; the threads alone are answered.
+    return {
+      before: plan.posted,
+      after: plan.posted,
+      needsApproval: false,
+      skipped: skippedOf(plan),
+      remaining,
+      changes: false,
+      refused: `the head moved since the review (${plan.reviewedSha.slice(0, 12)}), so only a follow-up review gives a verdict on the new head`,
+    }
+  }
   const before = deriveVerdict(plan.standing.map(asFinding), plan.questions, skippedOf(plan))
   const findings = remaining.map(asFinding)
   const unchecked = deriveVerdict(findings, plan.questions, [])

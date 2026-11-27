@@ -85,6 +85,12 @@ describe('releaseReplies', () => {
     expect([...io.set]).toEqual([completed])
   })
 
+  it('leaves the completion off when told the pull request did not carry it', async () => {
+    const io = fakeIo([processing])
+    await releaseReplies(io, DEFAULT_LABELS, false)
+    expect([...io.set]).toEqual([])
+  })
+
   it.each([[requested], [held]])(
     'keeps a %s placed meanwhile and leaves the completion off, so the next review claims it',
     async (label) => {

@@ -15,6 +15,7 @@ const PASSED = { passed: true } as const
 
 const plan = (overrides: Partial<ReplyPlan> = {}): ReplyPlan => ({
   headSha: 'a'.repeat(40),
+  reviewedSha: 'a'.repeat(40),
   reviewId: 'R1',
   author: 'dev',
   effort: 'high',
@@ -45,6 +46,20 @@ describe('reply markers', () => {
 })
 
 describe('reassess', () => {
+  it('never changes the verdict or asks for an approval when the head moved', () => {
+    const moved = plan({ headSha: 'c'.repeat(40) })
+    const result = reassess(moved, [judged('T1', 'settled')], PASSED)
+    expect(result).toMatchObject({
+      before: 'Request Changes',
+      after: 'Request Changes',
+      changes: false,
+      needsApproval: false,
+      refused: expect.stringContaining('follow-up review'),
+    })
+    expect(result.remaining).toEqual([])
+    expect(reassess(moved, [judged('T1', 'settled')]).changes).toBe(false)
+  })
+
   it('settling the only blocking finding lowers Request Changes to Approve once the approval check passed', () => {
     const result = reassess(plan(), [judged('T1', 'settled')], PASSED)
     expect(result).toMatchObject({

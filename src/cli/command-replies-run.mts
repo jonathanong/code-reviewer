@@ -65,7 +65,8 @@ export async function assessReplies(run: Assessment): Promise<RepliesLine> {
       reason: `the replies step failed, so nothing was written: ${judged.error}`,
     })
   }
-  const runDir = runDirFor(deps, pull.repo, pull.pr, plan.headSha)
+  // The report belongs to the head that was reviewed, which is where the cost is added.
+  const runDir = runDirFor(deps, pull.repo, pull.pr, plan.reviewedSha)
   let result = reassess(plan, judged.judgments)
   let approval: ApprovalRun | undefined
   if (result.needsApproval && held.length === 0) {
