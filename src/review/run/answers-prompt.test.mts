@@ -28,10 +28,10 @@ const NOT_IN_SKILL = 'it is not a whole sentence of the skill, or is too short'
 const SENTENCE = 'Never lock a parent row the transaction only reads.'
 const RULES: AnswerRules = {
   texts: new Map([
-    ['jong-skills:locks', `# Locks\n- Take a lock only on a row it writes.\n- ${SENTENCE}`],
-    ['jong-skills:other', `- ${SENTENCE}`],
+    ['ratchet-workflows:locks', `# Locks\n- Take a lock only on a row it writes.\n- ${SENTENCE}`],
+    ['ratchet-workflows:other', `- ${SENTENCE}`],
   ]),
-  selected: ['jong-skills:locks'],
+  selected: ['ratchet-workflows:locks'],
 }
 const given = (thread: string, extra: object = {}) => ({
   thread,
@@ -69,7 +69,7 @@ describe('the answers block', () => {
 
 describe('checkedAnswers', () => {
   it('keeps an answer on a listed thread with a location, and one with a quoted rule', () => {
-    const rule = { skill: 'jong-skills:locks', quote: SENTENCE }
+    const rule = { skill: 'ratchet-workflows:locks', quote: SENTENCE }
     expect(check([given('T1'), given('T2', { rule, at: undefined })])).toEqual({
       answers: [given('T1'), { thread: 'T2', body: 'No lock here.', rule }],
       warnings: [],
@@ -77,9 +77,11 @@ describe('checkedAnswers', () => {
   })
 
   it('reads a quote across the skill line breaks, and a skill the verifier loaded', () => {
-    const wrapped = { skill: 'jong-skills:other', quote: SENTENCE.replace(' ', '\n  ') }
+    const wrapped = { skill: 'ratchet-workflows:other', quote: SENTENCE.replace(' ', '\n  ') }
     expect(check([given('T1', { rule: wrapped })]).answers).toEqual([]) // not selected, not loaded
-    expect(check([given('T1', { rule: wrapped })], ['jong-skills:other']).answers).toHaveLength(1)
+    expect(
+      check([given('T1', { rule: wrapped })], ['ratchet-workflows:other']).answers,
+    ).toHaveLength(1)
   })
 
   it.each([
@@ -88,12 +90,12 @@ describe('checkedAnswers', () => {
     ['a mention', given('T1', { body: 'cc @bob' }), 'mentions'],
     [
       'a skill that is not installed',
-      given('T1', { rule: { skill: 'jong-skills:none', quote: SENTENCE } }),
+      given('T1', { rule: { skill: 'ratchet-workflows:none', quote: SENTENCE } }),
       'not a loaded rule skill',
     ],
     [
       'a skill that is installed but neither selected nor loaded',
-      given('T1', { rule: { skill: 'jong-skills:other' } }),
+      given('T1', { rule: { skill: 'ratchet-workflows:other' } }),
       'not a loaded rule skill',
     ],
   ])('drops %s and warns', (_name, entry, reason) => {
@@ -103,7 +105,7 @@ describe('checkedAnswers', () => {
   })
 
   it('keeps an answer that names a skill without a quote', () => {
-    const rule = { skill: 'jong-skills:locks' }
+    const rule = { skill: 'ratchet-workflows:locks' }
     expect(check([given('T1', { rule, at: undefined })])).toEqual({
       answers: [{ thread: 'T1', body: 'No lock here.', rule }],
       warnings: [],
@@ -114,31 +116,35 @@ describe('checkedAnswers', () => {
     ['a quote the skill does not hold', 'Always lock the whole table.'],
     ['a quote that is too short', 'lock'],
   ])('removes %s, keeps the answer with its skill, and warns', (_name, quote) => {
-    const rule = { skill: 'jong-skills:locks', quote }
+    const rule = { skill: 'ratchet-workflows:locks', quote }
     expect(check([given('T1', { rule })])).toEqual({
-      answers: [given('T1', { rule: { skill: 'jong-skills:locks' } })],
+      answers: [given('T1', { rule: { skill: 'ratchet-workflows:locks' } })],
       warnings: ['answers[0] kept without its quote: ' + NOT_IN_SKILL],
     })
   })
 
   it("carries the skill's link from the rules, and not one the model wrote", () => {
     const url = 'https://github.com/jonathanong/no-mistakes/blob/HEAD/skills/locks/SKILL.md'
-    const rules = { ...RULES, links: new Map([['jong-skills:locks', url]]) }
-    const rule = { skill: 'jong-skills:locks', quote: SENTENCE, url: 'https://evil.example/x' }
+    const rules = { ...RULES, links: new Map([['ratchet-workflows:locks', url]]) }
+    const rule = {
+      skill: 'ratchet-workflows:locks',
+      quote: SENTENCE,
+      url: 'https://evil.example/x',
+    }
     const one = (links: AnswerRules) =>
       checkedAnswers([given('T1', { rule })], [item('T1')], links, []).answers[0]?.rule
-    expect(one(rules)).toEqual({ skill: 'jong-skills:locks', quote: SENTENCE, url })
-    expect(one(RULES)).toEqual({ skill: 'jong-skills:locks', quote: SENTENCE })
+    expect(one(rules)).toEqual({ skill: 'ratchet-workflows:locks', quote: SENTENCE, url })
+    expect(one(RULES)).toEqual({ skill: 'ratchet-workflows:locks', quote: SENTENCE })
   })
 
   it('keeps a whole sentence or list item and drops the tail of one', () => {
     const skill = `# Locks\n\n- Never lock a parent row the transaction only reads.\n- Prefer short   transactions. Keep every transaction\n  small and short.`
     const rules: AnswerRules = {
-      texts: new Map([['jong-skills:locks', normalizeLines(skill)]]),
-      selected: ['jong-skills:locks'],
+      texts: new Map([['ratchet-workflows:locks', normalizeLines(skill)]]),
+      selected: ['ratchet-workflows:locks'],
     }
     const quote = (text: string) => [
-      given('T1', { rule: { skill: 'jong-skills:locks', quote: text } }),
+      given('T1', { rule: { skill: 'ratchet-workflows:locks', quote: text } }),
     ]
     const kept = (text: string) =>
       checkedAnswers(quote(text), [item('T1')], rules, []).answers[0]?.rule?.quote === undefined
@@ -163,12 +169,12 @@ describe('checkedAnswers', () => {
       '',
     ].join('\n')
     const rules: AnswerRules = {
-      texts: new Map([['jong-skills:locks', normalizeLines(skill)]]),
-      selected: ['jong-skills:locks'],
+      texts: new Map([['ratchet-workflows:locks', normalizeLines(skill)]]),
+      selected: ['ratchet-workflows:locks'],
     }
     const kept = (text: string) =>
       checkedAnswers(
-        [given('T1', { rule: { skill: 'jong-skills:locks', quote: text } })],
+        [given('T1', { rule: { skill: 'ratchet-workflows:locks', quote: text } })],
         [item('T1')],
         rules,
         [],

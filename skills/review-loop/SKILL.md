@@ -64,7 +64,7 @@ change to how you queue, review or post; `report.md` says which kind of push it 
 ## Step 1 - Start or restart
 
 1. Check the rule plugins before any review:
-   `code-reviewer plugins --require no-mistakes-rules --require jong-skills`.
+   `code-reviewer plugins --require no-mistakes-rules --require ratchet-workflows --require ratchet-github --require ratchet-backend --require ratchet-code`.
    Require the names `code-reviewer settings --repo OWNER/NAME` prints under `rulePlugins` (by default
    these two); `run` checks them itself.
    It prints the enabled plugins with versions and exits 1 naming any that are missing. Then

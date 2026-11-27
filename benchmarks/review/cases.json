@@ -22,7 +22,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["jong-skills:typescript-authoring"]
+    "expectedSkills": ["ratchet-code:typescript-authoring"]
   },
   {
     "id": "vouchington-1092",
@@ -47,7 +47,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["jong-skills:postgres-schema-design"]
+    "expectedSkills": ["ratchet-backend:postgres-schema-design"]
   },
   {
     "id": "vouchington-platform-69",
@@ -131,7 +131,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["jong-skills:postgres-schema-design"]
+    "expectedSkills": ["ratchet-backend:postgres-schema-design"]
   },
   {
     "id": "vouchington-1077",
@@ -163,7 +163,7 @@
       }
     ],
     "relation": "revert",
-    "expectedSkills": ["jong-skills:postgres-schema-design"]
+    "expectedSkills": ["ratchet-backend:postgres-schema-design"]
   },
   {
     "id": "vouchington-tooling-154",
@@ -275,7 +275,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["jong-skills:postgres-locking"]
+    "expectedSkills": ["ratchet-backend:postgres-locking"]
   },
   {
     "id": "vouchington-4154",
@@ -300,7 +300,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["jong-skills:postgres-node-performance-tuning"]
+    "expectedSkills": ["ratchet-backend:postgres-node-performance-tuning"]
   },
   {
     "id": "vouchington-2806",
@@ -373,7 +373,7 @@
       }
     ],
     "relation": "fix-forward",
-    "expectedSkills": ["jong-skills:dependabot"]
+    "expectedSkills": ["ratchet-github:dependabot"]
   },
   {
     "id": "vouchington-clients-130",
@@ -462,7 +462,7 @@
     },
     "relation": "undo",
     "confidence": "high",
-    "expectedSkills": ["jong-skills:feature-rollout"]
+    "expectedSkills": ["ratchet-backend:feature-rollout"]
   },
   {
     "id": "vouchington-1146",
@@ -488,7 +488,7 @@
     },
     "relation": "undo",
     "confidence": "high",
-    "expectedSkills": ["jong-skills:feature-rollout"]
+    "expectedSkills": ["ratchet-backend:feature-rollout"]
   },
   {
     "id": "vouchington-1144",
@@ -514,7 +514,7 @@
     },
     "relation": "undo",
     "confidence": "medium",
-    "expectedSkills": ["jong-skills:feature-rollout"]
+    "expectedSkills": ["ratchet-backend:feature-rollout"]
   },
   {
     "id": "vouchington-1143",
@@ -540,7 +540,7 @@
     },
     "relation": "rework",
     "confidence": "high",
-    "expectedSkills": ["jong-skills:postgres-schema-design"]
+    "expectedSkills": ["ratchet-backend:postgres-schema-design"]
   },
   {
     "id": "vouchington-402",
@@ -620,7 +620,7 @@
         "claim": "The compare-and-set guards two cleanup runs overlapping, but the cleanup job runs under one ordering key with concurrency 1, so the overlap is unreachable and the guard is unneeded."
       }
     ],
-    "expectedSkills": ["jong-skills:postgres-locking"],
+    "expectedSkills": ["ratchet-backend:postgres-locking"],
     "expectedReads": [
       "backend/queues/psql/enqueues/schedules.mts",
       "backend/queues/psql/config.mts"
@@ -729,7 +729,7 @@
         "claim": "`playwright-no-serial` silently reports nothing when a spec imports `test` from a local module that builds it through `.extend()` inside helper calls, so serial suites in such specs are missed with no warning that the binding was unresolved."
       }
     ],
-    "expectedSkills": ["jong-skills:lint-rule-authoring"],
+    "expectedSkills": ["ratchet-code:lint-rule-authoring"],
     "expectedTargets": ["clean-code-newly-reports", "untraced-name-passes"],
     "focus": [
       {
@@ -1078,7 +1078,7 @@
         "claim": "When a CSP array, `join` or concatenation is not fully static (for example a nonce template inside the array), the extractor falls through to `visit_string_literal` and collects each `-src` literal as its own policy, and `parse_from_strings` then requires every collected string to allow an origin. Fragments of one policy deny each other: `[\"default-src 'self'\", `script-src 'nonce-${n}' https://cdn.x.com`, \"img-src https://img.x.com\"].join(\"; \")` with `<img src=\"https://img.x.com/a.png\">` is reported although the browser allows it. The fragments must be treated as one policy, or the policy reported as unanalyzable."
       }
     ],
-    "expectedSkills": ["jong-skills:lint-rule-authoring"]
+    "expectedSkills": ["ratchet-code:lint-rule-authoring"]
   },
   {
     "id": "no-mistakes-4062-ce406a2",
@@ -1119,7 +1119,7 @@
         "claim": "A fixture read is proven against other non-literal calls only by the spelled callee path (`unknown_loaders` against `proven.callee`). A dynamic read through another spelling of the same loader does not void the proof: an alias (`const get = loadFixture; get(id)`) or a namespace import (`import * as l from \"./loader\"; l.loadFixture(id)`) next to a literal `loadFixture(\"a\")`. The test is then judged to read only the pointers of its literal call and is dropped when only another pointer changed, although it can read any pointer. Any non-literal call or non-call reference to the loader, under any spelling, must void the proof for the file."
       }
     ],
-    "expectedSkills": ["jong-skills:lint-rule-authoring"]
+    "expectedSkills": ["ratchet-code:lint-rule-authoring"]
   },
   {
     "id": "code-reviewer-210-fe45b7e",

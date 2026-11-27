@@ -11,7 +11,7 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-const settings = { enabledPlugins: { 'jong-skills@harness-plugins': true } }
+const settings = { enabledPlugins: { 'ratchet-workflows@ratchet-stack': true } }
 const analysis = { commands: ['graph dependents'], section: 'ANALYSIS SECTION' }
 const answer = JSON.stringify({
   type: 'result',

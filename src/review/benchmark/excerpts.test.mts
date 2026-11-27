@@ -24,7 +24,7 @@ describe('parseExcerpts', () => {
 
 describe('excerptWriter', () => {
   const plugins = JSON.stringify([
-    { id: 'jong-skills@m', enabled: true, scope: 'user', installPath: PLUGIN },
+    { id: 'ratchet-workflows@m', enabled: true, scope: 'user', installPath: PLUGIN },
   ])
   const run = async (mode: 'alongside' | 'replace', selected: string[]) => {
     const written = new Map<string, string>()
@@ -38,15 +38,15 @@ describe('excerptWriter', () => {
   }
 
   it('writes the excerpts of the selected skills only, marked in the replace arm', async () => {
-    const written = await run('replace', ['jong-skills:sample-prose'])
+    const written = await run('replace', ['ratchet-workflows:sample-prose'])
     const text = written.get(`/snap/${EXCERPTS_FILE}`) as string
-    expect(text).toContain('### jong-skills:sample-prose')
+    expect(text).toContain('### ratchet-workflows:sample-prose')
     expect(text).toContain('Status: not quoted')
     expect(text).not.toContain('sample-rules')
   })
 
   it('leaves the alongside arm unmarked and still writes a file when nothing is selected', async () => {
-    const marked = await run('alongside', ['jong-skills:sample-prose'])
+    const marked = await run('alongside', ['ratchet-workflows:sample-prose'])
     expect(marked.get(`/snap/${EXCERPTS_FILE}`)).not.toContain('Status:')
     const empty = await run('replace', [])
     expect(empty.get(`/snap/${EXCERPTS_FILE}`)).toContain('# Review context')

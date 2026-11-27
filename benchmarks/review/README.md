@@ -9,7 +9,7 @@ suite to measure noise.
 
 One run: 2026-11-16, at the commit that added this table, reviewer Sonnet 5.5, selection Haiku,
 judge Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`).
-Rule plugins: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14 (since renamed `jong-skills`;
+Rule plugins: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14 (since renamed and split into the `ratchet-*` plugins;
 not re-measured under the new name). Reviewer and selection cost
 $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
@@ -33,7 +33,7 @@ Mined cases (8 real pull requests from `cases.json`):
   `vouchington-2936` every run objects to the advisory lock itself, citing the lock rules, and
   never reviews the lock key the case expects. `vouchington-4154` expects a low-severity index
   note inside a 54-file change.
-- `vouchington-2936` was run again on 2026-11-19 with `jong-skills` 8cad1e4eb680 (lock rule
+- `vouchington-2936` was run again on 2026-11-19 with the rule-skills plugin 8cad1e4eb680 (lock rule
   reworded from "never" to "avoid") and `no-mistakes-rules` 0.109.97, on the snapshots without
   history: still 0 of 3 in both arms. No run objects to the lock existing any more; one of three
   reviews the lock key but not the letter-case defect the case expects. This row is from that
@@ -91,7 +91,7 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 
 - The control's three catches are one each on `rules-content-only-unordered-pick`,
   `rules-manifest-only-duplicate-utility` and `rules-test-only-per-item`.
-- The `lock-scope-*` row is from the 2026-11-22 run (`jong-skills` a361cf367bd2,
+- The `lock-scope-*` row is from the 2026-11-22 run (the rule-skills plugin a361cf367bd2,
   `no-mistakes-rules` 0.109.113), not the 2026-11-16 one. Both positives are ceiling cases: the
   correctness prompt tells the reviewer not to recommend a lock the locking skill does not allow.
 - `rules-repo-orchestration-package` puts its rule in the fixture repository's own `AGENTS.md`.
@@ -134,7 +134,7 @@ judged by Sonnet, $25.14):
   without the scope bullet it was written for.
 - Not in the table: `congruence-missing-real-run` checks that a user-visible behavior change whose
   description is a checklist with no realistic input or output raises one `low` congruence finding
-  under `jong-skills:pr-description`'s "Show one real run" rule. Added on 2026-11-24; piloted once per
+  under `ratchet-github:pr-description`'s "Show one real run" rule. Added on 2026-11-24; piloted once per
   arm (1 of 1 with the rule, 0 of 1 without), see `HISTORY.md`.
 - Not in the table: `congruence-description-command-paths-unresolved` and
   `congruence-description-command-paths-resolve` check a description's example command against the
@@ -199,7 +199,7 @@ graded by code and reported per thread. The pillar benches do not run this file.
 
 | Case                       | Note                                                                             | Expected                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `answers-like-row-lock`    | asks for `SELECT ... FOR UPDATE` on the parent row of an append-only vote insert | an answer that cites `jong-skills:postgres-locking`                           |
+| `answers-like-row-lock`    | asks for `SELECT ... FOR UPDATE` on the parent row of an append-only vote insert | an answer that cites `ratchet-backend:postgres-locking`                       |
 | `answers-floating-promise` | says a try/catch cannot catch a send that is never awaited (true)                | no answer, and the verifier raises the defect itself as a correctness finding |
 
 - Both are not measured. Neither has a control: the first needs the rule skill to pass, so run

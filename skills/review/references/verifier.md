@@ -85,7 +85,7 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    note is not yet an open thread; if it is, link that thread in one line instead. Drop the
    rest; never repeat a note only because another reviewer made it. When a note asks for a lock
    or a wider one (parents, ancestors, roots, or other rows the transaction only reads), load
-   `jong-skills:postgres-locking`: unless that skill allows the lock, drop the note and prefer
+   `ratchet-backend:postgres-locking`: unless that skill allows the lock, drop the note and prefer
    what the skill recommends.
 7. **Stacks.** When the run has a Stack block, do this last, for every finding you are about to
    keep, including those kept in steps 5 and 6: check it against the later members' diffs (each

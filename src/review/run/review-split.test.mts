@@ -61,12 +61,12 @@ async function run(git: Exec, verifierExtra: object) {
     abort: async () => undefined,
     preview: async () => ({ verdict: 'Approve', reviews: [] }),
     plugins: async () => ({
-      enabled: [{ id: 'jong-skills@m', version: '1' }],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      enabled: [{ id: 'ratchet-workflows@m', version: '1' }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
     approvalCheck: false,
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     exec,
     references: fixture('references'),
   } as unknown as ReviewSteps

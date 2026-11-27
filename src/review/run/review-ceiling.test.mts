@@ -48,7 +48,7 @@ async function run(options: { ceilingUsd?: number; check?: boolean; evidence?: b
     const prompt = args[1] as string
     prompts.push(prompt)
     if (args[args.indexOf('--tools') + 1] === '')
-      return result({ skills: ['jong-skills:documentation'] }, 0.01)
+      return result({ skills: ['ratchet-workflows:documentation'] }, 0.01)
     if (prompt.includes('APPROVAL CHECK prompt text'))
       return result({ summary: 'Holds.', findings: [] }, 0.5)
     if (prompt.includes('VERIFIER prompt text')) return result(CLEAN, 1)
@@ -81,13 +81,13 @@ async function run(options: { ceilingUsd?: number; check?: boolean; evidence?: b
     preview: async () => ({ verdict: 'Comment', warnings: [], tooLong: [], reviews: [] }),
     plugins: async () => ({
       enabled: [],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({
       sources: options.evidence === true ? [source] : [],
       readGuide: async () => 'guide',
     }),
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     approvalCheck: options.check ?? true,
     models: { plan: DEFAULT_MODEL_PLAN, watch },
     exec,

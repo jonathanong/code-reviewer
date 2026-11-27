@@ -10,6 +10,7 @@ import { parseRepoConfig } from '../review/rules/config.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { BOB_LABELS, LIMIT_DEFAULTS, fakeDeps, targetConfig } from './command-loop-fake-io.mts'
 import { builtInTargets } from '../review/targets.mts'
+import { DEFAULT_RULE_PLUGINS } from '../review/plugins.mts'
 
 const TARGET = { repo: 'acme/widgets', pr: 4 }
 const target = () => TARGET
@@ -25,7 +26,7 @@ const UNSET = {
   answers: { enabled: false, from: null },
   upgrades: { enabled: false, packages: [], from: null },
   requestFocus: { enabled: false, from: null },
-  rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
+  rulePlugins: { names: DEFAULT_RULE_PLUGINS, from: null },
   limits: { ...LIMIT_DEFAULTS, maxCostFrom: null, from: null },
   pillars: {
     disabled: [],

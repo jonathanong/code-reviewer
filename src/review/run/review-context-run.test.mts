@@ -55,12 +55,12 @@ async function run(selected: string[]) {
     abort: async () => undefined,
     preview: async () => ({ verdict: 'Approve', reviews: [] }),
     plugins: async () => ({
-      enabled: [{ id: 'jong-skills@m', version: '1' }],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      enabled: [{ id: 'ratchet-workflows@m', version: '1' }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
     approvalCheck: false,
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     exec,
     references: fixture('references'),
   } as unknown as ReviewSteps
@@ -78,10 +78,12 @@ async function run(selected: string[]) {
 
 describe('runReview context', () => {
   it('builds the context after skill selection and tells the pillar, not the verifier', async () => {
-    const { outcome, out, pillar, verifier, report } = await run(['jong-skills:documentation'])
+    const { outcome, out, pillar, verifier, report } = await run([
+      'ratchet-workflows:documentation',
+    ])
     expect(outcome.ok).toBe(true)
     const file = join(out, CONTEXT_FILE)
-    expect(readFileSync(file, 'utf8')).toContain('### jong-skills:documentation')
+    expect(readFileSync(file, 'utf8')).toContain('### ratchet-workflows:documentation')
     expect(pillar).toContain(`\`${file}\` is reference data collected mechanically`)
     expect(verifier).not.toContain(CONTEXT_FILE)
     expect(report).not.toContain('Context file: not built')

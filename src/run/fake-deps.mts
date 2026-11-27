@@ -8,6 +8,7 @@ import type { LabelIo, PrepareIo, ReviewIo } from '../review/index.mts'
 import { parseRepoConfig, NO_CONFIGS, type RepoConfigs } from '../review/rules/config.mts'
 import { createTrackerIo } from '../tracker/io.mts'
 import type { TrackerIo } from '../tracker/types.mts'
+import { DEFAULT_RULE_PLUGINS } from '../review/plugins.mts'
 
 type Mocked<T> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R ? Mock<(...args: A) => R> : never
@@ -103,7 +104,7 @@ export function fakeDeps(options: FakeOptions) {
           problems: parseRepoConfig(JSON.stringify(options.ownerConfig), 'acme.json', 'owner')
             .problems,
         }
-  const plugins = (options.plugins ?? ['no-mistakes-rules', 'jong-skills']).map((name) => ({
+  const plugins = (options.plugins ?? DEFAULT_RULE_PLUGINS).map((name) => ({
     id: `${name}@market`,
     version: '1.0.0',
   }))

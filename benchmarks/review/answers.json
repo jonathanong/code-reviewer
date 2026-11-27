@@ -4,7 +4,7 @@
     "fixture": "fixtures/answers-like-row-lock",
     "title": "feat: record a vote as a new row",
     "kind": "negative",
-    "reason": "Another reviewer's open note asks for SELECT ... FOR UPDATE on the post row so concurrent votes serialize. The vote is an append-only insert whose latest row per voter wins, so the lock is unnecessary: jong-skills:postgres-locking says \"**Append-only writes never lock**: votes, events, history, anything where the latest row wins.\" and \"A reviewer's \"race condition\" finding, from a person or a bot, never by itself justifies a lock, a wider lock, or a coordination column.\" The verifier should answer the thread citing that skill, and its quote must be a sentence of the installed skill.",
+    "reason": "Another reviewer's open note asks for SELECT ... FOR UPDATE on the post row so concurrent votes serialize. The vote is an append-only insert whose latest row per voter wins, so the lock is unnecessary: ratchet-backend:postgres-locking says \"**Append-only writes never lock**: votes, events, history, anything where the latest row wins.\" and \"A reviewer's \"race condition\" finding, from a person or a bot, never by itself justifies a lock, a wider lock, or a coordination column.\" The verifier should answer the thread citing that skill, and its quote must be a sentence of the installed skill.",
     "expected": [],
     "answerable": [
       {
@@ -17,7 +17,7 @@
           "replies": []
         },
         "expect": "answer",
-        "skill": "jong-skills:postgres-locking"
+        "skill": "ratchet-backend:postgres-locking"
       }
     ]
   },

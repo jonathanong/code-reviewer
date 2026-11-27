@@ -54,17 +54,23 @@ describe('checkPlugins', () => {
 describe('pluginSettings', () => {
   const plugins = [
     { id: 'no-mistakes-rules@no-mistakes', version: '1' },
-    { id: 'jong-skills@harness-plugins', version: '1' },
+    { id: 'ratchet-workflows@ratchet-stack', version: '1' },
     { id: 'skills-extra@m', version: '1' },
     { id: 'superpowers@official', version: '1' },
   ]
 
   it('keeps only the rule plugins on', () => {
-    expect(DEFAULT_RULE_PLUGINS).toEqual(['no-mistakes-rules', 'jong-skills'])
+    expect(DEFAULT_RULE_PLUGINS).toEqual([
+      'no-mistakes-rules',
+      'ratchet-workflows',
+      'ratchet-github',
+      'ratchet-backend',
+      'ratchet-code',
+    ])
     expect(pluginSettings(plugins, DEFAULT_RULE_PLUGINS)).toEqual({
       enabledPlugins: {
         'no-mistakes-rules@no-mistakes': true,
-        'jong-skills@harness-plugins': true,
+        'ratchet-workflows@ratchet-stack': true,
         'skills-extra@m': false,
         'superpowers@official': false,
       },
@@ -84,7 +90,7 @@ describe('pluginSettings', () => {
   it('turns on exactly the configured plugins, and none for an empty list', () => {
     expect(pluginSettings(plugins, ['superpowers']).enabledPlugins).toEqual({
       'no-mistakes-rules@no-mistakes': false,
-      'jong-skills@harness-plugins': false,
+      'ratchet-workflows@ratchet-stack': false,
       'skills-extra@m': false,
       'superpowers@official': true,
     })
@@ -100,7 +106,7 @@ describe('pluginSettings', () => {
 describe('parsePluginInstalls', () => {
   it('keeps enabled user-scope plugins that have an install path', () => {
     const listed = JSON.stringify([
-      { id: 'jong-skills@m', scope: 'user', enabled: true, installPath: '/cache/skills' },
+      { id: 'ratchet-workflows@m', scope: 'user', enabled: true, installPath: '/cache/skills' },
       { id: 'off@m', scope: 'user', enabled: false, installPath: '/cache/off' },
       { id: 'proj@m', scope: 'project', enabled: true, installPath: '/cache/proj' },
       { id: 'bare@m', scope: 'user', enabled: true },
@@ -109,7 +115,7 @@ describe('parsePluginInstalls', () => {
       null,
     ])
     expect(parsePluginInstalls(listed)).toEqual([
-      { name: 'jong-skills', installPath: '/cache/skills', marketplace: 'm' },
+      { name: 'ratchet-workflows', installPath: '/cache/skills', marketplace: 'm' },
       { name: 'local', installPath: '/cache/local' },
     ])
   })

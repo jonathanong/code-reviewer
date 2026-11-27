@@ -9,6 +9,7 @@ import type { PluginInfo } from '../plugins.mts'
 import type { ReviewPlan } from '../plan.mts'
 import { resolveModelPlan } from '../models.mts'
 import { runReview, type ReviewSteps } from './review.mts'
+import { DEFAULT_RULE_PLUGINS } from '../plugins.mts'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -29,10 +30,10 @@ const PLAN: ReviewPlan = {
 const result = (structured: unknown) =>
   JSON.stringify({ type: 'result', total_cost_usd: 0, num_turns: 1, structured_output: structured })
 
-const SKILLS = { name: 'jong-skills', installPath: fixture('plugins/skills') }
+const SKILLS = { name: 'ratchet-workflows', installPath: fixture('plugins/skills') }
 const WITH_SKILLS: PluginInfo = {
   enabled: [
-    { id: 'jong-skills@m', version: '1' },
+    { id: 'ratchet-workflows@m', version: '1' },
     { id: 'no-mistakes-rules@m', version: '1' },
   ],
   installs: [SKILLS],
@@ -51,7 +52,7 @@ async function run(
     if (command === 'git') return ''
     seen.push(args)
     if (args[args.indexOf('--tools') + 1] === '') {
-      return result({ skills: ['jong-skills:documentation'] })
+      return result({ skills: ['ratchet-workflows:documentation'] })
     }
     if ((args[1] as string).includes('VERIFIER prompt text')) {
       return result({ summary: 's', pullRequestSummary: 'p', findings: [] })
@@ -97,7 +98,7 @@ describe('runReview models', () => {
     const plan = resolveModelPlan({
       steps: { select: 'large', pillars: 'small', verifier: 'small' },
     })
-    const { outcome, out, seen } = await run(['jong-skills'], WITH_SKILLS, { plan })
+    const { outcome, out, seen } = await run(['ratchet-workflows'], WITH_SKILLS, { plan })
     expect(outcome.ok).toBe(true)
     const modelOf = (args: string[]) => args[args.indexOf('--model') + 1]
     expect(seen.map(modelOf)).toEqual(['opus', 'haiku', 'haiku'])
@@ -109,33 +110,52 @@ describe('runReview models', () => {
 
 describe('runReview rule plugins', () => {
   it('gives a default run the pillar contract as it is on disk, and the default plugins on', async () => {
-    const { outcome, seen } = await run(['no-mistakes-rules', 'jong-skills'], {
-      ...WITH_SKILLS,
+    const { outcome, seen } = await run(DEFAULT_RULE_PLUGINS, {
+      enabled: [
+        { id: 'ratchet-workflows@m', version: '1' },
+        ...DEFAULT_RULE_PLUGINS.filter((name) => name !== 'ratchet-workflows').map((name) => ({
+          id: `${name}@m`,
+          version: '1',
+        })),
+      ],
       installs: [
         SKILLS,
         { name: 'no-mistakes-rules', installPath: fixture('plugins/no-mistakes-rules') },
+        ...['ratchet-github', 'ratchet-backend', 'ratchet-code'].map((name) => ({
+          name,
+          installPath: fixture('plugins/skills'),
+        })),
       ],
     })
     expect(outcome.ok).toBe(true)
     const [pillar] = pillarCalls(seen) as string[][]
     expect(pillar?.[1]).toContain(
-      '_contract prompt text\n\n- Shared rule skills: from the `no-mistakes-rules` and `jong-skills` plugins.\n- Other input.',
+      '_contract prompt text\n\n- Shared rule skills: from the `no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code` plugins.\n- Other input.',
     )
     expect(settingsOf(pillar as string[])).toBe(
-      JSON.stringify({ enabledPlugins: { 'jong-skills@m': true, 'no-mistakes-rules@m': true } }),
+      JSON.stringify({
+        enabledPlugins: Object.fromEntries(
+          [
+            'ratchet-workflows',
+            ...DEFAULT_RULE_PLUGINS.filter((n) => n !== 'ratchet-workflows'),
+          ].map((name) => [`${name}@m`, true]),
+        ),
+      }),
     )
   })
 
   it('renders the configured plugins into the pillar prompt and turns the others off', async () => {
-    const { outcome, seen } = await run(['jong-skills'], WITH_SKILLS)
+    const { outcome, seen } = await run(['ratchet-workflows'], WITH_SKILLS)
     expect(outcome.ok).toBe(true)
     const [pillar] = pillarCalls(seen) as string[][]
-    expect(pillar?.[1]).toContain('- Shared rule skills: from the `jong-skills` plugin.')
+    expect(pillar?.[1]).toContain('- Shared rule skills: from the `ratchet-workflows` plugin.')
     expect(pillar?.[1]).toContain(
       'A pillar file may name a skill from a plugin this run does not load',
     )
     expect(settingsOf(pillar as string[])).toBe(
-      JSON.stringify({ enabledPlugins: { 'jong-skills@m': true, 'no-mistakes-rules@m': false } }),
+      JSON.stringify({
+        enabledPlugins: { 'ratchet-workflows@m': true, 'no-mistakes-rules@m': false },
+      }),
     )
   })
 
@@ -152,7 +172,9 @@ describe('runReview rule plugins', () => {
     expect(pillars).toHaveLength(1)
     const [pillar] = pillars as string[][]
     expect(settingsOf(pillar as string[])).toBe(
-      JSON.stringify({ enabledPlugins: { 'jong-skills@m': false, 'no-mistakes-rules@m': false } }),
+      JSON.stringify({
+        enabledPlugins: { 'ratchet-workflows@m': false, 'no-mistakes-rules@m': false },
+      }),
     )
     expect(pillar?.[1]).toContain('no shared rule plugins are configured')
     expect(pillar?.[1]).not.toContain('no-mistakes-rules')
@@ -160,10 +182,10 @@ describe('runReview rule plugins', () => {
   })
 
   it('fails before any model call naming a configured plugin not enabled at user scope', async () => {
-    const { outcome, seen, abort } = await run(['no-mistakes-rules', 'jong-skills'], WITH_SKILLS)
+    const { outcome, seen, abort } = await run(DEFAULT_RULE_PLUGINS, WITH_SKILLS)
     expect(outcome.ok).toBe(false)
     expect(outcome.summary.error).toBe(
-      'rule plugins missing or not enabled at user scope: no-mistakes-rules',
+      'rule plugins missing or not enabled at user scope: no-mistakes-rules, ratchet-github, ratchet-backend, ratchet-code',
     )
     expect(seen).toEqual([])
     expect(abort).toHaveBeenCalledTimes(1)
@@ -174,7 +196,7 @@ describe('runReview rule plugins', () => {
       enabled: [],
       installs: [SKILLS, { name: 'other', installPath: fixture('plugins/missing') }],
     }
-    const { outcome, seen } = await run(['jong-skills', 'other'], plugins)
+    const { outcome, seen } = await run(['ratchet-workflows', 'other'], plugins)
     expect(outcome.ok).toBe(false)
     expect(outcome.summary.error).toBe('rule plugins with no skills: other')
     expect(seen).toEqual([])

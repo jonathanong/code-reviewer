@@ -24,6 +24,7 @@ import { resolveAnalysis } from '../review/analysis-settings.mts'
 import { NO_CONFIGS, parseRepoConfig } from '../review/rules/config.mts'
 import type { TargetConfig } from '../review/rules/target-config.mts'
 import type { ReviewDeps } from './deps.mts'
+import { DEFAULT_RULE_PLUGINS } from '../review/plugins.mts'
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -245,7 +246,7 @@ describe('reviewCommand', () => {
     const untrusted = await steps()
     expect(targetConfig).toHaveBeenCalledWith('acme/widgets')
     expect(untrusted.wired.webReferences).toEqual([])
-    expect(untrusted.wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
+    expect(untrusted.wired.rulePlugins).toEqual(DEFAULT_RULE_PLUGINS)
     vi.clearAllMocks()
     configs.mockReturnValue({
       ...NO_CONFIGS,
@@ -306,7 +307,7 @@ describe('reviewCommand', () => {
   })
 
   it('uses the default rule plugins unless a machine config lists others, even none', async () => {
-    expect((await steps()).wired.rulePlugins).toEqual(['no-mistakes-rules', 'jong-skills'])
+    expect((await steps()).wired.rulePlugins).toEqual(DEFAULT_RULE_PLUGINS)
     vi.clearAllMocks()
     configs.mockReturnValue({
       ...NO_CONFIGS,

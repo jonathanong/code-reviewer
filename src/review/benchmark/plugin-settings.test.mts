@@ -3,24 +3,26 @@ import { describe, expect, it, vi } from 'vitest'
 import { benchPlugins } from './plugin-settings.mts'
 
 const LISTED = JSON.stringify([
-  { id: 'jong-skills@m', version: '1.0.0', enabled: true },
+  { id: 'ratchet-workflows@m', version: '1.0.0', enabled: true },
   { id: 'other@m', version: '2.0.0', enabled: true },
 ])
 
 describe('benchPlugins', () => {
   it('records the enabled plugins and keeps only the rule plugins on', async () => {
     const result = await benchPlugins(async () => LISTED, '/cwd', true, vi.fn())
-    expect(result.labels).toEqual(['jong-skills@m 1.0.0', 'other@m 2.0.0'])
-    expect(result.settings).toEqual({ enabledPlugins: { 'other@m': false, 'jong-skills@m': true } })
+    expect(result.labels).toEqual(['other@m 2.0.0', 'ratchet-workflows@m 1.0.0'])
+    expect(result.settings).toEqual({
+      enabledPlugins: { 'other@m': false, 'ratchet-workflows@m': true },
+    })
   })
 
   it('lists where the enabled user-scope plugins are installed', async () => {
     const stdout = JSON.stringify([
-      { id: 'jong-skills@m', enabled: true, scope: 'user', installPath: '/p/jong' },
+      { id: 'ratchet-workflows@m', enabled: true, scope: 'user', installPath: '/p/jong' },
     ])
     const result = await benchPlugins(async () => stdout, '/cwd', true, vi.fn())
     expect(result.installs).toEqual([
-      { name: 'jong-skills', installPath: '/p/jong', marketplace: 'm' },
+      { name: 'ratchet-workflows', installPath: '/p/jong', marketplace: 'm' },
     ])
   })
 
@@ -28,7 +30,7 @@ describe('benchPlugins', () => {
     const result = await benchPlugins(async () => LISTED, '/cwd', false, vi.fn())
     expect(result.labels).toEqual([])
     expect(result.settings).toEqual({
-      enabledPlugins: { 'other@m': false, 'jong-skills@m': false },
+      enabledPlugins: { 'other@m': false, 'ratchet-workflows@m': false },
     })
   })
 

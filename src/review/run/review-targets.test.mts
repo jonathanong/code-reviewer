@@ -156,11 +156,11 @@ async function runScenario(scenario: Scenario) {
     preview: async () => ({ verdict: 'Approve', reviews: [] }),
     plugins: async () => ({
       enabled: [],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
     approvalCheck: false,
-    rulePlugins: scenario.rulePlugins ?? ['jong-skills'],
+    rulePlugins: scenario.rulePlugins ?? ['ratchet-workflows'],
     targets: scenario.targetSettings,
     exec,
     references,

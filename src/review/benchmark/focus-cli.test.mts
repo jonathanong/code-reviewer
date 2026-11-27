@@ -32,7 +32,13 @@ const HOSTILE = {
 }
 
 const PLUGINS = JSON.stringify([
-  { id: 'jong-skills@m', version: '1', enabled: true, scope: 'user', installPath: '/p/skills' },
+  {
+    id: 'ratchet-workflows@m',
+    version: '1',
+    enabled: true,
+    scope: 'user',
+    installPath: '/p/skills',
+  },
   { id: 'other@m', version: '1', enabled: true, scope: 'user', installPath: '/p/other' },
 ])
 
@@ -173,7 +179,7 @@ describe('runReviewFocusBenchCli', () => {
     expect(h.ran[0]).toMatchObject({
       mode: 'light',
       contract: '# Contract',
-      settings: { enabledPlugins: { 'jong-skills@m': true, 'other@m': false } },
+      settings: { enabledPlugins: { 'ratchet-workflows@m': true, 'other@m': false } },
       models: { plan: { steps: { focus: [{ harness: 'claude', model: 'opus' }] } } },
     })
     expect(h.store.has('o/raw/plain.json')).toBe(false)

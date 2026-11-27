@@ -1,6 +1,6 @@
 # Benchmark rules
 
-- Load `jong-skills:evals` before changing a case, a fixture, a grader, or these documents.
+- Load `ratchet-workflows:evals` before changing a case, a fixture, a grader, or these documents.
 - Run one case with `pnpm exec code-reviewer bench --cases <file> --pillar <p> --case <id> --out <dir>`.
   Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
 - Measure a pillar on another harness with `bench ... --harness codex --model <id> --reads-outside-checkout`; only the pillar agent moves, and its rows are not comparable with Claude rows.
@@ -31,7 +31,7 @@
   skill states its rule. Do not write a case for a rule no skill states.
 - `unwantedSkills` (full `plugin:skill` names, scored only by `bench-selection`) lists skills the selection
   should leave out. Label conservatively and only on fixture cases: list a skill only when nothing in the
-  changed files falls under what its installed description governs. Process skills (`agent-workflow`,
+  changed files falls under what its installed description governs. Process skills (`implementing-changes`,
   `pr-description`, `git-commit-checklist`, `planning`, `technical-writing`), `documentation` when no doc or
   comment changes, and a domain skill for a technology absent from the diff (SQL, React, workflows, ...)
   qualify. When in doubt leave it out, never list an expected skill, and note in `HISTORY.md` which plugin

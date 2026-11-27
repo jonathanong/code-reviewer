@@ -274,11 +274,11 @@ layer when a value came from there. `doctor` checks rule plugins from the machin
 ## `rulePlugins`
 
 ```yaml
-rulePlugins: [no-mistakes-rules, jong-skills]
+rulePlugins: [no-mistakes-rules, ratchet-workflows, ratchet-github, ratchet-backend, ratchet-code]
 ```
 
 The Claude Code plugins whose skills a review may use as shared rules, by plugin name (no
-`@marketplace`). Unset, the list is `no-mistakes-rules` and `jong-skills`. A list replaces the
+`@marketplace`). Unset, the list is `no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`. A list replaces the
 default whole and is never appended to it, and the repository file's list replaces the owner
 file's. `[]` is valid: rules then come only from the reviewed repository's `AGENTS.md` and
 skills, skill selection is skipped, and every headless run enables no plugin. Names are letters,

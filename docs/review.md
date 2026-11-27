@@ -256,7 +256,7 @@ duplicates something already in the tree, or a much smaller change reaches the s
 only with evidence from the tree or the context, as a `medium` or `low` finding that the verifier
 may turn into a question; never as `blocking` or `high` on that ground alone. These are prompt
 rules in the pillar contract, with no code check. In the congruence pillar, the verifier also loads
-`jong-skills:pr-description` when a change alters user- or caller-visible behavior and raises one
+`ratchet-github:pr-description` when a change alters user- or caller-visible behavior and raises one
 `low` finding (never blocking) when the description does not show one realistic input, command or
 call, and real output under its "Show one real run" rule.
 
@@ -544,7 +544,7 @@ cost. `review` prints the line above on stderr, then the JSON summary on stdout 
 
 Every headless run passes `--strict-mcp-config --setting-sources user` and
 `--settings '{"enabledPlugins":{...}}'` listing each enabled plugin, true only for the configured rule
-plugins (`rulePlugins`; by default `no-mistakes-rules` and `jong-skills`, and none for `[]`). That keeps fixed context near 17k tokens instead of
+plugins (`rulePlugins`; by default `no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`, and none for `[]`). That keeps fixed context near 17k tokens instead of
 about 139k. Pillar runs also get a read-only `explorer` subagent and no other (Haiku by default, else the `small` tier's first Claude model), because Claude Code's built-in agent types
 are denied. The same flags apply to
 `bench`, where `--no-rules` sets every plugin false.

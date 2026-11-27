@@ -46,7 +46,7 @@ async function run(options: {
   const exec: Exec = async (_command, args) => {
     const prompt = args[1] as string
     if (args[args.indexOf('--tools') + 1] === '') {
-      return result({ skills: ['jong-skills:documentation'] })
+      return result({ skills: ['ratchet-workflows:documentation'] })
     }
     if (prompt.includes('APPROVAL CHECK prompt text')) {
       calls.push(prompt)
@@ -68,10 +68,10 @@ async function run(options: {
     preview: async () => ({ verdict: 'Comment', warnings: [], tooLong: [], reviews: [] }),
     plugins: async () => ({
       enabled: [],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     approvalCheck: options.enabled ?? true,
     exec,
     references: fixture('references'),

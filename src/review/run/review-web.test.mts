@@ -39,7 +39,7 @@ async function run(webReferences?: ReviewSteps['webReferences'], extra: Partial<
     seen.push(args.map((arg) => arg.split(out).join('RUN')))
     const prompt = args[1] as string
     if (args[args.indexOf('--tools') + 1] === '') {
-      return result({ skills: ['jong-skills:documentation'] })
+      return result({ skills: ['ratchet-workflows:documentation'] })
     }
     if (prompt.includes('VERIFIER prompt text')) {
       return result({ summary: 's', pullRequestSummary: 'p', findings: [] })
@@ -59,10 +59,10 @@ async function run(webReferences?: ReviewSteps['webReferences'], extra: Partial<
     preview: async () => ({ verdict: 'Approve', reviews: [] }),
     plugins: async () => ({
       enabled: [],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     exec,
     references: fixture('references'),
     ...(webReferences === undefined ? {} : { webReferences }),

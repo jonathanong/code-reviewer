@@ -25,13 +25,13 @@ describe('parseAnswerable', () => {
   it('reads the note, the expected outcome and the skill an answer must cite', () => {
     const parsed = parseAnswerable(
       [
-        entry({ expect: 'answer', skill: 'jong-skills:postgres-locking' }),
+        entry({ expect: 'answer', skill: 'ratchet-backend:postgres-locking' }),
         { note: { ...note, thread: 'PRRT_2', omitted: 2 }, expect: 'leave' },
       ],
       'w',
     )
     expect(parsed.answerable).toEqual([
-      { note, expect: { answer: 'jong-skills:postgres-locking' } },
+      { note, expect: { answer: 'ratchet-backend:postgres-locking' } },
       { note: { ...note, thread: 'PRRT_2', omitted: 2 }, expect: 'leave' },
     ])
   })
@@ -74,7 +74,7 @@ describe('the answers cases', () => {
       'answers-floating-promise',
     ])
     expect(cases.map((item) => item.answerable?.map((entry) => entry.expect))).toEqual([
-      [{ answer: 'jong-skills:postgres-locking' }],
+      [{ answer: 'ratchet-backend:postgres-locking' }],
       ['leave'],
     ])
   })

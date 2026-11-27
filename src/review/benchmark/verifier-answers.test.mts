@@ -8,12 +8,12 @@ import type { EvalCase } from './cases.mts'
 import { gradeAnswers, notesOf } from './verifier-answers.mts'
 import { buildVerifierPrompt, verifierRequest, VERIFIER_OUTPUT_SCHEMA } from './verifier-run.mts'
 
-const SKILL = 'jong-skills:postgres-locking'
+const SKILL = 'ratchet-backend:postgres-locking'
 const SENTENCE = 'Append-only writes never lock: votes, events, history.'
 const RULES = {
   texts: new Map([
     [SKILL, normalizeLines(`# Locking\n\n- ${SENTENCE}\n`)],
-    ['jong-skills:other', normalizeLines(`# Other\n\n- ${SENTENCE}\n`)],
+    ['ratchet-workflows:other', normalizeLines(`# Other\n\n- ${SENTENCE}\n`)],
   ]),
   selected: [],
 }
@@ -47,12 +47,12 @@ describe('gradeAnswers', () => {
   })
 
   it('fails an answer that cites another skill, cites none, or is missing', () => {
-    const other = gradeAnswers(CASES, [reply('T1', 'jong-skills:other')], RULES, [
-      'jong-skills:other',
+    const other = gradeAnswers(CASES, [reply('T1', 'ratchet-workflows:other')], RULES, [
+      'ratchet-workflows:other',
     ])
     expect(other.threads[0]).toMatchObject({
       answered: true,
-      cited: 'jong-skills:other',
+      cited: 'ratchet-workflows:other',
       passed: false,
     })
     const code = gradeAnswers(CASES, [{ thread: 'T1', body: 'No.', at: 'src/a.ts:3' }], RULES, [])

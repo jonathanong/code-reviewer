@@ -6,7 +6,7 @@
 ## Rule skills
 
 - Before writing or changing code, tests, CI, or dependencies, load every installed skill whose description matches the files or topic you are about to touch (both rule skills and design skills), and follow them.
-- Reviews get shared rules only from the installed plugins the machine config lists (`rulePlugins`; by default `no-mistakes-rules` and `jong-skills`); nothing is copied from clones.
+- Reviews get shared rules only from the installed plugins the machine config lists (`rulePlugins`; by default `no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`); nothing is copied from clones.
 
 ## no-mistakes
 

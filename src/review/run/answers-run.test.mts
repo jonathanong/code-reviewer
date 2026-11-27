@@ -27,14 +27,14 @@ const INPUT: VerifierInput = {
   threads: [],
 }
 const RULES: AnswerRules = {
-  texts: new Map([['jong-skills:locks', 'Take a lock only on a row it writes.']]),
-  selected: ['jong-skills:locks'],
+  texts: new Map([['ratchet-workflows:locks', 'Take a lock only on a row it writes.']]),
+  selected: ['ratchet-workflows:locks'],
 }
 const GIVEN = [
   {
     thread: 'PRT_1',
     body: 'No lock.',
-    rule: { skill: 'jong-skills:locks', quote: 'Take a lock only on a row it writes.' },
+    rule: { skill: 'ratchet-workflows:locks', quote: 'Take a lock only on a row it writes.' },
   },
   { thread: 'PRT_9', body: 'Made up.', at: 'a.ts:1' },
 ]
