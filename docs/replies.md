@@ -19,8 +19,9 @@ Authors usually push a fix and then reply ("fixed in abc123"), so a reply often 
 A thread with a new author reply is still judged. The head is checked out the way `run` checks it out, and
 each such thread gets the `git diff` of its file from the reviewed commit to the current head (local git;
 `sinceDiff`, cut at `SINCE_DIFF_CHARS`) next to the reply, so the call judges the reply against the new code. A
-finding with no file, or a diff git cannot produce (for example after a force push), is listed under `unjudged`,
-and when no thread can be read the command does nothing and says why. Threads without a new reply are not
+finding with no file, or whose diff git cannot produce, is listed under `unjudged` while the other threads are
+still judged. When the reviewed commit cannot be fetched (for example after a force push removed it), or no
+thread can be read, the command does nothing and says why. Threads without a new reply are not
 touched.
 
 The new commits were never reviewed as a whole, so a moved-head run answers threads only: it replies in each

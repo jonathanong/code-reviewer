@@ -46,25 +46,33 @@ export async function withSinceDiffs(
         unjudged.push({ thread: candidate.thread, why: 'the finding has no file to diff' })
         continue
       }
-      const diff = await env.git([
-        '-C',
-        tree.path,
-        'diff',
-        '--no-color',
-        plan.reviewedSha,
-        plan.headSha,
-        '--',
-        candidate.path,
-      ])
-      const text = diff.trim() === '' ? UNCHANGED : diff
-      candidates.push({
-        ...candidate,
-        sinceDiff:
-          text.length > SINCE_DIFF_CHARS ? `${text.slice(0, SINCE_DIFF_CHARS)}\n[cut]` : text,
-      })
+      try {
+        const diff = await env.git([
+          '-C',
+          tree.path,
+          'diff',
+          '--no-color',
+          plan.reviewedSha,
+          plan.headSha,
+          '--',
+          candidate.path,
+        ])
+        const text = diff.trim() === '' ? UNCHANGED : diff
+        candidates.push({
+          ...candidate,
+          sinceDiff:
+            text.length > SINCE_DIFF_CHARS ? `${text.slice(0, SINCE_DIFF_CHARS)}\n[cut]` : text,
+        })
+      } catch (error) {
+        unjudged.push({
+          thread: candidate.thread,
+          why: `the diff of its file could not be read: ${message(error)}`,
+        })
+      }
     }
   } catch (error) {
-    return { noop: `the changes since the reviewed commit could not be read: ${message(error)}` }
+    // Only the fetch of the reviewed commit reaches here: without it no thread can be read.
+    return { noop: `the reviewed commit could not be fetched: ${message(error)}` }
   } finally {
     await tree.remove().catch(() => undefined)
   }

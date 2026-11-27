@@ -39,6 +39,22 @@ jobs:
           pnpm run vendor
           git diff --exit-code vendor/
       - run: pnpm run lint
+      # actionlint is a pinned release binary, not an npm package: the npm wrapper pulls in adm-zip,
+      # which has open advisories and no fixed release. ubuntu-latest has shellcheck preinstalled,
+      # which actionlint runs on `run:` scripts.
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$archive"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir "$RUNNER_TEMP/actionlint"
+          tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP/actionlint" actionlint
+          echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
       - run: pnpm run actionlint
       - run: pnpm run typecheck
       # Coverage thresholds are 100% and enforced by vitest.config.mts.

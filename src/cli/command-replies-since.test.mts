@@ -87,7 +87,7 @@ describe('withSinceDiffs', () => {
     })
   })
 
-  it('does nothing, and removes the checkout, when git cannot read the old commit', async () => {
+  it('does nothing, and removes the checkout, when the reviewed commit cannot be fetched', async () => {
     const { env } = setup(async () => {
       throw new Error('unknown revision')
     })
@@ -95,6 +95,28 @@ describe('withSinceDiffs', () => {
       noop: expect.stringContaining('unknown revision'),
     })
     expect(remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves a thread whose diff fails unjudged and still judges the others', async () => {
+    const { env } = setup(async (args) => {
+      if (args.at(-1) === 'bad.ts') throw new Error('bad path')
+      return args.includes('diff') ? 'diff' : ''
+    })
+    const result = await read([candidate('T1', 'bad.ts'), candidate('T2', 'a.ts')], env)
+    expect(result).toMatchObject({
+      candidates: [{ thread: 'T2', sinceDiff: 'diff' }],
+      unjudged: [{ thread: 'T1', why: expect.stringContaining('bad path') }],
+    })
+  })
+
+  it('does nothing when every diff fails', async () => {
+    const { env } = setup(async (args) => {
+      if (args.includes('diff')) throw new Error('bad path')
+      return ''
+    })
+    expect(await read([candidate('T1', 'a.ts')], env)).toEqual({
+      noop: expect.stringContaining('could be read'),
+    })
   })
 
   it('ignores a checkout that cannot be removed', async () => {
