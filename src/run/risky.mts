@@ -1,6 +1,6 @@
 import { matchesGlob } from 'node:path'
 
-import { isDependencyFile, isDocPath, isTestPath } from '../review/triggers.mts'
+import { isDependencyFile, isDocFile, isTestPath } from '../review/triggers.mts'
 
 /**
  * Paths whose change a human should read the review for before it posts. This is narrower than the
@@ -38,7 +38,7 @@ const NOT_SOURCE_RE = /\.stories\.|\.(?:sh|bash|zsh)$/iu
  */
 export function riskyPaths(paths: readonly string[], patterns?: readonly string[]): string[] {
   return paths.filter((path) => {
-    if (isTestPath(path) || isDocPath(path)) return false
+    if (isTestPath(path) || isDocFile(path)) return false
     if (patterns !== undefined) return patterns.some((pattern) => matchesGlob(path, pattern))
     if (CI_RES.some((re) => re.test(path))) return true
     if (NOT_SOURCE_RE.test(path) || isDependencyFile(path)) return false

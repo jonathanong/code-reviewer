@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
+
+Plan logic only: `src/review/mode.mts`, `triggers.mts` and `plan-settings.mts`. No prompt, schema, case or grader changed, so
+no score here moves. What changes is which pillars a live review gets, so rows that name a plan are not comparable with
+earlier ones: a follow-up that edits more than 40 lines of hand-written source is `full` at `high` (was `light` at `low`);
+a pull request that edits only `SKILL.md`, `AGENTS.md`, `CLAUDE.md` or `.md` under `skills/`, `agents/`, `plugins/` or
+`.claude/` is no longer docs-only (it gets rules and correctness when small, the full set when large; was rules only); a
+pull request that changes a path in `plan.sqlPaths` is `full`. Plan logic is covered by unit tests
+(`src/review/plan-paths.test.mts`, `triggers.test.mts`), not by a benchmark case.
+
 ## 2026-11-27 (case fix, no run): `supervisor-65-417fd1b` gains the head-binding claim
 
 The case expected only the ordinal-operator claim. At head `417fd1b` the defect CodeRabbit found in the diff was "Bind

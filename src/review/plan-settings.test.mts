@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_PLAN_VALUES, SMALL_PR_LINES, resolvePlanValues } from './plan-settings.mts'
+import {
+  DEFAULT_PLAN_VALUES,
+  FOLLOW_UP_SOURCE_LINES as SMALL_FOLLOW_UP,
+  SMALL_PR_LINES,
+  resolvePlanValues,
+} from './plan-settings.mts'
 import { NO_CONFIGS, type RepoConfig, type RepoConfigs } from './rules/config.mts'
 import type { PlanConfig } from './rules/plan-parse.mts'
 
@@ -29,9 +34,13 @@ const configs: RepoConfigs = {
         generatedPaths: ['gen/**'],
         authors: [{ login: 'repo-bot', review: 'light' }],
         smallChangeLines: 20,
+        sqlPaths: ['db/**'],
       }),
     ],
-    ['acme/trusting', config({ smallChangeLines: 60 }, { trustRepoConfig: true })],
+    [
+      'acme/trusting',
+      config({ smallChangeLines: 60, followUpSourceLines: 10 }, { trustRepoConfig: true }),
+    ],
     ['acme/plain', config()],
   ]),
   problems: [],
@@ -42,6 +51,8 @@ const own = config({
   generatedPaths: ['own-gen/**'],
   authors: [{ login: 'own-bot', review: 'skip' }],
   smallChangeLines: 500,
+  sqlPaths: ['own-sql/**'],
+  followUpSourceLines: 5,
 })
 
 describe('resolvePlanValues', () => {
@@ -59,6 +70,8 @@ describe('resolvePlanValues', () => {
         { login: 'owner-bot', review: 'skip' },
       ],
       smallChangeLines: 20,
+      sqlPaths: ['db/**'],
+      followUpSourceLines: SMALL_FOLLOW_UP,
     })
     expect(resolvePlanValues(configs, 'acme/plain')).toMatchObject({
       securityPaths: ['a/**', 'shared/**'],
@@ -78,6 +91,8 @@ describe('resolvePlanValues', () => {
       generatedPaths: [],
       authors: [{ login: 'owner-bot', review: 'skip' }],
       smallChangeLines: SMALL_PR_LINES,
+      sqlPaths: ['own-sql/**'],
+      followUpSourceLines: SMALL_FOLLOW_UP,
     })
   })
 
@@ -87,6 +102,8 @@ describe('resolvePlanValues', () => {
       generatedPaths: ['own-gen/**'],
       authors: [{ login: 'owner-bot', review: 'skip' }],
       smallChangeLines: 60,
+      sqlPaths: ['own-sql/**'],
+      followUpSourceLines: 10,
     })
     const bare: RepoConfigs = {
       ...NO_CONFIGS,

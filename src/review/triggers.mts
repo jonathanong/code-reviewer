@@ -6,6 +6,16 @@ const DOC_RE = /\.(?:md|mdx|markdown|txt|rst|adoc)$/iu
 const TEST_RE =
   /(?:\.(?:test|spec)\.[cm]?[jt]sx?$)|(?:(?:^|\/)(?:__tests__|tests?|fixtures|__snapshots__)\/)|(?:_test\.(?:go|rs|py)$)|(?:Tests?\.(?:swift|cs|kt)$)/u
 
+/**
+ * Files that direct agents are code: a skill, an agent definition, and `AGENTS.md` or `CLAUDE.md`
+ * change what an agent does, so a pull request that touches only them is not a docs-only change.
+ */
+const INSTRUCTION_RE =
+  /(?:(?:^|\/)(?:SKILL|AGENTS|CLAUDE)\.md$)|(?:(?:^|\/)(?:skills|agents|plugins|\.claude)\/(?:.*\/)?[^/]+\.md$)/u
+
+/** SQL files and migrations; the plan's `sqlPaths` add to these. */
+const SQL_RE = /\.sql$|(?:^|\/)migrations?\//iu
+
 /** Build and dependency manifests that look like docs (requirements.txt) are code, not docs. */
 const MANIFEST_RE = /(?:^|\/)(?:requirements[^/]*|CMakeLists)\.txt$/iu
 
@@ -101,8 +111,24 @@ export function reviewableLines(
   )
 }
 
-export function isDocPath(path: string): boolean {
+/** True for a file with a documentation extension, instruction files included. */
+export function isDocFile(path: string): boolean {
   return DOC_RE.test(path) && !MANIFEST_RE.test(path)
+}
+
+/** True for a markdown file that directs an agent; see `INSTRUCTION_RE`. */
+export function isInstructionFile(path: string): boolean {
+  return INSTRUCTION_RE.test(path)
+}
+
+/** Documentation a pull request may change without changing behaviour; an instruction file is not. */
+export function isDocPath(path: string): boolean {
+  return isDocFile(path) && !isInstructionFile(path)
+}
+
+/** True for a SQL file or a migration, or a path matching one of the configured `extra` globs. */
+export function isSqlPath(path: string, extra: readonly string[] = []): boolean {
+  return SQL_RE.test(path) || matchesAny(path, extra)
 }
 
 export function isTestPath(path: string): boolean {
@@ -118,6 +144,22 @@ export function isTestOrDocsOnly(paths: readonly string[]): boolean {
   return paths.length > 0 && paths.every((path) => isTestPath(path) || isDocPath(path))
 }
 
+/** Hand-written source: not generated, a test, or a doc (an instruction file is source). */
+export function isSourcePath(path: string, generatedPaths: readonly string[] = []): boolean {
+  return !isGenerated(path, generatedPaths) && !isTestPath(path) && !isDocPath(path)
+}
+
+/** Changed lines of hand-written source only (see `isSourcePath`). */
+export function sourceLines(
+  files: readonly ChangedFile[],
+  generatedPaths: readonly string[] = [],
+): number {
+  return files.reduce(
+    (sum, file) => sum + (isSourcePath(file.path, generatedPaths) ? file.lines : 0),
+    0,
+  )
+}
+
 /** The changed paths that trigger the security pillar; `extra` are configured globs that trigger it too. */
 export function securityTriggers(
   paths: readonly string[],
@@ -125,7 +167,7 @@ export function securityTriggers(
 ): string[] {
   return paths.filter(
     (path) =>
-      !isDocPath(path) && (SECURITY_RES.some((re) => re.test(path)) || matchesAny(path, extra)),
+      !isDocFile(path) && (SECURITY_RES.some((re) => re.test(path)) || matchesAny(path, extra)),
   )
 }
 
