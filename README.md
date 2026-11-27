@@ -121,6 +121,7 @@ code-reviewer help
 - [Shared context](docs/context.md): `context`, and the file of excerpts, line history and linked
   regressions that a review gives its pillars.
 - [Choosing a model](docs/models.md): `models`, which probes the models a harness offers.
+- [Reviewer models, 2026-11](docs/reviewer-models-2026-11.md): field notes from the second review machine on agy, Codex and Sonnet, with open items.
 - [Configuration](docs/configuration.md): the config layers and each key.
 - [Authentication and trust](docs/authentication.md): the GitHub App, the local `gh` login, and
   whose reviews count.
