@@ -247,8 +247,7 @@ the description; "pre-1.0, we will bump a minor" counts). Then it is `medium`, a
 moves the same finding from `blocking` to `medium`, so the verdict can go from Request Changes to
 Approve. A behavior change that is not incompatible (a new output, an added option) stays `medium`.
 The definition and examples are in `skills/review/references/pillars/congruence.md`. The reviewer
-asks the author, through the finding, rather than holding the review for a person: there is no
-`undeclared-breaking` [flag](#flags). A title or description problem stays `medium` at most. How a
+asks the author, through the finding, rather than holding the review for a person. A title or description problem stays `medium` at most. How a
 reply reaches the verifier is in [context](context.md#past-reviews).
 
 ## Pre-existing defects (FYI)
@@ -434,7 +433,7 @@ The impact is the verifier's judgment, one of `breaking`, `architectural`, `main
 breaking is a change that makes an existing caller, consumer, stored data or configuration stop
 working without a change on their side; architectural is a new dependency on a remote service or
 another repository, new persisted state or cache, a new process, queue or command family, or a
-change to how components are divided; maintenance is neither. The verifier looks at every effect of the diff, not only its findings: exit codes, allow or config entries that become unused, changed output fields. A behavior change the description does not list is a `medium` congruence finding that asks the author to document it, never `high`; it does not block or hold by itself. The verifier reads the reviewed
+change to how components are divided; maintenance is neither. The verifier looks at every effect of the diff, not only its findings: exit codes, allow or config entries that become unused, changed output fields. A non-breaking behavior change the description does not list is a `medium` congruence finding that asks the author to document it, never `high`; it does not block or hold by itself. An incompatible change, such as an exit code that goes from 0 to nonzero or an allow entry that becomes unused, is a [breaking change](#breaking-changes) and is rated by that rule. The verifier reads the reviewed
 repository's root `AGENTS.md` and any document it points to for these words; when they define
 them, those definitions win and the basis quotes the sentence used. A definition the pull request
 itself adds or changes does not count, so a change cannot reclassify itself. When the verifier cannot tell it answers `unsure` and says what it would need.
