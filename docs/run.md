@@ -99,7 +99,9 @@ later `run` of the same head a no-op rather than a loop. `queue` reports such a 
 facts make an entry `held`: the `held` label (set by any machine, so it covers a hold made by
 another machine, and has no `runDir` there) and this machine's own tracker, which finds an unposted
 review of the same head with `review.json` still there (it also covers a hold made before the label
-existed). With `--post auto`, a held review is
+existed). The label holds only the head it was placed on: a head pushed after the hold is
+reviewed by an unforced `run` or `claim`, which clears the stale label (the timeline decides; if it
+cannot be read, the hold stands). With `--post auto`, a held review is
 posted by a human, after reading the document at `explainPath`, with the printed `postCommand`
 (`code-reviewer post ... --input RUNDIR/review.json`), which clears the held and request labels
 along with the in-progress one. Running that command again for a review already posted is a no-op

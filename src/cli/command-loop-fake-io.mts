@@ -80,7 +80,7 @@ export const targetConfig = vi.fn(async (repo: string) =>
 
 /** `problems` are the machine config's problems; none unless a test is about them. */
 export function fakeDeps(mode: 'app' | 'gh' = 'app', problems: string[] = []) {
-  const labelIo = { labels: vi.fn(), add: vi.fn(), remove: vi.fn() }
+  const labelIo = { labels: vi.fn(), add: vi.fn(), remove: vi.fn(), heldHead: vi.fn() }
   const prepareIo = {} as ReturnType<ReviewDeps['createPrepareIo']>
   const run = vi.fn(async (_args: readonly string[]) => 'https://example.test/check\n')
   const runner = vi.fn(() => run)

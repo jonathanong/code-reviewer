@@ -1,13 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  abortReview,
-  claimReview,
-  completeReview,
-  createGhLabelIo,
-  skipReview,
-  type LabelIo,
-} from './labels.mts'
+import { abortReview, claimReview, completeReview, createGhLabelIo, skipReview } from './labels.mts'
+import { fakeIo } from './labels-fake-io.mts'
 import { DEFAULT_LABELS } from './settings.mts'
 
 const {
@@ -17,28 +11,6 @@ const {
   held: HELD_LABEL,
   approval: APPROVAL_LABEL,
 } = DEFAULT_LABELS
-
-type Fake = LabelIo & { set: Set<string>; calls: string[] }
-
-function fakeIo(initial: string[]): Fake {
-  const set = new Set(initial)
-  const calls: string[] = []
-  return {
-    set,
-    calls,
-    async labels() {
-      return [...set]
-    },
-    async add(names) {
-      calls.push(`add:${names.join(',')}`)
-      for (const name of names) set.add(name)
-    },
-    async remove(name) {
-      calls.push(`remove:${name}`)
-      set.delete(name)
-    },
-  }
-}
 
 describe('createGhLabelIo', () => {
   const target = { repo: 'o/r', pr: 7 }
@@ -143,15 +115,6 @@ describe('claimReview', () => {
       added: [IN_PROGRESS_LABEL],
       removed: [],
     })
-  })
-
-  it('declines a held review, even when a person re-requested it', async () => {
-    const io = fakeIo([HELD_LABEL, REQUESTED_LABEL])
-    expect(await claimReview(io, DEFAULT_LABELS)).toMatchObject({
-      claimed: false,
-      reason: 'held for a person',
-    })
-    expect(io.calls).toEqual([])
   })
 
   it('claims a held review with force and clears the hold', async () => {

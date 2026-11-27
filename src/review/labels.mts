@@ -1,12 +1,16 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 import type { LabelNames } from './settings.mts'
+import { heldFrom, holdStatus, parseTimelineRows, type Held } from './held-head.mts'
+import { claimLost, holdReplaced, swap, undoClaim } from './label-claim-steps.mts'
 
 /** Label reads and writes for one pull request, injectable for tests. */
 export type LabelIo = {
   labels(): Promise<string[]>
   add(names: readonly string[]): Promise<void>
   remove(name: string): Promise<void>
+  /** Where the timeline puts the current hold: its head (undefined when unknown) and how often it was placed. */
+  heldHead(heldLabel: string): Promise<Held>
 }
 
 export function createGhLabelIo(target: PullTarget, run: RunTextCommand): LabelIo {
@@ -33,17 +37,17 @@ export function createGhLabelIo(target: PullTarget, run: RunTextCommand): LabelI
     async remove(name) {
       await run(['api', '--method', 'DELETE', `${issue}/${encodeURIComponent(name)}`, '--silent'])
     },
+    async heldHead(heldLabel) {
+      const out = await run([
+        'api',
+        '--paginate',
+        `repos/${target.repo}/issues/${target.pr}/timeline?per_page=100`,
+        '-q',
+        '.[] | select(.event == "committed" or .event == "head_ref_force_pushed" or .event == "labeled" or .event == "unlabeled") | [.event, (if .event == "labeled" or .event == "unlabeled" then (.label.name // "") else (.sha // .commit_id // "") end)] | @tsv',
+      ])
+      return heldFrom(parseTimelineRows(out), heldLabel)
+    },
   }
-}
-
-/** Adds `add` first, then removes whichever of `remove` are present, so a PR is never unlabeled. */
-async function swap(io: LabelIo, add: readonly string[], remove: readonly string[]) {
-  const before = await io.labels()
-  const missing = add.filter((name) => !before.includes(name))
-  if (missing.length > 0) await io.add(missing)
-  const removed = remove.filter((name) => before.includes(name))
-  for (const name of removed) await io.remove(name)
-  return { added: missing, removed }
 }
 
 export type ClaimOutcome =
@@ -57,7 +61,9 @@ export type ClaimOutcome =
  * review already covers (`headReviewed`) once posting finished: the marker rides on the first
  * review part, so only `complete` (set after every part and the approval label) proves that. A
  * requeued retry of a partial post is therefore claimed and finishes publication. A pull request
- * carrying the held label is declined: a person has to post, skip or abort it (or `force`).
+ * carrying the held label is declined while the hold is on the current head (`headSha`): a person
+ * has to post, skip or abort it (or `force`). A hold on an older head is stale, so the new head is
+ * claimed and the swap clears the stale hold.
  */
 export async function claimReview(
   io: LabelIo,
@@ -65,19 +71,36 @@ export async function claimReview(
   options: {
     force?: boolean
     headReviewed?: boolean
+    /** The pull request's current head, to tell a stale hold from a current one. */
+    headSha?: string | undefined
+    /** The pull request's head as read now; a claim for another head declines, the head moved. */
+    liveHeadSha?: string | undefined
     /** True when a review of this head was posted since the claim began; only asked of a first claim. */
     reviewedSince?: () => Promise<boolean>
   } = {},
 ) {
   const labels = await io.labels()
+  if (
+    options.headSha !== undefined &&
+    options.liveHeadSha !== undefined &&
+    options.headSha.toLowerCase() !== options.liveHeadSha.toLowerCase()
+  ) {
+    // The head moved since the caller pinned it, so a hold may belong to the newer head; the
+    // caller reviews the new head instead.
+    return { claimed: false, reason: 'head moved', labels } satisfies ClaimOutcome
+  }
   if (options.force !== true && options.headReviewed === true && labels.includes(names.completed)) {
     // The newest review covers this head: answer the request without touching the verdict.
     await swap(io, labels.includes(names.requested) ? [names.completed] : [], [names.requested])
     return { claimed: false, reason: 'head already reviewed', labels } satisfies ClaimOutcome
   }
+  let staleHold: Held | undefined
   if (options.force !== true && labels.includes(names.held)) {
-    // A person re-requesting does not undo a hold; only `force`, `post`, `skip` or `abort` does.
-    return { claimed: false, reason: 'held for a person', labels } satisfies ClaimOutcome
+    // A person re-requesting does not undo a hold on this head; only `force`, `post`, `skip` or
+    // `abort` does. A hold on an older head is stale and gives way to the new head.
+    const hold = await holdStatus(io, names, options.headSha)
+    if (!hold.stale) return { claimed: false, reason: hold.reason, labels } satisfies ClaimOutcome
+    staleHold = hold.held
   }
   if (options.force !== true && !labels.includes(names.requested)) {
     const reason = labels.includes(names.processing)
@@ -85,8 +108,8 @@ export async function claimReview(
       : `no ${names.requested} label`
     return { claimed: false, reason, labels } satisfies ClaimOutcome
   }
-  // A forced claim clears a hold. An unforced one keeps it, so the re-read below still sees a hold
-  // another machine set after our first read.
+  // A forced claim or a stale hold is cleared. Otherwise the hold stays, so the re-read below still
+  // sees a hold another machine set after our first read.
   const outcome = await swap(
     io,
     [names.processing],
@@ -94,13 +117,15 @@ export async function claimReview(
       names.requested,
       names.completed,
       names.approval,
-      ...(options.force === true ? [names.held] : []),
+      ...(options.force === true || staleHold !== undefined ? [names.held] : []),
     ],
   )
   if (options.force === true) return { claimed: true, ...outcome } satisfies ClaimOutcome
   let lost: boolean
   try {
-    lost = await claimLost(io, names, options)
+    lost =
+      (staleHold !== undefined && (await holdReplaced(io, names, staleHold))) ||
+      (await claimLost(io, names, options))
   } catch (error) {
     // Best effort, like `abort --requeue`: drop the in-progress label this claim added and ask
     // again, so the pull request is not stuck. The original failure is the one to report.
@@ -116,34 +141,6 @@ export async function claimReview(
     } satisfies ClaimOutcome
   }
   return { claimed: true, ...outcome } satisfies ClaimOutcome
-}
-
-async function undoClaim(io: LabelIo, names: LabelNames, outcome: { added: string[] }) {
-  // An unforced claim only gets here with the request label present, and the swap removed it.
-  await io.add([names.requested])
-  if (outcome.added.includes(names.processing)) await io.remove(names.processing)
-}
-
-/**
- * Re-reads after the swap. Reading and claiming are separate calls and labels have no
- * compare-and-set, so two machines can both pass the first read. This catches the ones that left a
- * trace by now: a request, hold or completion that appeared after our swap, our own in-progress
- * label gone, or (`reviewedSince`) a review of this head posted since the claim began. It narrows
- * the window; two claims whose writes interleave without either seeing the other's still both win.
- */
-async function claimLost(
-  io: LabelIo,
-  names: LabelNames,
-  options: { reviewedSince?: (() => Promise<boolean>) | undefined },
-): Promise<boolean> {
-  const after = await io.labels()
-  if (
-    !after.includes(names.processing) ||
-    [names.requested, names.held, names.completed].some((name) => after.includes(name))
-  ) {
-    return true
-  }
-  return (await options.reviewedSince?.()) === true
 }
 
 /**

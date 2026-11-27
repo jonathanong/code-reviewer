@@ -269,14 +269,37 @@ describe('runCommand doing nothing', () => {
     expect((await run(fake, { ...PULL, force: true })).code).toBe(0)
   })
 
-  it('declines a pull request another machine holds for a person, and takes it with force', async () => {
-    const fake = setup({ labels: ['final-review:held', 'final-review:requested'] })
+  it('declines a pull request another machine holds on this head, and takes it with force', async () => {
+    const fake = setup({
+      labels: ['final-review:held', 'final-review:requested'],
+      heldHead: 'a'.repeat(40),
+    })
     const { code, line } = await run(fake)
     expect(code).toBe(11)
     expect(line.reason).toBe('held for a person')
     expect(fake.labels).toEqual(['final-review:held', 'final-review:requested'])
     stdout.length = 0
     expect((await run(fake, { ...PULL, force: true })).code).toBe(0)
+  })
+
+  it('declines a hold whose head cannot be determined, saying so', async () => {
+    for (const options of [{}, { heldHeadFails: true }]) {
+      const fake = setup({ labels: ['final-review:held', 'final-review:requested'], ...options })
+      const { code, line } = await run(fake)
+      expect(code).toBe(11)
+      expect(line.reason).toBe('held for a person (the held head could not be determined)')
+      stdout.length = 0
+    }
+  })
+
+  it('reviews a new head pushed after the hold and clears the stale held label', async () => {
+    const fake = setup({
+      labels: ['final-review:held', 'final-review:requested'],
+      heldHead: 'b'.repeat(40),
+    })
+    const { code } = await run(fake)
+    expect(code).toBe(0)
+    expect(fake.labels).not.toContain('final-review:held')
   })
 
   it('exits as a no-op when review loses the claim, and removes the checkout', async () => {

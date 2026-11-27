@@ -15,6 +15,7 @@ function fakeDeps(head: string) {
     add: vi.fn(async (names: string[]) => {
       names.forEach((name) => labels.add(name))
     }),
+    heldHead: vi.fn(async () => ({ head: undefined, placements: 0 })),
     remove: vi.fn(async (name: string) => {
       labels.delete(name)
     }),

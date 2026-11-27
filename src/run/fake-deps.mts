@@ -30,6 +30,9 @@ export type FakeOptions = {
   /** The post succeeds but the review list never shows it. */
   unconfirmed?: boolean
   trackerPostedFails?: boolean
+  /** The head the held label was placed on, as the timeline says. */
+  heldHead?: string
+  heldHeadFails?: boolean
 }
 
 /** Dependencies for `run`: GitHub and `claude` are fakes; the tracker and files are real, under `stateDir`. */
@@ -38,6 +41,10 @@ export function fakeDeps(options: FakeOptions) {
   const labelIo: Mocked<LabelIo> = {
     labels: vi.fn(async () => [...labels]),
     add: vi.fn(async (names) => void labels.push(...names)),
+    heldHead: vi.fn(async () => {
+      if (options.heldHeadFails === true) throw new Error('timeline unavailable')
+      return { head: options.heldHead, placements: 1 }
+    }),
     remove: vi.fn(async (name) => {
       labels.splice(labels.indexOf(name), 1)
     }),
