@@ -79,8 +79,7 @@ claude plugin marketplace add jongleberry/ratchet-stack
 claude plugin install code-reviewer@ratchet-stack
 ```
 
-If you added the old `code-reviewer` marketplace, run `claude plugin marketplace remove code-reviewer`
-first (removing a marketplace uninstalls its plugins), then install as above. The plugin puts `code-reviewer` on the session's `PATH` and needs only
+The plugin puts `code-reviewer` on the session's `PATH` and needs only
 Node 24, so the standing reviewer session runs from any directory; see
 [`skills/review-loop/SKILL.md`](skills/review-loop/SKILL.md).
 
