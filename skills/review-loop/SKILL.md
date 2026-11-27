@@ -217,10 +217,21 @@ either is noted and does not stop the loop.
 
 Its "Caught by others, not by us (candidates)" section lists threads other reviewers raised that we did not.
 Triage each into a mined benchmark case (per `benchmarks/review/AGENTS.md`: only if the no-rules control
-misses it), a rule or prompt change, or "not a real miss", and propose; the human decides.
+misses it), a rule or prompt change, or "not a real miss".
 
 With a document connector, put the digest's text in the same document as Step 4 as a section for
 that day (headed with the date), the way each pull request has one; without one, the local file
-is the record. Tell the human its path or link. The digest only proposes: change no rule, prompt
-or config and file no issue from it unless the human says so (`issues` stays opt-in, see
-`docs/issues.md`). It is machine-local and lists finding titles and paths: share it nowhere else.
+is the record. Tell the human its path or link. It is machine-local and lists finding titles and
+paths: share it nowhere else.
+
+What happens next depends on what the human has set up:
+
+| Setup                                                     | After the digest                                                                                                                                                                       |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Neither                                                   | Propose each triaged item; the human decides. Change no rule, prompt or config.                                                                                                        |
+| `issues` configured (`docs/issues.md`)                    | Also run `code-reviewer issues` to record improvements as issues.                                                                                                                      |
+| Plus a standing grant from the human to open obvious wins | Open a pull request for each obvious win: a mined case the control misses, a noise or skip-list entry, a doc fix, or a reviewer bug seen in a run. Merge it only as that grant allows. |
+
+A prompt, schema or verdict change is never an obvious win. Open it with a benchmark before and
+after and its `HISTORY.md` row, and leave the merge to the human, since the reviewer would be
+approving its own prompt.
