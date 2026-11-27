@@ -29,6 +29,7 @@ export {
   DEFAULT_LABELS,
   repoSettings,
   resolveAnswers,
+  resolveUpgrades,
   resolveApprovalCheck,
   resolveRequestFocus,
   resolveRun,

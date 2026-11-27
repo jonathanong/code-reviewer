@@ -43,6 +43,7 @@ describe('prepare plan values', () => {
         authors: [{ login: 'renovate', review: 'skip' }],
         smallChangeLines: 30,
       },
+      upgrades: { enabled: false, packages: [] },
     })
   })
 })

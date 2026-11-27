@@ -34,6 +34,8 @@ export type PlanInput = {
    * (local git proved it); `resolvedPaths` are the files its merge resolutions touch.
    */
   push?: { kind: LightPush; resolvedPaths: string[] }
+  /** An upgraded package is on an auth or security path or crosses a pre-1.0 minor: a lockfile-only Dependabot pull request is reviewed, not skipped. */
+  upgrades?: boolean
   /** Revert or hotfix subjects on the changed files; undefined when history was not checked. */
   history?: string[]
   /** Login of the pull request author; undefined or null when unknown. */

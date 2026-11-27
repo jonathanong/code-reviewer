@@ -129,6 +129,15 @@ export function resolveAnswers(
   return { enabled: value?.enabled ?? false, from }
 }
 
+/** Whether `prepare` reads upgraded packages from the npm registry: off unless a machine layer enables it. */
+export function resolveUpgrades(
+  configs: RepoConfigs,
+  scope: string,
+): { enabled: boolean; packages: string[]; from: MachineLayer } {
+  const { value, from } = machineSetting(configs, scope, 'upgrades')
+  return { enabled: value?.enabled ?? false, packages: value?.packages ?? [], from }
+}
+
 /** Whether `run` turns the requester's explicit check list into focus points: off unless a machine layer enables it. */
 export function resolveRequestFocus(
   configs: RepoConfigs,

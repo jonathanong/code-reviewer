@@ -11,6 +11,8 @@ import {
 import { splitRepo } from '../gh-cli/index.mts'
 import { requirePillars, type PillarSettings } from '../review/pillars-settings.mts'
 import { resolvePlanValues, type PlanValues } from '../review/plan-settings.mts'
+import { resolveUpgrades } from '../review/settings.mts'
+import type { UpgradesConfig } from '../review/upgrades/prepare.mts'
 import { requireValidConfig } from './config-check.mts'
 import type { ReviewDeps } from './deps.mts'
 
@@ -30,11 +32,13 @@ export function effort(value: string | undefined): Effort | undefined {
 export async function prepareSettingsFor(
   deps: ReviewDeps,
   repo: string,
-): Promise<{ pillars: PillarSettings; values: PlanValues }> {
+): Promise<{ pillars: PillarSettings; values: PlanValues; upgrades: UpgradesConfig }> {
   const own = (await requireValidConfig(deps, repo)).config
+  const upgrades = resolveUpgrades(deps.configs(), repo)
   return {
     pillars: requirePillars(deps.configs(), repo, own),
     values: resolvePlanValues(deps.configs(), repo, own),
+    upgrades: { enabled: upgrades.enabled, packages: upgrades.packages },
   }
 }
 

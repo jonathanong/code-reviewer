@@ -23,6 +23,7 @@ const UNSET = {
   references: { sources: [], from: null },
   approvalCheck: { enabled: true, from: null },
   answers: { enabled: false, from: null },
+  upgrades: { enabled: false, packages: [], from: null },
   requestFocus: { enabled: false, from: null },
   rulePlugins: { names: ['no-mistakes-rules', 'jong-skills'], from: null },
   limits: { ...LIMIT_DEFAULTS, maxCostFrom: null, from: null },
@@ -83,6 +84,7 @@ describe('settings', () => {
       },
       approvalCheck: { enabled: false, from: 'machine owner' },
       answers: { enabled: false, from: null },
+      upgrades: { enabled: false, packages: [], from: null },
       requestFocus: { enabled: false, from: null },
       rulePlugins: { names: ['team-rules'], from: 'machine owner' },
       limits: {

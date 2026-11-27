@@ -10,6 +10,7 @@ import { parseReferences } from './references-parse.mts'
 import { parseRulePlugins } from './rule-plugins-parse.mts'
 import { parseRun } from './run-parse.mts'
 import { parseSwitch } from './settings-parse.mts'
+import { parseUpgrades } from './upgrades-parse.mts'
 import type { RepoConfig } from './config.mts'
 
 type Json = Record<string, unknown>
@@ -27,6 +28,7 @@ type MachineKeys = Pick<
   | 'limits'
   | 'issues'
   | 'answers'
+  | 'upgrades'
   | 'requestFocus'
 >
 
@@ -95,6 +97,10 @@ export function parseMachineKeys(
     what: 'answers is',
     parse: parseAnswers,
   })
+  const upgrades = machineOnly(scope, raw.upgrades, file, 'upgrades', problems, {
+    what: 'upgrades is',
+    parse: parseUpgrades,
+  })
   const requestFocus = machineOnly(scope, raw.requestFocus, file, 'requestFocus', problems, {
     what: 'requestFocus is',
     parse: parseRequestFocus,
@@ -111,6 +117,7 @@ export function parseMachineKeys(
     ...(limits === undefined ? {} : { limits }),
     ...(issues === undefined ? {} : { issues }),
     ...(answers === undefined ? {} : { answers }),
+    ...(upgrades === undefined ? {} : { upgrades }),
     ...(requestFocus === undefined ? {} : { requestFocus }),
   }
 }

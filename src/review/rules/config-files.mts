@@ -91,3 +91,26 @@ export function listConfigFiles(dir: string): string[] {
   }
   return files
 }
+
+/** The top-level keys a config file may hold; any other key is reported and ignored. */
+export const CONFIG_KEYS = new Set([
+  'trustRepoConfig',
+  'consumes',
+  'labels',
+  'checkRun',
+  'evidence',
+  'analysis',
+  'references',
+  'approvalCheck',
+  'rulePlugins',
+  'run',
+  'models',
+  'limits',
+  'issues',
+  'answers',
+  'upgrades',
+  'requestFocus',
+  'pillars',
+  'targets',
+  'plan',
+])
