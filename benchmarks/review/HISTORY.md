@@ -2,6 +2,24 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (no run): review no longer reports what CI can verify
+
+Owner policy: skip reporting AST violations, rules, or anything verifiable via CI; review adds value only where CI
+cannot (a missing test, a wrong test, why a test failed, a test that does not match the acceptance criteria).
+Trigger: jongleberry/code-reviewer#231, where the verifier confirmed a high finding that `cargo fmt --check` would fail
+when CI had passed that step. No run.
+
+- **What changed.** `_contract.md` (Method) adds a bullet: a defect a formatter, linter, type checker, AST or static
+  rule, or other CI check can detect is not a finding, and a CI failure is never claimed without reading its result at
+  the head. `rules.md` Blocking bar: a mandatory rule that CI or a linter enforces is no longer `high` at most but not
+  reported. `verifier.md` step 2: rejects such findings (reason: CI reports it) and confirms a "CI fails" claim only
+  from the actual result at the reviewed head. The `prevent` field is unchanged.
+- **Comparability.** Not measured: before and after numbers are pending until the `ratchet-*` plugins are installed on
+  the bench machine and will be added before merge. Rows after this entry are not comparable with earlier `rules`
+  and `correctness` rows, and verifier rows, because the prompts can now suppress findings a case may expect. No
+  `cases.json` or `synthetic.json` case expects a formatter, linter or type-check defect (grep of claims found none), so
+  no case is expected to flip, but rules cases whose rule an AST check could enforce should be read on the first run.
+
 ## 2026-11-27 (no run): default rule plugins and skill ids move from `jong-skills` to four `ratchet-*` plugins
 
 The `jong-skills` plugin is split into `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`
