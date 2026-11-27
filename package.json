@@ -30,7 +30,7 @@
     "@vitest/coverage-v8": "^5.1.1",
     "code-reviewer": "link:.",
     "esbuild": "^0.28.2",
-    "eslint-plugin-no-mistakes": "^0.109.83",
+    "eslint-plugin-no-mistakes": "^0.109.97",
     "github-actionlint": "^1.7.12",
     "oxfmt": "^0.79.0",
     "oxlint": "^1.94.0",
