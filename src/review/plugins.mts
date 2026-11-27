@@ -43,7 +43,13 @@ export function checkPlugins(
  * The plugins whose skills hold the shared review rules when no machine config sets
  * `rulePlugins`. Benchmarks always use this list.
  */
-export const DEFAULT_RULE_PLUGINS: readonly string[] = ['no-mistakes-rules', 'jong-skills']
+export const DEFAULT_RULE_PLUGINS: readonly string[] = [
+  'no-mistakes-rules',
+  'ratchet-workflows',
+  'ratchet-github',
+  'ratchet-backend',
+  'ratchet-code',
+]
 
 /**
  * The `--settings` value for a headless run: only the `rulePlugins` stay on (none when `rules` is

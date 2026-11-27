@@ -37,7 +37,7 @@ async function run(files: Record<string, object> = {}) {
   const exec: Exec = async (_command, args) => {
     const prompt = args[1] as string
     if (args[args.indexOf('--tools') + 1] === '') {
-      return result({ skills: ['jong-skills:documentation'] })
+      return result({ skills: ['ratchet-workflows:documentation'] })
     }
     prompts.push(prompt)
     if (prompt.includes('VERIFIER prompt text')) {
@@ -68,10 +68,10 @@ async function run(files: Record<string, object> = {}) {
     preview: async () => ({ verdict: 'Approve', reviews: [] }),
     plugins: async () => ({
       enabled: [],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     exec,
     references: fixture('references'),
   } as unknown as ReviewSteps

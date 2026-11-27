@@ -94,7 +94,7 @@ runs have none, so `skills` is empty). A case may declare
 name (a bare name is rejected when the cases load), and only a loaded skill with exactly that name
 satisfies it, so a same-named skill from a stale plugin does not. An entry may instead be a
 non-empty array of full names, meaning any one of them satisfies it:
-`[["jong-skills:bounded-iteration", "no-mistakes-rules:queue-rules"]]`; a missing group is listed as
+`[["ratchet-backend:bounded-iteration", "no-mistakes-rules:queue-rules"]]`; a missing group is listed as
 `a | b`. The expectation applies to the pillars of the case's
 `expected` findings, and to every pillar run for a negative case. The summary adds:
 
@@ -156,8 +156,8 @@ the cost and tokens-by-model tables; they have no recall, severity or false-alar
 results use the same `<out>/raw/<pillar>/<case>.json` paths, so use a fresh `--out`.
 
 Pillar runs pass `--strict-mcp-config`, `--setting-sources user`, `--effort medium` and
-`--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`,
-`jong-skills`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
+`--settings` with `enabledPlugins` set true only for the rule plugins (`no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend`,
+`ratchet-code`), so the run's fixed context holds the rule skills and built-ins only. `--no-rules` sets
 every plugin false. Pillars may use the `Agent` tool to dispatch an `explorer` subagent (Haiku, as `bench` always uses the default tiers;
 read-only tools), and only that one: `--disallowedTools` denies Claude Code's built-in agent types,
 which would run on the user's default model. Verifier runs get the same isolation flags and settings; checker runs get the same,
@@ -229,7 +229,7 @@ re-runs pillars), and the judge cache is keyed on findings only, so the new fiel
 stale result look current; the rules digest and `plugins` are unchanged.
 
 The `rules-*` cases in `synthetic.json` test the rules pillar: an installed
-`no-mistakes-rules` skill (`rules-test-only-global-call-count`), an installed `jong-skills` plugin skill
+`no-mistakes-rules` skill (`rules-test-only-global-call-count`), an installed `ratchet-workflows` plugin skill
 (`rules-skills-sweep-until-empty`, which accepts either of two skills),
 workflow-only, manifest-only, and test-only changes (`rules-workflow-only-*`,
 `rules-manifest-only-*`, `rules-test-only-*`), `rules-content-only-*` cases whose changed file path
@@ -499,7 +499,7 @@ skills whose descriptions fail to trigger), and tokens by model. `--score-only` 
 attempts, `--case <id>` limits the run, and `--cache <dir>` reuses the clone cache of an earlier
 `bench` run.
 
-A case may also declare `"unwantedSkills": ["jong-skills:agent-workflow"]`: full `plugin:skill`
+A case may also declare `"unwantedSkills": ["ratchet-workflows:agent-workflow"]`: full `plugin:skill`
 names the call should leave out because nothing in the changed files falls under what the skill
 governs. The loader rejects an empty array, a bare name, a repeat, and a name that is also in
 `expectedSkills` (an any-of member counts). The names are only scored here; `bench` ignores them.

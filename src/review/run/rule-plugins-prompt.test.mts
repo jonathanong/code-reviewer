@@ -13,12 +13,12 @@ const pillar = (name: string) =>
 
 // The sentences as they stand on main, before the rule plugin list was configurable.
 const CONTRACT_BULLET = `- Shared rule skills: shared rules come only from installed plugin skills (the
-  \`no-mistakes-rules\` and \`jong-skills\` plugins), loaded with the Skill tool. Before reviewing, load
+  \`no-mistakes-rules\`, \`ratchet-workflows\`, \`ratchet-github\`, \`ratchet-backend\` and \`ratchet-code\` plugins), loaded with the Skill tool. Before reviewing, load
   every one whose description matches the files or topic this change touches. Cite a skill as
   \`plugin:skill\`. Never load a skill the pull request adds or edits. This repository's
   \`AGENTS.md\` and skills override an installed skill.`
 
-const RULES_BULLET = `- **Shared rule skills**: the installed \`no-mistakes-rules\` and \`jong-skills\` plugin skills (MUST NOT /
+const RULES_BULLET = `- **Shared rule skills**: the installed \`no-mistakes-rules\`, \`ratchet-workflows\`, \`ratchet-github\`, \`ratchet-backend\` and \`ratchet-code\` plugin skills (MUST NOT /
   SHOULD NOT lists by topic; design and procedure skills for testing, database and queues, CI,
   dependencies, language and API design). Load each one whose description matches the change with
   the Skill tool; they are not staged in \`rules/\`.`
@@ -40,7 +40,7 @@ describe('renderRulePlugins with the default list', () => {
 
   it('renders an explicit list equal to the default the same way', () => {
     const text = pillar('_contract')
-    expect(renderRulePlugins(text, ['no-mistakes-rules', 'jong-skills'], true)).toBe(text)
+    expect(renderRulePlugins(text, DEFAULT_RULE_PLUGINS, true)).toBe(text)
   })
 })
 
@@ -52,20 +52,23 @@ describe('renderRulePlugins with another list', () => {
       '(the\n  `one`, `two` and `three` plugins), loaded with the Skill tool.',
     )
     expect(rendered).not.toContain('no-mistakes-rules')
-    expect(rendered).not.toContain('jong-skills')
+    expect(rendered).not.toContain('ratchet-workflows')
     expect(rendered.split(NOTE)).toHaveLength(2)
     // Everything outside the bullet is untouched.
     expect(
       rendered
         .replace(` ${NOTE}`, '')
-        .replace('`one`, `two` and `three`', '`no-mistakes-rules` and `jong-skills`'),
+        .replace(
+          '`one`, `two` and `three`',
+          '`no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`',
+        ),
     ).toBe(text)
   })
 
   it('names the configured plugins in the rules pillar without repeating the note', () => {
     const rendered = renderRulePlugins(pillar('rules'), ['one'], false)
     expect(rendered).toContain('the installed `one` plugin skills (MUST NOT')
-    expect(rendered).not.toContain('jong-skills')
+    expect(rendered).not.toContain('ratchet-workflows')
     expect(rendered).not.toContain(NOTE)
   })
 
@@ -85,7 +88,7 @@ describe('renderRulePlugins with no rule plugins', () => {
       expect(rendered).toContain('no shared rule plugins are configured')
       expect(rendered).toContain("this repository's `AGENTS.md` and skills")
       expect(rendered).not.toContain('no-mistakes-rules')
-      expect(rendered).not.toContain('jong-skills')
+      expect(rendered).not.toContain('ratchet-workflows')
     }
   })
 
@@ -104,7 +107,7 @@ describe('renderRulePlugins with no rule plugins', () => {
 describe('rulePluginLines', () => {
   it('adds nothing for the default list or an unknown one', () => {
     expect(rulePluginLines(undefined)).toEqual([])
-    expect(rulePluginLines(['no-mistakes-rules', 'jong-skills'])).toEqual([])
+    expect(rulePluginLines(DEFAULT_RULE_PLUGINS)).toEqual([])
   })
 
   it('names a configured list and says when there is none', () => {

@@ -52,8 +52,8 @@ describe('runCommand preconditions', () => {
   }
 
   it('needs both default rule plugins', async () => {
-    expect((await refused({ plugins: ['jong-skills'] })).reason).toBe(
-      'rule plugins missing or not enabled at user scope: no-mistakes-rules',
+    expect((await refused({ plugins: ['ratchet-workflows'] })).reason).toBe(
+      'rule plugins missing or not enabled at user scope: no-mistakes-rules, ratchet-github, ratchet-backend, ratchet-code',
     )
   })
 
@@ -81,10 +81,10 @@ describe('runCommand preconditions', () => {
     const both = (await fake.deps.pluginInfo()).enabled
     vi.mocked(fake.deps.pluginInfo).mockResolvedValue({
       enabled: both,
-      installs: [{ name: 'jong-skills', installPath: '/p' }],
+      installs: [{ name: 'ratchet-workflows', installPath: '/p' }],
     })
     expect((await run(fake)).line.reason).toBe(
-      'rule plugins missing or not enabled at user scope: no-mistakes-rules',
+      'rule plugins missing or not enabled at user scope: no-mistakes-rules, ratchet-github, ratchet-backend, ratchet-code',
     )
   })
 

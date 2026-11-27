@@ -6,7 +6,7 @@ import type { Graded } from './verifier-grade.mts'
 import { renderVerifierTable, scoreVerifierCase, summarizeVerifier } from './verifier-score.mts'
 import { runVerifier } from './verifier-run.mts'
 
-const SKILL = 'jong-skills:postgres-locking'
+const SKILL = 'ratchet-backend:postgres-locking'
 const SENTENCE = 'Append-only writes never lock: votes, events, history.'
 const RULES = { texts: new Map([[SKILL, normalizeLines(`# L\n\n- ${SENTENCE}\n`)]]), selected: [] }
 

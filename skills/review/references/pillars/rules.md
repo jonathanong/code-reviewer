@@ -11,7 +11,7 @@ rule skills (see the contract), never from the pull request head.
   to each changed file, and its skills, all at the **base** ref. A pull request can edit its own
   rules; if it does, review the rule change itself as a finding target, but judge the rest of the
   diff by the base rules.
-- **Shared rule skills**: the installed `no-mistakes-rules` and `jong-skills` plugin skills (MUST NOT /
+- **Shared rule skills**: the installed `no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code` plugin skills (MUST NOT /
   SHOULD NOT lists by topic; design and procedure skills for testing, database and queues, CI,
   dependencies, language and API design). Load each one whose description matches the change with
   the Skill tool; they are not staged in `rules/`.

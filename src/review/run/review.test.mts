@@ -53,7 +53,7 @@ function claude(routes: Routes = {}): Exec {
     if (args[args.indexOf('--tools') + 1] === '') {
       return (
         routes.select?.() ??
-        result({ skills: ['jong-skills:documentation', 'no-mistakes-rules:git-rules'] }, 0.01)
+        result({ skills: ['ratchet-workflows:documentation', 'no-mistakes-rules:git-rules'] }, 0.01)
       )
     }
     if (prompt.includes('EVIDENCE prompt text')) {
@@ -139,14 +139,14 @@ function setup(
       reviews: [{ event: 'COMMENT', commit_id: SHA, body: 'Body.', comments: [] }],
     })) as never,
     plugins: vi.fn(async () => ({
-      enabled: [{ id: 'jong-skills@m', version: '1' }],
+      enabled: [{ id: 'ratchet-workflows@m', version: '1' }],
       installs: [
-        { name: 'jong-skills', installPath: fixture('plugins/skills') },
+        { name: 'ratchet-workflows', installPath: fixture('plugins/skills') },
         { name: 'no-mistakes-rules', installPath: fixture('plugins/no-mistakes-rules') },
       ],
     })),
     evidence: vi.fn(async () => ({ sources: [], readGuide: async () => '' })),
-    rulePlugins: ['no-mistakes-rules', 'jong-skills'],
+    rulePlugins: ['no-mistakes-rules', 'ratchet-workflows'],
     approvalCheck: false,
     exec: claude(),
     references: fixture('references'),
@@ -185,7 +185,7 @@ describe('runReview', () => {
       expect(readFileSync(join(out, file), 'utf8').length).toBeGreaterThan(0)
     }
     expect(readJson(out, 'skills.json').selected).toEqual([
-      'jong-skills:documentation',
+      'ratchet-workflows:documentation',
       'no-mistakes-rules:git-rules',
     ])
     expect(readFileSync(join(out, 'preview.md'), 'utf8')).toContain('Body.')

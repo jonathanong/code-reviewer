@@ -13,8 +13,8 @@ GitHub review. It runs on your machine, for the repositories you pick.
 - **A reviewed repository needs no setup.** Every setting has a default; what the reviewer knows
   about a repository lives on the reviewer's machine.
 - **Rules come from trusted places only.** The repository's `AGENTS.md` and skills at the base
-  ref, and the rule plugins the machine config lists (by default `no-mistakes-rules` and
-  `jong-skills`; see [`rulePlugins`](docs/configuration.md#ruleplugins)). Everything in the pull
+  ref, and the rule plugins the machine config lists (by default `no-mistakes-rules`,
+  `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`; see [`rulePlugins`](docs/configuration.md#ruleplugins)). Everything in the pull
   request (diff, description, comments, linked issues) is untrusted data, and a pull request
   cannot change its own review settings.
 - **Few, real findings.** A clean pull request is common. A finding names what goes wrong or what
@@ -70,11 +70,11 @@ command that posts it, or there was nothing to do. See [Unattended runs](docs/ru
 
 ## Install
 
-As a Claude Code plugin, install it from the shared `harness-plugins` marketplace:
+As a Claude Code plugin, install it from the shared `ratchet-stack` marketplace:
 
 ```bash
-claude plugin marketplace add jonathanong/harness-plugins
-claude plugin install code-reviewer@harness-plugins
+claude plugin marketplace add jongleberry/ratchet-stack
+claude plugin install code-reviewer@ratchet-stack
 ```
 
 If you added the old `code-reviewer` marketplace, run `claude plugin marketplace remove code-reviewer`
@@ -85,7 +85,7 @@ Node 24, so the standing reviewer session runs from any directory; see
 A checkout is for developing the reviewer and running benchmarks:
 
 ```bash
-git clone https://github.com/jonathanong/code-reviewer.git
+git clone https://github.com/jongleberry/code-reviewer.git
 cd code-reviewer && pnpm install
 ```
 

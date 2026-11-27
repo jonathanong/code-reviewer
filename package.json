@@ -7,7 +7,7 @@
   "author": "Jonathan Ong",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jonathanong/code-reviewer.git"
+    "url": "git+https://github.com/jongleberry/code-reviewer.git"
   },
   "bin": {
     "code-reviewer": "bin/code-reviewer.mts",

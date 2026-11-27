@@ -15,7 +15,7 @@ import {
 
 const path = (name: string) => fileURLToPath(new URL(`./fixtures/plugins/${name}`, import.meta.url))
 const INSTALLS: PluginInstall[] = [
-  { name: 'jong-skills', installPath: path('skills') },
+  { name: 'ratchet-workflows', installPath: path('skills') },
   { name: 'no-mistakes-rules', installPath: path('no-mistakes-rules') },
   { name: 'other', installPath: path('other') },
 ]
@@ -26,13 +26,13 @@ const answer = (skills: unknown) =>
 describe('listRuleSkills', () => {
   it('reads name and description from the rule plugins only, naming each plugin:skill', () => {
     expect(listRuleSkills(INSTALLS, DEFAULT_RULE_PLUGINS)).toEqual([
-      { name: 'jong-skills:bare', description: '' },
-      { name: 'jong-skills:documentation', description: 'Decide what belongs in docs.' },
       { name: 'no-mistakes-rules:git-rules', description: 'Rules for git and pull requests.' },
       {
         name: 'no-mistakes-rules:typescript-rules',
         description: 'MUST NOT rules for TypeScript and Node.js. Use when writing TS.',
       },
+      { name: 'ratchet-workflows:bare', description: '' },
+      { name: 'ratchet-workflows:documentation', description: 'Decide what belongs in docs.' },
     ])
   })
 
@@ -68,7 +68,10 @@ describe('listRuleSkills', () => {
   it('offers nothing for a plugin that is not installed or has no skills directory', () => {
     expect(listRuleSkills([], DEFAULT_RULE_PLUGINS)).toEqual([])
     expect(
-      listRuleSkills([{ name: 'jong-skills', installPath: path('missing') }], DEFAULT_RULE_PLUGINS),
+      listRuleSkills(
+        [{ name: 'ratchet-workflows', installPath: path('missing') }],
+        DEFAULT_RULE_PLUGINS,
+      ),
     ).toEqual([])
   })
 })
@@ -79,11 +82,11 @@ describe('selectSkills', () => {
 
   it('asks Haiku with no tools and keeps only offered names, once each', async () => {
     const exec = vi.fn(async () =>
-      answer(['jong-skills:documentation', 'made:up', 'jong-skills:documentation', 7]),
+      answer(['ratchet-workflows:documentation', 'made:up', 'ratchet-workflows:documentation', 7]),
     )
-    const settings = { enabledPlugins: { 'jong-skills@m': true } }
+    const settings = { enabledPlugins: { 'ratchet-workflows@m': true } }
     const choice = await selectSkills({ ...base, settings, exec })
-    expect(choice.selected).toEqual(['jong-skills:documentation'])
+    expect(choice.selected).toEqual(['ratchet-workflows:documentation'])
     expect(choice.available).toBe(4)
     expect(choice.usage?.costUsd).toBe(0.01)
     expect(choice.error).toBeUndefined()
@@ -111,7 +114,7 @@ describe('selectSkills', () => {
       '## Diff excerpt\n\n+added line',
     )
     const prompt = buildSelectionPrompt('T', 'x'.repeat(30_000), skills)
-    expect(prompt).toContain('- jong-skills:documentation: Decide what belongs in docs.')
+    expect(prompt).toContain('- ratchet-workflows:documentation: Decide what belongs in docs.')
     expect(prompt).toContain('Pull request title: T')
     expect(prompt.length).toBeLessThan(26_000)
   })
@@ -137,11 +140,11 @@ describe('selectSkills', () => {
     const flaky = async () => {
       calls += 1
       if (calls === 1) throw new ExecError('claude exited with 1', 1, '', undefined)
-      return answer(['jong-skills:documentation'])
+      return answer(['ratchet-workflows:documentation'])
     }
     const choice = await selectSkills({ ...base, exec: flaky })
     expect(choice.error).toBeUndefined()
-    expect(choice.selected).toEqual(['jong-skills:documentation'])
+    expect(choice.selected).toEqual(['ratchet-workflows:documentation'])
   })
 
   it('records an answer without a skills list', async () => {
@@ -162,7 +165,7 @@ describe('selectSkills', () => {
   })
 
   it('selects nothing and calls no model when no rule plugins are configured', async () => {
-    const exec = vi.fn(async () => answer(['jong-skills:documentation']))
+    const exec = vi.fn(async () => answer(['ratchet-workflows:documentation']))
     const choice = await selectSkills({ ...base, skills: [], rulePlugins: [], exec })
     expect(choice).toEqual({ selected: [], available: 0, usage: null })
     expect(exec).not.toHaveBeenCalled()
@@ -170,7 +173,12 @@ describe('selectSkills', () => {
 
   it('still fails when configured plugins yield no skills', async () => {
     const exec = vi.fn(async () => answer([]))
-    const choice = await selectSkills({ ...base, skills: [], rulePlugins: ['jong-skills'], exec })
+    const choice = await selectSkills({
+      ...base,
+      skills: [],
+      rulePlugins: ['ratchet-workflows'],
+      exec,
+    })
     expect(choice.error).toBe('No rule skills are installed.')
     expect(exec).not.toHaveBeenCalled()
   })
@@ -188,13 +196,13 @@ describe('selectSkills', () => {
         type: 'result',
         total_cost_usd: 0.01,
         structured_output: {
-          skills: ['jong-skills:documentation'],
+          skills: ['ratchet-workflows:documentation'],
           targets: ['unneeded-concurrency-guard', 'made-up', 'unneeded-concurrency-guard', 9],
         },
       }),
     )
     const choice = await selectSkills({ ...base, targets, exec })
-    expect(choice.selected).toEqual(['jong-skills:documentation'])
+    expect(choice.selected).toEqual(['ratchet-workflows:documentation'])
     expect(choice.targets).toEqual(['unneeded-concurrency-guard'])
     const args = (exec.mock.calls[0] as unknown as [string, string[]])[1]
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string)).toEqual(

@@ -13,7 +13,7 @@ import { defaultExec } from './exec.mts'
 
 const PLUGIN = fileURLToPath(new URL('../context/fixtures/plugin', import.meta.url))
 const PLUGINS = JSON.stringify([
-  { id: 'jong-skills@m', version: '1', enabled: true, scope: 'user', installPath: PLUGIN },
+  { id: 'ratchet-workflows@m', version: '1', enabled: true, scope: 'user', installPath: PLUGIN },
 ])
 const SHA = 'a'.repeat(40)
 
@@ -42,12 +42,14 @@ const HISTORY = [
 const FILES: Record<string, unknown> = {
   'cases.json': [
     caseJson('c1', {
-      expectedSkills: ['jong-skills:sample-rules'],
+      expectedSkills: ['ratchet-workflows:sample-rules'],
       expectedRules: [
-        { skill: 'jong-skills:sample-rules', text: 'MUST NOT leave a gadget unplugged.' },
+        { skill: 'ratchet-workflows:sample-rules', text: 'MUST NOT leave a gadget unplugged.' },
       ],
     }),
-    caseJson('c2', { expectedSkills: [['jong-skills:sample-prose', 'jong-skills:sample-rules']] }),
+    caseJson('c2', {
+      expectedSkills: [['ratchet-workflows:sample-prose', 'ratchet-workflows:sample-rules']],
+    }),
     caseJson('plain'),
   ],
   'history.json': HISTORY,
@@ -95,7 +97,9 @@ describe('runReviewContextBenchCli', () => {
     expect(json.rules.map((item: { id: string }) => item.id)).toEqual(['c1', 'c2'])
     expect(json.summary.rules.expectedRules.present).toBe(1)
     expect(json.summary.history).toEqual({ cases: 1, checks: 1, found: 1 })
-    expect(written.get(join('o', 'summary.md'))).toContain('| c1 | jong-skills:sample-rules full')
+    expect(written.get(join('o', 'summary.md'))).toContain(
+      '| c1 | ratchet-workflows:sample-rules full',
+    )
     expect(out).toHaveBeenCalledWith(expect.stringContaining('# Context bench'))
   })
 

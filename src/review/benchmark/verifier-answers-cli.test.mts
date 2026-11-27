@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runReviewVerifierBenchCli } from './verifier-cli.mts'
 import type { VerifierBenchDeps } from './verifier-snapshot.mts'
 
-const SKILL = 'jong-skills:postgres-locking'
+const SKILL = 'ratchet-backend:postgres-locking'
 const SENTENCE = 'Append-only writes never lock: votes, events, history.'
 
 const FIXTURE = mkdtempSync(join(tmpdir(), 'answers-fixture-'))
@@ -44,7 +44,7 @@ function plugins(): string {
     `---\nname: postgres-locking\ndescription: d\n---\n\n# Locking\n\n- ${SENTENCE}\n`,
   )
   return JSON.stringify([
-    { id: 'jong-skills@m', version: '1', enabled: true, scope: 'user', installPath: root },
+    { id: 'ratchet-backend@m', version: '1', enabled: true, scope: 'user', installPath: root },
   ])
 }
 

@@ -9,18 +9,18 @@ You are the correctness reviewer. Follow [the pillar contract](_contract.md).
 - Tests: does a test exercise the changed behavior through an observable boundary? Would it fail
   without the change? Over-mocking that tests the mock, assertions on exact SHAs or versions,
   flaky timing, and missing negative cases. When the change adds or edits a test, load
-  `jong-skills:test-authoring` and `no-mistakes-rules:testing-rules`; they are the bar.
+  `ratchet-code:test-authoring` and `no-mistakes-rules:testing-rules`; they are the bar.
 - Data and performance where the change touches them: unbounded reads or loops over rows, N+1
   queries, missing indexes for new query shapes, queue fan-out without caps. Load the installed
-  skill that covers it before judging: `jong-skills:bounded-iteration` for a loop or job that reads
-  rows, `jong-skills:glide-mq` for a queue, `jong-skills:postgres-schema-design` and
-  `no-mistakes-rules:postgresql-rules` for SQL or a migration, and `jong-skills:postgres-locking`
+  skill that covers it before judging: `ratchet-backend:bounded-iteration` for a loop or job that reads
+  rows, `ratchet-backend:glide-mq` for a queue, `ratchet-backend:postgres-schema-design` and
+  `no-mistakes-rules:postgresql-rules` for SQL or a migration, and `ratchet-backend:postgres-locking`
   with `no-mistakes-rules:postgresql-rules` for a lock.
 
 ## Lock scope
 
 When the diff takes a lock (`FOR UPDATE`, an advisory lock, a recursive ancestor lock) or closes a
-race, load `jong-skills:postgres-locking` and apply it. Where
+race, load `ratchet-backend:postgres-locking` and apply it. Where
 `no-mistakes-rules:postgresql-rules` allows more, such as a parent row used as a mutex, the
 stricter rule wins.
 

@@ -28,7 +28,7 @@ Does the code match what the pull request says?
 
 ## One real run
 
-When the change alters behavior a user or caller can see, load `jong-skills:pr-description` and
+When the change alters behavior a user or caller can see, load `ratchet-github:pr-description` and
 apply its "Show one real run" rule.
 
 - Raise one `low` finding when the description does not let a reader see what the change does on

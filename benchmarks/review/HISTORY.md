@@ -2,6 +2,27 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (no run): default rule plugins and skill ids move from `jong-skills` to four `ratchet-*` plugins
+
+The `jong-skills` plugin is split into `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`
+(jongleberry/ratchet-stack#143). Skill names do not change; only the plugin prefix does. No run.
+
+- **What changed.** `DEFAULT_RULE_PLUGINS` is now `no-mistakes-rules`, `ratchet-workflows`, `ratchet-github`,
+  `ratchet-backend`, `ratchet-code`. Every `jong-skills:<skill>` in `cases.json` and `synthetic.json`
+  (`expectedSkills`, `unwantedSkills`), in the pillar prompts (`_contract.md`, `rules.md`, `correctness.md`,
+  `congruence.md`) and in the verifier prompt now names the new plugin. The "Shared rule skills" bullet lists the five
+  default plugins, so the default prompt text is longer by three plugin names.
+- **Comparability.** The skill text is unchanged, so every earlier row is comparable on content: `bench` loads the same
+  rules, in the same words, under new ids. Rows that quote a plugin name or an `expectedSkills` id from before this
+  entry (including the selection rows of `bench-selection`, which compares chosen ids with `expectedSkills`) used the
+  old `jong-skills:<skill>` ids; they are comparable once the ids are mapped, but a selection run on a machine that
+  still has only `jong-skills` installed cannot match the new ids. The pillar prompts differ by the plugin names in
+  one bullet, which a model may read differently; no run has measured that, so treat a difference of one catch between
+  a row before and a row after as noise, as at 3 attempts. `bench` always uses the default list, so it needs the four
+  new plugins installed.
+- **Tags.** `agent-workflow`, used in `unwantedSkills` and in the prompts, is not on the split list; it is mapped to
+  `ratchet-workflows` with the other process skills and needs checking when the split lands.
+
 ## 2026-11-27 (cases added, targeted run): three misses CodeRabbit caught on heads this reviewer passed
 
 Three mined cases in `cases.json`, all positive and `correctness`, from heads where the posted review had 0

@@ -4,7 +4,7 @@ import { MAX_ANSWERS, MAX_ANSWER_CHARS, readAnswer, renderAnswer } from './answe
 import { ReviewError } from './finding.mts'
 import { parseAnswers } from './finding-extras.mts'
 
-const RULE = { skill: 'jong-skills:locks', quote: 'Take a lock only on a row it writes.' }
+const RULE = { skill: 'ratchet-workflows:locks', quote: 'Take a lock only on a row it writes.' }
 
 const read = (raw: unknown) => {
   const why: string[] = []
@@ -16,7 +16,7 @@ describe('readAnswer', () => {
     const { answer } = read({
       thread: 'PRT_1',
       body: ' No lock\n here. ',
-      rule: { skill: ' jong-skills:locks ', quote: 'Take a lock only on a row it writes.' },
+      rule: { skill: ' ratchet-workflows:locks ', quote: 'Take a lock only on a row it writes.' },
     })
     expect(answer).toEqual({ thread: 'PRT_1', body: 'No lock here.', rule: RULE })
   })
@@ -63,24 +63,24 @@ describe('readAnswer', () => {
 describe('renderAnswer', () => {
   it('ends a rule answer with the skill and the quoted sentence', () => {
     expect(renderAnswer({ thread: 'T', body: 'No lock.', rule: RULE })).toBe(
-      'No lock.\n\nRule: jong-skills:locks: "Take a lock only on a row it writes."',
+      'No lock.\n\nRule: ratchet-workflows:locks: "Take a lock only on a row it writes."',
     )
   })
 
   it('links the skill, and quotes it only when a quote is kept', () => {
     const url = 'https://github.com/jonathanong/no-mistakes/blob/HEAD/skills/locks/SKILL.md'
     expect(
-      renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'jong-skills:locks', url } }),
-    ).toBe(`b\n\nRule: [jong-skills:locks](${url})`)
+      renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'ratchet-workflows:locks', url } }),
+    ).toBe(`b\n\nRule: [ratchet-workflows:locks](${url})`)
     expect(renderAnswer({ thread: 'T', body: 'b', rule: { ...RULE, url } })).toBe(
-      `b\n\nRule: [jong-skills:locks](${url}): "Take a lock only on a row it writes."`,
+      `b\n\nRule: [ratchet-workflows:locks](${url}): "Take a lock only on a row it writes."`,
     )
   })
 
   it('names the skill plainly when there is no link', () => {
-    expect(renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'jong-skills:locks' } })).toBe(
-      'b\n\nRule: jong-skills:locks',
-    )
+    expect(
+      renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'ratchet-workflows:locks' } }),
+    ).toBe('b\n\nRule: ratchet-workflows:locks')
     expect(renderAnswer({ thread: 'T', body: 'b', rule: { skill: 'a:b' }, at: 'a.ts:2' })).toBe(
       'b\n\nRule: a:b (`a.ts:2`)',
     )

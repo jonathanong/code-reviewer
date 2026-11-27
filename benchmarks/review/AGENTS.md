@@ -1,6 +1,6 @@
 # Benchmark rules
 
-- Load `jong-skills:evals` before changing a case, a fixture, a grader, or these documents.
+- Load `ratchet-workflows:evals` before changing a case, a fixture, a grader, or these documents.
 - Run one case with `pnpm exec code-reviewer bench --cases <file> --pillar <p> --case <id> --out <dir>`.
   Use `--model sonnet --judge opus`: the judge must be a different model from the reviewer.
 - Measure a pillar on another harness with `bench ... --harness codex --model <id> --reads-outside-checkout`; only the pillar agent moves, and its rows are not comparable with Claude rows.

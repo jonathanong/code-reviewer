@@ -32,7 +32,7 @@ async function run(questions: unknown[], warnings: string[] = [], flags: unknown
   dirs.push(out)
   const exec: Exec = async (_command, args) => {
     if (args[args.indexOf('--tools') + 1] === '') {
-      return result({ skills: ['jong-skills:documentation'] })
+      return result({ skills: ['ratchet-workflows:documentation'] })
     }
     if ((args[1] as string).includes('VERIFIER prompt text')) {
       return result({ summary: 's', pullRequestSummary: 'p', findings: [], questions, flags })
@@ -52,10 +52,10 @@ async function run(questions: unknown[], warnings: string[] = [], flags: unknown
     preview: async () => ({ verdict: 'Comment', warnings, tooLong: [], reviews: [] }),
     plugins: async () => ({
       enabled: [],
-      installs: [{ name: 'jong-skills', installPath: fixture('plugins/skills') }],
+      installs: [{ name: 'ratchet-workflows', installPath: fixture('plugins/skills') }],
     }),
     evidence: async () => ({ sources: [], readGuide: async () => '' }),
-    rulePlugins: ['jong-skills'],
+    rulePlugins: ['ratchet-workflows'],
     exec,
     references: fixture('references'),
   } as unknown as ReviewSteps

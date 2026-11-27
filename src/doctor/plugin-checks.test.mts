@@ -18,7 +18,10 @@ const markets = JSON.stringify({
 
 const skills = {
   '/plugins/no-mistakes-rules/skills': ['a', 'b'],
-  '/plugins/jong-skills/skills': ['c'],
+  '/plugins/ratchet-workflows/skills': ['c'],
+  '/plugins/ratchet-github/skills': ['c'],
+  '/plugins/ratchet-backend/skills': ['c'],
+  '/plugins/ratchet-code/skills': ['c'],
 }
 
 function setup(options: FakeOptions & { list?: string }) {
@@ -26,7 +29,15 @@ function setup(options: FakeOptions & { list?: string }) {
   return fakeIo({
     ...rest,
     exec: {
-      [LIST]: list ?? listing({ id: 'no-mistakes-rules@m' }, { id: 'jong-skills@g' }),
+      [LIST]:
+        list ??
+        listing(
+          { id: 'no-mistakes-rules@m' },
+          { id: 'ratchet-workflows@g' },
+          { id: 'ratchet-github@g' },
+          { id: 'ratchet-backend@g' },
+          { id: 'ratchet-code@g' },
+        ),
       ...rest.exec,
     },
     dirs: { ...skills, ...rest.dirs },
@@ -46,24 +57,30 @@ describe('rule plugins', () => {
     expect(checks.map((check) => [check.name, check.status])).toEqual([
       ['rule-plugin:no-mistakes-rules', 'ok'],
       ['plugin-freshness:no-mistakes-rules', 'ok'],
-      ['rule-plugin:jong-skills', 'ok'],
-      ['plugin-freshness:jong-skills', 'ok'],
+      ['rule-plugin:ratchet-workflows', 'ok'],
+      ['plugin-freshness:ratchet-workflows', 'ok'],
+      ['rule-plugin:ratchet-github', 'ok'],
+      ['plugin-freshness:ratchet-github', 'ok'],
+      ['rule-plugin:ratchet-backend', 'ok'],
+      ['plugin-freshness:ratchet-backend', 'ok'],
+      ['rule-plugin:ratchet-code', 'ok'],
+      ['plugin-freshness:ratchet-code', 'ok'],
     ])
   })
 
   it('fails a plugin that is not enabled at user scope, with the install command', async () => {
     const fake = setup({ list: listing({ id: 'no-mistakes-rules@m' }) })
     const checks = await run(fake, true)
-    expect(byName(checks, 'rule-plugin:jong-skills')).toMatchObject({
+    expect(byName(checks, 'rule-plugin:ratchet-workflows')).toMatchObject({
       status: 'fail',
-      fix: 'claude plugin install jong-skills --scope user',
+      fix: 'claude plugin install ratchet-workflows --scope user',
     })
-    expect(byName(checks, 'plugin-freshness:jong-skills')).toBeUndefined()
+    expect(byName(checks, 'plugin-freshness:ratchet-workflows')).toBeUndefined()
   })
 
   it('ignores a plugin enabled only at project scope', async () => {
     const project = JSON.stringify([
-      { id: 'jong-skills@g', scope: 'project', enabled: true, installPath: '/p' },
+      { id: 'ratchet-workflows@g', scope: 'project', enabled: true, installPath: '/p' },
       {
         id: 'no-mistakes-rules@m',
         scope: 'user',
@@ -72,18 +89,18 @@ describe('rule plugins', () => {
       },
     ])
     const checks = await run(setup({ list: project }), true)
-    expect(byName(checks, 'rule-plugin:jong-skills')?.status).toBe('fail')
+    expect(byName(checks, 'rule-plugin:ratchet-workflows')?.status).toBe('fail')
   })
 
   it('warns when an installed plugin holds no skills', async () => {
-    const fake = setup({ dirs: { '/plugins/jong-skills/skills': [] } })
+    const fake = setup({ dirs: { '/plugins/ratchet-workflows/skills': [] } })
     const checks = await run(fake, true)
-    expect(byName(checks, 'rule-plugin:jong-skills')).toMatchObject({
+    expect(byName(checks, 'rule-plugin:ratchet-workflows')).toMatchObject({
       status: 'warn',
-      fix: 'claude plugin update jong-skills',
+      fix: 'claude plugin update ratchet-workflows',
     })
-    const gone = setup({ dirs: { '/plugins/jong-skills/skills': undefined as never } })
-    expect(byName(await run(gone, true), 'rule-plugin:jong-skills')?.status).toBe('warn')
+    const gone = setup({ dirs: { '/plugins/ratchet-workflows/skills': undefined as never } })
+    expect(byName(await run(gone, true), 'rule-plugin:ratchet-workflows')?.status).toBe('warn')
   })
 
   it('fails when claude cannot list plugins, and says how to see why', async () => {
@@ -167,10 +184,10 @@ describe('plugin freshness', () => {
 
   describe('online, for an install that records a commit', () => {
     const list = (record: object) =>
-      listing({ id: 'no-mistakes-rules@m', ...record }, { id: 'jong-skills@g', sha: SHA_OLD })
+      listing({ id: 'no-mistakes-rules@m', ...record }, { id: 'ratchet-workflows@g', sha: SHA_OLD })
     const remote = (sha: string) => `${sha}\tHEAD\n`
     const only = (record: object) =>
-      listing({ id: 'no-mistakes-rules@m', ...record }, { id: 'jong-skills@g' })
+      listing({ id: 'no-mistakes-rules@m', ...record }, { id: 'ratchet-workflows@g' })
     const lsRemote = 'git ls-remote https://github.com/acme/rules.git HEAD'
 
     it('warns when the remote HEAD moved, naming both commits', async () => {
@@ -187,7 +204,7 @@ describe('plugin freshness', () => {
         detail: expect.stringContaining('behind: installed aaaaaaa, latest bbbbbbb'),
         fix: 'claude plugin update no-mistakes-rules',
       })
-      expect(byName(checks, 'plugin-freshness:jong-skills')?.status).toBe('ok')
+      expect(byName(checks, 'plugin-freshness:ratchet-workflows')?.status).toBe('ok')
       expect(fake.exec).toHaveBeenCalledWith(
         'git',
         ['ls-remote', 'https://github.com/acme/rules.git', 'HEAD'],
@@ -231,12 +248,15 @@ describe('plugin freshness', () => {
         files: { [MARKETS]: undefined as never },
       })
       const noMarket = setup({
-        list: listing({ id: 'no-mistakes-rules@unknown', sha: SHA_OLD }, { id: 'jong-skills@g' }),
+        list: listing(
+          { id: 'no-mistakes-rules@unknown', sha: SHA_OLD },
+          { id: 'ratchet-workflows@g' },
+        ),
       })
       const bad = setup({ list: only({ sha: SHA_OLD }), files: { [MARKETS]: '{nope' } })
       const versionOnly = setup({ list: only({ version: '1.2.3' }) })
       const noMarketplace = setup({
-        list: listing({ id: 'no-mistakes-rules', sha: SHA_OLD }, { id: 'jong-skills@g' }),
+        list: listing({ id: 'no-mistakes-rules', sha: SHA_OLD }, { id: 'ratchet-workflows@g' }),
       })
       for (const fake of [noFile, noMarket, bad, versionOnly, noMarketplace]) {
         expect(rules(await run(fake))?.status).toBe('ok')
