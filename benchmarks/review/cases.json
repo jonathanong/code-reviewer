@@ -1031,6 +1031,35 @@
     ]
   },
   {
+    "id": "vouchington-6656-12fe22b",
+    "repo": "vouchington/vouchington",
+    "pr": 6656,
+    "title": "Seek topic merge alias continuations by cursor",
+    "baseSha": "197ae9777732e0285890e73a19bcaa79cf1c66fb",
+    "headSha": "12fe22bf0e8dfa4b0316d6610b94063adb62bf7f",
+    "body": "## Summary\n\nInclude the `alias > cursor` predicate on continuation pages. PostgreSQL can then apply the topic and cursor together to the existing `(topic_id, alias)` index in both plan modes.\n\n## Impact\n\nThe topic merge worker keeps the same first page, continuation, exact moved IDs, and write scope. The committed-tail EXPLAIN scenario keeps its one-alias bound and now checks that the cursor is an index condition.\n\n## Related issues\n\n- Closes #6627 — Seeks from the alias cursor in custom and generic plans and guards the plan shape.\n\n## Details\n\n| Committed one-alias continuation | Before | After |\n| --- | --- | --- |\n| Forced custom | Index conditions on topic and alias, one row | Same |\n| Forced generic | Topic index condition, residual cursor filter, one row | Topic and alias in `Index Cond`, one row and no residual filter |\n\nThe committed first page already moves the previous 64 aliases out of the source index range. The earlier pre-move replay exposed the residual filter by examining 65 aliases. The new guard fails the old generic plan even when it happens to examine only one row. [Earlier artifact and committed-page evidence](https://github.com/vouchington/vouchington/issues/6627#issuecomment-7201536031)\n\nThe change keeps the same index, query order, page limit, and write behavior. The fixture still asserts exact moved, repointed, retained, and surviving IDs.\n",
+    "kind": "positive",
+    "reason": "The first commit of the pull request rewrote the optional-cursor condition in the alias move query (processTopicMergeAliasPage) only. snapshotTopicMergeAliases, called from the same file, kept ($3::text IS NULL OR alias > $3) in the same flow; a second commit fixed it after a hand check. The head 43bb47dd2f at which the pipeline first reviewed it was force-pushed away, so this snapshots the first commit, which has the same gap.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "backend/services/topics/merge-aliases-snapshot.mts",
+        "lines": null,
+        "claim": "snapshotTopicMergeAliases keeps the optional-cursor condition ($3::text IS NULL OR alias > $3) that this change replaces in processTopicMergeAliasPage, so the snapshot continuation query still cannot apply the cursor to the (topic_id, alias) index in a generic plan; the description says continuation pages seek from the cursor."
+      }
+    ],
+    "expectedReads": ["backend/services/topics/merge-aliases-snapshot.mts"],
+    "focus": [
+      {
+        "target": "sibling-keeps-old-shape",
+        "expectedStatus": "does_not_hold",
+        "reason": "snapshotTopicMergeAliases, imported by the changed file, still uses ($3::text IS NULL OR alias > $3), the shape the fix removes from processTopicMergeAliasPage."
+      }
+    ],
+    "expectedTargets": ["sibling-keeps-old-shape"]
+  },
+  {
     "id": "no-mistakes-4102-5a0aca3",
     "repo": "jonathanong/no-mistakes",
     "pr": 4102,

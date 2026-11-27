@@ -244,6 +244,11 @@ posted review, the "Requested checks" block lists requester points only: a targe
 `review.json` and in `report.json` / `report.md` (`Focus checks` and `Targets selected`) after all
 model steps finish.
 
+The `sibling-keeps-old-shape` target applies to a change that fixes a defect: it looks for other instances of the
+old, broken shape next to the fix (same directory, imports and importers). An instance the fix left is a normal
+finding when the title or description says the fix covers that shape or class, and an FYI marked pre-existing
+otherwise.
+
 ## Findings: premise and prevention
 
 A reviewer may challenge whether a change should exist in this form (it solves the wrong problem,
