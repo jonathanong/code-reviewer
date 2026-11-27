@@ -70,7 +70,10 @@ change to how you queue, review or post; `report.md` says which kind of push it 
    `runDir`) and need a human's attention; a review may not exist (a cost-ceiling hold has none): skip them, and do not claim, rerun or `--force` them. A person
    who adds the request label to a held pull request does not release it; `claim` declines it with
    `held for a person` while the hold is on the current head; a head pushed after the hold is claimed
-   normally and the claim clears the stale label. An entry `claim` answers with `claim lost` was taken by another claimant: leave it.
+   normally and the claim clears the stale label. `queue` still lists such a pull request as `held`, so
+   for a `held` entry whose head moved since the hold, run `run` directly (unforced) once: it checks
+   the new head, clears a stale hold, and declines a current or unknown one. Leave holds on the current
+   head, and holds whose head cannot be determined, for a person. An entry `claim` answers with `claim lost` was taken by another claimant: leave it.
 
 Keep nothing that a restart would lose. GitHub is the source of truth: the labels hold the queue,
 and the newest review's hidden marker holds the reviewed SHA, verdict, and effort.

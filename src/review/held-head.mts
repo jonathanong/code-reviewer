@@ -10,15 +10,21 @@ export type TimelineRow = { event: string; value: string }
  * newest commit or force-push target before the last `held` label; undefined when the label is
  * not on the timeline last as added, or no head precedes it.
  */
-export function heldHeadFrom(rows: readonly TimelineRow[], heldLabel: string): string | undefined {
+/** The current hold's head, and how many times the timeline shows the held label added. */
+export type Held = { head: string | undefined; placements: number }
+
+export function heldFrom(rows: readonly TimelineRow[], heldLabel: string): Held {
   let head: string | undefined
   let held: string | undefined
+  let placements = 0
   for (const { event, value } of rows) {
     if (event === 'committed' || event === 'head_ref_force_pushed') head = value
-    else if (value === heldLabel && event === 'labeled') held = head
-    else if (value === heldLabel && event === 'unlabeled') held = undefined
+    else if (value === heldLabel && event === 'labeled') {
+      held = head
+      placements += 1
+    } else if (value === heldLabel && event === 'unlabeled') held = undefined
   }
-  return held?.toLowerCase()
+  return { head: held?.toLowerCase(), placements }
 }
 
 /** Parses `event<TAB>value` lines, the shape the timeline query prints. */
@@ -41,12 +47,12 @@ export async function holdStatus(
   io: LabelIo,
   names: LabelNames,
   headSha: string | undefined,
-): Promise<{ stale: true } | { stale: false; reason: string }> {
+): Promise<{ stale: true; held: Held } | { stale: false; reason: string }> {
   const held =
     headSha === undefined ? undefined : await io.heldHead(names.held).catch(() => undefined)
-  if (held === undefined || headSha === undefined) {
+  if (held?.head === undefined || headSha === undefined) {
     return { stale: false, reason: 'held for a person (the held head could not be determined)' }
   }
-  if (held === headSha.toLowerCase()) return { stale: false, reason: 'held for a person' }
-  return { stale: true }
+  if (held.head === headSha.toLowerCase()) return { stale: false, reason: 'held for a person' }
+  return { stale: true, held }
 }

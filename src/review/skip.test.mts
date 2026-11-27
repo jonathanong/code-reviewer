@@ -25,7 +25,12 @@ function fakes(head = SHA) {
     calls.push('remove')
   })
   const io = { headSha: async () => head, postReview } as unknown as ReviewIo
-  const labelIo: LabelIo = { labels, add, remove, heldHead: async () => undefined }
+  const labelIo: LabelIo = {
+    labels,
+    add,
+    remove,
+    heldHead: async () => ({ head: undefined, placements: 0 }),
+  }
   return { io, labelIo, calls, postReview, labels, add, remove }
 }
 

@@ -43,7 +43,7 @@ export function fakeDeps(options: FakeOptions) {
     add: vi.fn(async (names) => void labels.push(...names)),
     heldHead: vi.fn(async () => {
       if (options.heldHeadFails === true) throw new Error('timeline unavailable')
-      return options.heldHead
+      return { head: options.heldHead, placements: 1 }
     }),
     remove: vi.fn(async (name) => {
       labels.splice(labels.indexOf(name), 1)

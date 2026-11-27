@@ -1,14 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  abortReview,
-  claimReview,
-  completeReview,
-  createGhLabelIo,
-  skipReview,
-  type LabelIo,
-} from './labels.mts'
-import { heldHeadFrom, parseTimelineRows } from './held-head.mts'
+import { abortReview, claimReview, completeReview, createGhLabelIo, skipReview } from './labels.mts'
+import { fakeIo } from './labels-fake-io.mts'
 import { DEFAULT_LABELS } from './settings.mts'
 
 const {
@@ -19,67 +12,7 @@ const {
   approval: APPROVAL_LABEL,
 } = DEFAULT_LABELS
 
-type Fake = LabelIo & { set: Set<string>; calls: string[] }
-
-function fakeIo(initial: string[], held?: string | Error): Fake {
-  const set = new Set(initial)
-  const calls: string[] = []
-  return {
-    set,
-    calls,
-    async labels() {
-      return [...set]
-    },
-    async add(names) {
-      calls.push(`add:${names.join(',')}`)
-      for (const name of names) set.add(name)
-    },
-    async remove(name) {
-      calls.push(`remove:${name}`)
-      set.delete(name)
-    },
-    async heldHead() {
-      if (held instanceof Error) throw held
-      return held
-    },
-  }
-}
-
-describe('heldHeadFrom', () => {
-  it('names the head before the last held label', () => {
-    const text = 'committed\tAAA\nlabeled\tfinal-review:held\nhead_ref_force_pushed\tbbb\n'
-    expect(heldHeadFrom(parseTimelineRows(text), HELD_LABEL)).toBe('aaa')
-  })
-
-  it('has no head once the hold was removed, or before any commit, or for another label', () => {
-    expect(
-      heldHeadFrom(
-        parseTimelineRows(
-          'committed\taaa\nlabeled\tfinal-review:held\nunlabeled\tfinal-review:held',
-        ),
-        HELD_LABEL,
-      ),
-    ).toBeUndefined()
-    expect(
-      heldHeadFrom(parseTimelineRows('labeled\tfinal-review:held'), HELD_LABEL),
-    ).toBeUndefined()
-    expect(
-      heldHeadFrom(parseTimelineRows('committed\taaa\nlabeled\tother'), HELD_LABEL),
-    ).toBeUndefined()
-    expect(parseTimelineRows('labeled')).toEqual([{ event: 'labeled', value: '' }])
-  })
-})
-
 describe('createGhLabelIo', () => {
-  it('reads the held head from the timeline', async () => {
-    const run = vi.fn(
-      async (_args: readonly string[]) => 'committed\tAbc\nlabeled\tfinal-review:held\n',
-    )
-    const io = createGhLabelIo({ repo: 'o/r', pr: 7 }, run)
-    expect(await io.heldHead(HELD_LABEL)).toBe('abc')
-    expect(run.mock.calls[0]?.[0]).toContain('repos/o/r/issues/7/timeline?per_page=100')
-  })
-
   const target = { repo: 'o/r', pr: 7 }
 
   it('parses, trims, and drops blank label lines', async () => {
@@ -182,38 +115,6 @@ describe('claimReview', () => {
       added: [IN_PROGRESS_LABEL],
       removed: [],
     })
-  })
-
-  it('declines a review held on the current head, even when a person re-requested it', async () => {
-    const io = fakeIo([HELD_LABEL, REQUESTED_LABEL], 'abc')
-    expect(await claimReview(io, DEFAULT_LABELS, { headSha: 'ABC' })).toMatchObject({
-      claimed: false,
-      reason: 'held for a person',
-    })
-    expect(io.calls).toEqual([])
-  })
-
-  it('declines a hold whose head cannot be determined, and says so', async () => {
-    for (const io of [
-      fakeIo([HELD_LABEL, REQUESTED_LABEL]),
-      fakeIo([HELD_LABEL, REQUESTED_LABEL], new Error('api down')),
-    ]) {
-      expect(await claimReview(io, DEFAULT_LABELS, { headSha: 'abc' })).toMatchObject({
-        claimed: false,
-        reason: 'held for a person (the held head could not be determined)',
-      })
-      expect(io.calls).toEqual([])
-    }
-    const noHead = fakeIo([HELD_LABEL, REQUESTED_LABEL], 'abc')
-    expect(await claimReview(noHead, DEFAULT_LABELS)).toMatchObject({ claimed: false })
-  })
-
-  it('claims a new head pushed after the hold and clears the stale held label', async () => {
-    const io = fakeIo([HELD_LABEL, REQUESTED_LABEL], 'old')
-    expect(await claimReview(io, DEFAULT_LABELS, { headSha: 'new' })).toMatchObject({
-      claimed: true,
-    })
-    expect([...io.set]).toEqual([IN_PROGRESS_LABEL])
   })
 
   it('claims a held review with force and clears the hold', async () => {

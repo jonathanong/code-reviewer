@@ -131,7 +131,7 @@ function makeDeps(options: {
     labels: vi.fn(async () => ['final-review:in-progress']),
     add: vi.fn(async () => undefined),
     remove: vi.fn(async () => undefined),
-    heldHead: vi.fn(async () => undefined),
+    heldHead: vi.fn(async () => ({ head: undefined, placements: 0 })),
   }
   const ghRun = vi.fn(async (args: readonly string[]) => {
     if (args[0] === 'pr' && args[1] === 'view') {

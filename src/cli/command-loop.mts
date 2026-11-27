@@ -52,6 +52,7 @@ export async function claimCommand(values: LoopValues, target: () => PullTarget,
       force,
       headReviewed: status?.current === true,
       headSha: values.headSha ?? status?.headSha,
+      liveHeadSha: status?.headSha,
       // A first claim of a head nothing covered yet backs off when a review of it appeared since.
       ...(force || status?.current === true
         ? {}
