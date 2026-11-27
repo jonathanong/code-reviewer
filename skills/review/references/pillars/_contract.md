@@ -55,6 +55,13 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
   with its base, that a check is failing, that a review is pending. Report what the page does not
   show: a defect in this change that causes it, or what it means for the change, for example a
   failing check that shows an acceptance criterion is not met.
+- Do not report a defect that a check this repository runs in CI detects (a formatter, linter, type
+  checker, AST or static rule such as a no-mistakes codebase rule, or another CI check), whether or
+  not that check is failing now. A defect no configured check catches is still reviewed.
+  Review's value is analysis CI cannot do: a missing test, a wrong test, why a test failed, a test that
+  does not match the acceptance criteria, behavior, design, rollout. Recommending a missing check or
+  test is still a finding (see `prevent`). Never claim a CI check fails or will fail unless you read
+  its result at the reviewed head.
 - When you read or reason about another repository's code (a dependency the change calls, or a
   consumer), read that repository's staged instructions and matching skills first and apply them
   to how the change uses it. A declared dependency has no import to follow: check each call the

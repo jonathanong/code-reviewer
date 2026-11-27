@@ -24,7 +24,7 @@
 - A follow-up on the same machine builds on that machine's last review and adds to it. Earlier evidence carries over to the verifier, and the evidence step still runs: new evidence may block or raise a question for the author.
 - Rule text given to a model is quoted verbatim by section with a link to the skill, never paraphrased.
 - The title, description and code of a pull request must agree. A claim the diff contradicts, such as test-only on a change that edits production code, is a finding.
-- A comparison with the base branch that a script can make, such as a lowered coverage threshold, tolerance or gate, belongs in the repository's CI. The reviewer recommends the missing test.
+- The reviewer does not report what a check this repository runs in CI already verifies (a formatter, linter, type check, AST rule). A comparison with the base branch that a script could make, such as a lowered coverage threshold, belongs in CI too. The reviewer reports what needs analysis: a missing or wrong test, why a test failed, a test that does not match the acceptance criteria. It never infers a CI result from code. It recommends the missing check or test.
 - The reviewer does not inspect how CI or the test database is set up. It reads environment data only when the change makes it relevant.
 - The reviewer never merges a pull request it reviews. When the loop is unsure, it holds the review and flags it to a person.
 - A change to a prompt, schema or contract is recorded in the benchmark `HISTORY.md` in the same change, with the rows it makes non-comparable.

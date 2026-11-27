@@ -24,6 +24,7 @@
   them on every pillar for comparison) and 3 with `--no-rules` in the same session, then score
   with `--score-only --baseline <control dir>`. Run without either flag (every skill offered, none
   named) only to separate a selection failure from a reviewer miss.
+- To feed the verifier a finding no pillar run produced, write it as `planted-findings/raw/<pillar>/<case id>.json` (`{ "findings": [...] }`). Run `bench-verifier --findings-from` on a scratch copy of that directory: the command clones the snapshot cache into it.
 - Do not run the whole of `cases.json` or `revisions.json` unless the owner asks: large cases cost dollars per run.
 - Give a mined case `body` (the description as it read at `headSha`) whenever the description was edited after that head; a later edit can state the fix.
 - Name in `expectedReads` (repo-relative paths) a file a good review must open; the raw result's `reads` and `searches` show what the run opened and searched for, and the count is reported apart from recall.
