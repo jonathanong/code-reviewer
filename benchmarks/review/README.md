@@ -61,6 +61,12 @@ Mined cases (8 real pull requests from `cases.json`):
   (nested PostgreSQL option structs without `deny_unknown_fields` in a change that rejects unknown nested fields).
   Run at 3 attempts per arm on Sonnet: 0 of 3 with skills and 0 of 3 without on each, so the control misses all
   three; not a rate, see `HISTORY.md`.
+- Not in the table: `no-mistakes-4745-3ff11a1` (negative, rules pillar and the verifier: a wrong `high` finding that
+  a line exceeds rustfmt's `max_width` so CI's `cargo fmt --all -- --check` fails, on a head where that CI step ran
+  and succeeded; no `high` or `blocking` finding is expected). Added 2026-11-27 with the skip of defects a CI check
+  detects; not run yet (unmeasured). Its counter-case, a lint-catchable defect in a repository that runs no such
+  check and so is still reported, is the existing `answers-floating-promise` (`answers.json`, verifier only): a
+  floating promise in a fixture with no lint or CI configuration, which the verifier must raise. See `HISTORY.md`.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the

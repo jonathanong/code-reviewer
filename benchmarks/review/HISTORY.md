@@ -19,6 +19,17 @@ when CI had passed that step. No run.
   and `correctness` rows, and verifier rows, because the prompts can now suppress findings a case may expect. No
   `cases.json` or `synthetic.json` case expects a formatter, linter or type-check defect (grep of claims found none), so
   no case is expected to flip, but rules cases whose rule an AST check could enforce should be read on the first run.
+- **Cases added, unmeasured (no run).** `no-mistakes-4745-3ff11a1` in `cases.json` (negative, mined from
+  jongleberry/no-mistakes#4745 at head `3ff11a1e`): the rules pillar had claimed at `high` that
+  `config_path_references/references.rs:21` exceeds rustfmt's `max_width` so `cargo fmt --all -- --check` fails, while
+  the repository's `Check Rust formatting` step (`.github/workflows/ci.yml:439-442`) had succeeded on that head. The
+  case expects no `high` or `blocking` finding from any pillar, and the verifier is expected to reject the claim. It
+  uses the existing negative format (`expected: []`, graded on `high` or `blocking`); no new grader. The snapshot
+  holds the workflow file but not the check's result, so the case measures the "this repository runs the formatter
+  in CI" half; reading a result at the head is not measured. Its `body` is the description as the reviewer saw it.
+  The counter-case, a defect a lint could catch in a repository that runs no such check, is the existing
+  `answers-floating-promise` (a floating promise in a fixture with no lint or CI config, raised by the verifier), so
+  no new case was added for it; it only covers the verifier, not the rules pillar.
 
 ## 2026-11-27 (no run): default rule plugins and skill ids move from `jong-skills` to four `ratchet-*` plugins
 
