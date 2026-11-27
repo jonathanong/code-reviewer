@@ -48,7 +48,8 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    unchanged file in the checkout. If the base behaves the same and the diff neither changes nor
    makes reachable that path, the finding is pre-existing: mark it under step 12. A gap beside the
    fix that the base already had is pre-existing, even when the pull request fixes a neighbouring
-   case. A gap in a branch the diff edits is at most `low` when the base had the same gap there.
+   case, unless the title or description says the fix covers that shape or class: then the diff
+   contradicts its own claim and the finding is a normal one. A gap in a branch the diff edits is at most `low` when the base had the same gap there.
 
    Check a convention claim against the head tree. A finding that says the change breaks a
    repository convention ("this repository does not use X", "other modules do Y") must rest on

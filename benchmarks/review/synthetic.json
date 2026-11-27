@@ -900,7 +900,8 @@
     "unwantedTargets": [
       "unneeded-concurrency-guard",
       "untraced-name-passes",
-      "undecided-input-passes"
+      "undecided-input-passes",
+      "sibling-keeps-old-shape"
     ]
   },
   {
@@ -994,5 +995,38 @@
     "kind": "negative",
     "reason": "The repository's AGENTS.md says \"Never serialize parallel work.\" The change halves the parallel test shards (they still run in parallel) and folds a 13-second format check into the lint job. The description's measurements show the longest chain gets shorter (6m 20s to 5m 10s) and nothing that ran in parallel now runs one after another, so the effect the rule exists to prevent does not occur. A finding that cites the rule from its wording alone must not be raised. The pillar contract (`skills/review/references/pillars/_contract.md`) states the rule on citing a repository rule. This is reviewer policy, not a shared rule skill.",
     "expected": []
+  },
+  {
+    "id": "focus-target-sibling-remains",
+    "fixture": "fixtures/focus-target-sibling-remains",
+    "title": "fix(exports): seek invoice export pages from the cursor",
+    "kind": "negative",
+    "reason": "The fix rewrites the optional-cursor condition in listInvoicePage, but snapshotInvoiceIds, which the same export job imports and runs first, keeps `($2::text is null or id > $2)`. The description says a continuation page seeks from the cursor, so the remaining instance is a finding, not a pre-existing note. A no-rules control also finds it (see HISTORY.md), so this case checks the target, not a gap the control misses.",
+    "expected": [],
+    "focus": [
+      {
+        "target": "sibling-keeps-old-shape",
+        "expectedStatus": "does_not_hold",
+        "reason": "snapshotInvoiceIds still filters with ($2::text IS NULL OR id > $2), the shape the fix removes from listInvoicePage, and the fix does not cover it."
+      }
+    ],
+    "expectedTargets": ["sibling-keeps-old-shape"]
+  },
+  {
+    "id": "focus-target-sibling-fixed",
+    "fixture": "fixtures/focus-target-sibling-fixed",
+    "title": "fix(exports): seek invoice export pages from the cursor",
+    "kind": "negative",
+    "reason": "The target must stay quiet: both queries in the export, listInvoicePage and snapshotInvoiceIds, now append the cursor condition only when there is a cursor, so no instance of the old shape remains.",
+    "expected": [],
+    "focus": [
+      {
+        "target": "sibling-keeps-old-shape",
+        "expectedStatus": "holds",
+        "reason": "No file in the directory or its imports keeps the optional-cursor condition the fix replaces.",
+        "expectNoFindings": true
+      }
+    ],
+    "expectedTargets": ["sibling-keeps-old-shape"]
   }
 ]
