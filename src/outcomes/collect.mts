@@ -2,7 +2,8 @@ import { foldRows, readRows } from '../tracker/store.mts'
 import type { TrackerIo, TrackerRow } from '../tracker/types.mts'
 import { classifyReview } from './classify.mts'
 import { fetchPull } from './fetch.mts'
-import type { OutcomeRow, OutcomesIo } from './types.mts'
+import { findMisses } from './misses.mts'
+import type { MissRow, OutcomeRow, OutcomesIo, ReviewData } from './types.mts'
 
 export const DEFAULT_SINCE_DAYS = 30
 /** Pull requests checked per run; the rest are reported as not checked. */
@@ -18,6 +19,7 @@ export type CollectOptions = {
 
 export type Collected = {
   rows: OutcomeRow[]
+  misses: MissRow[]
   pulls: number
   notChecked: number
   problems: string[]
@@ -59,6 +61,7 @@ export async function collectOutcomes(
   const { rows: tracked, problems } = readRows(tracker)
   const groups = groupByPull(foldRows(tracked).filter((row) => wanted(row, options, cutoff)))
   const rows: OutcomeRow[] = []
+  const misses: MissRow[] = []
   for (const group of groups.slice(0, MAX_PULLS)) {
     const { repo, pr } = group[0] as TrackerRow
     try {
@@ -66,15 +69,18 @@ export async function collectOutcomes(
       const pull = await fetchPull(io.run(owner, name), repo, pr)
       if (pull.truncated) problems.push(`${repo}#${pr} has more reviews or threads than were read.`)
       const ctx = { repo, pr, pull, io, now: now.toISOString(), problems }
+      const mine: ReviewData[] = []
       for (const entry of group) {
         const review = pull.reviews.find((candidate) => candidate.id === entry.reviewId)
         if (review === undefined) {
           problems.push(`${repo}#${pr}: review ${entry.reviewId} is no longer on the pull request.`)
           continue
         }
+        mine.push(review)
         const found = await classifyReview(ctx, review)
         rows.push(...found.map((found) => ({ ...found, head: entry.head })))
       }
+      misses.push(...(await findMisses(ctx, mine)))
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       problems.push(`${repo}#${pr} was not checked: ${reason}`)
@@ -82,6 +88,7 @@ export async function collectOutcomes(
   }
   return {
     rows,
+    misses,
     pulls: Math.min(groups.length, MAX_PULLS),
     notChecked: Math.max(groups.length - MAX_PULLS, 0),
     problems,

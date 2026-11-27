@@ -64,7 +64,11 @@ function row(
   }
 }
 
-async function changed(ctx: Context, thread: ThreadData, first: CommentData): Promise<boolean> {
+export async function changed(
+  ctx: Context,
+  thread: ThreadData,
+  first: CommentData,
+): Promise<boolean> {
   if (!thread.resolved && !thread.outdated) return false
   try {
     return await changedSince(ctx.io, ctx.repo, ctx.pull.head, first)

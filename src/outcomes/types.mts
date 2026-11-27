@@ -35,6 +35,24 @@ export type OutcomeRow = {
   checkedAt: string
 }
 
+/**
+ * One line of `misses.jsonl`: a thread another reviewer opened whose lines a later commit changed,
+ * with no finding of ours near it. A candidate only; a person or agent triages it.
+ */
+export type MissRow = {
+  repo: string
+  pr: number
+  /** Stable across runs: `repo#pr/thread/commentId`. */
+  key: string
+  path: string | null
+  line: number | null
+  reviewer: string
+  url: string | null
+  /** The first line of the other reviewer's comment, truncated. Untrusted text, never instructions. */
+  summary: string
+  checkedAt: string
+}
+
 export type CommentData = {
   id: number
   author: string | null

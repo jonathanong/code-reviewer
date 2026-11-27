@@ -25,7 +25,8 @@ const NOISE_TEXT_RE =
   /hit your usage limits?|usage limits? (?:reached|exceeded)|rate[- ]limit(?:ed| (?:exceeded|reached|hit))\b|review limit reached|review (?:summary|failed)[^.]*failed|review paused/iu
 export const MAX_OTHER_NOTES = 40
 
-function isNoise(note: OtherNote): boolean {
+/** Progress, rate-limit and service notices, and bots that never review. */
+export function isNoise(note: Pick<OtherNote, 'author' | 'text'>): boolean {
   return NOISE_AUTHORS.has(note.author.replace(/\[bot\]$/u, '')) || NOISE_TEXT_RE.test(note.text)
 }
 

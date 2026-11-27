@@ -38,6 +38,8 @@ export function review(id: number, over: Json = {}): Json {
 type ThreadOptions = {
   id: number
   review?: number
+  author?: string
+  path?: string
   body?: string
   resolved?: boolean
   outdated?: boolean
@@ -55,14 +57,14 @@ export function thread(options: ThreadOptions): Json {
     databaseId: options.id,
     body: options.body ?? BODY(),
     url: `https://example.test/comment/${options.id}`,
-    path: 'src/a.ts',
+    path: options.path ?? 'src/a.ts',
     line: null,
     originalLine: options.line === undefined ? 14 : options.line,
     originalStartLine: options.startLine === undefined ? 12 : options.startLine,
     originalCommit: options.oid === null ? null : { oid: options.oid ?? OID },
-    author: { login: 'reviewer[bot]' },
+    author: { login: options.author ?? 'reviewer[bot]' },
     reactionGroups: groups(options.up, options.down, options.other),
-    pullRequestReview: { databaseId: options.review ?? 100 },
+    pullRequestReview: { databaseId: options.review ?? (options.author === undefined ? 100 : 200) },
   }
   const reply: Json = {
     ...first,
