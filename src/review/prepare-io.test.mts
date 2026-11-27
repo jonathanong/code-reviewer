@@ -84,6 +84,7 @@ describe('createGhPrepareIo', () => {
       status: 'ahead',
       paths: ['a.ts', 'b.ts'],
       lines: 5,
+      sourceLines: 5,
     })
     expect(run).toHaveBeenCalledWith(['api', 'repos/o/r/compare/x...y'])
   })
@@ -99,6 +100,21 @@ describe('createGhPrepareIo', () => {
       }),
     )
     expect(await setup(run).io.compare('x', 'y')).toMatchObject({ lines: 5 })
+  })
+
+  it('counts only source lines apart from tests and docs in the compare', async () => {
+    const run = vi.fn(async (_args: readonly string[]) =>
+      JSON.stringify({
+        status: 'ahead',
+        files: [
+          { filename: 'a.ts', additions: 1, deletions: 1 },
+          { filename: 'a.test.ts', additions: 60, deletions: 0 },
+          { filename: 'docs/a.md', additions: 30, deletions: 0 },
+          { filename: 'skills/x/SKILL.md', additions: 3, deletions: 0 },
+        ],
+      }),
+    )
+    expect(await setup(run).io.compare('x', 'y')).toMatchObject({ lines: 95, sourceLines: 5 })
   })
 
   it('counts additions and deletions per listed file', async () => {
@@ -117,11 +133,16 @@ describe('createGhPrepareIo', () => {
 
   it('defaults missing compare fields', async () => {
     const { io } = setup(vi.fn(async (_args: readonly string[]) => '{}'))
-    expect(await io.compare('x', 'y')).toEqual({ status: 'missing', paths: [], lines: 0 })
+    expect(await io.compare('x', 'y')).toEqual({
+      status: 'missing',
+      paths: [],
+      lines: 0,
+      sourceLines: 0,
+    })
   })
 
   it('treats a failing or non-JSON compare as missing', async () => {
-    const missing = { status: 'missing', paths: [], lines: 0 }
+    const missing = { status: 'missing', paths: [], lines: 0, sourceLines: 0 }
     const failing = setup(
       vi.fn(async (_args: readonly string[]) => Promise.reject(new Error('404'))),
     )

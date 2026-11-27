@@ -5,12 +5,11 @@ import { DEFAULT_PLAN_VALUES } from './plan-settings.mts'
 import type { LightPush } from './push-types.mts'
 import {
   isDependencyFile,
-  isDocPath,
   isGenerated,
   isLockfile,
   isSqlPath,
   isTestOrDocsOnly,
-  isTestPath,
+  isSourcePath,
   securityTriggers,
 } from './triggers.mts'
 
@@ -65,12 +64,11 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
     return escalate('New commits change more than half the pull request:')
   }
   const { followUpSourceLines, generatedPaths } = input.values ?? DEFAULT_PLAN_VALUES
-  const source = since.paths.filter(
-    (path) => !isGenerated(path, generatedPaths) && !isTestPath(path) && !isDocPath(path),
-  )
-  if (source.length > 0 && since.lines > followUpSourceLines) {
+  const sourceLines = since.sourceLines ?? since.lines
+  const source = since.paths.filter((path) => isSourcePath(path, generatedPaths))
+  if (source.length > 0 && sourceLines > followUpSourceLines) {
     return escalate(
-      `The new commits change source (${source.slice(0, 3).join(', ')}) in ${since.lines} lines, more than ${followUpSourceLines}:`,
+      `The new commits change ${sourceLines} lines of source (${source.slice(0, 3).join(', ')}), more than ${followUpSourceLines}:`,
     )
   }
   reasons.push('Follow-up after an earlier review: light review of the new commits.')

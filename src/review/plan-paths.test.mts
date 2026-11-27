@@ -58,7 +58,18 @@ describe('planReview follow-ups that change source', () => {
     const result = edit(['src/lock.ts', 'src/lock.test.ts'], 41)
     expect(result).toMatchObject({ mode: 'full', effort: 'high', sinceSha: null })
     expect(result.reasons).toEqual([
-      'The new commits change source (src/lock.ts) in 41 lines, more than 40: high effort.',
+      'The new commits change 41 lines of source (src/lock.ts), more than 40: high effort.',
+    ])
+  })
+
+  it('counts only source lines, not the tests and docs that come with them', () => {
+    const since = { status: 'ahead', paths: ['src/lock.ts', 'src/lock.test.ts'], lines: 62 }
+    expect(edit(since.paths, 62, {}).mode).toBe('full')
+    const fix = plan({ context: reviewed({ lines: 10_000 }), since: { ...since, sourceLines: 2 } })
+    expect(fix).toMatchObject({ mode: 'light', sinceSha: OLD })
+    const big = plan({ context: reviewed({ lines: 10_000 }), since: { ...since, sourceLines: 41 } })
+    expect(big.reasons).toEqual([
+      'The new commits change 41 lines of source (src/lock.ts), more than 40: high effort.',
     ])
   })
 

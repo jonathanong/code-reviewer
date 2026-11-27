@@ -144,6 +144,22 @@ export function isTestOrDocsOnly(paths: readonly string[]): boolean {
   return paths.length > 0 && paths.every((path) => isTestPath(path) || isDocPath(path))
 }
 
+/** Hand-written source: not generated, a test, or a doc (an instruction file is source). */
+export function isSourcePath(path: string, generatedPaths: readonly string[] = []): boolean {
+  return !isGenerated(path, generatedPaths) && !isTestPath(path) && !isDocPath(path)
+}
+
+/** Changed lines of hand-written source only (see `isSourcePath`). */
+export function sourceLines(
+  files: readonly ChangedFile[],
+  generatedPaths: readonly string[] = [],
+): number {
+  return files.reduce(
+    (sum, file) => sum + (isSourcePath(file.path, generatedPaths) ? file.lines : 0),
+    0,
+  )
+}
+
 /** The changed paths that trigger the security pillar; `extra` are configured globs that trigger it too. */
 export function securityTriggers(
   paths: readonly string[],
