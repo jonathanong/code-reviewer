@@ -142,13 +142,17 @@ The two bottom rows are stale (not re-run on 2026-11-27); every other row is the
 - Reviewer cost: $0.16 a rules run with skills on a fixture and $0.07 without, $0.12 a correctness run with skills
   and $0.07 without (2026-11-27); $0.23 on a mined case (2026-11-16).
 
-Reply-only re-assessment (`bench-replies`, `replies.json`, 6 synthetic cases, Sonnet, 3 attempts, 2026-11-27,
+Reply-only re-assessment (`bench-replies`, `replies.json`, 6 synthetic cases and 3 moved-head cases, Sonnet, 3 attempts, 2026-11-27,
 $0.16 in all, one pilot run, no control arm): 18 of 18 attempts gave the expected outcome. The cases are a valid
 acknowledgement of a breaking change (lowered to `medium`), a reply that gives what the finding asked for
 (settled), and four that must stay open: pushback with no evidence, a promise to fix later, a claim about code
 the call cannot see, and an instruction hidden in the reply. All are ceiling cases for Sonnet, so this shows the
 step works and is not fooled by these shapes, not how much margin it has. It does not measure replies that are
-partly right, or threads of several replies. See [docs/replies.md](../../docs/replies.md).
+partly right, or threads of several replies. Three moved-head cases (2026-11-27, 3 attempts, $0.08, a second run
+with no control arm) add a `sinceDiff` and a reply "Fixed in <sha>": 9 of 9 as expected, a diff that shows the
+fix (settled), a diff that changes only a comment (open), and the same diff carrying an instruction (open).
+They are ceiling cases for Sonnet: the old prompt, with no rule about `sinceDiff`, also passed all 9, so the
+diff as data is enough and the prompt did not change. See [docs/replies.md](../../docs/replies.md).
 
 Skill selection alone (`bench-selection`, Haiku, 30 tagged cases, 3 attempts, 2026-11-27, $0.44): the expected
 skill was named in 87 of 90 attempts (97%), with 9.7 skills selected on average. The three misses are one case:

@@ -61,7 +61,11 @@ export async function claimLost(
 export async function claimReplies(
   io: LabelIo,
   names: LabelNames,
-  options: { reviewedSince?: (() => Promise<boolean>) | undefined },
+  options: {
+    reviewedSince?: (() => Promise<boolean>) | undefined
+    /** Passed to `releaseReplies` when the claim is rolled back; false when the caller will not put the completion back. */
+    restoreCompleted?: boolean | undefined
+  },
 ): Promise<ClaimOutcome> {
   const labels = await io.labels()
   const busy = [names.requested, names.processing, names.held].filter((name) =>
@@ -75,7 +79,7 @@ export async function claimReplies(
   try {
     lost = await claimLost(io, names, options)
   } catch (error) {
-    await releaseReplies(io, names).catch(() => undefined)
+    await releaseReplies(io, names, options.restoreCompleted).catch(() => undefined)
     throw error
   }
   if (lost) return { claimed: false, reason: 'claim lost', labels: await io.labels() }
@@ -85,10 +89,11 @@ export async function claimReplies(
 /**
  * Gives a re-assessment's claim back: the in-progress label goes off and the completion goes back
  * on. A request or hold placed meanwhile stays, and then the completion is left off so the next
- * review claims it.
+ * review claims it. With `restoreCompleted: false` the completion is not put back, for a pull request
+ * that did not carry it when claimed.
  */
-export async function releaseReplies(io: LabelIo, names: LabelNames) {
+export async function releaseReplies(io: LabelIo, names: LabelNames, restoreCompleted = true) {
   const labels = await io.labels()
   const waiting = labels.includes(names.requested) || labels.includes(names.held)
-  return swap(io, waiting ? [] : [names.completed], [names.processing])
+  return swap(io, waiting || !restoreCompleted ? [] : [names.completed], [names.processing])
 }

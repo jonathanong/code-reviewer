@@ -3,16 +3,32 @@
 `code-reviewer replies --repo owner/name --pr N [--post auto|hold] [--model replies=HARNESS:MODEL]`
 re-assesses this reviewer's newest review of a pull request from what the author has answered since,
 without a new review of the code. It is a command of its own, not a `run` mode: it runs no pillars and
-reads no code, apart from the approval check below. It prints one JSON line and exits like `run`: 0 applied,
+reads no code, apart from the approval check below and the diff of a moved head (see below). It prints one JSON line and exits like `run`: 0 applied,
 10 held, 11 nothing to do, 12 precondition or config failure, 13 failure.
 
 ## What it reads
 
-Only GitHub, until an approval needs the check below. It acts when the newest review by this reviewer's identity covers the current
-head. If the head moved, it does nothing and says so (`reason: the head moved since the last review`): a
-follow-up review reads the replies itself. It also does nothing while the pull request carries a request,
-in-progress or held label, when the author is the reviewer's own identity, or when no unresolved finding
-thread has a reply by the pull request author after this reviewer last spoke in it.
+Only GitHub, until an approval needs the check below or the head moved. It acts on the newest review by this
+reviewer's identity. It does nothing while the pull request carries a request, in-progress or held label, when
+the author is the reviewer's own identity, or when no unresolved finding thread has a reply by the pull request
+author after this reviewer last spoke in it.
+
+### A head that moved since the review
+
+Authors usually push a fix and then reply ("fixed in abc123"), so a reply often arrives after the head moved.
+A thread with a new author reply is still judged. The head is checked out the way `run` checks it out, and
+each such thread gets the `git diff` of its file from the reviewed commit to the current head (local git;
+`sinceDiff`, cut at `SINCE_DIFF_CHARS`) next to the reply, so the call judges the reply against the new code. A
+finding with no file, or whose diff git cannot produce, is listed under `unjudged` while the other threads are
+still judged. When the reviewed commit cannot be fetched (for example after a force push removed it), or no
+thread can be read, the command does nothing and says why. Threads without a new reply are not
+touched.
+
+The new commits were never reviewed as a whole, so a moved-head run answers threads only: it replies in each
+judged thread, resolves the settled ones, and never posts a review, changes the verdict, runs the approval
+check, or changes the approval or final-review labels (the in-progress claim is taken and given back, and the
+completion label is restored only if the pull request carried it). A follow-up review is the only path to a
+verdict on the new head.
 
 Only the pull request author's replies count. Review text from anyone else is not read, a hidden marker
 counts only from the reviewer's identity, and every reply is untrusted data.
@@ -20,8 +36,8 @@ counts only from the reviewer's identity, and every reply is untrusted data.
 ## The call
 
 One call on the `replies` model step (default tier `medium`, never a free model; set it under
-[`models`](configuration.md#models) or with `--model replies=...`), with no tools and no checkout, so a
-reply's claim about the code cannot be checked here. The prompt quotes the breaking-change rule of
+[`models`](configuration.md#models) or with `--model replies=...`), with no tools, so a
+reply's claim about the code cannot be checked here, except against the `sinceDiff` of a moved head. The prompt quotes the breaking-change rule of
 [`verifier.md`](../skills/review/references/verifier.md) verbatim and puts every finding and reply in one
 delimited data block. Each finding comes back as:
 
@@ -43,7 +59,7 @@ new severity. A verdict only ever becomes less strict, never stricter, and an Ap
 approval check. It changes a verdict only when the findings, as they stood, give the posted verdict
 (otherwise something outside them shaped it and a full review should decide).
 
-Request Changes to Comment needs no check. A verdict that would become Approve, from Request Changes or from
+Request Changes to Comment needs no check. None of this applies to a moved head: there the verdict stays as posted. A verdict that would become Approve, from Request Changes or from
 a Comment, first goes through the approval check of `run` on its configured model (`approvalCheck`, a
 machine-config setting; when it is off, as for `run`, no check runs). The head is checked out the way `run`
 checks it out, and the check is given the findings that remain and the ones the replies removed, to challenge.
@@ -55,7 +71,7 @@ every exit. It declines when another run, a review request or a hold holds the p
 writes nothing (`--post hold`) takes no claim. Just before writing it checks again that the head has not
 moved and that no newer review by this reviewer has landed; if either has, it writes nothing.
 
-1. When the verdict changes, a new body-only review of the same head is posted through the same path as
+1. When the verdict changes (never at a moved head), a new body-only review of the same head is posted through the same path as
    `post` (same identity, labels, check run and tracker row). Its id comes from the head and the judgments,
    so repeating the run cannot post it twice. Findings that still have a thread are counted but not posted
    again; a finding in the review body and the open questions are written again so the next review reads them.

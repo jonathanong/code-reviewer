@@ -36,6 +36,7 @@ const standing: StandingFinding = {
 }
 const plan: ReplyPlan = {
   headSha: HEAD,
+  reviewedSha: HEAD,
   reviewId: 'R1',
   author: 'dev',
   effort: 'high',

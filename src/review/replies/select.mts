@@ -29,6 +29,11 @@ export type ReplyCandidate = {
   /** The start of the finding's own comment, which says what would settle it. */
   finding: string
   replies: AuthorReply[]
+  /**
+   * Set only when the head moved since the review: the git diff of the finding's file from the
+   * reviewed commit to the current head, which the author's reply may be about. Untrusted code.
+   */
+  sinceDiff?: string
 }
 
 /** An earlier finding still open; it counts toward the verdict. */
@@ -44,6 +49,11 @@ export type StandingFinding = {
 
 export type ReplyPlan = {
   headSha: string
+  /**
+   * The head the newest review covers. When it differs from `headSha` the head moved since that
+   * review; see `headMoved`.
+   */
+  reviewedSha: string
   /** The newest review by this reviewer when the plan was read; a different one later means another run wrote. */
   reviewId: string
   author: string
@@ -61,6 +71,14 @@ export type ReplyPlan = {
 
 export type NoPlan = { noop: string }
 
+/**
+ * True when the head moved since the review this plan re-assesses. Those new commits were never
+ * reviewed as a whole, so such a plan may reply in threads and resolve them but never changes the
+ * verdict, approves, or touches the labels: only a follow-up review gives a verdict on the new head.
+ */
+export const headMoved = (plan: Pick<ReplyPlan, 'headSha' | 'reviewedSha'>): boolean =>
+  plan.headSha !== plan.reviewedSha
+
 /** The id of the newest review by this reviewer, of any kind; undefined when it has none. */
 export function newestOwnReview(
   pull: PrConversation,
@@ -77,9 +95,11 @@ function verdictOf(raw: string | null): Verdict | undefined {
  * Reads what a reply-only re-assessment needs from the pull request: the newest review of this
  * reviewer, the earlier findings still open at their current severity, and the author's replies
  * that came after this reviewer last spoke in each thread. Nothing here is a model call or a write.
- * It returns a reason instead of a plan when the pull request is not one this applies to: the head
- * moved since that review (a follow-up review reads the replies then), no review of this head
- * exists, the author is the reviewer's own identity, or no thread has a new author reply.
+ * When the head moved since that review, a thread with a new author reply is still a candidate (the
+ * reply often says "fixed in <sha>"); the caller adds the diff since the reviewed commit, and the
+ * plan is `headMoved`, so it applies to threads only. It returns a reason instead of a plan when the
+ * pull request is not one this applies to: this reviewer has no review of it, the author is the
+ * reviewer's own identity, or no thread has a new author reply.
  */
 export function planReplies(
   pull: PrConversation,
@@ -90,11 +110,6 @@ export function planReplies(
   const newest = own.map((review) => MARKER_RE.exec(review.body)).findLast((m) => m !== null)
   if (newest === undefined || newest[2] === 'Skipped' || context.reviewedSha === null) {
     return { noop: 'this reviewer has no review of this pull request to re-assess' }
-  }
-  if (context.reviewedSha !== context.headSha || newest[1] !== context.headSha) {
-    return {
-      noop: `the head moved since the last review (${context.reviewedSha.slice(0, 12)}); a follow-up review reads the replies`,
-    }
   }
   const posted = verdictOf(context.verdict)
   if (posted === undefined) return { noop: 'the last review carries a verdict this cannot read' }
@@ -142,6 +157,7 @@ export function planReplies(
   const instance = latestInstance(own, context.reviewedSha)
   return {
     headSha: context.headSha,
+    reviewedSha: context.reviewedSha,
     reviewId: newestOwnReview(pull, trusted) as string,
     author: context.author,
     effort: String(context.effort),

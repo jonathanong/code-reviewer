@@ -59,6 +59,19 @@ describe('claimReplies', () => {
     expect([...io.set]).toEqual([completed])
   })
 
+  it('does not put the completion back on a rollback when the caller will not', async () => {
+    const io = fakeIo([completed])
+    await expect(
+      claimReplies(io, DEFAULT_LABELS, {
+        restoreCompleted: false,
+        reviewedSince: async () => {
+          throw new Error('GitHub is down')
+        },
+      }),
+    ).rejects.toThrow('GitHub is down')
+    expect([...io.set]).toEqual([])
+  })
+
   it('still rethrows the re-check failure when giving the claim back fails too', async () => {
     const io = fakeIo([completed])
     const labels = io.labels.bind(io)
@@ -83,6 +96,12 @@ describe('releaseReplies', () => {
     const io = fakeIo([processing])
     await releaseReplies(io, DEFAULT_LABELS)
     expect([...io.set]).toEqual([completed])
+  })
+
+  it('leaves the completion off when told the pull request did not carry it', async () => {
+    const io = fakeIo([processing])
+    await releaseReplies(io, DEFAULT_LABELS, false)
+    expect([...io.set]).toEqual([])
   })
 
   it.each([[requested], [held]])(
