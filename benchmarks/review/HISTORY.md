@@ -159,7 +159,10 @@ when CI had passed that step. No run.
   rule, or other check this repository runs in CI detects is not a finding, and a CI failure is never claimed without reading its result at
   the head. `rules.md` Blocking bar: a mandatory rule that CI or a linter enforces is no longer `high` at most but not
   reported. `verifier.md` step 2: rejects such findings (reason: CI reports it) and confirms a "CI fails" claim only
-  from the actual result at the reviewed head. The `prevent` field is unchanged.
+  from the actual result at the reviewed head. The `prevent` field is unchanged. After review, step 2 also keeps a finding about what a
+  check's actual result means for the change (a failing check that shows an acceptance criterion is not met), matching
+  the contract's bullet on what the pull request page already shows; no case exercises that exception, and the planted
+  `no-mistakes-4745-3ff11a1` run below predates it.
 - **Comparability.** Not measured: before and after numbers are pending until the `ratchet-*` plugins are installed on
   the bench machine and will be added before merge. Rows after this entry are not comparable with earlier `rules`
   and `correctness` rows, and verifier rows, because the prompts can now suppress findings a case may expect. No
