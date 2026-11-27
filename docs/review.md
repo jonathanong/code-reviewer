@@ -130,6 +130,37 @@ characters (counted as Unicode code points). A file that is missing, unreadable,
 stops the command before any work, naming `--focus`, the file, and for an over-long line its line number and length. Without the flag nothing changes:
 no step, no prompt, no cost.
 
+### Points read from the request
+
+`run` can also read the points from the review request itself, so a person who asks for a review and
+lists what they want checked does not need anyone to write a file. It is off until the machine config
+sets [`requestFocus`](configuration.md#requestfocus), and an explicit `--focus` always wins and
+reads nothing. The request is the label the loop queues on, which carries no text, so the text is
+found next to it:
+
+1. The requester is the actor of the newest `labeled` event for the request label on the pull
+   request timeline (the one thing git cannot know). A label the reviewer's own identity added, as
+   the loop does for a message request or `run` does for a bare invocation, has no requester; there
+   the loop passes `--focus` itself.
+2. The text is the requester's newest visible comment on the pull request (of the 30 newest) that
+   holds a check list; failing that, when the requester is also the pull request's author, the
+   description's. Nobody else's words count, and neither do review summaries or inline comments.
+3. A check list is an explicit lead-in line (`Focus`, `Review focus`, `Focus on`, `Please focus on`,
+   `Check`, `Checks`, `Please check` or `Things to check`, any case, with Markdown heading, quote or
+   bold marks and an optional colon) and the list items under it (`-`, `*`, `+` or `1.`, up to the
+   first line that is not an item), plus any text after the lead-in's colon as the first point. Prose
+   such as "no wrappers or re-exports, please" is not a list: the reviewer does not judge whether a
+   sentence is a request, so what is not marked is not used.
+
+The points then follow the rules above: the same limits, and the same treatment as a file's. The
+text is a stranger's words, so every point is a claim to check, never an instruction, and goes only
+to the `focus` step as before. The limits differ in one respect, because the text is not
+configuration: a list with too many points or an over-long one, or a read of GitHub that fails, does
+not stop the run. The review goes on without the points, and the run line's `problems` and
+`attention` say that the requested checks were not used and why. A review with no list reads one
+timeline and, when the requester is not the reviewer, one conversation; with the setting off it reads
+nothing.
+
 With points, one extra step, `focus`, runs beside the pillars, whatever the plan dispatched. One
 agent checks every point against the code, with the same context, read-only tools, retry and
 failure handling as a pillar. Its prompt also includes a `## Change facts` Markdown block computed
@@ -238,6 +269,18 @@ the class of mistake; over 160 characters it warns like any over-long posted tex
 comment or body finding); `report.md` shows them as plain lines. With neither, no section is
 rendered. Another reviewer's credit stays visible, after the section.
 
+## Breaking changes
+
+An incompatible change to a public API, CLI (exit codes included), config shape or published
+package's contract is `blocking`, so the review requests changes, unless the description declares it
+breaking or the pull request author acknowledged it (a reply on the finding's thread, a comment, or
+the description; "pre-1.0, we will bump a minor" counts). Then it is `medium`, and a follow-up review
+moves the same finding from `blocking` to `medium`, so the verdict can go from Request Changes to
+Approve. A behavior change that is not incompatible (a new output, an added option) stays `medium`.
+The definition and examples are in `skills/review/references/pillars/congruence.md`. The reviewer
+asks the author, through the finding, rather than holding the review for a person. A title or description problem stays `medium` at most. How a
+reply reaches the verifier is in [context](context.md#past-reviews).
+
 ## Pre-existing defects (FYI)
 
 A pillar that comes across a defect or rule violation on the base branch, in code it read, that the
@@ -248,7 +291,10 @@ verdict, the finding counts, the tracker counts and the inline comments ignore i
 pre-existing `high` never turns an Approve into a Comment. The posted review lists each as one
 line under "FYI — pre-existing, not part of this review", after the findings, with the finding's
 body collapsed under a "Why" summary (cut at 600 characters) so the author can see the reason, and
-shows at most five (the renderer drops the rest and prints "and N more"). It is a flag on the finding, not a
+shows at most five (the renderer drops the rest and prints "and N more"). One line after the items
+asks the author to decide on each: fix it here, or track it in an issue; none blocks the merge. The
+reviewer files no issue for it: the [`issues`](issues.md) setting files issues about the reviewer's
+own rules and harnesses, never about a gap in the reviewed repository, so the author tracks it. It is a flag on the finding, not a
 second list, so it passes through the pillar, verifier and approval-check schemas unchanged.
 
 An approval that lists at least one non-pre-existing finding (not only FYI items) adds one line
@@ -297,7 +343,7 @@ so a restated blocking item gives Request Changes. With no items the prompt and 
 
 The verifier may return `flags`: concerns only a person can settle, each `{ kind, concern, where? }`.
 `kind` is one of `architecture`, `acceptance-criteria`, `feature-sense`, `wrong-intent`, `design`,
-`broken-workflow`, `safeguard-weakened`, `irreversible`, `undeclared-breaking`, `new-service` and
+`broken-workflow`, `safeguard-weakened`, `irreversible`, `new-service` and
 `rule-workaround`; their definitions are in `skills/review/references/verifier.md`. An unintentional
 bug that is easy to fix, a large or renamed change, touching a migration or workflow by itself, a bug
 check phrased as a question, and an investigation or experiment whose goal is not yet shown to be met
@@ -418,7 +464,7 @@ The impact is the verifier's judgment, one of `breaking`, `architectural`, `main
 breaking is a change that makes an existing caller, consumer, stored data or configuration stop
 working without a change on their side; architectural is a new dependency on a remote service or
 another repository, new persisted state or cache, a new process, queue or command family, or a
-change to how components are divided; maintenance is neither. The verifier looks at every effect of the diff, not only its findings: exit codes, allow or config entries that become unused, changed output fields. A behavior change the description does not list is a `medium` congruence finding that asks the author to document it, never `high`; it does not block or hold by itself. The verifier reads the reviewed
+change to how components are divided; maintenance is neither. The verifier looks at every effect of the diff, not only its findings: exit codes, allow or config entries that become unused, changed output fields. A non-breaking behavior change the description does not list is a `medium` congruence finding that asks the author to document it, never `high`; it does not block or hold by itself. An incompatible change, such as an exit code that goes from 0 to nonzero or an allow entry that becomes unused, is a [breaking change](#breaking-changes) and is rated by that rule. The verifier reads the reviewed
 repository's root `AGENTS.md` and any document it points to for these words; when they define
 them, those definitions win and the basis quotes the sentence used. A definition the pull request
 itself adds or changes does not count, so a change cannot reclassify itself. When the verifier cannot tell it answers `unsure` and says what it would need.

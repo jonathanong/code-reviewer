@@ -16,6 +16,7 @@ function labelIo(initial: string[]): LabelIo {
   return {
     labels: async () => [...set],
     heldHead: async () => ({ head: undefined, placements: 0 }),
+    labeledBy: async () => undefined,
     add: async (names) => {
       for (const name of names) set.add(name)
     },

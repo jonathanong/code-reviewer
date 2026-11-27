@@ -30,6 +30,7 @@ function fakes(head = SHA) {
     add,
     remove,
     heldHead: async () => ({ head: undefined, placements: 0 }),
+    labeledBy: async () => undefined,
   }
   return { io, labelIo, calls, postReview, labels, add, remove }
 }

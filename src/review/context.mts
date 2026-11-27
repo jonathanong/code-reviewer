@@ -18,7 +18,17 @@ export type PriorFinding = {
   path: string | null
   line: number | null
   outdated: boolean
+  /** Later comments of the finding's thread by anyone but this reviewer, oldest first; absent when none. */
+  replies?: ThreadReply[]
+  /** How many further replies were not carried; absent when all were. */
+  moreReplies?: number
 }
+
+/** One reply on a finding's thread: who wrote it and the start of it, untrusted. */
+export type ThreadReply = { login: string; text: string }
+
+const REPLY_CHARS = 300
+const MAX_REPLIES = 5
 
 export type FollowUpContext = {
   title: string
@@ -60,15 +70,47 @@ const ISSUE_BODY_CHARS = 1500
 function clip(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`
 }
-function priorFinding(thread: ReviewThread, body: string): PriorFinding | undefined {
+/** The replies on a finding's thread from anyone but this reviewer, so a follow-up sees an acknowledgement. */
+function repliesOf(
+  thread: ReviewThread,
+  trusted: ReadonlySet<string>,
+): { replies: ThreadReply[]; more: number } {
+  const theirs = thread.comments.nodes
+    .slice(1)
+    .filter((comment) => !isTrustedAuthor(comment.author?.login, trusted))
+  const total = Math.max(thread.comments.totalCount ?? 0, thread.comments.nodes.length) - 1
+  const replies = theirs.slice(0, MAX_REPLIES).map((comment) => {
+    const flat = comment.body
+      .replaceAll(/<!--[\s\S]*?-->/gu, '')
+      .replaceAll(/\s+/gu, ' ')
+      .trim()
+    return {
+      login: comment.author?.login ?? 'unknown author',
+      text: flat.length > REPLY_CHARS ? `${flat.slice(0, REPLY_CHARS)} [cut]` : flat,
+    }
+  })
+  return {
+    replies,
+    more: Math.max(0, total - replies.length - (thread.comments.nodes.length - 1 - theirs.length)),
+  }
+}
+
+function priorFinding(
+  thread: ReviewThread,
+  body: string,
+  trusted: ReadonlySet<string>,
+): PriorFinding | undefined {
   const head = parseInlineHead(body)
   if (head === undefined) return undefined
+  const { replies, more } = repliesOf(thread, trusted)
   return {
     threadId: thread.id,
     ...head,
     path: thread.path,
     line: thread.line,
     outdated: thread.isOutdated,
+    ...(replies.length > 0 ? { replies } : {}),
+    ...(more > 0 ? { moreReplies: more } : {}),
   }
 }
 
@@ -95,7 +137,7 @@ export function buildFollowUpContext(
     const first = thread.comments.nodes[0]
     if (thread.isResolved || first === undefined) return []
     if (!markedIds.has(first.pullRequestReview?.id ?? '')) return []
-    return priorFinding(thread, first.body) ?? []
+    return priorFinding(thread, first.body, trusted) ?? []
   })
   const others = othersFrom(pull, markedIds, trusted)
   const lastReviews = latestInstance(own, latest?.[1])

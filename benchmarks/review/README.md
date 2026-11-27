@@ -53,9 +53,7 @@ Mined cases (8 real pull requests from `cases.json`):
   separate policies), `no-mistakes-4062-ce406a2` (a single `|` loses piped loop input) and
   `no-mistakes-4057-d2fd340` (a loader alias or namespace import escapes the narrowing proof). Run at 2 attempts
   per arm on Sonnet: 0 of 2 with skills and 0 of 2 without on each, so the control misses all three (the reviewer
-  never loaded `lint-rule-authoring`); not a rate, see `HISTORY.md`. The fixture pair
-  `correctness-shell-lexer-pid-redirect` (positive, `>|` and `$$i` lexer bugs) and `-handled` (negative) is a
-  ceiling case: the control caught both claims 2 of 2.
+  never loaded `lint-rule-authoring`); not a rate, see `HISTORY.md`.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
@@ -146,13 +144,18 @@ judged by Sonnet, $25.14):
   change that halves parallel shards and folds a 13-second step into a job, with measurements showing a shorter
   longest chain; the rules pillar must not cite the rule). Added 2026-11-26 with the contract's rule on citing a
   repository rule; not run yet, see `HISTORY.md`.
-- Not in the table: `congruence-undocumented-unused-allow-failure` (one `medium` congruence finding
-  when a description calls a change non-breaking but an allow entry becomes unused and the audit
-  exits 1) and its negative twin `congruence-documented-unused-allow-failure`;
+- Not in the table: `congruence-undocumented-unused-allow-failure` (one `blocking` congruence finding
+  since 2026-11-27, was `medium`: a description calls a change non-breaking but an allow entry becomes unused and the audit
+  exits 1, an undeclared break) and its negative twin `congruence-documented-unused-allow-failure`;
   `correctness-selection-alias-escapes` (one `high` correctness finding: a test-selection proof that
   voids only same-name loader calls lets an alias hide reads) and its negative twin
   `correctness-selection-alias-invalidates`. Added on 2026-11-24 from two live reviews; piloted once
   each on agy `gemini-4-hydrogen-medium`, see `HISTORY.md`.
+- Not in the table: `congruence-declared-breaking-vague` (a `!` title and "breaking" with no effect named: one
+  `medium` finding, never `blocking`) and `congruence-acknowledged-breaking` (a follow-up whose fixture
+  `context.md` holds the earlier `blocking` finding and the author's reply "pre-1.0, I will bump a minor":
+  one `medium` finding). Added 2026-11-27 with the breaking-change rule; piloted once on the verifier with
+  Sonnet, both as expected, see `HISTORY.md`.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
   alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of

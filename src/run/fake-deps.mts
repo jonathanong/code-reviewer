@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { vi, type Mock } from 'vitest'
 
 import type { ReviewDeps } from '../cli/deps.mts'
+import type { PrConversation } from '../review/context-query.mts'
 import type { ListedReview } from '../review/github.mts'
 import type { LabelIo, PrepareIo, ReviewIo } from '../review/index.mts'
 import { parseRepoConfig, NO_CONFIGS, type RepoConfigs } from '../review/rules/config.mts'
@@ -33,6 +34,10 @@ export type FakeOptions = {
   /** The head the held label was placed on, as the timeline says. */
   heldHead?: string
   heldHeadFails?: boolean
+  /** Who added the request label, as the timeline says. */
+  labeledBy?: string | undefined
+  /** The pull request conversation, for a request that carries a check list. */
+  conversation?: PrConversation
 }
 
 /** Dependencies for `run`: GitHub and `claude` are fakes; the tracker and files are real, under `stateDir`. */
@@ -45,6 +50,7 @@ export function fakeDeps(options: FakeOptions) {
       if (options.heldHeadFails === true) throw new Error('timeline unavailable')
       return { head: options.heldHead, placements: 1 }
     }),
+    labeledBy: vi.fn(async () => options.labeledBy),
     remove: vi.fn(async (name) => {
       labels.splice(labels.indexOf(name), 1)
     }),
@@ -113,7 +119,11 @@ export function fakeDeps(options: FakeOptions) {
     createLabelIo: vi.fn(() => labelIo),
     createAnswerIo: vi.fn(),
     createPrepareIo: vi.fn(
-      () => ({ files: async () => options.files ?? [] }) as unknown as PrepareIo,
+      () =>
+        ({
+          files: async () => options.files ?? [],
+          conversation: async () => options.conversation,
+        }) as unknown as PrepareIo,
     ),
     guideReader: vi.fn(),
     runner: vi.fn(),
