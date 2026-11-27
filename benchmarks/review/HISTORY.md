@@ -30,7 +30,8 @@ because the model used the machine's local date.
 - **Cases added** (`synthetic.json`, `correctness`, both `reviewedAt` 2030-01-03T07:46Z, a time no machine date has reached,
   so a reviewer that judges against its own date sees the entry as future): `history-dated-utc-day` (negative; the entry is
   dated 2030-01-03) and `history-dated-future` (positive; dated 2030-01-09, expects one low finding on `HISTORY.md`).
-  The earlier prompt should fail the negative; the pair is the guard against the new line silencing every date check.
+  Only the positive fails on `main`; the negative passed there too, so it guards against the new line over-firing on
+  the review's own UTC day rather than reproducing #237.
 - **Comparability.** Every row is made non-comparable: `bench` adds the date line to the prompt of every case, and
   `_contract.md` is part of every pillar prompt; `bench-verifier` rows too, through `verifier.md`. A difference of one
   catch is within noise at 3 attempts. The 2026-11-27 entries below are the last rows made without the line.

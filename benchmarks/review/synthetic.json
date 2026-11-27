@@ -1051,7 +1051,7 @@
     "title": "fix: reject an inverted clamp range",
     "kind": "negative",
     "reviewedAt": "2030-01-03T07:46:00Z",
-    "reason": "The HISTORY entry is dated 2030-01-03, the UTC day of the review, which is still 2030-01-02 in Pacific time. Run now, an environment date of 2026 makes any 2030 date look future, so a reviewer that judges against its own date raises 'dated after today'. The contract says to check a dated record against the review date in UTC.",
+    "reason": "The HISTORY entry is dated 2030-01-03, the UTC day of the review, which is still 2030-01-02 in Pacific time. The contract says to check a dated record against the review date in UTC, so the entry is not future. This guards against the date line over-firing; without the line the pillar raised no date finding either (see HISTORY.md), so it does not reproduce #237 on its own.",
     "expected": []
   },
   {
