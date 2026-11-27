@@ -2,6 +2,15 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (change, no re-run): replies claim the pull request and approve through the approval check
+
+No prompt, schema or contract of any scored step changed, so no row is non-comparable.
+
+- **What changed.** `replies` now takes the in-progress claim and re-checks for a newer review before writing.
+  A verdict that would become Approve runs the existing approval check first, on its configured model. The
+  `replies` benchmark only covers the judging call, which is unchanged, so it was not run again.
+  `Finding.standing` is now a `Standing` type; it is not read from model output.
+
 ## 2026-11-27 (new suite, one pilot): reply-only re-assessment
 
 New `replies` model step and `bench-replies`; nothing existing was re-scored.

@@ -14,6 +14,8 @@ export type RepliesRecord = {
   verdictAfter: Verdict
   /** A new review was posted because the verdict changed. */
   posted: boolean
+  /** What the approval check said when the re-assessment would approve; absent when none was needed or it is off. */
+  approval?: 'upheld' | 'not upheld'
   costUsd: number | null
 }
 
@@ -27,26 +29,40 @@ export function renderReplies(records: readonly RepliesRecord[] | undefined): st
     records
       .map(
         (record) =>
-          `- ${record.at}: ${record.settled} settled, ${record.downgraded} lowered, ${record.open} still open; verdict ${record.verdictBefore} to ${record.verdictAfter}${record.posted ? ' (posted)' : ''}; ${money(record.costUsd)}`,
+          `- ${record.at}: ${record.settled} settled, ${record.downgraded} lowered, ${record.open} still open; verdict ${record.verdictBefore} to ${record.verdictAfter}${record.posted ? ' (posted)' : ''}${record.approval === undefined ? '' : `; approval check ${record.approval}`}; ${money(record.costUsd)}`,
       )
       .join('\n'),
   ]
 }
 
-/** The report with the re-assessment's cost under the `replies` step and its model in `ran`. */
+/** The report with this step's cost in the cost table and the model that ran it in `ran`. */
+export function withStepCost(
+  data: ReportData,
+  step: string,
+  usage: Usage | null,
+  ran: StepRan | undefined,
+): ReportData {
+  return {
+    ...data,
+    usageByModel: [
+      ...data.usageByModel,
+      { name: step, models: summarizeModels(usage === null ? [] : [usage]) },
+    ],
+    ran: [...(data.ran ?? []), ...(ran === undefined ? [] : [{ step, ...ran }])],
+  }
+}
+
+/** The report with the re-assessment's record, and its cost under the `replies` step. */
 export function withReplies(
   data: ReportData,
   record: RepliesRecord,
   usage: Usage | null,
   ran: StepRan | undefined,
 ): ReportData {
-  return {
-    ...data,
-    replies: [...(data.replies ?? []), record],
-    usageByModel: [
-      ...data.usageByModel,
-      { name: 'replies', models: summarizeModels(usage === null ? [] : [usage]) },
-    ],
-    ran: [...(data.ran ?? []), ...(ran === undefined ? [] : [{ step: 'replies', ...ran }])],
-  }
+  return withStepCost(
+    { ...data, replies: [...(data.replies ?? []), record] },
+    'replies',
+    usage,
+    ran,
+  )
 }

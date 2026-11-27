@@ -24,6 +24,7 @@ export { NUMBERED_DIFF_LEGEND, numberDiff } from './numbered-diff.mts'
 export type { TrustedAuthors } from './trust.mts'
 export { MARKER_RE, PART_MARKER_RE } from './markers.mts'
 export { abortReview, claimReview, completeReview, createGhLabelIo } from './labels.mts'
+export { claimReplies, releaseReplies } from './label-claim-steps.mts'
 export { skipPullRequest } from './skip.mts'
 export {
   DEFAULT_LABELS,

@@ -11,8 +11,11 @@ const standing = (
   title = `Finding ${thread}`,
 ): StandingFinding => ({ thread, severity, pillar: 'congruence', title, path: 'a.ts', line: 1 })
 
+const PASSED = { passed: true } as const
+
 const plan = (overrides: Partial<ReplyPlan> = {}): ReplyPlan => ({
   headSha: 'a'.repeat(40),
+  reviewId: 'R1',
   author: 'dev',
   effort: 'high',
   posted: 'Request Changes',
@@ -42,14 +45,49 @@ describe('reply markers', () => {
 })
 
 describe('reassess', () => {
-  it('settling the only blocking finding lowers Request Changes to Approve', () => {
-    const result = reassess(plan(), [judged('T1', 'settled')])
-    expect(result).toMatchObject({ before: 'Request Changes', after: 'Approve', changes: true })
+  it('settling the only blocking finding lowers Request Changes to Approve once the approval check passed', () => {
+    const result = reassess(plan(), [judged('T1', 'settled')], PASSED)
+    expect(result).toMatchObject({
+      before: 'Request Changes',
+      after: 'Approve',
+      changes: true,
+      needsApproval: true,
+      skipped: [],
+    })
     expect(result.remaining).toEqual([])
   })
 
-  it('a blocking finding lowered to medium gives Approve, to high gives Comment', () => {
-    expect(reassess(plan(), [judged('T1', 'downgraded', 'medium')])).toMatchObject({
+  it('an approval no check passed is never derived: without one it is a Comment that lists the skipped check', () => {
+    const unchecked = reassess(plan(), [judged('T1', 'settled')])
+    expect(unchecked).toMatchObject({ after: 'Comment', changes: true, needsApproval: true })
+    expect(unchecked.skipped.map((skip) => skip.pillar)).toEqual(['approval-check'])
+    const refuted = reassess(plan(), [judged('T1', 'settled')], {
+      passed: false,
+      reason: 'It missed the migration.',
+    })
+    expect(refuted).toMatchObject({ after: 'Comment', changes: true })
+    expect(refuted.skipped).toEqual([
+      { pillar: 'approval-check', reason: 'It missed the migration.' },
+    ])
+  })
+
+  it('moving Request Changes to Comment needs no approval check', () => {
+    const result = reassess(plan(), [judged('T1', 'downgraded', 'high')])
+    expect(result).toMatchObject({ after: 'Comment', changes: true, needsApproval: false })
+  })
+
+  it('a Comment held by a skipped approval check becomes an Approve once the check passes', () => {
+    const skipped = plan({ posted: 'Comment', approvalSkipped: true, standing: [] })
+    expect(reassess(skipped, [])).toMatchObject({
+      after: 'Comment',
+      changes: false,
+      needsApproval: true,
+    })
+    expect(reassess(skipped, [], PASSED)).toMatchObject({ after: 'Approve', changes: true })
+  })
+
+  it('a blocking finding lowered to medium needs the check for Approve, to high gives Comment', () => {
+    expect(reassess(plan(), [judged('T1', 'downgraded', 'medium')], PASSED)).toMatchObject({
       after: 'Approve',
       changes: true,
     })
@@ -76,10 +114,9 @@ describe('reassess', () => {
 
   it('open questions and a skipped approval check keep an approve at Comment', () => {
     const question = { question: 'q?', askOf: 'author', why: 'w' } as const
-    expect(reassess(plan({ questions: [question] }), [judged('T1', 'settled')])).toMatchObject({
-      after: 'Comment',
-      changes: true,
-    })
+    expect(
+      reassess(plan({ questions: [question] }), [judged('T1', 'settled')], PASSED),
+    ).toMatchObject({ after: 'Comment', changes: true, needsApproval: false })
     const skipped = plan({ posted: 'Comment', approvalSkipped: true, standing: [] })
     expect(reassess(skipped, [])).toMatchObject({ after: 'Comment', changes: false })
   })
@@ -93,7 +130,7 @@ describe('reassess', () => {
 
   it('refuses a change when the posted verdict was not derived from these findings', () => {
     const odd = plan({ posted: 'Request Changes', standing: [standing('T1', 'high')] })
-    const result = reassess(odd, [judged('T1', 'settled')])
+    const result = reassess(odd, [judged('T1', 'settled')], PASSED)
     expect(result.changes).toBe(false)
     expect(result.refused).toContain('full review')
   })

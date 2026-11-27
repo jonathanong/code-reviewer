@@ -43,6 +43,8 @@ describe('replies in the report', () => {
       '1 settled, 1 lowered, 2 still open; verdict Request Changes to Approve (posted); $0.0123',
     )
     expect(body).toContain('n/a')
+    const [, checked] = renderReplies([{ ...record, approval: 'not upheld' }])
+    expect(checked).toContain('(posted); approval check not upheld; $0.0123')
   })
 
   it('adds the record, the replies step to the cost table, and the model that ran', () => {

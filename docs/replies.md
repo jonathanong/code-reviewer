@@ -2,13 +2,13 @@
 
 `code-reviewer replies --repo owner/name --pr N [--post auto|hold] [--model replies=HARNESS:MODEL]`
 re-assesses this reviewer's newest review of a pull request from what the author has answered since,
-without a new review of the code. It is a command of its own, not a `run` mode: `run` claims the pull
-request, checks the head out and runs pillars, and none of that is wanted here. It prints one JSON line
-and exits like `run`: 0 applied, 10 held, 11 nothing to do, 12 precondition or config failure, 13 failure.
+without a new review of the code. It is a command of its own, not a `run` mode: it runs no pillars and
+reads no code, apart from the approval check below. It prints one JSON line and exits like `run`: 0 applied,
+10 held, 11 nothing to do, 12 precondition or config failure, 13 failure.
 
 ## What it reads
 
-Only GitHub, no checkout. It acts when the newest review by this reviewer's identity covers the current
+Only GitHub, until an approval needs the check below. It acts when the newest review by this reviewer's identity covers the current
 head. If the head moved, it does nothing and says so (`reason: the head moved since the last review`): a
 follow-up review reads the replies itself. It also does nothing while the pull request carries a request,
 in-progress or held label, when the author is the reviewer's own identity, or when no unresolved finding
@@ -31,16 +31,29 @@ delimited data block. Each finding comes back as:
   claims something about the code the finding does not confirm.
 
 Code checks the answer: an unknown or repeated thread, a missing reason, or a downgrade that does not lower
-the severity leaves the finding open, and a failed call leaves every finding open and writes nothing. At
-most ten threads are judged per call, and a thread longer than what the context reads is left out and listed
-under `unjudged`.
+the severity leaves the finding open, and a failed call leaves every finding open and writes nothing. The
+number of threads judged per call is `MAX_CANDIDATES` in `src/review/replies/select.mts`, and a thread longer
+than what the context reads is left out and listed under `unjudged`.
 
 ## What it applies
 
 The verdict is derived again with the verifier's rules (`deriveVerdict`) from the findings still open, at
 their current severities: the review's findings with the settled ones removed and the lowered ones at their
-new severity. It never raises a verdict, and it changes one only when the findings, as they stood, give the
-posted verdict (otherwise something outside them shaped it and a full review should decide).
+new severity. A verdict only ever becomes less strict, never stricter, and an Approve always passes the
+approval check. It changes a verdict only when the findings, as they stood, give the posted verdict
+(otherwise something outside them shaped it and a full review should decide).
+
+Request Changes to Comment needs no check. A verdict that would become Approve, from Request Changes or from
+a Comment, first goes through the approval check of `run` on its configured model (`approvalCheck`, a
+machine-config setting; when it is off, as for `run`, no check runs). The head is checked out the way `run`
+checks it out, and the check is given the findings that remain and the ones the replies removed, to challenge.
+When the check does not uphold the approval, or cannot run, the review posted is a Comment, and `attention`
+says why. Anything the check adds is not posted: a review that would be stricter is a full review's job.
+
+The command claims the pull request the way `run` does, with the in-progress label, and gives it back on
+every exit. It declines when another run, a review request or a hold holds the pull request. A run that
+writes nothing (`--post hold`) takes no claim. Just before writing it checks again that the head has not
+moved and that no newer review by this reviewer has landed; if either has, it writes nothing.
 
 1. When the verdict changes, a new body-only review of the same head is posted through the same path as
    `post` (same identity, labels, check run and tracker row). Its id comes from the head and the judgments,
@@ -61,8 +74,9 @@ fails is a configuration problem, never a fall back to the login.
 
 ## Cost and trace
 
-One small call per pull request with a new reply, no pillars, no evidence. Its cost is added to the head's
-`report.json` as a `replies` record and a `replies` row in `usageByModel` and `ran`, and `report.md` lists it.
+One small call per pull request with a new reply, no pillars, no evidence, plus the approval check when a
+verdict would become an Approve. Their costs are added to the head's `report.json` as a `replies` record, and
+a `replies` and an `approvalCheck` row in `usageByModel` and `ran`, and `report.md` lists them.
 The JSON line carries `costUsd`.
 
 ## Trigger

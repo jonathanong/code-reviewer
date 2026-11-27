@@ -1,166 +1,34 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { PrConversation, PrReview, ThreadComment } from '../review/context-query.mts'
-import { reviewMarker } from '../review/render.mts'
 import type { ReportData } from '../review/run/report.mts'
-import { HEAD, APP, fakeDeps } from '../run/fake-deps.mts'
-import { runDirFor } from '../run/stage.mts'
-import { repliesCommand, runRepliesCommand } from './command-replies.mts'
+import { runRepliesCommand } from './command-replies.mts'
+import { approveReplies } from './command-replies-approve.mts'
+import {
+  VALUES,
+  comment,
+  conversation,
+  dropRoot,
+  makeRoot,
+  model,
+  rootDir,
+  run,
+  setup,
+} from './command-replies-fake-io.mts'
 import type { RepliesLine } from './command-replies-line.mts'
 import { replyText } from './command-replies-write.mts'
 
-const references = fileURLToPath(new URL('../../skills/review/references', import.meta.url))
-const FINDING = '**[blocking · congruence]** Option removed\n\nThe `--legacy` flag is gone.'
-const VALUES = { repo: ['acme/widgets'], pr: '4' }
+vi.mock('./command-replies-approve.mts', async (original) => ({
+  ...(await original<typeof import('./command-replies-approve.mts')>()),
+  approveReplies: vi.fn(),
+}))
 
-let root: string
-
-const comment = (login: string, body: string, review = false): ThreadComment => ({
-  author: { login },
-  body,
-  createdAt: 't',
-  pullRequestReview: review ? { id: 'R1' } : null,
-  url: 'https://example.test/c',
-})
-
-function conversation(options: {
-  verdict?: 'Request Changes' | 'Comment'
-  severity?: string
-  replies?: ThreadComment[]
-  head?: string
-  threads?: number
-}): PrConversation {
-  const review: PrReview = {
-    id: 'R1',
-    author: { login: APP },
-    state: 'CHANGES_REQUESTED',
-    body: reviewMarker(HEAD, options.verdict ?? 'Request Changes', 'high'),
-    submittedAt: null,
-    commit: { oid: HEAD },
-  }
-  const threads = Array.from({ length: options.threads ?? 1 }, (_, at) => ({
-    id: `T${at + 1}`,
-    isResolved: false,
-    isOutdated: false,
-    path: 'a.ts',
-    line: 3,
-    comments: {
-      nodes: [
-        comment(APP, FINDING.replace('blocking', options.severity ?? 'blocking'), true),
-        ...(options.replies ?? [comment('dev', 'Intended.')]),
-      ],
-    },
-  }))
-  return {
-    title: 'Title',
-    author: { login: 'dev', __typename: 'User' },
-    body: '',
-    closingIssuesReferences: { nodes: [] },
-    headRefOid: options.head ?? HEAD,
-    baseRefOid: HEAD,
-    baseRefName: 'main',
-    additions: 1,
-    deletions: 1,
-    reviews: { nodes: [review] },
-    reviewThreads: { nodes: threads },
-    comments: { nodes: [] },
-    commits: { nodes: [{ commit: { oid: HEAD, messageHeadline: 'c' } }] },
-  }
-}
-
-const model = (judgments: unknown) =>
-  JSON.stringify({
-    type: 'result',
-    total_cost_usd: 0.02,
-    num_turns: 1,
-    structured_output: { judgments },
-  })
-
-type Setup = {
-  pull?: PrConversation
-  answer?: string
-  labels?: string[]
-  authMode?: 'app' | 'gh'
-  replyFails?: boolean | 'string'
-  resolveFails?: boolean
-  noReport?: boolean
-  rules?: string
-  trusted?: string[]
-  newHead?: string
-}
-
-function setup(options: Setup = {}) {
-  const fake = fakeDeps({
-    stateDir: join(root, 'state'),
-    labels: options.labels ?? [],
-    ...(options.authMode === undefined ? {} : { authMode: options.authMode }),
-  })
-  const { deps, io } = fake
-  const reply = vi.fn(async (_thread: string, _body: string) => {
-    if (options.replyFails === 'string') throw 'text failure'
-    if (options.replyFails === true) throw new Error('reply denied')
-  })
-  deps.createAnswerIo.mockReturnValue({
-    conversation: async () => options.pull ?? conversation({}),
-    reply,
-  })
-  const graphql = vi.fn(async () => {
-    if (options.resolveFails === true) throw new Error('resolve denied')
-    return ''
-  })
-  deps.runner.mockReturnValue(graphql)
-  deps.references.mockReturnValue(options.rules ?? references)
-  deps.exec.mockResolvedValue(
-    options.answer ??
-      model([{ thread: 'T1', outcome: 'settled', why: 'Declared in the description.' }]),
-  )
-  deps.readFile.mockImplementation((path) => readFileSync(path, 'utf8'))
-  deps.writeFile.mockImplementation((path, text) => writeFileSync(path, text))
-  io.trustedAuthors.mockResolvedValue(new Set(options.trusted ?? [APP]))
-  if (options.newHead !== undefined) {
-    io.headSha.mockResolvedValue(options.newHead)
-  }
-  const runDir = runDirFor(deps, 'acme/widgets', 4, HEAD)
-  if (options.noReport !== true) {
-    mkdirSync(runDir, { recursive: true })
-    const report = {
-      version: 1,
-      repo: 'acme/widgets',
-      pr: 4,
-      title: 'T',
-      url: 'u',
-      headSha: HEAD,
-      mode: 'full',
-      effort: 'high',
-      reasons: [],
-      skipReason: 'test',
-      pillars: [],
-      skillSelection: { selected: [] },
-      verifier: null,
-      usageByModel: [],
-      verdict: null,
-    }
-    writeFileSync(join(runDir, 'report.json'), JSON.stringify(report))
-  }
-  const env = { env: {}, tmp: join(root, 'tmp'), git: vi.fn(), remote: vi.fn(), signals: undefined }
-  return { ...fake, reply, graphql, runDir, env: env as never }
-}
-
-const run = (fake: ReturnType<typeof setup>, values: object = VALUES) =>
-  repliesCommand(values, fake.deps as never, fake.env)
-
-beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'replies-'))
-  mkdirSync(join(root, 'tmp'))
-})
+beforeEach(makeRoot)
 
 afterEach(() => {
   vi.restoreAllMocks()
-  rmSync(root, { recursive: true, force: true })
+  dropRoot()
 })
 
 describe('replies', () => {
@@ -187,7 +55,11 @@ describe('replies', () => {
     expect(report.replies).toEqual([
       expect.objectContaining({ settled: 1, posted: true, costUsd: 0.02, verdictAfter: 'Approve' }),
     ])
-    expect(report.usageByModel.at(-1)?.name).toBe('replies')
+    expect(report.usageByModel.slice(-2).map((step) => step.name)).toEqual([
+      'replies',
+      'approvalCheck',
+    ])
+    expect(report.replies?.[0]?.approval).toBe('upheld')
     expect(readFileSync(join(fake.runDir, 'report.md'), 'utf8')).toContain('Skipped')
   })
 
@@ -232,7 +104,9 @@ describe('replies', () => {
   it('writes nothing under --post hold, and still records the cost', async () => {
     const fake = setup()
     const line = await run(fake, { ...VALUES, post: 'hold' })
-    expect(line).toMatchObject({ outcome: 'held', exitCode: 10, attention: ['--post hold'] })
+    expect(line).toMatchObject({ outcome: 'held', exitCode: 10, verdictAfter: 'Comment' })
+    expect(line.attention).toEqual(['--post hold', expect.stringContaining('approval check')])
+    expect(approveReplies).not.toHaveBeenCalled()
     expect(line.applyCommand).toContain('replies --repo acme/widgets --pr 4')
     expect(fake.reply).not.toHaveBeenCalled()
     expect(fake.io.postReview).not.toHaveBeenCalled()
@@ -319,7 +193,7 @@ describe('replies', () => {
 
   it('is a precondition failure without the reviewer identity or the rule', async () => {
     await expect(run(setup({ trusted: [] }))).rejects.toThrow('identity')
-    const dir = join(root, 'rules')
+    const dir = join(rootDir(), 'rules')
     mkdirSync(dir)
     writeFileSync(join(dir, 'verifier.md'), 'no paragraph here')
     await expect(run(setup({ rules: dir }))).rejects.toThrow('breaking-change rule')

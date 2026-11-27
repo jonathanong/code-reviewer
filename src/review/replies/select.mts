@@ -1,22 +1,21 @@
 import { buildFollowUpContext, type PriorFinding } from '../context.mts'
-import type { PrConversation, ReviewThread } from '../context-query.mts'
-import { SEVERITIES, type Severity } from '../finding.mts'
+import type { PrConversation } from '../context-query.mts'
+import type { Severity } from '../finding.mts'
 import { latestInstance } from '../last-review.mts'
 import { MARKER_RE } from '../markers.mts'
 import type { Question } from '../question.mts'
 import { VERDICTS, type Verdict } from '../render.mts'
 import { APPROVAL_CHECK } from '../skipped.mts'
 import { isTrustedAuthor } from '../trust.mts'
-import { parseReplyMarker } from './marker.mts'
+import {
+  flat,
+  FINDING_CHARS,
+  newReplies,
+  standingSeverity,
+  type AuthorReply,
+} from './thread-read.mts'
 
-/** Threads judged in one call, and replies shown for each: the call stays small. */
 export const MAX_CANDIDATES = 10
-export const MAX_REPLIES = 5
-const FINDING_CHARS = 2000
-const REPLY_CHARS = 1500
-
-/** One of the author's new replies, flattened and cut; untrusted. */
-export type AuthorReply = { url?: string | undefined; text: string }
 
 /** An earlier finding with new author replies, as the judging call sees it. */
 export type ReplyCandidate = {
@@ -45,6 +44,8 @@ export type StandingFinding = {
 
 export type ReplyPlan = {
   headSha: string
+  /** The newest review by this reviewer when the plan was read; a different one later means another run wrote. */
+  reviewId: string
   author: string
   effort: string
   /** The verdict of the newest review of this head by this reviewer. */
@@ -60,48 +61,12 @@ export type ReplyPlan = {
 
 export type NoPlan = { noop: string }
 
-const rank = (severity: Severity) => SEVERITIES.indexOf(severity)
-
-function flat(text: string, max: number): string {
-  const clean = text
-    .replaceAll(/<!--[\s\S]*?-->/gu, '')
-    .replaceAll(/\s+/gu, ' ')
-    .trim()
-  return clean.length > max ? `${clean.slice(0, max)} [cut]` : clean
-}
-
-const sameLogin = (a: string | undefined, b: string): boolean =>
-  a !== undefined && a.toLowerCase().replace(/\[bot\]$/u, '') === b.toLowerCase()
-
-/** The severity this reviewer's last downgrade marker in the thread left, when it is below the posted one. */
-function standingSeverity(
-  thread: ReviewThread | undefined,
-  posted: Severity,
+/** The id of the newest review by this reviewer, of any kind; undefined when it has none. */
+export function newestOwnReview(
+  pull: PrConversation,
   trusted: ReadonlySet<string>,
-): Severity {
-  const lowered = (thread?.comments.nodes ?? [])
-    .slice(1)
-    .filter((comment) => isTrustedAuthor(comment.author?.login, trusted))
-    .map((comment) => parseReplyMarker(comment.body))
-    .findLast((marker) => marker?.state === 'downgraded')
-  return lowered?.severity !== undefined && rank(lowered.severity) > rank(posted)
-    ? lowered.severity
-    : posted
-}
-
-/** The author's replies after this reviewer last spoke in the thread, oldest first. */
-function newReplies(
-  thread: ReviewThread,
-  author: string,
-  trusted: ReadonlySet<string>,
-): AuthorReply[] {
-  const { nodes } = thread.comments
-  const lastOwn = nodes.findLastIndex((comment) => isTrustedAuthor(comment.author?.login, trusted))
-  return nodes
-    .slice(Math.max(lastOwn, 0) + 1)
-    .filter((comment) => comment.isMinimized !== true && sameLogin(comment.author?.login, author))
-    .slice(-MAX_REPLIES)
-    .map((comment) => ({ url: comment.url, text: flat(comment.body, REPLY_CHARS) }))
+): string | undefined {
+  return pull.reviews.nodes.findLast((review) => isTrustedAuthor(review.author?.login, trusted))?.id
 }
 
 function verdictOf(raw: string | null): Verdict | undefined {
@@ -177,6 +142,7 @@ export function planReplies(
   const instance = latestInstance(own, context.reviewedSha)
   return {
     headSha: context.headSha,
+    reviewId: newestOwnReview(pull, trusted) as string,
     author: context.author,
     effort: String(context.effort),
     posted,

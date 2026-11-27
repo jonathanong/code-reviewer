@@ -1,4 +1,4 @@
-import type { LabelIo } from './labels.mts'
+import type { ClaimOutcome, LabelIo } from './labels.mts'
 import type { LabelNames } from './settings.mts'
 import type { Held } from './held-head.mts'
 
@@ -50,4 +50,45 @@ export async function claimLost(
     return true
   }
   return (await options.reviewedSince?.()) === true
+}
+
+/**
+ * Takes a reviewed pull request for a reply-only re-assessment: in-progress goes on and the
+ * completion goes off, so `claimLost` sees any request, hold or completion that appears after, and
+ * `reviewedSince` a review that landed. A pull request already requested, in progress or held is
+ * declined. Like any claim it narrows the window; labels have no compare-and-set.
+ */
+export async function claimReplies(
+  io: LabelIo,
+  names: LabelNames,
+  options: { reviewedSince?: (() => Promise<boolean>) | undefined },
+): Promise<ClaimOutcome> {
+  const labels = await io.labels()
+  const busy = [names.requested, names.processing, names.held].filter((name) =>
+    labels.includes(name),
+  )
+  if (busy.length > 0) {
+    return { claimed: false, reason: `the pull request carries ${busy.join(', ')}`, labels }
+  }
+  const outcome = await swap(io, [names.processing], [names.completed])
+  let lost: boolean
+  try {
+    lost = await claimLost(io, names, options)
+  } catch (error) {
+    await releaseReplies(io, names).catch(() => undefined)
+    throw error
+  }
+  if (lost) return { claimed: false, reason: 'claim lost', labels: await io.labels() }
+  return { claimed: true, ...outcome }
+}
+
+/**
+ * Gives a re-assessment's claim back: the in-progress label goes off and the completion goes back
+ * on. A request or hold placed meanwhile stays, and then the completion is left off so the next
+ * review claims it.
+ */
+export async function releaseReplies(io: LabelIo, names: LabelNames) {
+  const labels = await io.labels()
+  const waiting = labels.includes(names.requested) || labels.includes(names.held)
+  return swap(io, waiting ? [] : [names.completed], [names.processing])
 }

@@ -5,11 +5,12 @@ import { resolveThreads, type PullTarget } from '../review/index.mts'
 import type { Judgment, judgeReplies } from '../review/replies/judge.mts'
 import { replyMarker } from '../review/replies/marker.mts'
 import { replyReviewInput, type Reassessment } from '../review/replies/reassess.mts'
-import { withReplies, type RepliesRecord } from '../review/replies/report.mts'
+import { withReplies, withStepCost, type RepliesRecord } from '../review/replies/report.mts'
 import type { ReplyPlan } from '../review/replies/select.mts'
 import { renderReport } from '../review/run/report-render.mts'
 import type { ReportData } from '../review/run/report.mts'
 import { postPreparedReview } from './command-post.mts'
+import type { ApprovalRun } from './command-replies-approve.mts'
 import type { ReviewDeps } from './deps.mts'
 
 export const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
@@ -39,11 +40,16 @@ export function recordCost(
   runDir: string,
   record: RepliesRecord,
   judged: Awaited<ReturnType<typeof judgeReplies>>,
+  approval?: Pick<ApprovalRun, 'usage' | 'ran'>,
 ): string | undefined {
   try {
     const path = join(runDir, 'report.json')
     const data = JSON.parse(deps.readFile(path)) as ReportData
-    const next = withReplies(data, record, judged.usage, judged.ran)
+    const replies = withReplies(data, record, judged.usage, judged.ran)
+    const next =
+      approval === undefined
+        ? replies
+        : withStepCost(replies, 'approvalCheck', approval.usage, approval.ran)
     deps.writeFile(path, `${JSON.stringify(next, null, 2)}\n`)
     deps.writeFile(join(runDir, 'report.md'), renderReport(next))
     return undefined

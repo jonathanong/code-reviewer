@@ -1,16 +1,14 @@
-import { resolveRun } from '../review/index.mts'
+import { claimReplies, releaseReplies, resolveRun } from '../review/index.mts'
 import { parseModelOverrides } from '../review/model-overrides.mts'
 import { resolveModels } from '../review/models-settings.mts'
-import { judgeReplies, breakingChangeRule, type Judgment } from '../review/replies/judge.mts'
-import { reassess } from '../review/replies/reassess.mts'
-import type { RepliesRecord } from '../review/replies/report.mts'
-import { planReplies } from '../review/replies/select.mts'
+import { breakingChangeRule } from '../review/replies/judge.mts'
+import { newestOwnReview, planReplies } from '../review/replies/select.mts'
 import { RUN_EXIT, type RunExit } from '../run/output.mts'
 import { checkPreconditions, parseFlags, Precondition } from '../run/preflight.mts'
 import { defaultRunEnv, type RunEnv } from '../run/command.mts'
-import { runDirFor } from '../run/stage.mts'
 import { line, type RepliesLine } from './command-replies-line.mts'
-import { applyWrites, message, recordCost } from './command-replies-write.mts'
+import { assessReplies } from './command-replies-run.mts'
+import { message } from './command-replies-write.mts'
 import type { ReviewDeps } from './deps.mts'
 import { labelsFor } from './review-settings.mts'
 
@@ -50,7 +48,8 @@ export async function repliesCommand(
       reason: `the pull request carries ${busy.join(', ')}; a review reads the replies itself`,
     })
   }
-  const conversation = await deps.createAnswerIo(pull).conversation()
+  const answers = deps.createAnswerIo(pull)
+  const conversation = await answers.conversation()
   const plan = planReplies(conversation, trusted)
   if ('noop' in plan) return line({ ...base, reason: plan.noop })
   const rule = breakingChangeRule(deps.references())
@@ -58,89 +57,44 @@ export async function repliesCommand(
     throw new Precondition('the breaking-change rule is no longer in verifier.md.')
   }
   const models = resolveModels(deps.configs(), pull.repo, parseModelOverrides(values.model ?? []))
-  const judged = await judgeReplies(plan.candidates, rule, {
-    models: { plan: models.plan },
-    exec: deps.exec,
-    cwd: env.tmp,
-  })
-  const costUsd = judged.usage?.costUsd ?? null
-  const where = { ...base, headSha: plan.headSha, costUsd }
-  if (judged.error !== undefined) {
-    return line({
-      ...where,
-      outcome: 'error',
-      exitCode: RUN_EXIT.failed,
-      reason: `the replies step failed, so nothing was written: ${judged.error}`,
-    })
-  }
-  const result = reassess(plan, judged.judgments)
-  const count = (outcome: Judgment['outcome']) =>
-    judged.judgments.filter((judgment) => judgment.outcome === outcome).length
-  const record: RepliesRecord = {
-    at: deps.tracker().now().toISOString(),
-    settled: count('settled'),
-    downgraded: count('downgraded'),
-    open: count('open'),
-    verdictBefore: plan.posted,
-    verdictAfter: result.changes ? result.after : plan.posted,
-    posted: false,
-    costUsd,
-  }
-  const runDir = runDirFor(deps, pull.repo, pull.pr, plan.headSha)
-  const summary = {
-    ...where,
-    verdictBefore: plan.posted,
-    verdictAfter: result.changes ? result.after : plan.posted,
-    judged: judged.judgments.map(({ thread, outcome, severity, why }) => ({
-      thread,
-      outcome,
-      severity,
-      why,
-    })),
-    unjudged: plan.unjudged,
-  }
-  const notes = result.refused === undefined ? [] : [`the verdict was kept: ${result.refused}`]
   const identity =
     deps.authMode() !== 'app' && resolveRun(deps.configs(), pull.repo).rules['not-app-identity']
       ? ['calls use the local gh login, not the GitHub App']
       : []
-  const held = [...(post === 'hold' ? ['--post hold'] : []), ...identity]
-  if (held.length > 0) {
-    const problem = recordCost(deps, runDir, record, judged)
-    return line({
-      ...summary,
-      outcome: 'held',
-      exitCode: RUN_EXIT.held,
-      reason: 'nothing was written',
-      attention: [...held, ...notes, ...(problem === undefined ? [] : [problem])],
-      applyCommand: `code-reviewer replies --repo ${pull.repo} --pr ${pull.pr}`,
-    })
-  }
-  if ((await io.headSha()) !== plan.headSha) {
-    const problem = recordCost(deps, runDir, record, judged)
-    return line({
-      ...where,
-      reason: 'the head moved while the replies were judged; a follow-up review reads them',
-      attention: problem === undefined ? [] : [problem],
-    })
-  }
-  const written = await applyWrites(deps, pull, plan, judged.judgments, result)
-  const problem = recordCost(
+  const run = {
     deps,
-    runDir,
-    { ...record, posted: written.review !== undefined },
-    judged,
-  )
-  return line({
-    ...summary,
-    outcome: 'applied',
-    exitCode: RUN_EXIT.posted,
-    reviewUrl: written.review?.url ?? null,
-    event: written.review?.event ?? null,
-    replied: written.replied,
-    resolved: written.resolved,
-    attention: [...notes, ...written.problems, ...(problem === undefined ? [] : [problem])],
+    pull,
+    plan,
+    trusted,
+    models: { plan: models.plan },
+    rule,
+    env,
+    title: conversation.title,
+    held: [...(post === 'hold' ? ['--post hold'] : []), ...identity],
+  }
+  // A held run writes nothing, so it takes no claim. A run that writes holds the in-progress label
+  // until it is done, however it ends, so two runs, or a run and a review, do not write together.
+  if (run.held.length > 0) return assessReplies(run)
+  const labelIo = deps.createLabelIo(pull)
+  const claim = await claimReplies(labelIo, names, {
+    reviewedSince: async () =>
+      newestOwnReview(await answers.conversation(), trusted) !== plan.reviewId,
   })
+  if (!claim.claimed) {
+    return line({ ...base, headSha: plan.headSha, reason: `not claimed: ${claim.reason}` })
+  }
+  let result: RepliesLine
+  try {
+    result = await assessReplies(run)
+  } catch (error) {
+    await releaseReplies(labelIo, names).catch(() => undefined)
+    throw error
+  }
+  const problem = await releaseReplies(labelIo, names).then(
+    () => undefined,
+    (error: unknown) => `could not release the claim: ${message(error)}`,
+  )
+  return problem === undefined ? result : { ...result, attention: [...result.attention, problem] }
 }
 
 /** Runs `repliesCommand`, prints its line, and turns a failure into an error line with an exit code. */

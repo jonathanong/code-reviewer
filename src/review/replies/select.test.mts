@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PrConversation, PrReview, ReviewThread, ThreadComment } from '../context-query.mts'
 import { renderBodyFinding, reviewMarker } from '../render.mts'
 import { replyMarker } from './marker.mts'
-import { MAX_CANDIDATES, planReplies, type ReplyPlan } from './select.mts'
+import { MAX_CANDIDATES, newestOwnReview, planReplies, type ReplyPlan } from './select.mts'
 
 const HEAD = 'a'.repeat(40)
 const OLD = 'b'.repeat(40)
@@ -239,5 +239,16 @@ describe('planReplies', () => {
       }),
     )
     expect(plan.candidates[0]?.replies).toEqual([{ url: undefined, text: 'ok' }])
+  })
+
+  it('names the newest review of this reviewer, whatever its kind, so a later one shows', () => {
+    const marked = review(reviewMarker(HEAD, 'Request Changes', 'high'), 'R1')
+    const reply = { ...review('', 'R2'), commit: null }
+    const stranger = { ...review('x', 'R3'), author: { login: 'someone' } }
+    const before = pull({ reviews: { nodes: [marked] } })
+    expect(planned(before).reviewId).toBe('R1')
+    const after = pull({ reviews: { nodes: [marked, reply, stranger] } })
+    expect(newestOwnReview(after, TRUSTED)).toBe('R2')
+    expect(newestOwnReview(pull({ reviews: { nodes: [stranger] } }), TRUSTED)).toBeUndefined()
   })
 })
