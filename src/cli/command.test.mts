@@ -64,6 +64,7 @@ const fakeLabelIo = (): LabelIo => ({
   add: vi.fn(async () => undefined),
   remove: vi.fn(async () => undefined),
   heldHead: vi.fn(async () => ({ head: undefined, placements: 0 })),
+  labeledBy: vi.fn(async () => undefined),
 })
 
 type MemoryTracker = TrackerIo & { files: Map<string, string> }
@@ -179,6 +180,7 @@ describe('runReviewCommand', () => {
     ).resolves.toBe(0)
     expect(d.createIo).toHaveBeenCalledWith({ repo: 'acme/widgets', pr: 4 })
     expect(d.readFile).toHaveBeenCalledWith('f.json')
+    expect(out.join('').trimEnd()).not.toContain('\n')
     const printed = JSON.parse(out.join(''))
     expect(printed).toMatchObject({ verdict: 'Approve', label: 'unchanged' })
     expect(Array.isArray(printed.reviews)).toBe(true)

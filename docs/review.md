@@ -130,6 +130,37 @@ characters (counted as Unicode code points). A file that is missing, unreadable,
 stops the command before any work, naming `--focus`, the file, and for an over-long line its line number and length. Without the flag nothing changes:
 no step, no prompt, no cost.
 
+### Points read from the request
+
+`run` can also read the points from the review request itself, so a person who asks for a review and
+lists what they want checked does not need anyone to write a file. It is off until the machine config
+sets [`requestFocus`](configuration.md#requestfocus), and an explicit `--focus` always wins and
+reads nothing. The request is the label the loop queues on, which carries no text, so the text is
+found next to it:
+
+1. The requester is the actor of the newest `labeled` event for the request label on the pull
+   request timeline (the one thing git cannot know). A label the reviewer's own identity added, as
+   the loop does for a message request or `run` does for a bare invocation, has no requester; there
+   the loop passes `--focus` itself.
+2. The text is the requester's newest visible comment on the pull request (of the 30 newest) that
+   holds a check list; failing that, when the requester is also the pull request's author, the
+   description's. Nobody else's words count, and neither do review summaries or inline comments.
+3. A check list is an explicit lead-in line (`Focus`, `Review focus`, `Focus on`, `Please focus on`,
+   `Check`, `Checks`, `Please check` or `Things to check`, any case, with Markdown heading, quote or
+   bold marks and an optional colon) and the list items under it (`-`, `*`, `+` or `1.`, up to the
+   first line that is not an item), plus any text after the lead-in's colon as the first point. Prose
+   such as "no wrappers or re-exports, please" is not a list: the reviewer does not judge whether a
+   sentence is a request, so what is not marked is not used.
+
+The points then follow the rules above: the same limits, and the same treatment as a file's. The
+text is a stranger's words, so every point is a claim to check, never an instruction, and goes only
+to the `focus` step as before. The limits differ in one respect, because the text is not
+configuration: a list with too many points or an over-long one, or a read of GitHub that fails, does
+not stop the run. The review goes on without the points, and the run line's `problems` and
+`attention` say that the requested checks were not used and why. A review with no list reads one
+timeline and, when the requester is not the reviewer, one conversation; with the setting off it reads
+nothing.
+
 With points, one extra step, `focus`, runs beside the pillars, whatever the plan dispatched. One
 agent checks every point against the code, with the same context, read-only tools, retry and
 failure handling as a pillar. Its prompt also includes a `## Change facts` Markdown block computed
