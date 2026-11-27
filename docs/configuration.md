@@ -539,7 +539,7 @@ format of `<owner>.json`; the same keys work in YAML.
     "processing": "final-review:in-progress",
     "completed": "final-review:complete",
     "held": "final-review:held",
-    "approval": "final approval"
+    "approval": "final-review:approved"
   },
   "checkRun": { "name": "Code review" }
 }

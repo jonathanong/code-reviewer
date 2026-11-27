@@ -91,7 +91,7 @@ code-reviewer review --repo <repo> --pr <n> --out "$run" --tree "$run/tree" \
 rather than label, or to review a head that is already reviewed. The command:
 
 1. Claims the pull request: the processing label replaces the requested one, and a stale
-   `final approval` is removed. `claimed: false` means another run owns it, the request was
+   `final-review:approved` is removed. `claimed: false` means another run owns it, the request was
    withdrawn, or the newest review already covers this head: go to Step 5 to remove the worktree
    and the run directory, and never run `abort`, because the claim is not this run's.
 2. Prepares the run directory with no model calls: the numbered diff and one patch per file,
@@ -176,7 +176,7 @@ requests changes; otherwise a high finding or any open question comments; otherw
   `[medium · design]`: inline where the diff allows,
   collapsible body sections otherwise. Large reviews are split into numbered parts.
 - A hidden marker records the reviewed SHA, the verdict, and the effort.
-- On Approve the `final approval` label is added; otherwise it is removed. Then the completed
+- On Approve the `final-review:approved` label is added; otherwise it is removed. Then the completed
   label replaces the processing one. Completed means posted, not approved.
 - It refuses when the head moved since the review ran. Check out the new head in the worktree
   (`git -C <clone> fetch origin <head> && git -C "$run/tree" checkout --detach <head>`), then run
@@ -190,7 +190,7 @@ printed, which `report.md` repeats as a ready `code-reviewer resolve` command.
 `git -C <clone> worktree remove --force "$run/tree"`, then `rm -rf "$run"` once the explainer has
 been recorded (`explain` reads the run directory, so it cannot run after this). Reply to the requester with the verdict and the review link. Merging agents check
 `code-reviewer status`, which exits 0 only when the newest review approved the current head with
-the `final approval` label present, or skipped it.
+the `final-review:approved` label present, or skipped it.
 
 ## Benchmarks
 

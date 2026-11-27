@@ -47,7 +47,7 @@ export type PostOutcome = {
 
 export const SHA_RE = /^[0-9a-f]{40}$/u
 
-/** Removes a stale `final approval` label; run before every re-review. */
+/** Removes a stale `final-review:approved` label; run before every re-review. */
 export async function revokeFinalApproval(io: ReviewIo): Promise<boolean> {
   if (!(await io.hasApprovalLabel())) return false
   await io.removeApprovalLabel()

@@ -68,7 +68,7 @@ export type ClaimOutcome =
 
 /**
  * Takes a requested review: marks it in progress and clears the request, a previous completion,
- * and a stale `final approval`. Without `force` it only claims a pull request that still carries
+ * and a stale `final-review:approved`. Without `force` it only claims a pull request that still carries
  * the request label, so a replayed or stale event is ignored, and it declines a head the newest
  * review already covers (`headReviewed`) once posting finished: the marker rides on the first
  * review part, so only `complete` (set after every part and the approval label) proves that. A

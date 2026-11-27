@@ -101,14 +101,14 @@ describe('createGhReviewIo', () => {
   })
 
   it('detects the approval label', async () => {
-    const yes = setup(['bug\nfinal approval\n'])
+    const yes = setup(['bug\nfinal-review:approved\n'])
     await expect(yes.io.hasApprovalLabel()).resolves.toBe(true)
     const no = setup(['bug\n'])
     await expect(no.io.hasApprovalLabel()).resolves.toBe(false)
   })
 
   it('uses the configured approval label', async () => {
-    const yes = setup(['final approval\n'])
+    const yes = setup(['final-review:approved\n'])
     await expect(yes.io.hasApprovalLabel()).resolves.toBe(true)
     const calls: string[][] = []
     const io = createGhReviewIo(
@@ -187,13 +187,13 @@ describe('createGhReviewIo', () => {
       'POST',
       'repos/acme/widgets/issues/7/labels',
       '-f',
-      'labels[]=final approval',
+      'labels[]=final-review:approved',
     ])
     expect(calls[1]).toEqual([
       'api',
       '--method',
       'DELETE',
-      'repos/acme/widgets/issues/7/labels/final%20approval',
+      'repos/acme/widgets/issues/7/labels/final-review%3Aapproved',
       '--silent',
     ])
   })

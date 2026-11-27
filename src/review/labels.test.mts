@@ -59,7 +59,7 @@ describe('createGhLabelIo', () => {
       'api',
       '--method',
       'DELETE',
-      'repos/o/r/issues/7/labels/final%20approval',
+      'repos/o/r/issues/7/labels/final-review%3Aapproved',
       '--silent',
     ])
   })
@@ -328,7 +328,7 @@ describe('abortReview', () => {
 })
 
 describe('claimReview when the head is already reviewed', () => {
-  it('answers the request with complete and keeps final approval', async () => {
+  it('answers the request with complete and keeps final-review:approved', async () => {
     const io = fakeIo([REQUESTED_LABEL, COMPLETE_LABEL, APPROVAL_LABEL])
     await expect(claimReview(io, DEFAULT_LABELS, { headReviewed: true })).resolves.toMatchObject({
       claimed: false,

@@ -16,7 +16,7 @@ export const DEFAULT_LABELS: LabelNames = {
   /** Set while a finished review waits for a person; no machine claims it until it is posted, skipped or aborted. */
   held: 'final-review:held',
   /** Label a final approval carries; removed before any re-review. */
-  approval: 'final approval',
+  approval: 'final-review:approved',
 }
 
 export type ReviewSettings = {
