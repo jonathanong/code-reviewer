@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -72,6 +72,22 @@ describe('doctor command', () => {
     )
     expect(code).toBe(1)
     expect(err.join('')).toContain('could not list plugins')
+  })
+
+  it('warns about a clone under --clones whose owner has no machine config', async () => {
+    const { err } = capture()
+    const clones = mkdtempSync(join(tmpdir(), 'doctor-clones-'))
+    dirs.push(clones)
+    mkdirSync(join(clones, 'w', '.git'), { recursive: true })
+    const code = await doctorCommand(
+      { owner: 'acme', clones, offline: true },
+      deps({ git: 'git@github.com:zed/w.git', gh: 'gh 2', claude: 'claude 2' }),
+      env(),
+    )
+    expect(code).toBe(0)
+    expect(err.join('')).toContain(
+      'warn clone-owner:zed: zed (clones: w): no machine config for it',
+    )
   })
 
   it('exits 1 when a check fails', async () => {
