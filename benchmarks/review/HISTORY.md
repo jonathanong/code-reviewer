@@ -2,6 +2,25 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (no run, bench needs numbers): the review date in UTC goes into the pillar and verifier prompts
+
+Fixes jongleberry/code-reviewer#237: a review at 07:46 UTC raised "dated after today" for an entry dated that UTC day,
+because the model used the machine's local date. No run: the benchmark's `claude` calls exited "Not logged in" inside the
+agent's sandbox, so no before or after number exists yet. Run the two cases below on `main` and on this change.
+
+- **What changed.** Every pillar prompt and the verifier prompt now carry `Review date (UTC): YYYY-MM-DD.` (built from an
+  injectable clock) with the sentence "Check a dated record, such as a changelog or HISTORY entry, against this date, not
+  against the date your environment reports." `_contract.md` gains a Method bullet and `verifier.md` step 2 a sentence
+  saying the same. The benchmark's pillar prompt carries the same line, from the case's new optional `reviewedAt` (an ISO
+  time) or the bench clock.
+- **Cases added** (`synthetic.json`, `correctness`, both `reviewedAt` 2030-01-03T07:46Z, a time no machine date has reached,
+  so a reviewer that judges against its own date sees the entry as future): `history-dated-utc-day` (negative; the entry is
+  dated 2030-01-03) and `history-dated-future` (positive; dated 2030-01-09, expects one low finding on `HISTORY.md`).
+  The earlier prompt should fail the negative; the pair is the guard against the new line silencing every date check.
+- **Comparability.** Every row is made non-comparable: `bench` adds the date line to the prompt of every case, and
+  `_contract.md` is part of every pillar prompt; `bench-verifier` rows too, through `verifier.md`. A difference of one
+  catch is within noise at 3 attempts. The 2026-11-27 entries below are the last rows made without the line.
+
 ## 2026-11-27 (no run): default rule plugins and skill ids move from `jong-skills` to four `ratchet-*` plugins
 
 The `jong-skills` plugin is split into `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`

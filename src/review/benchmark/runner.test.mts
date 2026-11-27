@@ -36,6 +36,14 @@ const NO_USAGE = {
 const output = (findings: unknown) => JSON.stringify({ structured_output: { findings } })
 
 describe('prompt and args', () => {
+  it('gives the review date from the case clock, else the bench clock', () => {
+    const dated = { ...item, reviewedAt: '2030-01-01T07:46:00Z' }
+    expect(buildPillarPrompt('P', dated)).toContain('Review date (UTC): 2030-01-01.')
+    expect(buildPillarPrompt('P', item)).toContain(
+      `Review date (UTC): ${new Date().toISOString().slice(0, 10)}.`,
+    )
+  })
+
   it('wraps the pillar prompt with untrusted context instructions', () => {
     const prompt = buildPillarPrompt('  Pillar text  ', item)
     expect(prompt.startsWith('Pillar text\n\n## Pull request under review')).toBe(true)

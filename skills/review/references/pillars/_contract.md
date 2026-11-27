@@ -51,6 +51,10 @@ Every pillar reviewer follows this contract. The pillar file adds its scope and 
   a separate one. Report a test gap alone only when no defect is known and the gap matters.
 - Clean pull requests are common. Raise a finding only when you can name what goes wrong or what
   it costs; style preferences and speculative "could be cleaner" notes are not findings.
+- The run section gives the review date in UTC. Check a dated record, such as a changelog or
+  HISTORY entry, against that date, never against the date your environment reports, which is the
+  machine's local day. Report a record dated after the review date; a record dated that UTC day or
+  earlier is not in the future.
 - Do not report what the pull request page already shows the author: that the branch conflicts
   with its base, that a check is failing, that a review is pending. Report what the page does not
   show: a defect in this change that causes it, or what it means for the change, for example a
