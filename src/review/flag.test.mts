@@ -6,7 +6,7 @@ import { FLAG_DEFINITIONS, FLAG_KINDS, FLAGS_SCHEMA } from './flag.mts'
 import { REVIEW_VERIFIER_SCHEMA } from './run/verify-schema.mts'
 
 describe('flags', () => {
-  it('fixes the eleven kinds the owner decided, each defined', () => {
+  it('fixes the ten kinds the owner decided, each defined', () => {
     expect(FLAG_KINDS).toEqual([
       'architecture',
       'acceptance-criteria',
@@ -16,7 +16,6 @@ describe('flags', () => {
       'broken-workflow',
       'safeguard-weakened',
       'irreversible',
-      'undeclared-breaking',
       'new-service',
       'rule-workaround',
     ])

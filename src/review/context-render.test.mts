@@ -142,6 +142,8 @@ describe('renderFollowUpContext', () => {
             path: 'a.ts',
             line: 4,
             outdated: false,
+            replies: [{ login: 'dev', text: 'pre-1.0, we will bump a minor' }],
+            moreReplies: 2,
           },
           {
             threadId: null,
@@ -166,7 +168,10 @@ describe('renderFollowUpContext', () => {
         others: [{ author: 'bob', kind: 'issue comment', bot: false, where: '', text: 'hello' }],
       }),
     )
-    expect(out).toContain('- [high] Bug (correctness; a.ts:4; thread `T1`)')
+    expect(out).toContain(
+      '- [high] Bug (correctness; a.ts:4; thread `T1`)\n  - reply by dev: pre-1.0, we will bump a minor\n  - [2 more replies not shown]',
+    )
+    expect(out).toContain('- Pull request author:')
     expect(out).toContain('- [low] Nit (style; b.ts:file, outdated; thread `T2`)')
     expect(out).toContain('- [medium] Global (design; PR-level; no thread (review body))')
     expect(out).toContain('## Intent (untrusted)')
