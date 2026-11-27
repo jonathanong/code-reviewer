@@ -28,3 +28,4 @@
 - The reviewer does not inspect how CI or the test database is set up. It reads environment data only when the change makes it relevant.
 - The reviewer never merges a pull request it reviews. When the loop is unsure, it holds the review and flags it to a person.
 - A change to a prompt, schema or contract is recorded in the benchmark `HISTORY.md` in the same change, with the rows it makes non-comparable.
+- Behaviour that only a prompt decides is covered by a benchmark case, as code is covered by tests (`benchmarks/review/AGENTS.md`).
