@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { buildPillarRunPrompt } from './pillar-prompt.mts'
 import { reviewDateLine } from './review-date.mts'
@@ -38,9 +38,14 @@ describe('reviewDateLine', () => {
   })
 
   it('uses the current time when no clock is given', () => {
-    const today = new Date().toISOString().slice(0, 10)
-    const pillar = buildPillarRunPrompt({ contract: 'C', pillarText: 'P', run: RUN, skills: [] })
-    expect(pillar).toContain(`Review date (UTC): ${today}`)
-    expect(buildVerifierRunPrompt(VERIFIER)).toContain(`Review date (UTC): ${today}`)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-27T23:59:59Z'))
+    try {
+      const pillar = buildPillarRunPrompt({ contract: 'C', pillarText: 'P', run: RUN, skills: [] })
+      expect(pillar).toContain('Review date (UTC): 2026-11-27.')
+      expect(buildVerifierRunPrompt(VERIFIER)).toContain('Review date (UTC): 2026-11-27.')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

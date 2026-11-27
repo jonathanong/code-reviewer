@@ -39,9 +39,13 @@ describe('prompt and args', () => {
   it('gives the review date from the case clock, else the bench clock', () => {
     const dated = { ...item, reviewedAt: '2030-01-01T07:46:00Z' }
     expect(buildPillarPrompt('P', dated)).toContain('Review date (UTC): 2030-01-01.')
-    expect(buildPillarPrompt('P', item)).toContain(
-      `Review date (UTC): ${new Date().toISOString().slice(0, 10)}.`,
-    )
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-27T23:59:59Z'))
+    try {
+      expect(buildPillarPrompt('P', item)).toContain('Review date (UTC): 2026-11-27.')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('wraps the pillar prompt with untrusted context instructions', () => {

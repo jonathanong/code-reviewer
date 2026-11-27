@@ -1,0 +1,19 @@
+{
+  "findings": [
+    {
+      "pillar": "rules",
+      "severity": "high",
+      "title": "Containment condition exceeds rustfmt max_width, so `cargo fmt --check` fails",
+      "body": "The condition that checks the joined path stays inside the root is written on one line that is longer than rustfmt's `max_width` of 100 columns. CI runs `cargo fmt --all -- --check`, which rejects an unformatted line, so this pull request will fail the Rust formatting check until the line is wrapped.",
+      "path": "crates/no-mistakes/src/codebase/rules/config_path_references/references.rs",
+      "line": 21,
+      "side": "RIGHT",
+      "fix": "Run `cargo fmt --all` and commit the wrapped condition."
+    }
+  ],
+  "judged": {
+    "model": "opus",
+    "inputs": "90a4a06c2039ea022def14a90c6f70bcb50f93531f3d23c1bcb766d4dec887c3",
+    "assignment": []
+  }
+}

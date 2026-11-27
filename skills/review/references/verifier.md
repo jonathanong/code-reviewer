@@ -17,6 +17,10 @@ thread; the open questions the last review asked; and other reviewers' notes), `
 2. **Verify each finding** against the code at the reviewed head: open the cited lines and their
    callers. For a finding that cites a rule skill (`plugin:skill`), load that installed skill
    and check the claim against its text; shared rules come only from installed plugin skills.
+   Reject a finding whose defect a check this repository runs in CI detects (a formatter, linter, type checker,
+   AST or static rule, or another CI check; reason: CI reports it). Keep a finding about what a check's actual result
+   means for the change, such as a failing check that shows an acceptance criterion is not met. Confirm a claim that a CI check fails or will fail only from that check's actual
+   result at the reviewed head, never by inferring it from reading code; if there is no result yet, drop the claim.
    Mark it confirmed or rejected (not true, out of scope, or speculative), and decide its
    severity yourself from the [pillar contract](pillars/_contract.md); do not inherit the pillar's
    rating. Raise an under-rated finding as readily as you lower an over-rated one. Drop rejected
