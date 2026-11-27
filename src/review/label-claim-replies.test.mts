@@ -27,7 +27,7 @@ describe('claimReplies', () => {
 
   it('loses the claim when a request lands between the read and the swap, and leaves the labels', async () => {
     const io = fakeIo([completed])
-    const labels = io.labels
+    const labels = io.labels.bind(io)
     let reads = 0
     // Reads: the busy check, the swap's own, then the re-read; a request lands before the last.
     io.labels = async () => {
@@ -61,7 +61,7 @@ describe('claimReplies', () => {
 
   it('still rethrows the re-check failure when giving the claim back fails too', async () => {
     const io = fakeIo([completed])
-    const labels = io.labels
+    const labels = io.labels.bind(io)
     let failing = false
     io.labels = async () => {
       if (failing) throw new Error('labels unavailable')
