@@ -9,8 +9,24 @@ no score here moves. What changes is which pillars a live review gets, so rows t
 earlier ones: a follow-up that edits more than 40 lines of hand-written source is `full` at `high` (was `light` at `low`);
 a pull request that edits only `SKILL.md`, `AGENTS.md`, `CLAUDE.md` or `.md` under `skills/`, `agents/`, `plugins/` or
 `.claude/` is no longer docs-only (it gets rules and correctness when small, the full set when large; was rules only); a
-small pull request that changes a path in `plan.sqlPaths` is `full`. Plan logic is covered by unit tests
+pull request that changes a path in `plan.sqlPaths` is `full`. Plan logic is covered by unit tests
 (`src/review/plan-paths.test.mts`, `triggers.test.mts`), not by a benchmark case.
+
+## 2026-11-27 (case fix, no run): `supervisor-65-417fd1b` gains the head-binding claim
+
+The case expected only the ordinal-operator claim. At head `417fd1b` the defect CodeRabbit found in the diff was "Bind
+the classifier results to the head that `policy check` evaluates" (`src/cli/policy-classify.ts` line 118, jonathanong/supervisor#65,
+fixed in `79c8a27`); the ordinal claim was raised later, on `69c2528`, as an outside-the-diff comment. An Opus run of the
+correctness pillar found the head-binding bug 3 of 3 times while the case scored it a miss, so the case was wrong, not
+the reviewer.
+
+- **What changed.** A second expected claim (correctness, `high`, `src/cli/policy-classify.ts`) and two `expectedReads`
+  (`src/cli/policy-check.ts`, `src/policy/facts.ts`). The ordinal claim stays: `conditions.ts` and the TODO in
+  `condition-validate.ts` are unchanged at `417fd1b`, so it holds at this head. `reason` says which claim was raised at
+  which head.
+- **Not comparable.** Every earlier `supervisor-65-417fd1b` row (0 of 3 with skills, 0 of 3 without, 2026-11-27) scored
+  recall against one claim; it is now out of two, and a run that found the head-binding bug would have scored a miss then
+  and a hit now. The case is a mined miss no more: re-measure it before quoting a number. No run in this entry.
 
 ## 2026-11-27 (input change, cases added): follow-up reviews in `bench-verifier`
 

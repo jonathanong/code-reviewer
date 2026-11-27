@@ -113,10 +113,22 @@ describe('planReview small and instruction-file changes', () => {
   it('reviews a small pull request in full when it changes SQL', () => {
     const result = plan({ paths: ['src/a.ts', 'db/report.sql'], reviewableLines: 5 })
     expect(result).toMatchObject({ mode: 'full', effort: 'high' })
-    expect(result.reasons).toContain(
-      'Small pull request (5 reviewable lines) but it changes SQL (db/report.sql): high effort.',
-    )
+    expect(result.reasons).toContain('The pull request changes SQL (db/report.sql): high effort.')
     expect(plan({ paths: ['db/migrations/001.ts'], reviewableLines: 5 }).mode).toBe('full')
+  })
+
+  it('escalates a configured SQL path even when it has a doc extension', () => {
+    const paths = ['db/query.txt']
+    expect(plan({ paths, reviewableLines: 5 }).reasons).toEqual([
+      'Only docs and tests changed: light review.',
+    ])
+    const sqlPaths = ['db/**']
+    const result = plan({ paths, reviewableLines: 5, values: values({ sqlPaths }) })
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
+    expect(result.reasons[0]).toBe('The pull request changes SQL (db/query.txt): high effort.')
+    expect(plan({ paths: ['README.md'], values: values({ sqlPaths }) }).mode).toBe('light')
+    const generated = values({ sqlPaths, generatedPaths: ['db/**'] })
+    expect(plan({ paths, reviewableLines: 5, values: generated }).mode).toBe('light')
   })
 
   it('takes a configured sqlPaths glob as SQL, and a generated SQL path as not', () => {

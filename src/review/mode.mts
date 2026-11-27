@@ -9,6 +9,7 @@ import {
   isLockfile,
   isSqlPath,
   isTestOrDocsOnly,
+  isTestPath,
   isSourcePath,
   securityTriggers,
 } from './triggers.mts'
@@ -121,20 +122,19 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
     reasons.push('Dependabot pull request: light review.')
     return light(null)
   }
+  // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
+  const handWritten = input.paths.filter((path) => !isGenerated(path, values.generatedPaths))
+  // Before the docs-and-tests return: a configured SQL path may have a doc extension (`db/q.txt`).
+  const sql = handWritten.filter((path) => !isTestPath(path) && isSqlPath(path, values.sqlPaths))
+  if (sql.length > 0) {
+    reasons.push(`The pull request changes SQL (${sql.slice(0, 3).join(', ')}): high effort.`)
+    return full('high')
+  }
   if (isTestOrDocsOnly(input.paths)) {
     reasons.push('Only docs and tests changed: light review.')
     return light(null)
   }
-  // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
-  const handWritten = input.paths.filter((path) => !isGenerated(path, values.generatedPaths))
   const small = input.reviewableLines <= values.smallChangeLines
-  const sql = handWritten.filter((path) => isSqlPath(path, values.sqlPaths))
-  if (small && sql.length > 0) {
-    reasons.push(
-      `Small pull request (${input.reviewableLines} reviewable lines) but it changes SQL (${sql.slice(0, 3).join(', ')}): high effort.`,
-    )
-    return full('high')
-  }
   if (small && securityTriggers(handWritten, values.securityPaths).length === 0) {
     reasons.push(`Small pull request (${input.reviewableLines} reviewable lines): light review.`)
     return light(null)

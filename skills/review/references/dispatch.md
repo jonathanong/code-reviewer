@@ -91,7 +91,7 @@ never small. History is added in full mode only.
 - **Docs-only** (every changed file has a doc extension: md, mdx, markdown, txt, rst, adoc; `requirements*.txt`, `CMakeLists.txt` and agent instruction files are code): rules only (the verifier
   still performs congruence). An instruction file is `SKILL.md`, `AGENTS.md`, `CLAUDE.md`, or an `.md` under a `skills/`, `agents/`, `plugins/` or `.claude/` directory at any depth: it changes what an agent does, so it is reviewed as code. It never triggers the security pillar by its name.
 - **Follow-up that changes source**: when the new commits change hand-written source (not tests, docs or generated files) in more than `plan.followUpSourceLines` lines (default 40), the follow-up is a full review at high effort, not a light one.
-- **SQL**: a small pull request that changes a `.sql` file, a path under `migrations/`, or a path matching `plan.sqlPaths` is a full review, not a light one.
+- **SQL**: a pull request that changes (outside tests and generated files) a `.sql` file, a path under `migrations/`, or a path matching `plan.sqlPaths` is a full review, never a docs-only or small light one.
 - **Test- or docs-only**: blast-radius is skipped.
 - **Security trigger**, any changed non-doc path that matches:
   - auth, session, token, permission, crypto, secret, password, credential, OAuth, or JWT names;
