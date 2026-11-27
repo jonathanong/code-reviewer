@@ -4,6 +4,7 @@ import { creditedOutputs, referencing, type Graded } from './verifier-grade.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { VerifierOutput } from './verifier-run.mts'
 import type { AnswerGrade, ThreadGrade } from './verifier-answers.mts'
+import type { FollowUpGrade } from './followup-case.mts'
 
 export type VerifierCaseScore = {
   id: string
@@ -26,6 +27,8 @@ export type VerifierCaseScore = {
   after: number
   /** The verdict on each listed note; absent for a case that lists none. */
   threads?: ThreadGrade[]
+  /** The verdict on each earlier finding of a follow-up case; absent for any other case. */
+  earlier?: FollowUpGrade['threads']
 }
 
 const RANK: Record<Severity, number> = { blocking: 0, high: 1, medium: 2, low: 3 }
@@ -36,6 +39,7 @@ export function scoreVerifierCase(
   output: VerifierOutput,
   graded: Graded,
   answers?: AnswerGrade,
+  followUp?: FollowUpGrade,
 ): VerifierCaseScore {
   const kept = input.real.filter(([index]) => {
     const copy = input.planted.find(([original]) => original === index)?.[1]
@@ -70,6 +74,7 @@ export function scoreVerifierCase(
     before: input.findings.length - input.planted.length,
     after: output.findings.length,
     ...(answers === undefined ? {} : { threads: answers.threads }),
+    ...(followUp === undefined ? {} : { earlier: followUp.threads }),
   }
 }
 
@@ -87,6 +92,9 @@ export type VerifierSummary = {
   /** Listed notes graded, and how many the verifier handled as expected. */
   threads: number
   threadsPassed: number
+  /** Earlier findings of follow-up cases graded, and how many were judged as expected. */
+  earlier: number
+  earlierPassed: number
 }
 
 function ratio(numerator: number, denominator: number): number | null {
@@ -99,6 +107,7 @@ export function summarizeVerifier(scores: readonly VerifierCaseScore[]): Verifie
   const expected = sum((s) => s.expected)
   const checked = sum((s) => s.confirmed + s.refuted)
   const threads = scores.flatMap((score) => score.threads ?? [])
+  const earlier = scores.flatMap((score) => score.earlier ?? [])
   return {
     cases: scores.length,
     keptRate: ratio(
@@ -136,6 +145,8 @@ export function summarizeVerifier(scores: readonly VerifierCaseScore[]): Verifie
     ),
     threads: threads.length,
     threadsPassed: threads.filter((thread) => thread.passed).length,
+    earlier: earlier.length,
+    earlierPassed: earlier.filter((thread) => thread.passed).length,
   }
 }
 
@@ -155,10 +166,18 @@ export function renderVerifierTable(summary: VerifierSummary): string {
           '',
           `Answers to other reviewers' notes: ${summary.threadsPassed} of ${summary.threads} handled as expected.`,
         ]
+  const followUps =
+    summary.earlier === 0
+      ? []
+      : [
+          '',
+          `Earlier findings of follow-ups: ${summary.earlierPassed} of ${summary.earlier} judged as expected (fixed or still present).`,
+        ]
   return [
     '| Cases | Real kept | Label recall, pillars → verifier | Severity agreement | Other blocking/high confirmed | Duplicates merged | Findings before → after |',
     '| --- | --- | --- | --- | --- | --- | --- |',
     `| ${summary.cases} | ${pct(summary.keptRate)} | ${pct(summary.recallIn)} → ${pct(summary.recallOut)} | ${pct(summary.severityAgreement)} | ${pct(summary.confirmedRate)} (${summary.checked}) | ${pct(summary.mergeRate)} | ${mean(summary.meanBefore)} → ${mean(summary.meanAfter)} |`,
     ...answers,
+    ...followUps,
   ].join('\n')
 }

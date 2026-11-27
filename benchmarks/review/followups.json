@@ -1,0 +1,174 @@
+[
+  {
+    "id": "followup-fixed",
+    "fixture": "fixtures/followup-fixed",
+    "title": "feat: percentage discounts at checkout",
+    "kind": "negative",
+    "reason": "Guards the follow-up verdict on a fixed finding. The earlier review found that applyDiscount does not bound the percentage, and the since-diff adds the clamp. The verifier should report the thread fixed and raise nothing new; the check is on fixedThreadIds, and a high or blocking finding on the clamp would be a re-raise.",
+    "expected": [],
+    "followUp": {
+      "previous": {
+        "sha": "1111111111111111111111111111111111111111",
+        "date": "2026-11-20",
+        "mode": "full",
+        "verdict": "Comment",
+        "posted": true,
+        "findings": [
+          {
+            "severity": "high",
+            "title": "applyDiscount does not bound the percentage",
+            "pillar": "correctness",
+            "path": "src/discount.mts",
+            "line": 2
+          }
+        ]
+      },
+      "unresolved": [
+        {
+          "threadId": "PRRT_followupFixed01",
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "applyDiscount does not bound the percentage: a value above 100 gives a negative price",
+          "path": "src/discount.mts",
+          "line": 2,
+          "expect": "fixed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "followup-still-present",
+    "fixture": "fixtures/followup-still-present",
+    "title": "feat: percentage discounts at checkout",
+    "kind": "negative",
+    "reason": "Guards against marking a finding fixed because the follow-up touched nearby code. The since-diff clamps the percentage only in a new discountLabel display helper; applyDiscount, where the earlier finding sits, is unchanged. The verifier should leave the thread out of fixedThreadIds.",
+    "expected": [],
+    "followUp": {
+      "previous": {
+        "sha": "2222222222222222222222222222222222222222",
+        "date": "2026-11-20",
+        "mode": "full",
+        "verdict": "Comment",
+        "posted": true,
+        "findings": [
+          {
+            "severity": "high",
+            "title": "applyDiscount does not bound the percentage",
+            "pillar": "correctness",
+            "path": "src/discount.mts",
+            "line": 2
+          }
+        ]
+      },
+      "unresolved": [
+        {
+          "threadId": "PRRT_followupOpen01",
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "applyDiscount does not bound the percentage: a value above 100 gives a negative price",
+          "path": "src/discount.mts",
+          "line": 2,
+          "expect": "open"
+        }
+      ]
+    }
+  },
+  {
+    "id": "followup-fixed-new-defect",
+    "fixture": "fixtures/followup-fixed-new-defect",
+    "title": "feat: percentage discounts at checkout",
+    "kind": "positive",
+    "reason": "Guards a follow-up that must both close the old finding and see a new defect. The since-diff adds the clamp (the thread is fixed) and, in the same lines, a cache keyed by the percentage alone, so a later call returns the first price's result for any other price. The verifier should report the thread fixed and raise the cache defect.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/discount.mts",
+        "lines": [5, 8],
+        "claim": "applyDiscount caches its result by the bounded percentage alone, but the result also depends on priceCents. After the first call for a percentage, every later call with another price returns the first price's discounted value, so totals are wrong. The finding must say the cache key leaves out the price; a finding about the clamp or about the cache growing without bound does not match."
+      }
+    ],
+    "followUp": {
+      "previous": {
+        "sha": "3333333333333333333333333333333333333333",
+        "date": "2026-11-20",
+        "mode": "full",
+        "verdict": "Comment",
+        "posted": true,
+        "findings": [
+          {
+            "severity": "high",
+            "title": "applyDiscount does not bound the percentage",
+            "pillar": "correctness",
+            "path": "src/discount.mts",
+            "line": 2
+          }
+        ]
+      },
+      "unresolved": [
+        {
+          "threadId": "PRRT_followupNew01",
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "applyDiscount does not bound the percentage: a value above 100 gives a negative price",
+          "path": "src/discount.mts",
+          "line": 2,
+          "expect": "fixed"
+        }
+      ]
+    }
+  },
+  {
+    "id": "followup-mixed",
+    "fixture": "fixtures/followup-mixed",
+    "title": "feat: percentage discounts at checkout",
+    "kind": "negative",
+    "reason": "Guards a follow-up with two earlier findings that must be judged apart. The since-diff clamps the percentage (that thread is fixed) and leaves saveTotal's unawaited write alone (that thread is still open). The verifier should list only the first in fixedThreadIds.",
+    "expected": [],
+    "followUp": {
+      "previous": {
+        "sha": "4444444444444444444444444444444444444444",
+        "date": "2026-11-20",
+        "mode": "full",
+        "verdict": "Comment",
+        "posted": true,
+        "findings": [
+          {
+            "severity": "high",
+            "title": "applyDiscount does not bound the percentage",
+            "pillar": "correctness",
+            "path": "src/discount.mts",
+            "line": 2
+          },
+          {
+            "severity": "high",
+            "title": "saveTotal does not await the write",
+            "pillar": "correctness",
+            "path": "src/checkout.mts",
+            "line": 12
+          }
+        ]
+      },
+      "unresolved": [
+        {
+          "threadId": "PRRT_followupMixedA1",
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "applyDiscount does not bound the percentage: a value above 100 gives a negative price",
+          "path": "src/discount.mts",
+          "line": 2,
+          "expect": "fixed"
+        },
+        {
+          "threadId": "PRRT_followupMixedB2",
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "saveTotal does not await db.exec: it returns before the write finishes and a failed update is an unhandled rejection",
+          "path": "src/checkout.mts",
+          "line": 12,
+          "expect": "open"
+        }
+      ]
+    }
+  }
+]

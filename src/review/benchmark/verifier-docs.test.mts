@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { EvalCase } from './cases.mts'
-import { buildVerifierPrompt } from './verifier-run.mts'
+import { buildVerifierPrompt } from './verifier-prompt.mts'
 
 const ITEM: EvalCase = {
   id: 'case-1',

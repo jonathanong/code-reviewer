@@ -8,6 +8,8 @@ import { parseExpectedReads } from './reads-score.mts'
 import { parseUnwantedSkills } from './unwanted-skills.mts'
 import type { ExpectedSkill } from './skills-score.mts'
 import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
+import { parseExpectedSkills } from './expected-skills.mts'
+import { parseFollowUp, type FollowUpCase } from './followup-case.mts'
 import { parseFocusFields, type FocusFields } from './focus-case.mts'
 import { appliesToPillar } from './pillar-applies.mts'
 import { parseReviewedAt, type ReviewedAt } from './reviewed-at.mts'
@@ -34,6 +36,8 @@ type CaseBase = FocusFields & {
   expectedTargets?: string[]
   unwantedTargets?: string[]
   answerable?: AnswerableCase[]
+  /** The earlier review a follow-up case judges; a fixture case only, with a `reviewed/` tree. */
+  followUp?: FollowUpCase
 }
 
 /** A real pull request, cloned and exported with git. */
@@ -119,23 +123,6 @@ function source(
   return raw.body === undefined ? origin : { ...origin, body: str(raw, 'body', where) }
 }
 
-function skillName(value: unknown, where: string): string {
-  if (typeof value !== 'string' || !value.includes(':'))
-    fail(where, 'expectedSkills names must be full plugin:skill strings')
-  return value
-}
-
-function skillNames(value: unknown, where: string): ExpectedSkill[] | undefined {
-  if (value === undefined) return undefined
-  if (!Array.isArray(value) || value.length === 0)
-    fail(where, 'expectedSkills must be a non-empty array')
-  return value.map((entry): ExpectedSkill => {
-    if (!Array.isArray(entry)) return skillName(entry, where)
-    if (entry.length === 0) fail(where, 'an expectedSkills any-of group must not be empty')
-    return entry.map((name) => skillName(name, where))
-  })
-}
-
 function evalCase(
   raw: unknown,
   index: number,
@@ -155,10 +142,13 @@ function evalCase(
     fail(where, 'a positive case needs an expected finding')
   if (raw.kind === 'negative' && parsed.length > 0)
     fail(where, 'a negative case has no expected findings')
-  const expectedSkills = skillNames(raw.expectedSkills, where)
+  const expectedSkills = parseExpectedSkills(raw.expectedSkills, where)
   const expectedReads = parseExpectedReads(raw.expectedReads, where)
   const expectedRules = parseExpectedRules(raw.expectedRules, expectedSkills, where)
   const unwantedSkills = parseUnwantedSkills(raw.unwantedSkills, expectedSkills, where)
+  const followUp = parseFollowUp(raw.followUp, where)
+  if (followUp.followUp !== undefined && !('fixture' in origin))
+    fail(where, 'followUp needs a fixture case, which holds the reviewed tree')
   const targetNames = targets?.map((target) => target.name)
   return {
     id: str(raw, 'id', where),
@@ -169,6 +159,7 @@ function evalCase(
     ...(unwantedSkills === undefined ? {} : { unwantedSkills }),
     ...parseSelectionTargets(raw.expectedTargets, raw.unwantedTargets, where, targetNames),
     ...parseAnswerable(raw.answerable, where),
+    ...followUp,
     ...parseFocusFields(raw, where, targets),
     ...parseReviewedAt(raw.reviewedAt, where),
     title: str(raw, 'title', where),

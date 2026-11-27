@@ -158,6 +158,8 @@ describe('summarizeVerifier and renderVerifierTable', () => {
       meanAfter: 1,
       threads: 0,
       threadsPassed: 0,
+      earlier: 0,
+      earlierPassed: 0,
     })
     expect(renderVerifierTable(summary).split('\n')[2]).toBe(
       '| 2 | 50% | 25% → 50% | 50% | 75% (4) | 50% | 2.0 → 1.0 |',
