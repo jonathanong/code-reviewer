@@ -4,14 +4,15 @@ import type { LabelNames } from './settings.mts'
 /** One timeline row: the event name and the one value that matters for it. */
 export type TimelineRow = { event: string; value: string }
 
+/** The current hold's head, and how many times the timeline shows the held label added. */
+export type Held = { head: string | undefined; placements: number }
+
 /**
  * Which head the current hold was placed on, read from the pull request timeline, which GitHub
  * orders by when each thing happened (a push cannot be moved before a label). The head is the
  * newest commit or force-push target before the last `held` label; undefined when the label is
  * not on the timeline last as added, or no head precedes it.
  */
-/** The current hold's head, and how many times the timeline shows the held label added. */
-export type Held = { head: string | undefined; placements: number }
 
 export function heldFrom(rows: readonly TimelineRow[], heldLabel: string): Held {
   let head: string | undefined
