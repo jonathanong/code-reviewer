@@ -238,6 +238,19 @@ the class of mistake; over 160 characters it warns like any over-long posted tex
 comment or body finding); `report.md` shows them as plain lines. With neither, no section is
 rendered. Another reviewer's credit stays visible, after the section.
 
+## Breaking changes
+
+An incompatible change to a public API, CLI (exit codes included), config shape or published
+package's contract is `blocking`, so the review requests changes, unless the description declares it
+breaking or the pull request author acknowledged it (a reply on the finding's thread, a comment, or
+the description; "pre-1.0, we will bump a minor" counts). Then it is `medium`, and a follow-up review
+moves the same finding from `blocking` to `medium`, so the verdict can go from Request Changes to
+Approve. A behavior change that is not incompatible (a new output, an added option) stays `medium`.
+The definition and examples are in `skills/review/references/pillars/congruence.md`. The reviewer
+asks the author, through the finding, rather than holding the review for a person: there is no
+`undeclared-breaking` [flag](#flags). A title or description problem stays `medium` at most. How a
+reply reaches the verifier is in [context](context.md#past-reviews).
+
 ## Pre-existing defects (FYI)
 
 A pillar that comes across a defect or rule violation on the base branch, in code it read, that the
@@ -248,7 +261,10 @@ verdict, the finding counts, the tracker counts and the inline comments ignore i
 pre-existing `high` never turns an Approve into a Comment. The posted review lists each as one
 line under "FYI — pre-existing, not part of this review", after the findings, with the finding's
 body collapsed under a "Why" summary (cut at 600 characters) so the author can see the reason, and
-shows at most five (the renderer drops the rest and prints "and N more"). It is a flag on the finding, not a
+shows at most five (the renderer drops the rest and prints "and N more"). One line after the items
+asks the author to decide on each: fix it here, or track it in an issue; none blocks the merge. The
+reviewer files no issue for it: the [`issues`](issues.md) setting files issues about the reviewer's
+own rules and harnesses, never about a gap in the reviewed repository, so the author tracks it. It is a flag on the finding, not a
 second list, so it passes through the pillar, verifier and approval-check schemas unchanged.
 
 An approval that lists at least one non-pre-existing finding (not only FYI items) adds one line
@@ -297,7 +313,7 @@ so a restated blocking item gives Request Changes. With no items the prompt and 
 
 The verifier may return `flags`: concerns only a person can settle, each `{ kind, concern, where? }`.
 `kind` is one of `architecture`, `acceptance-criteria`, `feature-sense`, `wrong-intent`, `design`,
-`broken-workflow`, `safeguard-weakened`, `irreversible`, `undeclared-breaking`, `new-service` and
+`broken-workflow`, `safeguard-weakened`, `irreversible`, `new-service` and
 `rule-workaround`; their definitions are in `skills/review/references/verifier.md`. An unintentional
 bug that is easy to fix, a large or renamed change, touching a migration or workflow by itself, a bug
 check phrased as a question, and an investigation or experiment whose goal is not yet shown to be met

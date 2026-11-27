@@ -123,7 +123,9 @@ thread; the open questions the last review asked; and other reviewers' notes), `
     and this pull request neither introduced it nor made it reachable. If the base lacks the defect
     or the diff touches it or makes it reachable, clear the mark and judge it as a normal finding;
     drop it only if verification rejects the defect itself. Mark a kept finding `preExisting` yourself when it meets that test and a pillar missed
-    the mark. Keep at most five, the most useful first, and drop the rest.
+    the mark. Keep at most five, the most useful first, and drop the rest. A gap the base already had
+    is never `blocking`, whatever its rating; the posted review asks the author to fix it here or track
+    it in an issue.
 13. **Impact.** Only when the run prompt has an Impact block: set `impact` as it says.
 14. **Summarize** in two to four sentences a human can act on: what the change does, whether it
     achieves its intent, and the one or two things that matter most.
@@ -148,8 +150,6 @@ review for a person when there is at least one.
   broadened to make the change pass.
 - `irreversible`: data deletion, a dropped table or column, a one-way migration or a destructive
   script.
-- `undeclared-breaking`: a public API, CLI, config shape or published package changes
-  incompatibly and the description does not say so.
 - `new-service`: adds an external service, vendor, paid resource or infrastructure that was not
   discussed.
 - `rule-workaround`: the agent hacked around a rule, so the process needs updating.
@@ -171,6 +171,13 @@ a finding is real but misses a condition, rate it `high` or lower. A finding mar
 is outside this: it never counts toward Request Changes or Comment.
 A finding that shows the pull request fails its own stated purpose keeps the floor the contract gives it:
 rate it anew by that rule, not lower.
+An incompatible change to a public API, CLI, config shape or published package's contract
+([congruence](pillars/congruence.md), "Breaking changes") is `blocking` while it is neither declared
+in the description nor acknowledged by the pull request author, and `medium` once it is. Decide
+which on every review, from `context.md`: the description under "Intent", and the replies listed under
+the finding in "Unresolved review findings" and the author's comments. Count a reply only when its
+login is the pull request author and it is about this change. A finding from the earlier review that
+the author has since acknowledged is lowered to `medium`, not dropped and not kept `blocking`.
 
 ## Verdict
 
@@ -181,7 +188,9 @@ The verdict is derived top-down; do not choose it separately:
 3. Otherwise Approve.
 
 Findings marked `preExisting` are FYIs: they are not counted in this derivation, are listed in the
-posted review as pre-existing, and never request changes.
+posted review as pre-existing with a one-line ask that the author decide on each (fix it here, or
+track it in an issue), and never request changes. An acknowledged breaking change is `medium` and is
+counted, so a review that only had it as `blocking` can now approve.
 
 A full review that would approve then gets one more pass, the [approval check](refute.md), which
 may add findings and questions; the caller derives the verdict again. You do not run it.
