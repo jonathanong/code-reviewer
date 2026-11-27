@@ -15,7 +15,7 @@ $23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
 every run.
 
 **Every row below is stale.** The pillar contract, the pillar and verifier output schemas, the
-verifier prompt (which since 2026-11-23 may carry a list of document lines, and since 2026-11-27 the review date in UTC, as every pillar prompt does; `history-dated-utc-day` and `history-dated-future` are not run yet), the congruence pillar the verifier performs, the verifier's step 2 (documented limits, base severity, convention claims; 2026-11-25, unmeasured) and the mined-case snapshots have
+verifier prompt (which since 2026-11-23 may carry a list of document lines, and since 2026-11-27 the review date in UTC, as every pillar prompt does; `history-dated-future` 0 of 3 before and 3 of 3 after on Sonnet, `history-dated-utc-day` no false alarm in either, see `HISTORY.md`), the congruence pillar the verifier performs, the verifier's step 2 (documented limits, base severity, convention claims; 2026-11-25, unmeasured) and the mined-case snapshots have
 all changed since this run, so no row is comparable with a run made now. The
 "(no run)" entries in [HISTORY.md](HISTORY.md) list each change and the rows it affects.
 

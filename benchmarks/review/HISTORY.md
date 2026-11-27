@@ -2,11 +2,25 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
-## 2026-11-27 (no run, bench needs numbers): the review date in UTC goes into the pillar and verifier prompts
+## 2026-11-27 (targeted run): the review date in UTC goes into the pillar and verifier prompts
 
 Fixes jongleberry/code-reviewer#237: a review at 07:46 UTC raised "dated after today" for an entry dated that UTC day,
-because the model used the machine's local date. No run: the benchmark's `claude` calls exited "Not logged in" inside the
-agent's sandbox, so no before or after number exists yet. Run the two cases below on `main` and on this change.
+because the model used the machine's local date.
+
+- **Run.** `bench --pillar correctness --case history-dated-utc-day --case history-dated-future --model sonnet --judge
+  opus --no-rules`, 3 invocations on `main` at `9783d27` (with the two new cases and fixtures copied in; `main` ignores
+  `reviewedAt`) and 3 on this change. Cost about $0.89 for the 6 invocations (12 pillar runs). Raw results were in
+  `$TMPDIR` and are not kept.
+
+| Case                                             | `main` | This change |
+| ------------------------------------------------ | ------ | ----------- |
+| `history-dated-future` (positive, recall)        | 0 of 3 | 3 of 3      |
+| `history-dated-utc-day` (negative, false alarms) | 0 of 3 | 0 of 3      |
+
+- **Reading.** Without a date, the pillar never flagged an entry dated six days past the review: it had nothing to
+  compare against. With the UTC date it catches it every time and stays quiet on the entry dated the review's own UTC day.
+  The earlier prompt did not fail the negative, against the expectation below, so the negative guards against the new line
+  over-firing rather than showing the old bug; the live bug needed the machine's local date to be a day behind UTC.
 
 - **What changed.** Every pillar prompt and the verifier prompt now carry `Review date (UTC): YYYY-MM-DD.` (built from an
   injectable clock) with the sentence "Check a dated record, such as a changelog or HISTORY entry, against this date, not
