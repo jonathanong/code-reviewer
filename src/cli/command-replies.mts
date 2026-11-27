@@ -86,6 +86,7 @@ export async function repliesCommand(
   // labels end as they began: a run that gives no verdict on the new head does not mark it complete.
   const restoreCompleted = !headMoved(plan) || labels.includes(names.completed)
   const claim = await claimReplies(labelIo, names, {
+    restoreCompleted,
     reviewedSince: async () =>
       newestOwnReview(await answers.conversation(), trusted) !== plan.reviewId,
   })

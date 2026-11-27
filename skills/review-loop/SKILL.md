@@ -127,7 +127,7 @@ shows one, rely on the next review, which reads replies itself.
 For each such event: take `repo` and `pr`, skip a pull request that carries a request, in-progress or held
 label (a review will read the replies itself), and run `code-reviewer replies --repo <repo> --pr <n>
 --post auto` as a background command ([docs/replies.md](../../docs/replies.md)). It prints one JSON line;
-exit 11 means nothing to do (no new author reply), 10 held, 0 applied, 13 failed. It makes no
+exit 11 means nothing to do (no new author reply, or at a moved head no reply's diff since the reviewed commit could be read), 10 held, 0 applied, 13 failed. It makes no
 call unless the author has a new reply on an open finding, so waking it on every comment is cheap. Run
 it also when the head has moved since the review: it then judges the reply against the diff since the reviewed
 commit and only replies in or resolves threads; it never posts a verdict, so a follow-up review stays the way

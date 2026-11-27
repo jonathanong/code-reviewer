@@ -61,7 +61,11 @@ export async function claimLost(
 export async function claimReplies(
   io: LabelIo,
   names: LabelNames,
-  options: { reviewedSince?: (() => Promise<boolean>) | undefined },
+  options: {
+    reviewedSince?: (() => Promise<boolean>) | undefined
+    /** Passed to `releaseReplies` when the claim is rolled back; false when the caller will not put the completion back. */
+    restoreCompleted?: boolean | undefined
+  },
 ): Promise<ClaimOutcome> {
   const labels = await io.labels()
   const busy = [names.requested, names.processing, names.held].filter((name) =>
@@ -75,7 +79,7 @@ export async function claimReplies(
   try {
     lost = await claimLost(io, names, options)
   } catch (error) {
-    await releaseReplies(io, names).catch(() => undefined)
+    await releaseReplies(io, names, options.restoreCompleted).catch(() => undefined)
     throw error
   }
   if (lost) return { claimed: false, reason: 'claim lost', labels: await io.labels() }

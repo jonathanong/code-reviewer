@@ -10,6 +10,7 @@ import type { StackFile } from '../stack-file.mts'
 import { excerptsLines } from './excerpts-prompt.mts'
 import { carriedLines } from './carried-prompt.mts'
 import { mergeLines } from './merge-prompt.mts'
+import { reviewDateLine } from './review-date.mts'
 import { stackLines } from './stack-prompt.mts'
 
 /** The files `prepare` wrote that a pillar or the verifier may read, with absolute paths. */
@@ -103,6 +104,8 @@ export type PillarPromptInput = {
   contextFile?: string | undefined
   /** Internal and unset in a real review: `replace` skips the load of fully quoted skills. */
   excerpts?: ExcerptsMode | undefined
+  /** The clock; the review date line is built from it. */
+  now?: Date | undefined
 }
 
 /** The contract, the pillar file, a run section with absolute paths, then the skill instruction. */
@@ -113,6 +116,7 @@ export function buildPillarRunPrompt(input: PillarPromptInput): string {
     '## This run',
     'The working directory is a checkout of the pull request head. The run directory files:',
     runFileLines(input.run).join('\n'),
+    reviewDateLine(input.now ?? new Date()),
     NUMBERED_DIFF_LEGEND,
     ...contextLines(input.contextFile, input.excerpts),
     ...stackLines(input.run.stack, input.run.out),

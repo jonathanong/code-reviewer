@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterAll, expect, it } from 'vitest'
+import { afterAll, expect, it, vi } from 'vitest'
 
 import { runPillar } from '../benchmark/runner.mts'
 import { runVerifier } from '../benchmark/verifier-run.mts'
@@ -91,6 +91,8 @@ afterAll(() => rmSync(out, { recursive: true, force: true }))
 // step-argv.json was captured from the code before the harness seam: the whole exec call of
 // every step and variant, with prompts as sha256 and temp paths as placeholders.
 it('runs every step with the exact claude call', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-11-27T07:46:00Z'))
   const base = {
     tree: '/tree',
     run: { out, sinceSha: null, hasRules: true },
@@ -391,5 +393,6 @@ it('runs every step with the exact claude call', async () => {
     judgeFindings(expected, [FINDING], 'sonnet', exec, settings),
   )
   expect(Object.keys(captured)).toHaveLength(52)
+  vi.useRealTimers()
   expect(captured).toStrictEqual(EXPECTED)
 })
