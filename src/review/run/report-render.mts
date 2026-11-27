@@ -9,6 +9,7 @@ import { dependencyLine } from '../dependency-render.mts'
 import { renderCarried } from './carried-report.mts'
 import { renderRegression } from './regression-report.mts'
 import { renderPush } from './push-report.mts'
+import { renderReplies } from '../replies/report.mts'
 import { renderRan } from './report-models.mts'
 import { renderStack } from './stack-report.mts'
 import { renderApprovalCheck } from './approval-check-render.mts'
@@ -155,6 +156,7 @@ export function renderReport(data: ReportData): string {
       ? 'None.'
       : data.skipped.map((entry) => `- ${entry.pillar}: ${entry.reason}`).join('\n'),
     ...renderRan(data.ran ?? []),
+    ...renderReplies(data.replies),
     '### Cost',
     `Total: ${money(cost.total)} (skill selection ${money(cost.selection)}, pillars ${money(cost.pillars)}, verifier ${money(cost.verifier)}${data.verifier === null ? '' : `, ${data.verifier.model}`}${data.evidence === undefined ? '' : `, evidence ${money(cost.evidence)}`}${data.approvalCheck === undefined ? '' : `, approval check ${money(cost.approvalCheck)}`})`,
     '### Tokens by model',

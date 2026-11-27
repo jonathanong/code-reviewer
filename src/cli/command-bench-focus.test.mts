@@ -10,3 +10,15 @@ describe('runReviewCommand bench-focus', () => {
     expect(runFocusBench).toHaveBeenCalledWith(['--out', 'o'])
   })
 })
+
+describe('runReviewCommand bench-replies', () => {
+  it('forwards its arguments without parsing them', async () => {
+    const runRepliesBenchCli = vi.fn(async () => 3)
+    vi.doMock('../review/benchmark/replies-cli.mts', () => ({ runRepliesBenchCli }))
+    await expect(runReviewCommand(['bench-replies', '--out', 'o'], {} as ReviewDeps)).resolves.toBe(
+      3,
+    )
+    expect(runRepliesBenchCli).toHaveBeenCalledWith(['--out', 'o'])
+    vi.doUnmock('../review/benchmark/replies-cli.mts')
+  })
+})

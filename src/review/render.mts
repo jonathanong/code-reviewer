@@ -110,7 +110,7 @@ export function renderBodyFinding(finding: Finding): string {
 
 const ORDER: readonly Severity[] = ['blocking', 'high', 'medium', 'low']
 
-export function sortFindings(findings: readonly Finding[]): Finding[] {
+export function sortFindings<T extends Finding>(findings: readonly T[]): T[] {
   return [...findings].sort((a, b) => ORDER.indexOf(a.severity) - ORDER.indexOf(b.severity))
 }
 

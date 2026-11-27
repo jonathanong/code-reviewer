@@ -87,6 +87,14 @@ Fixture cases (`synthetic.json`, rules and correctness pillars):
 - Negatives drew three low findings in 84 runs and nothing higher.
 - Reviewer cost: $0.12 a pillar run with skills on a fixture, $0.23 on a mined case.
 
+Reply-only re-assessment (`bench-replies`, `replies.json`, 6 synthetic cases, Sonnet, 3 attempts, 2026-11-27,
+$0.16 in all, one pilot run, no control arm): 18 of 18 attempts gave the expected outcome. The cases are a valid
+acknowledgement of a breaking change (lowered to `medium`), a reply that gives what the finding asked for
+(settled), and four that must stay open: pushback with no evidence, a promise to fix later, a claim about code
+the call cannot see, and an instruction hidden in the reply. All are ceiling cases for Sonnet, so this shows the
+step works and is not fooled by these shapes, not how much margin it has. It does not measure replies that are
+partly right, or threads of several replies. See [docs/replies.md](../../docs/replies.md).
+
 Skill selection alone (`bench-selection`, Haiku, 22 tagged cases, 3 attempts, $0.19): the expected
 skill was named in 66 of 66 attempts, with 9.1 skills selected on average (2 to 9 on fixtures, 5
 to 20 on mined cases). **Stale for target selection:** `selectSkills` now also selects built-in

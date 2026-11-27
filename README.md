@@ -104,6 +104,8 @@ code-reviewer help
   checks, the files a run writes, and how the headless runs are confined.
 - [Unattended runs](docs/run.md): `run`, its exit codes and JSON line, the hold rules, and use
   from another agent session.
+- [Replies to findings](docs/replies.md): `replies`, which reads the author's answers on this
+  reviewer's open threads, settles or lowers findings, and re-derives the verdict in one small call.
 - [Health check](docs/doctor.md): `doctor`, what it checks and how to read its output.
 - [Posting a review](docs/posting.md): the verdict and review event, dismissals, retries,
   read-back, and text length.

@@ -7,6 +7,7 @@ code-reviewer prepare --repo owner/name --pr N --out DIR [--effort low|medium|hi
 code-reviewer abort --repo owner/name --pr N [--requeue]
 code-reviewer review --repo owner/name --pr N --out DIR --tree DIR [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--effort low|medium|high] [--force] [--focus FILE]
 code-reviewer run --repo owner/name --pr N [--post auto|hold] [--effort low|medium|high] [--force] [--jobs N] [--model STEP=HARNESS:MODEL]... [--max-cost USD] [--quiet] [--clones DIR] [--focus FILE]
+code-reviewer replies --repo owner/name --pr N [--post auto|hold] [--model replies=HARNESS:MODEL]
 code-reviewer context --repo owner/name --pr N --tree DIR [--out DIR] [--skill plugin:name]...
 code-reviewer report --out DIR
 code-reviewer resolve --repo owner/name --pr N --thread ID [--thread ID]...
@@ -27,6 +28,7 @@ code-reviewer bench --cases cases.json --prompts DIR --out DIR [--pillar NAME]..
 code-reviewer bench-verifier --cases cases.json --findings-from DIR --prompts DIR --out DIR [--case ID]... [--model NAME] [--jobs N] [--max-turns N] [--score-only] [--judge MODEL] [--checker MODEL] [--no-rules]
 code-reviewer bench-selection --cases cases.json... --out DIR [--case ID]... [--attempts N] [--jobs N] [--cache DIR] [--score-only]
 code-reviewer bench-context [--cases cases.json]... [--history history.json]... --out DIR [--case ID]...
+code-reviewer bench-replies --cases cases.json --out DIR [--case ID]... [--prompts DIR] [--model NAME] [--attempts N]
 code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prompts DIR] [--model NAME] [--mode light|full] [--jobs N] [--cache DIR] [--no-rules] [--score-only]
   auth reports whether gh calls use the GitHub App (app.yaml, .yml, .json or .jsonc in the config home ~/.config/code-reviewer, or
   CODE_REVIEWER_APP_ID with CODE_REVIEWER_APP_PRIVATE_KEY or _PATH, which wins) or the local gh
@@ -63,7 +65,8 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   the hold rules are in docs/run.md). It prints one JSON line and exits 0 posted, 10 held, 11 nothing
   to do, 12 precondition or config failure, 13 review or post failure. A held review stays in the run
   directory with the request label back and the command that posts it in postCommand.
-  --model STEP=HARNESS:MODEL (review and run, repeatable) sets one step's harness and model for that run, over the models config; a step named twice gets fallbacks in flag order. STEP is select, pillars, pillar.NAME, verifier, verifier.light, evidence or approvalCheck.
+  --model STEP=HARNESS:MODEL (review and run, repeatable) sets one step's harness and model for that run, over the models config; a step named twice gets fallbacks in flag order. STEP is select, pillars, pillar.NAME, verifier, verifier.light, evidence, approvalCheck or replies.
+  replies re-assesses this reviewer's newest review of a pull request from the author's new replies on its open threads, in one model call with no tools (docs/replies.md). It prints one JSON line and exits like run: 0 applied, 10 held, 11 nothing to do (including a head that moved), 12 precondition, 13 failure.
   doctor checks, without changing or posting anything, Node, git, gh, the App config, the machine config, the rule plugins (and how current they are), the harness binaries and the state directories, and prints one JSON line {ok, warn, fail, checks}; it exits 1 on a fail (docs/doctor.md).
   --max-cost USD (review and run) is a circuit breaker for runaway runs: once the cost the harnesses reported has reached USD no further step starts and the review fails whole, with nothing to post (the default is 25; a normal review costs a few dollars, so raise it only for very large pull requests); it beats limits.maxCostUsd in the machine config. --quiet turns off the progress lines review and run print to stderr, one when each step starts and ends.
   models lists the models the harness offers (opencode models; --free keeps ids ending in -free and a few known free ones, a naming heuristic; --model replaces the list), runs synthetic probes on each (--probes times each, --jobs at a time), and prints one JSON report on stdout and a table on stderr, ranked by found, valid, then seconds; --out DIR also writes models.json and models.md. It sends only its own tiny synthetic files, never a diff (docs/models.md).
@@ -126,6 +129,7 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   section for exactly those skills and reports each skill quoted in full, in part or not, and
   whether each expectedRules text is quoted, cut, or missing from the installed skill; --history
   files build small git repositories and check the history sections find the commits. It exits 0.
+  bench-replies runs the real replies step on each case's finding and author replies (no checkout, no tools), grades the outcome (settled, downgraded to expectedSeverity, or open) deterministically, repeats each case --attempts times, writes summary.json and summary.md, and prints one JSON line {summary, attempts, passed, costUsd}.
   bench-focus runs the real focus step (with computed change facts) on each case declaring focus
   points (inline point or built-in target name), grades each point deterministically against expectedStatus (and checks zero findings when
   expectNoFindings is set; a case's focusRefs, pull request number to a full 40-character commit, pins the head of

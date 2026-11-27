@@ -17,6 +17,8 @@
 - Run the requester-focus eval with `pnpm exec code-reviewer bench-focus --cases <file>... --out <dir>`
   (add `--case <id>` for one case, `--score-only` to re-score saved runs); it runs `runFocus` on
   every case declaring `focus` points and grades statuses deterministically without a judge model.
+- Run the reply-only re-assessment eval with `pnpm exec code-reviewer bench-replies --cases benchmarks/review/replies.json --out <dir> --model sonnet --attempts 3`
+  (add `--case <id>`); it makes one call per attempt (about $0.002 to $0.03) and grades the outcome deterministically, no judge. Each case has `expected` (`settled`, `downgraded` with `expectedSeverity`, or `open`).
 - Pilot a new case with one attempt. Before quoting a number, run 3 attempts with `--select` (what
   `review` does: Haiku picks the skills, and only the `rules` pillar is told to load them; `--select-all-pillars` forces
   them on every pillar for comparison) and 3 with `--no-rules` in the same session, then score

@@ -382,7 +382,7 @@ models:
 Which harness and model each step runs on. `tiers` name `small`, `medium` and `large`, each an
 ordered list of `{harness, model}` candidates (a Codex or agy candidate also needs `readsOutsideCheckout: true`, accepting that it may read files outside the checkout, or it refuses every step); unset, they are Claude's `haiku`, `sonnet` and
 `opus`. `steps` maps a step to a tier name or to its own ordered list. The steps are `select`,
-`pillars`, `focus` (the [requester focus](review.md#requester-focus) step), `pillar.<name>` (for a built-in or a configured pillar), `verifier`, `verifier.light`, `evidence` and `approvalCheck`. A
+`pillars`, `focus` (the [requester focus](review.md#requester-focus) step), `pillar.<name>` (for a built-in or a configured pillar), `verifier`, `verifier.light`, `evidence`, `approvalCheck` and `replies` (the [reply-only re-assessment](replies.md), default `medium`). A
 pillar uses `pillar.<name>`, else `pillars`, else the model the plan chose for it; `focus` uses itself, else `pillars`, else the `medium` tier; light reviews
 use only `verifier.light`. A step that is not set runs exactly as it would without this key, and
 a set key replaces only that key. The pillars' `explorer` subagent runs on the `small` tier: the model of its first `claude` candidate, else Haiku. It has no step of its own. The harnesses
@@ -390,7 +390,7 @@ are `claude`, `grok`, `opencode`, `codex` and `agy`; a name that is not register
 `grok`, `opencode`, `codex` or `agy` sends the pull request's diff and files to that provider. OpenCode at its free usage
 limit hangs until the step timeout and is then treated as rate limited, so the step moves on.
 A free OpenCode model (an id ending `-free`, or a known free id) may not run `verifier`,
-`verifier.light` or `approvalCheck`, in any candidate. `pillar.history` and `evidence` need shell,
+`verifier.light`, `approvalCheck` or `replies`, in any candidate. `pillar.history` and `evidence` need shell,
 which Grok, OpenCode, Codex and agy refuse, so a list with no Claude candidate for them is a problem (a
 `pillars` list reaches `pillar.history` unless that step is set). Refused web hosts are not known
 from the step name, so they are refused at run time and the step moves to its next candidate.

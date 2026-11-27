@@ -19,6 +19,8 @@ enter the verdict or the posted body (see [Flags](review.md#flags)).
 
 ## Review event and dismissals
 
+A verdict that a reply changes goes out the same way: see [Replies to findings](replies.md).
+
 `post` submits the verdict as its own review event: Approve as `APPROVE`, Request Changes as
 `REQUEST_CHANGES`, Comment as `COMMENT` (on the first part of a split review; later parts are
 comments). GitHub refuses approve and request-changes on your own pull request, so when the
