@@ -480,7 +480,6 @@ describe('runReviewCommand default dependencies', () => {
     try {
       const file = join(dir, 'findings.json')
       writeFileSync(file, '{"findings": 3}')
-      // Real file read and JSON parse happen before any gh call; the invalid findings abort first.
       await expect(
         runReviewCommand(['post', ...PR, '--head-sha', SHA, '--input', file]),
       ).resolves.toBe(2)
