@@ -3,6 +3,8 @@
 A standing, multi-pillar reviewer for pull requests in any repository. It reads each
 repository's `AGENTS.md` and skills, plus any configs for it, reviews the change, and posts a
 GitHub review. It runs on your machine, for the repositories you pick.
+It is part of [ratchet-stack](https://github.com/jongleberry/ratchet-stack), a set of plugins and
+tools for autonomous coding agents.
 
 ## Principles
 
@@ -70,7 +72,7 @@ command that posts it, or there was nothing to do. See [Unattended runs](docs/ru
 
 ## Install
 
-As a Claude Code plugin, install it from the shared `ratchet-stack` marketplace:
+As a Claude Code plugin, install it from the shared [`ratchet-stack`](https://github.com/jongleberry/ratchet-stack) marketplace:
 
 ```bash
 claude plugin marketplace add jongleberry/ratchet-stack
