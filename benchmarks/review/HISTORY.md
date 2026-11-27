@@ -2,6 +2,61 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-26 (cases added, targeted run): three no-mistakes misses found only by a hand check or a Codex shadow
+
+Source: `docs/reviewer-models-2026-11.md` (open item 4, PR #211). Cases added, and one targeted run: Sonnet reviewer
+(`--model sonnet`), judge Opus, `correctness` pillar, **2 attempts per arm** (`--select` and `--no-rules`, same
+session). That is not a rate: at 2 attempts a difference of one catch is noise. No prompt, schema or grader changed,
+so no earlier row changes.
+
+- **Mined cases (`cases.json`, positive, `correctness`)**, each at the head where the defect is in the code, with
+  `body` taken from the pull request's edit history as it read after that head. Mined rather than fixtures because
+  each defect sits in a 70 to 100 file Rust diff and finding it there was the real miss; a fixture would be the easier
+  case the journal warns about. The head Codex or the hand check looked at is not recorded, so each head is the one
+  where the defect is verifiable from the code and a review round is on record.
+  - `no-mistakes-4102-5a0aca3` (#4102, `csp-allowed-origins`, medium, `extract.rs`): when a CSP array, `join` or
+    concatenation holds a non-static element (a nonce template), `try_collect_array` returns false, the visitor
+    collects each `-src` literal as its own policy, and `parse_from_strings` intersects them, so fragments of one
+    policy deny each other. The pipeline's parse-error high (a target file that fails to parse passes silently) was
+    dropped because seven rules on main do the same; it is also true at this head but is not what the case expects.
+    The posted review of this head did raise the fragments defect as a medium, so it is a miss of the other review
+    machine, not of every run. Fixed in 578b6fd. `expectedSkills` `lint-rule-authoring` is a loose fit.
+  - `no-mistakes-4062-ce406a2` (#4062, `test-no-retries`, medium, `shell/lexer.rs`): a single `|` now splits the
+    segment, so `printf '%s\n' "$suite" | pnpm test` loses its loop-variable input and the loop is reported as a
+    retry. CodeRabbit raised it on this head; the posted review missed it and caught it on 065cb39. No
+    `expectedSkills`: no shared skill states it.
+  - `no-mistakes-4057-d2fd340` (#4057, fixture-attribute narrowing, high, `fixture_reads.rs`): a read is proven only
+    against non-literal calls with the same spelled callee, so a loader alias and a namespace import escape and the
+    affected test is dropped. First push of the feature; fixed in 26b9c8e (alias) and 602ce79 (namespace). The alias
+    half alone is the existing `correctness-selection-alias-escapes`. `expectedSkills` is a loose fit.
+- **Fixture pair (`synthetic.json`, `correctness`)**: `correctness-shell-lexer-pid-redirect` (positive, two medium
+  claims) and `correctness-shell-lexer-pid-redirect-handled` (negative). They reproduce the `>|` and `$$i` lexer bugs
+  Codex found on #4062 (present at 299c1d4, fixed in cb0b98b) in a small retry-loop detector. A fixture because no
+  head a review saw holds those two bugs.
+- **Result**, expected claims caught, with skills / without (`--no-rules` is the control):
+
+  | Case                                                      | With skills     | Without         |
+  | --------------------------------------------------------- | --------------- | --------------- |
+  | `no-mistakes-4102-5a0aca3`                                | 0 of 2          | 0 of 2          |
+  | `no-mistakes-4062-ce406a2`                                | 0 of 2          | 0 of 2          |
+  | `no-mistakes-4057-d2fd340`                                | 0 of 2          | 0 of 2          |
+  | `correctness-shell-lexer-pid-redirect` (2 claims)         | 4 of 4          | 4 of 4          |
+  | `correctness-shell-lexer-pid-redirect-handled` (negative) | no finding in 2 | no finding in 2 |
+
+  The three mined cases are misses in both arms (the reviewer also never loaded `lint-rule-authoring`); the control
+  misses them, so they stay as cases to fix. The fixture pair is a **ceiling case**: the control catches both claims
+  in both attempts, so it shows no harm, not skill lift. It is kept, labeled, because the real miss was in a large
+  diff and the pair guards the lexer shapes cheaply. Reviewer cost (judge not counted): mined $0.17 to $0.27 per case-run,
+  fixtures $0.08 to $0.13 a run.
+
+- **Existing cases re-run in the same session**: `focus-target-undecided-skipped` and
+  `focus-target-undecided-reported` (`undecided-input-passes`, `bench-focus`, Sonnet): 2 of 2 points in each of 2
+  attempts, $0.22 an attempt. `congruence-description-command-paths-unresolved` (#184, `bench-verifier`, Sonnet
+  verifier): caught 2 of 2, severity agreed, $0.15 an attempt. Its negative `-resolve` is skipped by
+  `bench-verifier` ("no pillar findings"; it has no expectation), so it was not run.
+- **Cost**: about $4.40 for reviewer, focus and verifier runs together (judge calls not counted), under the $15
+  cap. The bench command has no cost-cap flag; the cap was kept by running in stages and adding the reported cost.
+
 ## 2026-11-26 (change, not re-measured): finding `suggestion` field
 
 Prompt and schema change; no run was made and nothing was re-scored.

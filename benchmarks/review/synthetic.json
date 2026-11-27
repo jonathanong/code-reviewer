@@ -994,5 +994,36 @@
     "kind": "negative",
     "reason": "The repository's AGENTS.md says \"Never serialize parallel work.\" The change halves the parallel test shards (they still run in parallel) and folds a 13-second format check into the lint job. The description's measurements show the longest chain gets shorter (6m 20s to 5m 10s) and nothing that ran in parallel now runs one after another, so the effect the rule exists to prevent does not occur. A finding that cites the rule from its wording alone must not be raised. The pillar contract (`skills/review/references/pillars/_contract.md`) states the rule on citing a repository rule. This is reviewer policy, not a shared rule skill.",
     "expected": []
+  },
+  {
+    "id": "correctness-shell-lexer-pid-redirect",
+    "fixture": "fixtures/correctness-shell-lexer-pid-redirect",
+    "title": "fix(ci): find retry loops through pipelines, and stop counting a quoted dollar as loop input",
+    "kind": "positive",
+    "reason": "Two lexer shapes a Codex shadow found on no-mistakes #4062 that the pipeline missed. `splitSegments` splits at every `|`, so `printf x >| pnpm test` (noclobber redirection) becomes the segments `printf x >` and `pnpm test`, and a loop that runs no test is reported. `expandsVariable` reads each `$` followed by a name, so in `echo \"pid $$i\"` the second `$` followed by `i` counts as an expansion of `$i` although `$$` is the process id followed by a literal `i`, and a real retry loop is hidden. The description says the lexer follows shell syntax for both and the tests cover neither.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "src/shell-lexer.mts",
+        "lines": null,
+        "claim": "`splitSegments` treats every `|` as a pipeline boundary, including the `|` of the noclobber redirection `>|`. `for attempt in 1 2; do printf x >| pnpm test; done` is split into `printf x >` and `pnpm test`, so a command that is not a test run is taken for one and the loop is reported as a retry. A `|` that directly follows an unescaped `>` is part of the redirect operator, as the description says."
+      },
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "src/shell-lexer.mts",
+        "lines": null,
+        "claim": "`expandsVariable` does not treat `$$` (the shell process id) as one expansion: in `echo \"pid $$i\"` the second `$` followed by `i` matches the loop variable `i`, so the loop is taken to vary its input and a real retry loop (`for i in 1 2 3; do echo \"pid $$i\"; pnpm test; done`) is not reported. `$$` must be consumed as the process id, with `i` a literal, as the description says."
+      }
+    ]
+  },
+  {
+    "id": "correctness-shell-lexer-pid-redirect-handled",
+    "fixture": "fixtures/correctness-shell-lexer-pid-redirect-handled",
+    "title": "fix(ci): find retry loops through pipelines, and stop counting a quoted dollar as loop input",
+    "kind": "negative",
+    "reason": "The same change, but `splitSegments` keeps `>|` inside one segment (an escaped `\\>` does not make it a redirect) and `expandsVariable` consumes `$$` as the process id, with tests for both. Nothing should be flagged.",
+    "expected": []
   }
 ]

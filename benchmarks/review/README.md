@@ -48,6 +48,14 @@ Mined cases (8 real pull requests from `cases.json`):
   for an indirect import its fixtures never use) and `no-mistakes-4006` (focus only, no expected pillar finding: a point
   about a rule that another open pull request also adds). `no-mistakes-4027` (negative, focus: three
   requester points that all hold) checks that asking several points together raises nothing.
+- Not in the table: three mined misses from no-mistakes pull requests that only a hand check or a Codex shadow
+  caught (correctness, added 2026-11-26): `no-mistakes-4102-5a0aca3` (CSP array fragments intersected as
+  separate policies), `no-mistakes-4062-ce406a2` (a single `|` loses piped loop input) and
+  `no-mistakes-4057-d2fd340` (a loader alias or namespace import escapes the narrowing proof). Run at 2 attempts
+  per arm on Sonnet: 0 of 2 with skills and 0 of 2 without on each, so the control misses all three (the reviewer
+  never loaded `lint-rule-authoring`); not a rate, see `HISTORY.md`. The fixture pair
+  `correctness-shell-lexer-pid-redirect` (positive, `>|` and `$$i` lexer bugs) and `-handled` (negative) is a
+  ceiling case: the control caught both claims 2 of 2.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
