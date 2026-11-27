@@ -44,7 +44,7 @@ describe('reviewSettings', () => {
       processing: 'final-review:in-progress',
       completed: 'final-review:complete',
       held: 'final-review:held',
-      approval: 'final approval',
+      approval: 'final-review:approved',
     })
   })
 

@@ -36,7 +36,7 @@ code-reviewer bench-focus --cases cases.json... --out DIR [--case ID]... [--prom
   login (the <app-slug>[bot] identity whose reviews are trusted) or loginError. With --owner or --repo it also checks that the App is installed there; if not it prints installationError and exits 1. queue lists open pull requests
   labeled requested or processing (GraphQL fallback for hook-harness); queue, claim, skip, abort,
   post, revoke and status use the label names from the machine config (<owner>.yaml, <owner>/<name>.yaml; .yml, .json and .jsonc also) and the
-  repository's own .code-reviewer.yaml (or .yml, .json, .jsonc) on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final approval).
+  repository's own .code-reviewer.yaml (or .yml, .json, .jsonc) on its default branch (defaults final-review:requested, final-review:in-progress, final-review:complete, final-review:approved).
   settings prints the resolved labels and optional check run for a repository or owner, the
   layer each came from, the harness and model of every step (models), the names of the evidence sources (never commands or env), and any problems, so a session can read the requested label for hook-harness. skip closes a pull request the plan will
   not review: it posts one COMMENT review on the head with --reason and a verdict=Skipped marker,

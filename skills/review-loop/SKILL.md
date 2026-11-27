@@ -202,7 +202,7 @@ waits for an answer does not count toward the three.
 
 Posting the review is the hand-back: the pull request's shepherd sees the review and its inline
 comments, and the completed label replaces the processing one. Completed means the review was
-posted; approval is the `final approval` label, which `code-reviewer status` checks (a skipped head also passes). Reply to a
+posted; approval is the `final-review:approved` label, which `code-reviewer status` checks (a skipped head also passes). Reply to a
 requester that messaged with the verdict and the review link.
 
 Merge authority is separate: the human, or the triage loop within its grant, merges.
