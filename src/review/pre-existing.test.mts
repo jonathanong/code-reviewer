@@ -6,6 +6,7 @@ import { ReviewError, parseReviewInput, type Finding, type ReviewInput } from '.
 import {
   MAX_PRE_EXISTING,
   MAX_REASON_CHARS,
+  PRE_EXISTING_ASK,
   PRE_EXISTING_HEADING,
   preExistingSection,
 } from './pre-existing.mts'
@@ -88,7 +89,7 @@ describe('FYI section', () => {
       f({ title: 'normal' }),
     ])
     expect(section).toBe(
-      `${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:3\` — bad thing\n  <details><summary>Why</summary>\n\n  B\n\n  </details>\n- minor\n  <details><summary>Why</summary>\n\n  B\n\n  </details>`,
+      `${PRE_EXISTING_HEADING}\n\n- \`src/a.ts:3\` — bad thing\n  <details><summary>Why</summary>\n\n  B\n\n  </details>\n- minor\n  <details><summary>Why</summary>\n\n  B\n\n  </details>\n\n${PRE_EXISTING_ASK}`,
     )
   })
 
@@ -97,7 +98,7 @@ describe('FYI section', () => {
       f({ body: 'first\n\nsecond </details> end', preExisting: true }),
     ])
     expect(section).toBe(
-      `${PRE_EXISTING_HEADING}\n\n- T\n  <details><summary>Why</summary>\n\n  first\n\n  second &lt;/details> end\n\n  </details>`,
+      `${PRE_EXISTING_HEADING}\n\n- T\n  <details><summary>Why</summary>\n\n  first\n\n  second &lt;/details> end\n\n  </details>\n\n${PRE_EXISTING_ASK}`,
     )
   })
 
@@ -117,7 +118,7 @@ describe('FYI section', () => {
 
   it('shows just the line when there is no reason', () => {
     const [section] = preExistingSection([f({ body: ' ', preExisting: true })])
-    expect(section).toBe(`${PRE_EXISTING_HEADING}\n\n- T`)
+    expect(section).toBe(`${PRE_EXISTING_HEADING}\n\n- T\n\n${PRE_EXISTING_ASK}`)
   })
 
   it('clips a long title to one short line', () => {

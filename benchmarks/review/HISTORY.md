@@ -2,6 +2,77 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (change, one pilot): breaking changes block until declared or acknowledged
+
+Prompt, schema and context change; the verifier alone was run once on the three affected cases.
+
+- **What changed.** Owner decision. `congruence.md` gains "Breaking changes": an incompatible change to a
+  public API, CLI (exit codes included), config shape or published package's contract is `blocking`
+  unless the description declares it or the pull request author acknowledged it (a reply on the earlier
+  review's thread, a comment, or the description), then `medium`; the old "a pre-1.0 package is expected to
+  break: never `high`" line and the "omits a breaking change is `medium` at most" bar are replaced. `_contract.md`
+  and `verifier.md` (Severity, Verdict, step 12) carry the same rule; pre-existing gaps stay non-blocking and
+  the posted FYI block now asks the author to fix each here or track it in an issue. The `undeclared-breaking`
+  flag is removed from the verifier prompt and the flags schema (it would hold the review for a person; the
+  author is now asked through Request Changes), so the flag enum shrinks from eleven to ten kinds. The
+  follow-up context now quotes replies on this reviewer's own unresolved threads, and names the pull request
+  author, so the verifier can see an acknowledgement.
+- **Rows made non-comparable.** Every verifier row and every end-to-end row (the verifier prompt, the flags
+  schema and the congruence pillar changed), and every pillar row (the contract changed). The row of
+  `congruence-undocumented-unused-allow-failure` also changes meaning: its expected severity went from
+  `medium` to `blocking`. `bench-context`, `bench-focus` and `bench-selection` rows are unaffected.
+  `synthetic.json` grows from 49 to 51 cases.
+- **Cases.** `congruence-undocumented-unused-allow-failure` now expects `blocking`;
+  `congruence-declared-breaking-vague` (`!` title, "This is a breaking change", effect not stated: `medium`) and
+  `congruence-acknowledged-breaking` (fixture `context.md` holds the earlier blocking finding and the author's
+  "pre-1.0, I will bump a minor" reply: `medium`) are new.
+- **Run.** `bench-verifier --model sonnet --checker sonnet --judge sonnet`, one attempt, the three cases above,
+  no pillar findings (a congruence case needs none): all three graded as expected (label recall 0% from pillars to
+  100% from the verifier, severity agreement 100%), $0.50 in total. One attempt is a pilot, not a score. The
+  documented negative twin was not run (the command skips a negative without pillar findings). No control arm.
+
+## 2026-11-26 (pilot): a sixth targeted check, `sibling-keeps-old-shape`
+
+Pilot, not a measurement: one or two attempts per arm, Claude Sonnet 5.5 for the reviewer and Opus as judge, total
+cost about $2 (cap $5; `bench` has no cost flag, so the cap was held by hand from each run's reported cost).
+
+- **Target added.** `skills/review/references/targets/sibling-keeps-old-shape.md`: when a change fixes a defect by
+  replacing an old code shape in one place, name the shape from the removed lines and search the changed files, their
+  directories and the files that import or are imported by them for other instances the diff left unchanged. Claim:
+  none remains, or the description says why. Motivating miss: vouchington #6656 fixed the optional-cursor condition
+  `($2::text IS NULL OR alias > $2)` in one query and left it in `snapshotTopicMergeAliases` in the same flow; a hand
+  check found it, the pipeline reviewed only the fixed code.
+- **`preExisting`: decided.** A remaining instance is a normal finding, not `preExisting`, when the title or
+  description says the fix covers that shape or class; otherwise it stays pre-existing under the contract (the base
+  already had it and the change neither introduced it nor made it reachable). The reason is the "title, description
+  and code agree" rule: a description that claims continuation pages seek from the cursor is contradicted by a sibling
+  that does not. The target text states the exception, and `verifier.md` step 2 gains the matching clause (before it
+  said a gap beside the fix is pre-existing "even when the pull request fixes a neighbouring case", which would have
+  marked every such finding as an FYI). Without a claim of that scope the finding stays an FYI.
+- **Prompt change.** `verifier.md` step 2 ("Rate a finding against the base"): the neighbouring-case sentence gains
+  "unless the title or description says the fix covers that shape or class". Not re-measured.
+- **Cases added.** `synthetic.json`: `focus-target-sibling-fixed` (`holds`, no finding; `kind: negative`) as the false-alarm
+  check. The planted-sibling case `focus-target-sibling-remains` was removed in review (see Control). `cases.json`:
+  `vouchington-6656-12fe22b`, a mined positive at the first commit of the pull request (base `197ae97`, head
+  `12fe22bf0e`) with `body` recovered from the edit history, correctness, expecting the sibling in
+  `merge-aliases-snapshot.mts`. The head the miss was reported at (`43bb47dd2f`) is no longer in the repository (the
+  branch was force-pushed), so the first commit stands in; it has the same gap. `expectedSkills` is absent: no
+  installed skill states the rule. `select-target-no-guard` also lists the new target in `unwantedTargets`.
+- **Focus step.** `focus-target-sibling-fixed` 2 of 2 (and the removed `focus-target-sibling-remains` 2 of 2 before removal); `vouchington-6656-12fe22b`
+  1 of 1 (`does_not_hold`, 1 finding). About $0.12 a case.
+- **Control.** Synthetic: `bench --pillar correctness --model sonnet --judge opus --no-rules` on the planted
+  `focus-target-sibling-remains`: 100% recall, 6 of 6 runs, three fixture revisions (sibling moved to a caller in
+  another directory, description no longer quoting the old shape, SQL lowercased in a CTE). The control catches it, so
+  per the case rules the case and its fixture were removed; no gap the control misses was found at fixture size. Mined: the same control on
+  `vouchington-6656-12fe22b` found nothing (0 of 2 runs; neither opened `merge-aliases-snapshot.mts`), and a skills
+  run (`--select`) 0 of 1. The real miss is the case the control misses.
+- **Selection.** `bench-selection --attempts 1` on the three new cases (one since removed) and `select-target-no-guard`: 4 of 4 matched,
+  no unwanted target picked ($0.02).
+- **Not comparable.** Every `bench-selection` row that scores targets before this entry (six targets are now offered,
+  not five). Every verifier and end-to-end row (the `verifier.md` clause). Pillar prompts are unchanged.
+- **Not measured.** False alarms on unrelated fixes, a rate for any case, the target on the posted review, and the
+  `preExisting` clause at the verifier (no verifier bench was run).
+
 ## 2026-11-26 (change, not re-measured): upgrades file in the run directory
 
 Prompt change; no run was made and nothing was re-scored.

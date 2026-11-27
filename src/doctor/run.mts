@@ -1,3 +1,4 @@
+import { cloneOwnerChecks } from './clone-owner-checks.mts'
 import { cloneCheck, configCheck, dirChecks } from './dir-checks.mts'
 import { harnessChecks } from './harness-checks.mts'
 import { pluginChecks } from './plugin-checks.mts'
@@ -21,6 +22,7 @@ const GROUPS: Array<{ name: string; run: (ctx: Context) => Check[] | Promise<Che
   { name: 'harness', run: ({ io }) => harnessChecks(io) },
   { name: 'dirs', run: dirChecks },
   { name: 'clone-root', run: async (ctx) => [await cloneCheck(ctx)] },
+  { name: 'clone-owners', run: cloneOwnerChecks },
 ]
 
 /** Runs every check without changing anything; results keep a fixed order. */

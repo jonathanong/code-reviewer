@@ -138,13 +138,18 @@ judged by Sonnet, $25.14):
   change that halves parallel shards and folds a 13-second step into a job, with measurements showing a shorter
   longest chain; the rules pillar must not cite the rule). Added 2026-11-26 with the contract's rule on citing a
   repository rule; not run yet, see `HISTORY.md`.
-- Not in the table: `congruence-undocumented-unused-allow-failure` (one `medium` congruence finding
-  when a description calls a change non-breaking but an allow entry becomes unused and the audit
-  exits 1) and its negative twin `congruence-documented-unused-allow-failure`;
+- Not in the table: `congruence-undocumented-unused-allow-failure` (one `blocking` congruence finding
+  since 2026-11-27, was `medium`: a description calls a change non-breaking but an allow entry becomes unused and the audit
+  exits 1, an undeclared break) and its negative twin `congruence-documented-unused-allow-failure`;
   `correctness-selection-alias-escapes` (one `high` correctness finding: a test-selection proof that
   voids only same-name loader calls lets an alias hide reads) and its negative twin
   `correctness-selection-alias-invalidates`. Added on 2026-11-24 from two live reviews; piloted once
   each on agy `gemini-4-hydrogen-medium`, see `HISTORY.md`.
+- Not in the table: `congruence-declared-breaking-vague` (a `!` title and "breaking" with no effect named: one
+  `medium` finding, never `blocking`) and `congruence-acknowledged-breaking` (a follow-up whose fixture
+  `context.md` holds the earlier `blocking` finding and the author's reply "pre-1.0, I will bump a minor":
+  one `medium` finding). Added 2026-11-27 with the breaking-change rule; piloted once on the verifier with
+  Sonnet, both as expected, see `HISTORY.md`.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
   alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of
@@ -198,6 +203,9 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-target-untraced-reported`  | The `untraced-name-passes` target stays quiet when the check reports what it cannot trace (`holds`, no finding)                                    |
 | `focus-target-undecided-skipped`  | The `undecided-input-passes` target finds a new opt-in check that passes a parse failure, an expression value and a missing file (`does_not_hold`) |
 | `focus-target-undecided-reported` | The `undecided-input-passes` target stays quiet when the check reports each of them as could-not-analyse (`holds`, no finding)                     |
+| `focus-target-sibling-fixed`      | The `sibling-keeps-old-shape` target stays quiet when every query in the export is fixed (`holds`, no finding)                                     |
+
+`focus-target-sibling-fixed` (`sibling-keeps-old-shape`) is the false-alarm check, piloted on Claude Sonnet 2 of 2 attempts, and the mined case below 1 of 1 (see `HISTORY.md`); pilots, not rates.
 
 `focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 5, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates.
 
@@ -207,6 +215,8 @@ A case may set `focusRefs`, an object from pull request number to a full 40-char
 pins which commit it reads instead of the live `refs/pull/<n>/head`, and `bench-focus` fetches the pin
 into the case's cache. Mined case `no-mistakes-4006` uses it (a requester point names 3963, which
 changes 16 of the same files); piloted 3 of 3 (see `HISTORY.md`).
+
+Mined case `vouchington-6656-12fe22b` in `cases.json` (positive, correctness; the first commit of vouchington #6656, which fixed the optional cursor in `processTopicMergeAliasPage` and left `snapshotTopicMergeAliases` in the same flow unfixed) declares `target: "sibling-keeps-old-shape"` (expected `does_not_hold`; 1 of 1). Its `body` is the description as it read at that head (recovered from the pull request's edit history).
 
 Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
 (`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3). `no-mistakes-3963` and
