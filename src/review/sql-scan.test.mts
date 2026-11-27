@@ -132,6 +132,28 @@ describe('scanSqlPaths with ast-grep output faked', () => {
     expect(await scanSqlPaths({ astGrep: far, fileAt }, input(added))).toEqual({ paths: [] })
   })
 
+  it('reads the base file of a renamed file under its old path', async () => {
+    const astGrep = vi.fn(async (args: string[]) =>
+      JSON.stringify([match(args.at(-1) as string, 0, 0)]),
+    )
+    const fileAt = vi.fn(async () => 'select\n')
+    const renamed = [
+      'diff --git a/src/old.mts b/src/new.mts',
+      'similarity index 80%',
+      'rename from src/old.mts',
+      'rename to src/new.mts',
+      '--- a/src/old.mts',
+      '+++ b/src/new.mts',
+      '@@ -1 +1,0 @@',
+      '-sql`select`',
+      '',
+    ].join('\n')
+    expect(await scanSqlPaths({ astGrep, fileAt }, input(renamed))).toEqual({
+      paths: ['src/new.mts'],
+    })
+    expect(fileAt).toHaveBeenCalledWith(tree, 'b'.repeat(40), 'src/old.mts')
+  })
+
   it('skips docs, tests, generated files and other languages without running ast-grep', async () => {
     const astGrep = vi.fn(async () => '[]')
     const fileAt = vi.fn(async () => undefined)
@@ -181,6 +203,15 @@ describe('scanSqlPaths with ast-grep output faked', () => {
 const RULES = join(import.meta.dirname, '../../ast-rules/sql/sgconfig.yml')
 const hasAstGrep = spawnSync('ast-grep', ['--version']).status === 0
 
+// CI installs ast-grep; a missing binary there is a failure, never a silent skip.
+if (process.env['CI'] !== undefined && process.env['CI'] !== '' && !hasAstGrep) {
+  describe('scanSqlPaths with the real ast-grep', () => {
+    it('has ast-grep on PATH in CI', () => {
+      expect.fail('ast-grep is not installed; the CI workflow must install it')
+    })
+  })
+}
+
 describe.skipIf(!hasAstGrep)('scanSqlPaths with the real ast-grep', () => {
   let repo: string
   const git = (...args: string[]) =>
@@ -205,6 +236,7 @@ describe.skipIf(!hasAstGrep)('scanSqlPaths with the real ast-grep', () => {
     git('add', '-A')
     git('commit', '-q', '-m', 'base')
     const baseSha = git('rev-parse', 'HEAD').trim()
+    for (const path of Object.keys(base)) if (!(path in head)) rmSync(join(repo, path))
     for (const [path, text] of Object.entries(head)) write(path, text)
     git('add', '-A')
     git('commit', '-q', '-m', 'head')
@@ -275,6 +307,23 @@ describe.skipIf(!hasAstGrep)('scanSqlPaths with the real ast-grep', () => {
       'src/a.test.ts': 'const x = sql`select 1`\n',
       'src/q.ts': 'const q = sql`select 1`\nconst n = 2\n',
     })
+    expect(result).toEqual({ paths: [] })
+  })
+
+  it('finds removed SQL lines in a renamed file', async () => {
+    const rest = Array.from({ length: 20 }, (_, i) => `const v${i} = ${i}\n`).join('')
+    const result = await changed(
+      { 'src/old.ts': `const x = sql\`select 1\`\n${rest}` },
+      { 'src/new.ts': rest },
+    )
+    expect(result.paths).toEqual(['src/new.ts'])
+  })
+
+  it('does not match .query or .execute on a variable or a non-literal argument', async () => {
+    const result = await changed(
+      { 'src/a.ts': 'const r = map.query(key)\nconst n = 1\n' },
+      { 'src/a.ts': 'const r = map.query(other)\nconst n = 1\n' },
+    )
     expect(result).toEqual({ paths: [] })
   })
 

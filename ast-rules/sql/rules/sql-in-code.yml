@@ -33,6 +33,8 @@ rule:
             - { kind: member_expression, has: { field: property, regex: '^sql$' } }
 ---
 # The query text of .query(...) and .execute(...): the first argument is what the match reports.
+# Only a string or template literal counts, so a call such as map.query(key) does not match; a
+# query held in a variable is found where the variable is built, by the rules around this one.
 id: sql-query-argument
 language: Tsx
 severity: hint
@@ -43,6 +45,11 @@ rule:
     - pattern: $O.query($Q)
     - pattern: $O.execute($Q, $$$)
     - pattern: $O.execute($Q)
+constraints:
+  Q:
+    any:
+      - kind: string
+      - kind: template_string
 ---
 # Kysely builder calls that name a table.
 id: sql-builder-call

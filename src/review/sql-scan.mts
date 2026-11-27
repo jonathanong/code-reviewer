@@ -90,6 +90,12 @@ export type SqlScanIo = {
 
 export type SqlScan = { paths: string[]; skipped?: string }
 
+/** The path a file had at the base: the `rename from` of a renamed file, otherwise its own path. */
+function pathAtBase(fileDiff: string, path: string): string {
+  const renamed = /^rename from (.+)$/mu.exec(fileDiff)
+  return renamed?.[1] ?? path
+}
+
 const skippedBecause = (error: unknown): string =>
   (error as { code?: unknown }).code === 'ENOENT'
     ? 'ast-grep was not found'
@@ -125,14 +131,16 @@ export async function scanSqlPaths(
 ): Promise<SqlScan> {
   const { tree } = input
   const head = new Map<string, Set<number>>()
-  const removed = new Map<string, Set<number>>()
+  const removed = new Map<string, { lines: Set<number>; from: string }>()
   for (const file of splitDiff(input.patch)) {
     const { path } = file
     if (!SCANNED_RE.test(path) || SUPPORT_RE.test(path)) continue
     if (!isSourcePath(path, input.generatedPaths)) continue
     const lines = changedLines(file.text)
     if (lines.added.length > 0) head.set(path, new Set(lines.added))
-    if (lines.removed.length > 0) removed.set(path, new Set(lines.removed))
+    if (lines.removed.length > 0) {
+      removed.set(path, { lines: new Set(lines.removed), from: pathAtBase(file.text, path) })
+    }
   }
   if (head.size === 0 && removed.size === 0) return { paths: [] }
   if (tree === undefined) return { paths: [], skipped: 'there is no local checkout' }
@@ -141,8 +149,9 @@ export async function scanSqlPaths(
   try {
     const found = await scan(io, input.config, tree, present)
     const base = new Map<string, Set<number>>()
-    for (const [path, lines] of removed) {
-      const text = await io.fileAt(tree, input.base, path)
+    for (const [path, { lines, from }] of removed) {
+      // Written under the new path, so ast-grep's matches map back to the path the diff names.
+      const text = await io.fileAt(tree, input.base, from)
       if (text === undefined) continue
       mkdirSync(dirname(join(dir, path)), { recursive: true })
       writeFileSync(join(dir, path), text)
