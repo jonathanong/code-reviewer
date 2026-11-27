@@ -44,6 +44,7 @@ type ThreadOptions = {
   resolved?: boolean
   outdated?: boolean
   replyBy?: string
+  replyBody?: string
   line?: number | null
   startLine?: number | null
   oid?: string | null
@@ -69,6 +70,7 @@ export function thread(options: ThreadOptions): Json {
   const reply: Json = {
     ...first,
     databaseId: options.id + 1000,
+    body: options.replyBody ?? first.body,
     author: { login: options.replyBy },
     reactionGroups: [],
   }

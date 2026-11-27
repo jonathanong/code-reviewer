@@ -21,7 +21,7 @@ is the same as every other command: the GitHub App, else the local `gh` login.
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `rejected`  | Someone reacted thumbs-down to the comment, or to the review body (then every finding of that review). Wins over every other class. |
 | `dismissed` | The review was dismissed.                                                                                                           |
-| `fixed`     | The thread is resolved or outdated, and a later commit changed the commented lines.                                                 |
+| `fixed`     | The thread is resolved or outdated, and a later commit changed the commented lines, or a reply cites one that changed the file.     |
 | `disputed`  | The thread ends on a reply from someone other than the reviewer, and it is not `fixed`.                                             |
 | `resolved`  | Resolved with no code change and no reply. Not counted as wrong.                                                                    |
 | `open`      | Unresolved on an open pull request.                                                                                                 |
@@ -34,6 +34,14 @@ from the review alone (`rejected`, `dismissed`, `open`, or `ignored` once the pu
 (`--clones DIR`, else `CODE_REVIEWER_CLONE_ROOT`) with `git log -L` from the commit the comment was
 made on to the pull request head. Without a clone, or when the clone lacks either commit, the compare
 API answers instead. If neither can, the finding is not called `fixed` and stderr says so.
+
+A fix often lands elsewhere in the file than the commented lines, and the author replies instead of
+leaving the thread to go outdated. So a resolved or outdated thread is also `fixed` when a reply by
+someone other than the reviewer names a commit (a hex word of 7 to 40 characters, at most 5 per thread)
+that is on the pull request after the commit the comment was made on and changed the commented file,
+from `git log` in the clone, else the compare and commit APIs. The words of the reply are never read:
+the cited commit has to exist, come later and touch the file. A reply that cites no such commit, or a
+thread that is neither resolved nor outdated, stays `disputed`.
 
 ## Rows
 

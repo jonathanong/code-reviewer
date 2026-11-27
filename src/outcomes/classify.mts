@@ -1,6 +1,6 @@
 import { parseBodyFindings } from '../review/body-findings.mts'
 import { parseInlineHead } from '../review/finding-head.mts'
-import { changedSince } from './changed.mts'
+import { changedSince, citedFixSince } from './changed.mts'
 import { noReactions } from './reactions.mts'
 import type {
   CommentData,
@@ -20,6 +20,8 @@ type Facts = {
   resolved: boolean
   outdated: boolean
   changed: boolean
+  /** A reply cites a commit after the comment that changed the commented file. */
+  cited: boolean
   replied: boolean
   open: boolean
 }
@@ -28,7 +30,7 @@ type Facts = {
 export function decide(facts: Facts): Outcome {
   if (facts.rejected) return 'rejected'
   if (facts.dismissed) return 'dismissed'
-  if ((facts.resolved || facts.outdated) && facts.changed) return 'fixed'
+  if ((facts.resolved || facts.outdated) && (facts.changed || facts.cited)) return 'fixed'
   if (facts.replied) return 'disputed'
   if (facts.resolved) return 'resolved'
   return facts.open ? 'open' : 'ignored'
@@ -64,14 +66,9 @@ function row(
   }
 }
 
-export async function changed(
-  ctx: Context,
-  thread: ThreadData,
-  first: CommentData,
-): Promise<boolean> {
-  if (!thread.resolved && !thread.outdated) return false
+async function guarded(ctx: Context, first: CommentData, check: () => Promise<boolean>) {
   try {
-    return await changedSince(ctx.io, ctx.repo, ctx.pull.head, first)
+    return await check()
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
     ctx.problems.push(
@@ -79,6 +76,34 @@ export async function changed(
     )
     return false
   }
+}
+
+export async function changed(
+  ctx: Context,
+  thread: ThreadData,
+  first: CommentData,
+): Promise<boolean> {
+  if (!thread.resolved && !thread.outdated) return false
+  return guarded(ctx, first, () => changedSince(ctx.io, ctx.repo, ctx.pull.head, first))
+}
+
+/**
+ * Whether a closed thread's replies cite a commit made after the comment that changed its file: the
+ * fix landed elsewhere in the file than the commented lines, which `changed` cannot see.
+ */
+async function cited(
+  ctx: Context,
+  thread: ThreadData,
+  first: CommentData,
+  reviewer: string | null,
+): Promise<boolean> {
+  if (!thread.resolved && !thread.outdated) return false
+  const bodies = thread.comments
+    .slice(1)
+    .filter((reply) => reply.author !== reviewer)
+    .map((reply) => reply.body)
+  if (bodies.length === 0) return false
+  return guarded(ctx, first, () => citedFixSince(ctx.io, ctx.repo, ctx.pull.head, first, bodies))
 }
 
 async function inline(ctx: Context, review: ReviewData, thread: ThreadData, first: CommentData) {
@@ -93,12 +118,14 @@ async function inline(ctx: Context, review: ReviewData, thread: ThreadData, firs
     url: first.url,
   }
   const last = thread.comments.at(-1) as CommentData
+  const lines = await changed(ctx, thread, first)
   const outcome = decide({
     rejected: review.reactions.down > 0 || first.reactions.down > 0,
     dismissed: review.state === 'DISMISSED',
     resolved: thread.resolved,
     outdated: thread.outdated,
-    changed: await changed(ctx, thread, first),
+    changed: lines,
+    cited: !lines && (await cited(ctx, thread, first, review.author)),
     replied: last.author !== review.author,
     open: ctx.pull.state === 'OPEN',
   })
@@ -122,6 +149,7 @@ function bodyRows(ctx: Context, review: ReviewData): OutcomeRow[] {
       resolved: false,
       outdated: false,
       changed: false,
+      cited: false,
       replied: false,
       open: ctx.pull.state === 'OPEN',
     })
