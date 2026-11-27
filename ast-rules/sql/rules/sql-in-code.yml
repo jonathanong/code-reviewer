@@ -1,0 +1,74 @@
+# SQL by construction. The reviewer intersects each match's lines with the changed lines of a diff.
+# A tagged template: sql`...`, db.sql`...`, Prisma.sql`...`.
+id: sql-tagged-template
+language: Tsx
+severity: hint
+message: Template tagged sql
+rule:
+  kind: call_expression
+  all:
+    - has:
+        field: function
+        any:
+          - { kind: identifier, regex: '^sql$' }
+          - { kind: member_expression, has: { field: property, regex: '^sql$' } }
+    - has: { field: arguments, kind: template_string }
+---
+# The tsx grammar reads the generic form sql<Row>`...` as (sql < Row) > `...`.
+id: sql-tagged-template-generic
+language: Tsx
+severity: hint
+message: Template tagged sql with a type argument
+rule:
+  kind: binary_expression
+  all:
+    - has: { field: right, kind: template_string }
+    - has:
+        field: left
+        kind: binary_expression
+        has:
+          field: left
+          any:
+            - { kind: identifier, regex: '^sql$' }
+            - { kind: member_expression, has: { field: property, regex: '^sql$' } }
+---
+# The query text of .query(...) and .execute(...): the first argument is what the match reports.
+id: sql-query-argument
+language: Tsx
+severity: hint
+message: Query argument
+rule:
+  any:
+    - pattern: $O.query($Q, $$$)
+    - pattern: $O.query($Q)
+    - pattern: $O.execute($Q, $$$)
+    - pattern: $O.execute($Q)
+---
+# Kysely builder calls that name a table.
+id: sql-builder-call
+language: Tsx
+severity: hint
+message: Query builder call
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: member_expression
+    has:
+      field: property
+      regex: '^(selectFrom|insertInto|updateTable|deleteFrom)$'
+---
+# An untagged literal whose whole text is an upper-case statement: it starts with SELECT,
+# INSERT INTO, UPDATE or DELETE FROM (after an optional /* name */ comment) and also holds a clause
+# keyword. Prose such as "Select a file from disk" is not upper case and does not match.
+id: sql-statement-literal
+language: Tsx
+severity: hint
+message: Literal holding a SQL statement
+rule:
+  any:
+    - kind: template_string
+    - kind: string
+  all:
+    - regex: '^.\s*(/\*[^*]*\*/\s*)*(SELECT|INSERT INTO|UPDATE|DELETE FROM|WITH)\s'
+    - regex: '\s(FROM|SET|VALUES|AS|WHERE|JOIN)\s'

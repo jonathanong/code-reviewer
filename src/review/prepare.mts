@@ -28,7 +28,6 @@ import { prepareEarlier } from './earlier-prepare.mts'
 import type { EarlierFile } from './earlier-file.mts'
 import { clearPrepared } from './prepare-clear.mts'
 import { prepareStack } from './stack-prepare.mts'
-import { pathsChangingSql } from './sql-in-code.mts'
 import { prepareSince } from './since-prepare.mts'
 import { writeDiff, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
@@ -47,6 +46,8 @@ export type PrepareOptions = {
   /** Finds this machine's whole, unposted review of an earlier head; used only when git proves the push light. */
   earlier?: (headSha: string) => EarlierFile | undefined
   upgrades?: UpgradesConfig
+  /** The ast-grep project (`sgconfig.yml`) of the SQL-in-code rules; absent means the check is not run. */
+  sqlRules?: string
 }
 
 export type PrepareSummary = {
@@ -94,9 +95,9 @@ export async function prepareReview(
   write(join(options.out, 'context.md'), renderFollowUpContext(context, linkedIssues.issues))
   write(join(options.out, 'context.json'), `${JSON.stringify(context, null, 2)}\n`)
   written.push('context.md', 'context.json', ...linkedIssues.written)
-  const sinceInput = { context, headSha, values }
-  const { since, written: sinceFiles } = await prepareSince(io, options.out, write, sinceInput)
-  written.push(...sinceFiles)
+  const compared = await prepareSince(io, options, write, { context, headSha, patch })
+  const { since, sql } = compared
+  written.push(...compared.written)
   const docs = await prepareDocs(io, options.out, write, options.tree, paths)
   written.push(...docs.written)
   const { push, earlier } = await prepareEarlier(io, options.out, write, {
@@ -140,11 +141,10 @@ export async function prepareReview(
   })
   written.push(...links.written, ...upgrades.written)
   const author = await planAuthor(io, conversation.author, values.authors, headSha)
-  const sqlInCode = values.sqlInCode ? pathsChangingSql(patch, values.generatedPaths) : []
   const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files, values.generatedPaths),
-    ...(sqlInCode.length === 0 ? {} : { sqlInCode }),
+    ...sql,
     context,
     ...author,
     ...(options.requested === undefined ? {} : { requested: options.requested }),

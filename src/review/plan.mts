@@ -24,6 +24,8 @@ export type SinceDiff = {
   truncated?: boolean
   /** Hand-written source files whose changed lines since then are SQL. */
   sqlInCode?: string[]
+  /** Why the SQL check did not run on the since-diff. */
+  sqlSkipped?: string
 }
 
 export type PlanInput = {
@@ -32,6 +34,8 @@ export type PlanInput = {
   reviewableLines: number
   /** Hand-written source files whose changed lines are SQL (`pathsChangingSql`); absent when none or not checked. */
   sqlInCode?: string[]
+  /** Why the SQL check was not run (ast-grep missing, no checkout); the plan says so when it settles light. */
+  sqlSkipped?: string
   context: FollowUpContext
   requested?: Effort
   since?: SinceDiff
@@ -130,6 +134,11 @@ export function planReview(input: PlanInput): ReviewPlan {
   const { context } = input
   const upToDate = context.reviewedSha !== null && context.reviewedSha === context.headSha
   const choice = chooseMode(input, reasons)
+  if (choice.mode === 'light' && (input.sqlSkipped ?? input.since?.sqlSkipped) !== undefined) {
+    reasons.push(
+      `SQL detection was skipped because ${input.sqlSkipped ?? input.since?.sqlSkipped}.`,
+    )
+  }
   const { mode, effort, sinceSha } = choice
   if (choice.skipReason !== undefined) {
     const reason = choice.skipReason

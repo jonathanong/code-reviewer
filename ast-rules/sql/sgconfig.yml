@@ -1,0 +1,6 @@
+# ast-grep project for the SQL-in-code check (src/review/sql-scan.mts). Every JS and TS extension
+# is parsed with the tsx grammar, which accepts all of them.
+ruleDirs:
+  - rules
+languageGlobs:
+  Tsx: ['*.ts', '*.mts', '*.cts', '*.tsx', '*.js', '*.mjs', '*.cjs', '*.jsx']

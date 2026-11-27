@@ -36,6 +36,7 @@ describe('prepare plan values', () => {
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       earlier: expect.any(Function),
+      sqlRules: expect.stringMatching(/ast-rules\/sql\/sgconfig.yml$/),
       pillars: { disabled: [], extra: [] },
       values: {
         securityPaths: ['infra/**'],
