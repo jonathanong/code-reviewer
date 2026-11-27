@@ -30,6 +30,7 @@ export {
   repoSettings,
   resolveAnswers,
   resolveApprovalCheck,
+  resolveRequestFocus,
   resolveRun,
   reviewSettings,
   settingLayers,

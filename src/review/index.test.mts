@@ -49,6 +49,7 @@ describe('review index', () => {
       'resolveApprovalCheck',
       'resolveEvidence',
       'resolveReferences',
+      'resolveRequestFocus',
       'resolveRulePlugins',
       'resolveRun',
       'resolveThreads',
