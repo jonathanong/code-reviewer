@@ -114,7 +114,7 @@ describe('planReview full reviews', () => {
 })
 
 describe('planReview follow-ups', () => {
-  const since = { status: 'ahead', paths: ['src/new.ts'], lines: 100 }
+  const since = { status: 'ahead', paths: ['src/new.ts'], lines: 30 }
   const reviewed = (extra: Partial<FollowUpContext> = {}) => context({ reviewedSha: OLD, ...extra })
 
   it('defaults to a low follow-up on the new commits', () => {
@@ -144,7 +144,10 @@ describe('planReview follow-ups', () => {
   })
 
   it('keeps a sonnet verifier for large light follow-ups', () => {
-    const result = plan({ context: reviewed({ lines: 5000 }), since: { ...since, lines: 301 } })
+    const result = plan({
+      context: reviewed({ lines: 5000 }),
+      since: { ...since, paths: ['src/new.test.ts'], lines: 301 },
+    })
     expect(result).toMatchObject({ mode: 'light', effort: 'low', verifierModel: 'sonnet' })
   })
 
@@ -315,7 +318,7 @@ describe('planReview light first reviews', () => {
 
   it('compares reviewable lines on both sides of the follow-up rule', () => {
     const reviewed = context({ reviewedSha: OLD, lines: 10_000 })
-    const since = { status: 'ahead', paths: ['src/a.ts'], lines: 60 }
+    const since = { status: 'ahead', paths: ['src/a.test.ts'], lines: 60 }
     expect(plan({ context: reviewed, since, reviewableLines: 100 }).mode).toBe('full')
     expect(plan({ context: reviewed, since, reviewableLines: 120 }).mode).toBe('light')
   })

@@ -51,6 +51,23 @@ describe('parsePlan', () => {
     expect(parse('repo', { smallChangeLines: 0 }).value).toEqual({ smallChangeLines: 0 })
   })
 
+  it('lets any repository file add sqlPaths, and only a trusted one set followUpSourceLines', () => {
+    const raw = { sqlPaths: [' db/** '], followUpSourceLines: 10 }
+    expect(parse('target', raw)).toEqual({
+      value: { sqlPaths: ['db/**'] },
+      problems: ['f plan.followUpSourceLines: machine-only unless trustRepoConfig is on; ignored'],
+    })
+    expect(parse('trusted', raw)).toEqual({
+      value: { sqlPaths: ['db/**'], followUpSourceLines: 10 },
+      problems: [],
+    })
+    expect(parse('repo', { followUpSourceLines: 0 }).value).toEqual({ followUpSourceLines: 0 })
+    expect(parse('repo', { followUpSourceLines: 2.5 }).problems).toEqual([
+      'f plan.followUpSourceLines: must be a non-negative integer; ignored',
+    ])
+    expect(parse('repo', { sqlPaths: 'db/**' }).problems[0]).toContain('f plan.sqlPaths: must be')
+  })
+
   it.each([
     ['plan is not an object', ['x'], 'f plan: must be an object; ignored'],
     ['a list is not a list', { securityPaths: 'infra/**' }, 'f plan.securityPaths: must be a list'],

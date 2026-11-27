@@ -42,6 +42,8 @@ describe('prepare plan values', () => {
         generatedPaths: ['gen/**'],
         authors: [{ login: 'renovate', review: 'skip' }],
         smallChangeLines: 30,
+        sqlPaths: [],
+        followUpSourceLines: 40,
       },
       upgrades: { enabled: false, packages: [] },
     })

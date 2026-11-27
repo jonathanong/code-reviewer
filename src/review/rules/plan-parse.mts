@@ -11,13 +11,30 @@ export type PlanConfig = {
   authors?: AuthorRule[]
   /** A first review of at most this many reviewable lines, with no security trigger, is light. */
   smallChangeLines?: number
+  /** Globs of repository paths that count as SQL: a small change to one is reviewed in full. */
+  sqlPaths?: string[]
+  /** A follow-up whose new commits change more than this many lines of source is reviewed in full. */
+  followUpSourceLines?: number
 }
 
 export type PlanFileScope = 'repo' | 'owner' | 'target' | 'trusted'
 
-type PlanKey = 'securityPaths' | 'generatedPaths' | 'authors' | 'smallChangeLines'
+type PlanKey =
+  | 'securityPaths'
+  | 'generatedPaths'
+  | 'authors'
+  | 'smallChangeLines'
+  | 'sqlPaths'
+  | 'followUpSourceLines'
 
-const KEYS: readonly PlanKey[] = ['securityPaths', 'generatedPaths', 'authors', 'smallChangeLines']
+const KEYS: readonly PlanKey[] = [
+  'securityPaths',
+  'generatedPaths',
+  'authors',
+  'smallChangeLines',
+  'sqlPaths',
+  'followUpSourceLines',
+]
 
 const REVIEWS: readonly AuthorReview[] = ['light', 'skip']
 
@@ -63,13 +80,13 @@ function refusal(fileScope: PlanFileScope, key: PlanKey): string | undefined {
   if (key === 'authors') {
     return fileScope === 'target' || fileScope === 'trusted' ? 'machine-only' : undefined
   }
-  if (key === 'securityPaths') return undefined
+  if (key === 'securityPaths' || key === 'sqlPaths') return undefined
   return fileScope === 'target' ? 'machine-only unless trustRepoConfig is on' : undefined
 }
 
 /**
  * The `plan` key: values the dispatcher otherwise fixes. A repository's own file (`target`) may
- * add `securityPaths`, which only makes a review stricter. `generatedPaths` and `smallChangeLines`
+ * add `securityPaths` and `sqlPaths`, which only makes a review stricter. `generatedPaths`, `smallChangeLines` and `followUpSourceLines`
  * reduce review, so a repository file sets them only when `trusted`; `authors` is machine-only.
  * A value that is refused or invalid is ignored with a problem naming the file and key.
  */
@@ -109,15 +126,21 @@ export function parsePlan(
     problems,
   )
   const authors = parseAuthors(value('authors'), `${where}.authors`, problems)
-  const lines = value('smallChangeLines')
-  const valid = Number.isInteger(lines) && (lines as number) >= 0
-  if (lines !== undefined && !valid) {
-    problems.push(`${where}.smallChangeLines: must be a non-negative integer; ignored`)
+  const sqlPaths = parseStrings(value('sqlPaths'), `${where}.sqlPaths`, 'glob patterns', problems)
+  const count = (key: 'smallChangeLines' | 'followUpSourceLines'): number | undefined => {
+    const raw = value(key)
+    if (Number.isInteger(raw) && (raw as number) >= 0) return raw as number
+    if (raw !== undefined) problems.push(`${where}.${key}: must be a non-negative integer; ignored`)
+    return undefined
   }
+  const lines = count('smallChangeLines')
+  const followUpLines = count('followUpSourceLines')
   return {
     ...(securityPaths === undefined ? {} : { securityPaths }),
     ...(generatedPaths === undefined ? {} : { generatedPaths }),
     ...(authors === undefined ? {} : { authors }),
-    ...(valid ? { smallChangeLines: lines as number } : {}),
+    ...(sqlPaths === undefined ? {} : { sqlPaths }),
+    ...(lines === undefined ? {} : { smallChangeLines: lines }),
+    ...(followUpLines === undefined ? {} : { followUpSourceLines: followUpLines }),
   }
 }

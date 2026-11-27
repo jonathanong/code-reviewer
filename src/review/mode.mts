@@ -5,9 +5,12 @@ import { DEFAULT_PLAN_VALUES } from './plan-settings.mts'
 import type { LightPush } from './push-types.mts'
 import {
   isDependencyFile,
+  isDocPath,
   isGenerated,
   isLockfile,
+  isSqlPath,
   isTestOrDocsOnly,
+  isTestPath,
   securityTriggers,
 } from './triggers.mts'
 
@@ -60,6 +63,15 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
   }
   if (since.lines * 2 > input.reviewableLines) {
     return escalate('New commits change more than half the pull request:')
+  }
+  const { followUpSourceLines, generatedPaths } = input.values ?? DEFAULT_PLAN_VALUES
+  const source = since.paths.filter(
+    (path) => !isGenerated(path, generatedPaths) && !isTestPath(path) && !isDocPath(path),
+  )
+  if (source.length > 0 && since.lines > followUpSourceLines) {
+    return escalate(
+      `The new commits change source (${source.slice(0, 3).join(', ')}) in ${since.lines} lines, more than ${followUpSourceLines}:`,
+    )
   }
   reasons.push('Follow-up after an earlier review: light review of the new commits.')
   return light(reviewedSha)
@@ -118,6 +130,13 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
   const handWritten = input.paths.filter((path) => !isGenerated(path, values.generatedPaths))
   const small = input.reviewableLines <= values.smallChangeLines
+  const sql = handWritten.filter((path) => isSqlPath(path, values.sqlPaths))
+  if (small && sql.length > 0) {
+    reasons.push(
+      `Small pull request (${input.reviewableLines} reviewable lines) but it changes SQL (${sql.slice(0, 3).join(', ')}): high effort.`,
+    )
+    return full('high')
+  }
   if (small && securityTriggers(handWritten, values.securityPaths).length === 0) {
     reasons.push(`Small pull request (${input.reviewableLines} reviewable lines): light review.`)
     return light(null)
