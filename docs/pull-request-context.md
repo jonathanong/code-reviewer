@@ -117,7 +117,7 @@ how large a tarball, how long the diff and changelog, and a time limit for the w
 is followed from a lockfile or a registry document: the URL is built from a validated name and
 version, and redirects are refused. When the registry is unreachable, a tarball is too large or
 fails its integrity check, or a lockfile cannot be read, the package is marked `NOT READ`, one
-line goes to `problems`, and the review goes on. A Dependabot pull request that changes only
+line goes to `problems`, and the review goes on. A lockfile that is new, deleted or unreadable, lockfiles past the limit, and entries that are not compared each add a `problems` line, so a review never reads as clear when nothing was analysed. A Dependabot pull request that changes only
 lockfiles is skipped unless this step found something, in which case it is reviewed light.
 
 Skipped: lockfiles other than `pnpm-lock.yaml` (`package-lock.json`, `yarn.lock`, `bun.lock`),

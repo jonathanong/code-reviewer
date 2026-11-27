@@ -53,6 +53,11 @@ describe('parsePnpmLockfile', () => {
     expect(packages.get('loose')?.get('1.0.0')).toEqual({ integrity: undefined })
   })
 
+  it('counts the entries it leaves out, so a caller can say they were not compared', () => {
+    expect(parsePnpmLockfile(V9).ignored).toBeGreaterThan(0)
+    expect(parsePnpmLockfile("lockfileVersion: '9.0'\npackages:\n").ignored).toBe(0)
+  })
+
   it('leaves out non-registry resolutions, invalid names and versions, and other sections', () => {
     const names = [...parsePnpmLockfile(V9).packages.keys()]
     expect(names.toSorted()).toEqual(['@atproto/oauth-types', 'loose', 'react-dom'])

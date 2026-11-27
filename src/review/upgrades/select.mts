@@ -56,7 +56,7 @@ const SECURITY_SEGMENTS: ReadonlySet<string> = new Set([
 function globMatch(pattern: string, name: string): boolean {
   const source = pattern
     .split('*')
-    .map((part) => part.replace(/[.+?^${}()|[\]\\/-]/gu, '\\$&'))
+    .map((part) => part.replace(/[.+?^${}()|[\]\\/]/gu, '\\$&'))
     .join('.*')
   return new RegExp(`^${source}$`, 'u').test(name)
 }

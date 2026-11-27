@@ -3,7 +3,7 @@ import { basename, join } from 'node:path'
 
 import type { Write } from '../write-diff.mts'
 import { changelogBetween } from './changelog.mts'
-import { diffPackages } from './diff.mts'
+import { diffPackages, MAX_DIFF_CHARS } from './diff.mts'
 import type { UpgradeIo } from './io.mts'
 import { parsePnpmLockfile } from './lockfile.mts'
 import { fetchTarball } from './registry.mts'
@@ -43,14 +43,14 @@ export function clearUpgrades(out: string): void {
 
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-/** The upgrades the lockfile diff holds, from local git; the notes are why a lockfile was not read. */
+/** The upgrades the lockfile diff holds, from local git; `gaps` collects what was not compared. */
 async function selectFrom(
   io: UpgradeIo,
   input: UpgradesInput,
   tree: string,
   lockfiles: readonly string[],
   extra: readonly string[],
-  notes: string[],
+  gaps: string[],
 ): Promise<{ found: Upgrade[]; unpaired: number }> {
   const base = await io.mergeBase(tree, input.baseSha, input.headSha)
   const found = new Map<string, Upgrade>()
@@ -60,12 +60,27 @@ async function selectFrom(
       io.fileAt(tree, base, path),
       io.fileAt(tree, input.headSha, path),
     ])
-    if (old === undefined || now === undefined) continue
+    if (old === undefined || now === undefined) {
+      const state =
+        old === undefined && now === undefined
+          ? 'was not readable'
+          : old === undefined
+            ? 'is new in this change'
+            : 'is deleted in this change'
+      gaps.push(`\`${path}\` ${state}, so its packages were not compared.`)
+      continue
+    }
     const [before, after] = [parsePnpmLockfile(old), parsePnpmLockfile(now)]
     const problem = before.problem ?? after.problem
     if (problem !== undefined) {
-      notes.push(`\`${path}\`: ${problem}.`)
+      gaps.push(`\`${path}\`: ${problem}.`)
       continue
+    }
+    const ignored = before.ignored + after.ignored
+    if (ignored > 0) {
+      gaps.push(
+        `\`${path}\`: ${ignored} entries (an invalid name or version, or not from the registry) were not compared.`,
+      )
     }
     const selection = selectUpgrades(before.packages, after.packages, extra)
     unpaired += selection.unpaired
@@ -88,7 +103,12 @@ async function readUpgrade(
       fetchTarball(io.fetcher, upgrade.name, upgrade.to.text, upgrade.toIntegrity, signal),
     ])
     const [before, after] = await Promise.all([unpackTarball(oldBytes), unpackTarball(newBytes)])
-    const diff = await diffPackages(before, after, io.diffDirs, Math.min(diffBudget, 48_000))
+    const diff = await diffPackages(
+      before,
+      after,
+      io.diffDirs,
+      Math.min(diffBudget, MAX_DIFF_CHARS),
+    )
     return { changelog: changelogBetween(after, upgrade.from, upgrade.to), diff }
   } catch (error) {
     return { failure: reason(error) }
@@ -111,22 +131,27 @@ export async function prepareUpgrades(
 ): Promise<UpgradesResult> {
   const none: UpgradesResult = { written: [], problems: [], found: false }
   const { tree, config } = input
-  const lockfiles = input.paths
-    .filter((path) => basename(path) === LOCKFILE)
-    .slice(0, MAX_LOCKFILES)
+  const changed = input.paths.filter((path) => basename(path) === LOCKFILE)
+  const lockfiles = changed.slice(0, MAX_LOCKFILES)
   if (config === undefined || !config.enabled || tree === undefined || lockfiles.length === 0)
     return none
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), STEP_TIMEOUT_MS)
   try {
-    const notes: string[] = []
-    const { found, unpaired } = await selectFrom(io, input, tree, lockfiles, config.packages, notes)
+    const gaps: string[] = []
+    if (changed.length > lockfiles.length) {
+      gaps.push(
+        `${changed.length - lockfiles.length} more lockfiles were not read (limit ${MAX_LOCKFILES}).`,
+      )
+    }
+    const { found, unpaired } = await selectFrom(io, input, tree, lockfiles, config.packages, gaps)
+    const notes = [...gaps]
     if (unpaired > 0) {
       notes.push(
         `${unpaired} packages were added or removed with no old or new version to compare.`,
       )
     }
-    if (found.length === 0) return none
+    if (found.length === 0) return { ...none, problems: gaps }
     const { selected, omitted } = capUpgrades(found)
     if (omitted > 0)
       notes.push(`${omitted} more qualifying upgrades are not read (limit ${selected.length}).`)
@@ -149,12 +174,14 @@ export async function prepareUpgrades(
     const failed = entries.filter((entry) => 'failure' in entry)
     return {
       written: [`${UPGRADES_DIR}/INDEX.md`, ...names.map((name) => `${UPGRADES_DIR}/${name}`)],
-      problems:
-        failed.length === 0
+      problems: [
+        ...gaps,
+        ...(failed.length === 0
           ? []
           : [
               `The npm registry could not give ${failed.length} of ${entries.length} upgraded packages: ${(failed[0] as { failure: string }).failure}`,
-            ],
+            ]),
+      ],
       found: true,
     }
   } catch (error) {

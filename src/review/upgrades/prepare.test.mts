@@ -131,12 +131,67 @@ describe('prepareUpgrades', () => {
     const { fetcher, asked } = fakeRegistry({ [URLS.old]: OLD_TGZ, [URLS.new]: NEW_TGZ })
     const io = setup(fetcher)
     io.fileAt.mockImplementation(async (_tree, sha, path) =>
-      path === 'deleted/pnpm-lock.yaml' ? undefined : sha === 'base' ? BEFORE : AFTER,
+      sha !== 'base' && path === 'deleted/pnpm-lock.yaml'
+        ? undefined
+        : sha === 'base'
+          ? BEFORE
+          : AFTER,
     )
     const paths = ['apps/web/pnpm-lock.yaml', 'pnpm-lock.yaml', 'deleted/pnpm-lock.yaml']
     const result = await prepareUpgrades(io, out, writeFileSync, input({ paths }))
     expect(result.written).toHaveLength(2)
     expect(asked).toHaveLength(2)
+    expect(result.problems).toEqual([
+      '`deleted/pnpm-lock.yaml` is deleted in this change, so its packages were not compared.',
+    ])
+  })
+
+  it.each([
+    ['is new in this change', undefined, BEFORE],
+    ['was not readable', undefined, undefined],
+  ])('reports a lockfile that %s as a problem, not as nothing risky', async (state, base, head) => {
+    const { fetcher, asked } = fakeRegistry({})
+    const result = await prepareUpgrades(
+      setup(fetcher, { base, head }),
+      out,
+      writeFileSync,
+      input(),
+    )
+    expect(result).toEqual({
+      written: [],
+      problems: [`\`pnpm-lock.yaml\` ${state}, so its packages were not compared.`],
+      found: false,
+    })
+    expect(asked).toEqual([])
+  })
+
+  it('reports a lockfile it cannot read, and entries it left out, even when nothing was picked', async () => {
+    const { fetcher } = fakeRegistry({})
+    const odd = `${BEFORE}\n  'Not A Name@1.0.0':\n    resolution: {integrity: sha512-X}\n`
+    const io = setup(fetcher, { base: odd, head: odd })
+    io.fileAt.mockImplementation(async (_tree, sha, path) =>
+      path === 'old/pnpm-lock.yaml' ? "lockfileVersion: '5.4'\n" : odd,
+    )
+    const result = await prepareUpgrades(
+      io,
+      out,
+      writeFileSync,
+      input({ paths: ['pnpm-lock.yaml', 'old/pnpm-lock.yaml'] }),
+    )
+    expect(result.found).toBe(false)
+    expect(result.problems).toEqual([
+      '`pnpm-lock.yaml`: 2 entries (an invalid name or version, or not from the registry) were not compared.',
+      '`old/pnpm-lock.yaml`: lockfileVersion 5 is not read (6 or later is).',
+    ])
+  })
+
+  it('reports lockfiles past the limit and keeps the problems beside the files it did write', async () => {
+    const { fetcher } = fakeRegistry({ [URLS.old]: OLD_TGZ, [URLS.new]: NEW_TGZ })
+    const paths = ['pnpm-lock.yaml', 'a/pnpm-lock.yaml', 'b/pnpm-lock.yaml', 'c/pnpm-lock.yaml']
+    const result = await prepareUpgrades(setup(fetcher), out, writeFileSync, input({ paths }))
+    expect(result.found).toBe(true)
+    expect(result.problems).toEqual(['1 more lockfiles were not read (limit 3).'])
+    expect(read('INDEX.md')).toContain('1 more lockfiles were not read (limit 3).')
   })
 
   it('degrades when the registry fails: a note in the entry, a problem, and the review goes on', async () => {

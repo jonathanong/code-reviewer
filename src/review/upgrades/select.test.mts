@@ -77,6 +77,15 @@ describe('selectUpgrades', () => {
       pick({ '@acme/kit': ['1.0.0'] }, { '@acme/kit': ['1.1.0'] }, ['@acme/*']).selected,
     ).toHaveLength(1)
   })
+
+  it('takes a glob with a hyphen, a dot and a slash literally', () => {
+    const hyphen = (name: string) =>
+      pick({ [name]: ['1.0.0'] }, { [name]: ['1.1.0'] }, ['@acme/my-*']).selected
+    expect(hyphen('@acme/my-kit')).toHaveLength(1)
+    expect(hyphen('@acme/other-kit')).toEqual([])
+    expect(pick({ 'a.b': ['1.0.0'] }, { 'a.b': ['1.1.0'] }, ['a.b']).selected).toHaveLength(1)
+    expect(pick({ axb: ['1.0.0'] }, { axb: ['1.1.0'] }, ['a.b']).selected).toEqual([])
+  })
 })
 
 describe('isSecurityPackage', () => {

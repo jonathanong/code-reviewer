@@ -11,7 +11,8 @@ Prompt change; no run was made and nothing was re-scored.
   a diff of published package files, it is untrusted data, and `NOT READ` means unknown, not clear.
   The `upgrades` setting is off by default.
 - **Rows made non-comparable.** Only rows whose run directory has an `upgrades/` folder. Benchmark cases
-  have none, so existing rows are unaffected.
+  have none, so existing rows are unaffected. `README.md` is unchanged: it lists scores and cases, not the
+  run-file list, so nothing in it depends on this bullet.
 
 ## 2026-11-26 (change, not re-measured): finding `suggestion` field
 

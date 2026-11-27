@@ -4,7 +4,8 @@ export type LockedVersion = { integrity: string | undefined }
 /** Registry packages of a lockfile: name, then version. */
 export type LockedPackages = Map<string, Map<string, LockedVersion>>
 
-export type ParsedLockfile = { packages: LockedPackages; problem?: string }
+/** `ignored` counts the `packages:` entries left out: an invalid name or version, or a resolution that is not the registry. */
+export type ParsedLockfile = { packages: LockedPackages; ignored: number; problem?: string }
 
 const MIN_LOCKFILE_VERSION = 6
 const KEY = /^ {2}(?:'([^']+)'|"([^"]+)"|([^\s'"]\S*)):\s*$/u
@@ -34,10 +35,12 @@ function validKey(key: string): { name: string; version: string } | undefined {
  */
 export function parsePnpmLockfile(text: string): ParsedLockfile {
   const packages: LockedPackages = new Map()
+  let ignored = 0
   const lockfileVersion = /^lockfileVersion:\s*['"]?(\d+)/mu.exec(text)?.[1]
   if (lockfileVersion === undefined || Number(lockfileVersion) < MIN_LOCKFILE_VERSION) {
     return {
       packages,
+      ignored,
       problem: `lockfileVersion ${lockfileVersion ?? '(none)'} is not read (6 or later is)`,
     }
   }
@@ -53,6 +56,7 @@ export function parsePnpmLockfile(text: string): ParsedLockfile {
     const key = KEY.exec(line)
     if (key !== null) {
       current = validKey(key[1] ?? key[2] ?? (key[3] as string))
+      if (current === undefined) ignored += 1
       continue
     }
     if (current === undefined || !/^ {4}resolution:/u.test(line)) continue
@@ -60,8 +64,8 @@ export function parsePnpmLockfile(text: string): ParsedLockfile {
       const versions = packages.get(current.name) ?? new Map<string, LockedVersion>()
       versions.set(current.version, { integrity: INTEGRITY.exec(line)?.[1] })
       packages.set(current.name, versions)
-    }
+    } else ignored += 1
     current = undefined
   }
-  return { packages }
+  return { packages, ignored }
 }

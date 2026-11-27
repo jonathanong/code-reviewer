@@ -9,6 +9,7 @@ import {
   listConfigFiles,
   notObjectProblem,
   parseConfigText,
+  CONFIG_KEYS,
 } from './config-files.mts'
 import type { AnswersConfig } from './answers-parse.mts'
 import type { UpgradesKey } from './upgrades-parse.mts'
@@ -100,28 +101,6 @@ export type RepoConfig = {
  */
 export type ConfigScope = 'repo' | 'owner' | 'target' | 'trusted'
 
-const KEYS = new Set([
-  'trustRepoConfig',
-  'consumes',
-  'labels',
-  'checkRun',
-  'evidence',
-  'analysis',
-  'references',
-  'approvalCheck',
-  'rulePlugins',
-  'run',
-  'models',
-  'limits',
-  'issues',
-  'answers',
-  'upgrades',
-  'requestFocus',
-  'pillars',
-  'targets',
-  'plan',
-])
-
 type Json = Record<string, unknown>
 
 function isRecord(value: unknown): value is Json {
@@ -148,7 +127,7 @@ export function parseRepoConfig(
     return { consumes: [], problems: [invalidProblem(file, error)] }
   }
   if (!isRecord(raw)) return { consumes: [], problems: [notObjectProblem(file)] }
-  const problems = unknownKeys(raw, KEYS, file)
+  const problems = unknownKeys(raw, CONFIG_KEYS, file)
   const labels = parseLabels(raw.labels, `${file} labels`, problems)
   const checkRun = parseCheckRun(raw.checkRun, `${file} checkRun`, problems)
   if (scope === 'owner' && raw.consumes !== undefined) {
