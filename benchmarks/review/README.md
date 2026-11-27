@@ -7,17 +7,27 @@ suite to measure noise.
 
 ## Current results
 
-One run: 2026-11-16, at the commit that added this table, reviewer Sonnet 5.5, selection Haiku,
-judge Opus, 3 attempts with the installed rule skills (`--select`) and 3 without (`--no-rules`).
-Rule plugins: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14 (since renamed and split into the `ratchet-*` plugins;
-not re-measured under the new name). Reviewer and selection cost
-$23.43 (judge calls not counted). See [HISTORY.md](HISTORY.md) for
-every run.
+Two runs. The mined-case table and the notes under it come from 2026-11-16, at the commit that added this table:
+reviewer Sonnet 5.5, selection Haiku, judge Opus, 3 attempts with the installed rule skills (`--select`) and 3
+without (`--no-rules`). Rule plugins then: `no-mistakes-rules` 0.109.60 and `skills` 0480fabddb14 (since renamed and
+split into the `ratchet-*` plugins; not re-measured under the new name). Reviewer and selection cost $23.43 (judge
+calls not counted).
 
-**Every row below is stale.** The pillar contract, the pillar and verifier output schemas, the
-verifier prompt (which since 2026-11-23 may carry a list of document lines), the congruence pillar the verifier performs, the verifier's step 2 (documented limits, base severity, convention claims; 2026-11-25, unmeasured), the skip of defects a check the repository runs in CI detects (contract, rules pillar and verifier step 2; 2026-11-27, unmeasured) and the mined-case snapshots have
-all changed since this run, so no row is comparable with a run made now. The
-"(no run)" entries in [HISTORY.md](HISTORY.md) list each change and the rows it affects.
+The fixture, selection, context, verifier and answers rows come from the targeted run of 2026-11-27 at `7354b0b`
+(jongleberry/code-reviewer#233, which skips defects a check the repository runs in CI detects): reviewer and verifier
+Sonnet 5.5, selection Haiku, judge and checker Opus, 3 attempts per arm (`--select` and `--no-rules`, same session; each
+attempt is its own `bench` run, so a rate is over three runs of every case). Plugins: `no-mistakes-rules` 0.109.123 and
+`ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code` from the `ratchet-stack` marketplace build
+`960fb7a540e9` (reinstalled as `867832904876` during the run; the skill files are identical). Reviewer, verifier and
+selection cost $54.82 (judge calls not counted). See [HISTORY.md](HISTORY.md) for every run.
+
+**Still stale** (not re-measured since the changes listed in [HISTORY.md](HISTORY.md)): the mined-case table and the
+notes under it (the pillar contract, the output schemas, the verifier prompt, the congruence pillar, the verifier's
+step 2, the skip of CI-detectable defects and the mined snapshots changed since 2026-11-16); the review-round cases;
+`links-declared-api-payload` and the `lock-scope-*` positives; the verifier row on mined cases; the six mined
+misses of 2026-11-26 and 2026-11-27 (measured before #233); `vouchington-6282` and `vouchington-6254`; the negative
+congruence twins (`bench-verifier` skips a case with no pillar result and no expected finding); and every mined
+focus case. Everything else below was measured on 2026-11-27.
 
 Mined cases (8 real pull requests from `cases.json`):
 
@@ -61,12 +71,16 @@ Mined cases (8 real pull requests from `cases.json`):
   (nested PostgreSQL option structs without `deny_unknown_fields` in a change that rejects unknown nested fields).
   Run at 3 attempts per arm on Sonnet: 0 of 3 with skills and 0 of 3 without on each, so the control misses all
   three; not a rate, see `HISTORY.md`.
-- Not in the table: `no-mistakes-4745-3ff11a1` (negative, rules pillar and the verifier: a wrong `high` finding that
-  a line exceeds rustfmt's `max_width` so CI's `cargo fmt --all -- --check` fails, on a head where that CI step ran
-  and succeeded; no `high` or `blocking` finding is expected). Added 2026-11-27 with the skip of defects a CI check
-  detects; not run yet (unmeasured). Its counter-case, a lint-catchable defect in a repository that runs no such
-  check and so is still reported, is the existing `answers-floating-promise` (`answers.json`, verifier only): a
-  floating promise in a fixture with no lint or CI configuration, which the verifier must raise. See `HISTORY.md`.
+- Not in the table: `no-mistakes-4745-3ff11a1` (negative, rules and correctness pillars and the verifier: a wrong
+  `high` finding that a line exceeds rustfmt's `max_width` so CI's `cargo fmt --all -- --check` fails, on a head
+  where that CI step ran and succeeded; no `high` or `blocking` finding is expected). Added 2026-11-27 with the skip
+  of defects a CI check detects. Measured 2026-11-27, 3 attempts per arm: no `high` or `blocking` finding in 0 of 3
+  runs with skills and 0 of 3 without, on the rules pillar and on the correctness pillar; the verifier (Sonnet,
+  fed those findings) raised none in 3 of 3. It is a ceiling case: with `origin/main`'s prompts, which have no
+  CI-skip rule, the rules pillar also made no `high` finding in 3 of 3 runs, so Sonnet does not reproduce the
+  wrong claim here and the case cannot show that #233 prevents it. Its counter-case, a lint-catchable defect in a
+  repository that runs no such check and so is still reported, is the existing `answers-floating-promise`
+  (`answers.json`, verifier only), measured below. See `HISTORY.md`.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
@@ -85,26 +99,47 @@ findings; pilots are in [HISTORY.md](HISTORY.md). Two cases were added by hand, 
 
 Fixture cases (`synthetic.json`, rules and correctness pillars):
 
-| Group                                                | With skills   | Without      |
-| ---------------------------------------------------- | ------------- | ------------ |
-| Rules positives (10 cases)                           | 30 of 30      | 3 of 30      |
-| `rules-repo-orchestration-package` (repository rule) | 3 of 3        | 3 of 3       |
-| `links-declared-api-payload` (correctness)           | 3 of 3        | 0 of 3       |
-| `lock-scope-*` positives (correctness, 2)            | 6 of 6        | 6 of 6       |
-| Expected skill selected and loaded (10 tagged cases) | 30 of 30 runs | n/a          |
-| Negatives with a high or blocking finding (7, rules) | 0 of 21 runs  | 0 of 21 runs |
-| Negatives with a high or blocking finding (7, corr.) | 0 of 21 runs  | 0 of 21 runs |
+| Group                                                   | With skills   | Without      |
+| ------------------------------------------------------- | ------------- | ------------ |
+| Rules positives (10 cases)                              | 30 of 30      | 1 of 30      |
+| `rules-repo-orchestration-package` (repository rule)    | 3 of 3        | 3 of 3       |
+| Correctness positives added since 2026-11-16 (5, below) | 15 of 15      | 15 of 15     |
+| Expected skill selected and loaded (10 tagged cases)    | 30 of 30 runs | n/a          |
+| Negatives with a high or blocking finding (8, rules)    | 0 of 24 runs  | 0 of 24 runs |
+| Negatives with a high or blocking finding (11, corr.)   | 0 of 33 runs  | 1 of 33 runs |
+| `links-declared-api-payload` (correctness), 2026-11-16  | 3 of 3        | 0 of 3       |
+| `lock-scope-*` positives (correctness, 2), 2026-11-22   | 6 of 6        | 6 of 6       |
 
-- The control's three catches are one each on `rules-content-only-unordered-pick`,
-  `rules-manifest-only-duplicate-utility` and `rules-test-only-per-item`.
+The two bottom rows are stale (not re-run on 2026-11-27); every other row is the 2026-11-27 run.
+
+- The control's one catch on the rules positives is `rules-content-only-unordered-pick`, 1 of 3; it caught
+  none of the other nine. (The 2026-11-16 control caught three, one each on that case,
+  `rules-manifest-only-duplicate-utility` and `rules-test-only-per-item`.) Recall with skills: 33 of 33 over all 11
+  rules positives; the #233 prompts and `origin/main`'s give the same 33 of 33 (see `HISTORY.md`).
+- The five correctness positives are `correctness-introduced-sibling-gap` (`medium`),
+  `correctness-eslint-destructure-crash` (`high`), `correctness-unanalyzable-skip-swallows` (`medium`),
+  `correctness-selection-alias-escapes` (`high`) and `correctness-stated-purpose-human-gate` (`high`). All five
+  are ceiling cases: the control caught each 3 of 3, so none shows that a skill helps. They check that the
+  correctness prompt still fires after #233, and they fail the keep rule in [AGENTS.md](AGENTS.md) (a fixture stays
+  only while the control misses it).
+- The 11 correctness negatives are the 7 original ones plus `correctness-preexisting-sibling-gap`,
+  `correctness-eslint-destructure-guarded`, `correctness-unanalyzable-conditional-skip` and
+  `correctness-selection-alias-invalidates`; the 8 rules negatives are the 7 original ones plus
+  `rules-rule-effect-absent`. The control's one false alarm was on `correctness-selection-alias-invalidates`, in
+  one of three attempts. `correctness-preexisting-sibling-gap`, a severity miss when piloted, drew no `high` or
+  `blocking` finding in six runs.
 - The `lock-scope-*` row is from the 2026-11-22 run (the rule-skills plugin a361cf367bd2,
   `no-mistakes-rules` 0.109.113), not the 2026-11-16 one. Both positives are ceiling cases: the
   correctness prompt tells the reviewer not to recommend a lock the locking skill does not allow.
 - `rules-repo-orchestration-package` puts its rule in the fixture repository's own `AGENTS.md`.
   `--no-rules` removes the shared skills, not that file, so its control is not a null hypothesis;
   the case checks that a repository rule is applied and cited.
-- Negatives drew three low findings in 84 runs and nothing higher.
-- Reviewer cost: $0.12 a pillar run with skills on a fixture, $0.23 on a mined case.
+- Negatives, 57 runs per arm: with skills 7 low and 11 medium findings, nothing higher; without, 2 low, 11 medium and
+  one high (the false alarm above). The medium findings are on the correctness negatives (`preexisting-sibling-gap`,
+  `eslint-destructure-guarded`, `unanalyzable-conditional-skip`, `selection-alias-invalidates`), where a finding
+  below `high` is allowed.
+- Reviewer cost: $0.16 a rules run with skills on a fixture and $0.07 without, $0.12 a correctness run with skills
+  and $0.07 without (2026-11-27); $0.23 on a mined case (2026-11-16).
 
 Reply-only re-assessment (`bench-replies`, `replies.json`, 6 synthetic cases, Sonnet, 3 attempts, 2026-11-27,
 $0.16 in all, one pilot run, no control arm): 18 of 18 attempts gave the expected outcome. The cases are a valid
@@ -114,92 +149,77 @@ the call cannot see, and an instruction hidden in the reply. All are ceiling cas
 step works and is not fooled by these shapes, not how much margin it has. It does not measure replies that are
 partly right, or threads of several replies. See [docs/replies.md](../../docs/replies.md).
 
-Skill selection alone (`bench-selection`, Haiku, 22 tagged cases, 3 attempts, $0.19): the expected
-skill was named in 66 of 66 attempts, with 9.1 skills selected on average (2 to 9 on fixtures, 5
-to 20 on mined cases). **Stale for target selection:** `selectSkills` now also selects built-in
-targeted checks; `synthetic.json` includes two target-selection fixtures
-(`select-target-concurrency-guard` and `select-target-no-guard`), piloted only (6 of 6 attempts
-matched; see `HISTORY.md`, 2026-11-24).
+Skill selection alone (`bench-selection`, Haiku, 30 tagged cases, 3 attempts, 2026-11-27, $0.44): the expected
+skill was named in 87 of 90 attempts (97%), with 9.7 skills selected on average. The three misses are one case:
+`congruence-missing-real-run` never selected `ratchet-github:pr-description` (0 of 3), the one skill its rule
+comes from; the verifier case below still catches the defect without it. Every other case selected its skill 3 of 3. No attempt named a skill from an
+`unwantedSkills` label (0 of 30). Target selection (built-in targeted checks, 20 cases): 55 of 60 attempts matched
+(92%); the misses are `vouchington-6282` (`unneeded-concurrency-guard`, 2 of 3), `vouchington-6254` (the same
+check selected when unwanted, 2 of 3 attempts, and 1 of 3 matched) and `vouchington-6656-12fe22b`
+(`sibling-keeps-old-shape`, 1 of 3), all mined; the fixtures `select-target-concurrency-guard` and
+`select-target-no-guard` matched 3 of 3 each.
 
-Verifier (`bench-verifier`, Opus, on the with-skills findings of the run above, 3 attempts, labels
-judged by Sonnet, $25.14):
+Verifier (`bench-verifier`, 3 attempts; each attempt is its own run over the with-skills findings of the matching
+attempt of the fixture runs above):
 
-| Set           | Real findings kept | Planted duplicates merged | Severity kept   | Findings per case, before → after |
-| ------------- | ------------------ | ------------------------- | --------------- | --------------------------------- |
-| Fixtures (21) | 100% in 3 of 3     | 100% in 3 of 3            | 100% in 3 of 3  | 0.9 → 0.9                         |
-| Mined (8)     | 100% in 3 of 3     | 100% in 3 of 3            | 86%, 100%, 100% | 2.1 → 2.2                         |
+| Set                                        | Real findings kept | Planted duplicates merged | Severity kept   | Findings per case, before → after |
+| ------------------------------------------ | ------------------ | ------------------------- | --------------- | --------------------------------- |
+| Fixtures (28), 2026-11-27, Sonnet verifier | 100% in 3 of 3     | 100% in 3 of 3            | 100% in 3 of 3  | 1.0 → 1.0, 0.9 → 0.9, 1.0 → 1.0   |
+| Mined (8), 2026-11-16, Opus verifier       | 100% in 3 of 3     | 100% in 3 of 3            | 86%, 100%, 100% | 2.1 → 2.2                         |
+
+The fixture row is the 28 fixture cases that have pillar findings from the rules and correctness runs (labels
+judged by Opus, other high or blocking findings checked by Opus); the mined row is stale.
 
 - The verifier lost no real finding and merged every planted duplicate. It removes almost
-  nothing, because these pillar runs produce little noise to remove.
-- It confirmed all 5 other high or blocking findings it was asked to check, so this run does not
-  show whether it would refute a wrong one.
-- It costs about $0.24 a fixture case and $0.43 a mined case, more than a pillar run.
-- Not in the table: `congruence-test-only-edits-source` and `congruence-test-only-with-helper`
-  check a title and description that say test-only against the changed files. They were added
-  on 2026-11-22 and only piloted (1 attempt); the positive is a ceiling case, caught with and
-  without the scope bullet it was written for.
-- Not in the table: `congruence-missing-real-run` checks that a user-visible behavior change whose
-  description is a checklist with no realistic input or output raises one `low` congruence finding
-  under `ratchet-github:pr-description`'s "Show one real run" rule. Added on 2026-11-24; piloted once per
-  arm (1 of 1 with the rule, 0 of 1 without), see `HISTORY.md`.
-- Not in the table: `congruence-description-command-paths-unresolved` and
-  `congruence-description-command-paths-resolve` check a description's example command against the
-  code: a relative `--config` is joined to `--root`, so the positive's command cannot resolve its
-  config (one `medium` congruence finding); the negative's command resolves and nothing is flagged.
-  Added on 2026-11-24 from a known miss; piloted once each on agy `gemini-4-hydrogen-medium` (caught,
-  quiet), see `HISTORY.md`.
-- Not in the table: three pairs from live review outcomes of 2026-11-25, `correctness` pillar.
-  `correctness-preexisting-sibling-gap` (negative: a gap on the base that the change leaves
-  alone must be rated at most `low` or be `preExisting`; the grader can only fail it on `high`
-  or `blocking`) and `correctness-introduced-sibling-gap` (positive, `medium`);
-  `correctness-eslint-destructure-crash` (positive, `high`: an unguarded `match.computed`) and
-  `correctness-eslint-destructure-guarded` (negative); `correctness-unanalyzable-conditional-skip`
-  (negative: an intentional silent pass documented in code and doc) and
-  `correctness-unanalyzable-skip-swallows` (positive, `medium`). Piloted once each on agy
-  `gemini-4-hydrogen-medium`; the pre-existing negative is a known miss on severity (rated `medium`,
-  marked `preExisting`), see `HISTORY.md`.
-- Not in the table: `correctness-stated-purpose-human-gate` (positive, `high`: a check meant to force
-  human review accepts a rule with no human seat, so the pull request fails its own stated purpose).
-  Added 2026-11-26 with the contract's stated-purpose rule; not run yet, see `HISTORY.md`.
-- Not in the table: `rules-rule-effect-absent` (negative: a repository rule "Never serialize parallel work" and a
-  change that halves parallel shards and folds a 13-second step into a job, with measurements showing a shorter
-  longest chain; the rules pillar must not cite the rule). Added 2026-11-26 with the contract's rule on citing a
-  repository rule; not run yet, see `HISTORY.md`.
-- Not in the table: `congruence-undocumented-unused-allow-failure` (one `blocking` congruence finding
-  since 2026-11-27, was `medium`: a description calls a change non-breaking but an allow entry becomes unused and the audit
-  exits 1, an undeclared break) and its negative twin `congruence-documented-unused-allow-failure`;
-  `correctness-selection-alias-escapes` (one `high` correctness finding: a test-selection proof that
-  voids only same-name loader calls lets an alias hide reads) and its negative twin
-  `correctness-selection-alias-invalidates`. Added on 2026-11-24 from two live reviews; piloted once
-  each on agy `gemini-4-hydrogen-medium`, see `HISTORY.md`.
-- Not in the table: `congruence-declared-breaking-vague` (a `!` title and "breaking" with no effect named: one
-  `medium` finding, never `blocking`) and `congruence-acknowledged-breaking` (a follow-up whose fixture
-  `context.md` holds the earlier `blocking` finding and the author's reply "pre-1.0, I will bump a minor":
-  one `medium` finding). Added 2026-11-27 with the breaking-change rule; piloted once on the verifier with
-  Sonnet, both as expected, see `HISTORY.md`.
+  nothing, because these pillar runs produce little noise to remove: no fixture finding was dropped, so this run
+  does not show whether it rejects a wrong one.
+- It confirmed every other high or blocking finding it was asked to check (4, 1 and 1 over the three attempts; the
+  checker agreed each time), so it also does not show whether it would refute a wrong one.
+- It costs about $0.15 a fixture case with Sonnet ($13.18 for the three attempts with the checker) and $0.43 a
+  mined case with Opus (2026-11-16).
+- Congruence cases, verified alone by Sonnet (no pillar findings), 3 attempts per arm, 2026-11-27: the six positives
+  `congruence-test-only-edits-source`, `congruence-missing-real-run`, `congruence-description-command-paths-unresolved`,
+  `congruence-undocumented-unused-allow-failure`, `congruence-declared-breaking-vague` and
+  `congruence-acknowledged-breaking` each raised their expected finding in 3 of 3 attempts (label recall 100%, severity
+  agreement 100%, one finding per case). `congruence-missing-real-run` without `ratchet-github:pr-description`
+  (`--no-rules`) also raised it 3 of 3, so the 2026-11-24 pilot (0 of 1 without) did not repeat and the case is now a
+  ceiling case for Sonnet: the control catches it. The three negatives (`congruence-test-only-with-helper`,
+  `congruence-description-command-paths-resolve` and `congruence-documented-unused-allow-failure`) were "not run":
+  `bench-verifier` skips a case with no expected finding and no pillar result, so they remain unmeasured.
+- Pillar fixtures that moved into the fixture table on 2026-11-27 (rules and correctness runs above, 3 attempts per arm):
+  `correctness-preexisting-sibling-gap` and its positive twin `correctness-introduced-sibling-gap`;
+  `correctness-eslint-destructure-crash` and `correctness-eslint-destructure-guarded`;
+  `correctness-unanalyzable-conditional-skip` and `correctness-unanalyzable-skip-swallows`;
+  `correctness-selection-alias-escapes` and `correctness-selection-alias-invalidates`;
+  `correctness-stated-purpose-human-gate`; `rules-rule-effect-absent`. Every positive is caught 3 of 3 with skills and 3
+  of 3 without, so all five are ceiling cases; no negative drew a `high` or `blocking` finding with skills.
 - Not in the table: the stale-document expectation of `vouchington-6166-f684113f` (a requirements
   line outside the diff that the change makes false). Measured on 2026-11-23 with the verifier
   alone, counted by reading the findings: Sonnet 3 of 3 and Opus 2 of 2 with the list of
   document lines in the prompt as shipped, against Sonnet 0 of 3 in the same session with the
   list in a file only.
 
-Shared context alone (`bench-context`, no model, 12 tagged synthetic cases and 3 history cases;
-2026-11-22): is what a case depends on in the context a review builds?
+Shared context alone (`bench-context`, no model, 13 tagged synthetic cases and 3 history cases;
+2026-11-27, after the split into the `ratchet-*` plugins): is what a case depends on in the context a review builds?
 
-| Check                                           | Result                                        |
-| ----------------------------------------------- | --------------------------------------------- |
-| Expected skills quoted in full / in part / none | 9 / 1 / 3                                     |
-| Expected rule text in the excerpt               | 10 present, 3 cut, 0 missing, 0 not installed |
-| Most quoted from one skill                      | 5,933 of 6,000 characters                     |
-| History and linked-regression checks            | 5 of 5 found                                  |
+| Check                                           | Result                                       |
+| ----------------------------------------------- | -------------------------------------------- |
+| Expected skills quoted in full / in part / none | 8 / 1 / 5                                    |
+| Expected rule text in the excerpt               | 9 present, 3 cut, 1 missing, 0 not installed |
+| Most quoted from one skill                      | 5,630 of 6,000 characters                    |
+| History and linked-regression checks            | 5 of 5 found                                 |
 
-- The rules that were cut are in prose skills (`postgres-locking` twice, `bounded-iteration`),
-  which are never quoted; the `bounded-iteration` case also names `queue-rules`, which holds the
-  sibling rule in full.
+- The rules that were cut are in prose or long skills (`postgres-locking` once, `bounded-iteration`,
+  `github-actions-rules`), which are never quoted whole; the `bounded-iteration` case also names `queue-rules`, which
+  holds the sibling rule in full.
+- **Broken tag:** `lock-scope-ancestor-locks` reports its rule missing. Its `expectedRules` text ends "to serialize
+  writers", and the installed `postgres-locking` skill now wraps that line after "serialize", so the verbatim
+  substring no longer matches (it was present on 2026-11-22). The rule is still in the skill; the tag needs a shorter
+  substring, which this run did not change.
 - It does not measure whether a pillar uses the excerpt, only that the text is there to use.
   Rule text is checked against the plugin versions installed when it ran.
 
-Answer cases (`answers.json`, `bench-verifier` only), not re-measured since the answer's quote became optional (2026-11-23) or the verifier's step 2 changed (2026-11-25); last measured 2026-11-23, Sonnet as the verifier, three attempts per arm: `answers-like-row-lock` 3 of 3 with rules and 0 of 3 without (the answers without rules lack the rule citation the case expects); `answers-floating-promise` 3 of 3 in both arms, a ceiling case ([history](HISTORY.md)). Each lists another
+Answer cases (`answers.json`, `bench-verifier` only), measured 2026-11-27, Sonnet as the verifier, three attempts: `answers-like-row-lock` 3 of 3 with rules and 0 of 3 without (the answers without rules lack the rule citation the case expects); `answers-floating-promise` 3 of 3 with rules (no answer, and the verifier raised the floating promise itself, 1 finding in each attempt; not run without rules on 2026-11-27, 3 of 3 in both arms on 2026-11-23) ([history](HISTORY.md)). Each lists another
 reviewer's open note, as the verifier prompt renders it, and the outcome expected for that note,
 graded by code and reported per thread. The pillar benches do not run this file.
 
@@ -214,7 +234,7 @@ graded by code and reported per thread. The pillar benches do not run this file.
   (`answerableThreads`), so a case file, which lists notes after that filter, cannot express it;
   a unit test covers it instead.
 
-Focus cases (`synthetic.json`, `bench-focus`): **piloted once, 6 of 6 points (2026-11-24); no rate yet.** `bench-focus` runs the real
+Focus cases (`synthetic.json`, `bench-focus`): **measured on the 10 synthetic cases on 2026-11-27 at `7354b0b` (the focus step prefixes `_contract.md`, which #233 changed): 30 of 33 points over three attempts (11, 9 and 10 of 11), Sonnet, $3.23, no control arm.** The misses: `focus-target-untraced-reported` held 1 of 3 (the step answered `does_not_hold` from a shape the case allows, 7 of 9 earlier), and `focus-hostile-point` 2 of 3 (one attempt answered `does_not_hold` instead of `not_checked`). The mined focus cases were not run and are stale. `bench-focus` runs the real
 requester-focus step (`runFocus` with computed `Change facts`) on every case declaring `focus`
 points, and grades each point deterministically against its `expectedStatus` (`holds`,
 `does_not_hold`, or `not_checked`, plus zero findings when `expectNoFindings` is set).

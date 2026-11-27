@@ -2,6 +2,118 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (targeted run): fixture, selection, context and verifier rows re-measured after the plugin split, and #233 before and after
+
+Run at `7354b0b` (jongleberry/code-reviewer#233, the CI-detectable skip), Sonnet 5.5 reviewer (`--model sonnet`) and
+verifier, Haiku selection, Opus judge (`--judge opus`) and checker, **3 attempts per arm** (`--select` and
+`--no-rules` in the same session; `bench` has no attempts flag, so each attempt is its own run in its own `--out`
+directory, scored per attempt and summed). Plugins: `no-mistakes-rules` 0.109.123 and `ratchet-workflows`,
+`ratchet-github`, `ratchet-backend`, `ratchet-code` from the `ratchet-stack` marketplace build `960fb7a540e9` (the
+installed copy became `867832904876` at 08:00Z during the run; `diff -r` shows identical skill files). Cost, reviewer
+and verifier, judge not counted: **$54.82**, under the $90 stop: selection $0.44; rules pillar $12.81 (with skills
+$8.94, without $3.87); correctness pillar $9.24 ($5.72, $3.52); `no-mistakes-4745-3ff11a1` $1.79 in both pillars
+and both arms; `origin/main` prompts before and after $9.58; verifier on fixtures $13.18; verifier on congruence
+cases $2.91 and answers $1.21; verifier on 4745 $0.44; focus $3.23; `bench-context` free. Raw results were in
+`$TMPDIR/evals-2026-11-27` and are not kept.
+
+Commands (`--prompts skills/review/references/pillars`, `--jobs 3`, `--model sonnet --judge opus`):
+
+- `bench-context --cases synthetic.json --history context-history.json`.
+- `bench-selection --cases cases.json --cases synthetic.json --attempts 3` (30 tagged cases).
+- `bench --cases synthetic.json --pillar rules --case <11 positives> --case <8 negatives>`, three times each with
+  `--select` and `--no-rules`; `--pillar correctness --case <5 positives> --case <11 negatives>` the same way.
+- `bench --cases cases.json --pillar rules` and `--pillar correctness --case no-mistakes-4745-3ff11a1`, both arms.
+- `bench-verifier --model sonnet --judge opus --checker opus --findings-from <dir holding the three runs' rules and
+  correctness raw results>`, once per attempt, on the 28 fixture cases with pillar findings; on the 6 positive
+  congruence cases and the two `answers.json` cases (with `--no-rules` on `congruence-missing-real-run` and
+  `answers-like-row-lock`); on `no-mistakes-4745-3ff11a1`.
+- `bench-focus --cases synthetic.json --prompts skills/review/references`, three runs (the focus step prefixes
+  `_contract.md`).
+- Before and after for #233: the same rules cases and `no-mistakes-4745-3ff11a1`, `--select` only, three attempts, with
+  `--prompts` pointing at `skills/review/references/pillars` extracted from `origin/main` (`git archive origin/main
+  skills/review/references`). `bench` reads `_contract.md` and `rules.md` from `--prompts`, so the contract and rules
+  change switch cleanly. The verifier change did not get a before and after: `bench-verifier` reads `verifier.md` and
+  `_contract.md` from its own `--prompts` and the fixtures give it no CI-detectable claim to reject (see below).
+
+Results (3 attempts per arm; "with" is `--select`, "without" is `--no-rules`):
+
+| Group                                                | With           | Without                   |
+| ---------------------------------------------------- | -------------- | ------------------------- |
+| Rules positives, 10 cases                            | 30 of 30       | 1 of 30                   |
+| `rules-repo-orchestration-package`                   | 3 of 3         | 3 of 3                    |
+| Correctness positives, 5 cases (all new since 11-16) | 15 of 15       | 15 of 15                  |
+| Negatives with a high or blocking finding, rules, 8  | 0 of 24 runs   | 0 of 24 runs              |
+| Negatives with a high or blocking finding, corr., 11 | 0 of 33 runs   | 1 of 33 runs              |
+| `no-mistakes-4745-3ff11a1`, rules, then correctness  | 0 of 3, 0 of 3 | 0 of 3, 0 of 3            |
+| Skill selection, expected skill named                | 87 of 90       | n/a                       |
+| Verifier, 28 fixtures: real kept, merged, severity   | 100% x3        | n/a                       |
+| Verifier, 6 congruence positives, expected raised    | 18 of 18       | `missing-real-run` 3 of 3 |
+| Answers: `like-row-lock`, `floating-promise`         | 3 of 3, 3 of 3 | 0 of 3, not run           |
+| Focus, 10 synthetic cases, points                    | 30 of 33       | n/a                       |
+
+What moved against the last measured numbers:
+
+- **Rules positives.** With skills 30 of 30, as on 2026-11-16 (30 of 30). The control fell from 3 of 30 to 1 of 30
+  (only `rules-content-only-unordered-pick`, 1 of 3); the 11-16 catches on `rules-manifest-only-duplicate-utility` and
+  `rules-test-only-per-item` did not repeat. Skills loaded in 100% of the runs of the 10 tagged cases. Recall over
+  all 11 positives with skills was 33 of 33 across the three attempts.
+- **Selection.** 97% (87 of 90) on 30 tagged cases against 66 of 66 on 22 on 11-16. Every miss is
+  `congruence-missing-real-run`, never selecting `ratchet-github:pr-description` (new case since the last run); mean
+  skills selected 9.7 (was 9.1). Target selection, first rate: 55 of 60 (92%); misses on mined `vouchington-6282`
+  (2 of 3), `vouchington-6254` (1 of 3, unwanted check selected twice) and `vouchington-6656-12fe22b` (1 of 3).
+  The two `select-target-*` fixtures: 3 of 3 each (were 6 of 6 piloted). No `unwantedSkills` label was selected (0 of 30
+  attempts), read against the installed `ratchet-*` descriptions of 960fb7a540e9.
+- **Context.** Skills quoted 8 full, 1 part, 5 none; rules 9 present, 3 cut, 1 missing (was 10 present, 0 missing on
+  11-22). The missing one is a tag, not a skill defect: see the next section.
+- **Correctness pairs.** All five new positives are caught in every attempt of both arms, so they are ceiling cases,
+  and the pre-existing-gap negative that was a severity miss when piloted on agy `gemini-4-hydrogen-medium` drew no
+  `high` finding in six Sonnet runs. `correctness-preexisting-sibling-gap` therefore no longer reproduces as a miss.
+- **Verifier.** Fixtures: nothing lost, every duplicate merged, severity kept in 3 of 3 attempts; the checker
+  confirmed all 6 other high or blocking findings (4, 1, 1). All six congruence positives raised their finding at the expected
+  severity in 3 of 3 attempts (`congruence-test-only-edits-source`, `congruence-missing-real-run`,
+  `congruence-description-command-paths-unresolved`, `congruence-undocumented-unused-allow-failure` at `blocking`,
+  `congruence-declared-breaking-vague` and `congruence-acknowledged-breaking`).
+- **Answers.** `answers-like-row-lock` 3 of 3 with rules and 0 of 3 without, as on 11-23. `answers-floating-promise` 3 of
+  3 with rules (the verifier raised the defect itself every time); not run without rules.
+
+#233 before and after (rules pillar, `--select`, 3 attempts, 19 synthetic cases; and `no-mistakes-4745-3ff11a1`):
+
+| Prompts          | Positives caught (11 cases x 3) | Negatives with high or blocking (8 x 3) | Findings per run | 4745, high or blocking         |
+| ---------------- | ------------------------------- | --------------------------------------- | ---------------- | ------------------------------ |
+| `origin/main`    | 33 of 33                        | 0 of 24                                 | 0.84, 0.95, 0.79 | 0 of 3 (2 low findings in all) |
+| #233 (`7354b0b`) | 33 of 33                        | 0 of 24                                 | 0.89, 0.84, 0.95 | 0 of 3 (1 low finding in all)  |
+
+Nothing moved: the prompts give the same catches and the same quiet on every case. The result is expected for the
+synthetic rules cases, none of which has a defect a repository CI check would detect (the grep of claims in the
+2026-11-27 no-run entry), so a skip could only hurt them and did not. It is **not evidence that #233 works**:
+`no-mistakes-4745-3ff11a1` is a ceiling case, because Sonnet does not reproduce the wrong rustfmt claim even with
+`origin/main`'s prompts (no `high` finding in 3 of 3 with `origin/main`'s rules prompt, 3 of 3 with #233's, and 3 of 3 without skills, on the rules and
+correctness pillars; the verifier raised none given those findings). The verifier's step 2 rejection (a claim that
+CI fails) and the "never claim a CI failure without reading its result" half were not exercised: no case supplies the
+wrong claim to the verifier, and the 4745 snapshot does not hold the CI result. A case that does (a pillar finding
+fixed in the input, like the planted duplicates) is the missing piece.
+
+Failed or broken, for the next person:
+
+- `lock-scope-ancestor-locks` has a broken `expectedRules` tag: the text ends "to serialize writers" and the
+  installed `postgres-locking` skill wraps that line after "serialize", so `bench-context` reports the rule missing.
+  Not changed here (no case or grader edit in this run). Shortening the tag to "never lock a read set or a parent row to
+  serialize" fixes it; `lock-scope-race-response` is "cut" (the rule is in the skill but beyond the excerpt budget).
+- `bench-verifier` skips every negative congruence case (`congruence-test-only-with-helper`,
+  `congruence-description-command-paths-resolve`, `congruence-documented-unused-allow-failure`): no expected finding and no
+  pillar result, so "not run" in all attempts. They stay unmeasured on the verifier.
+- Ceiling cases (control catches 3 of 3): all five new correctness positives, `rules-repo-orchestration-package`
+  (its rule lives in the repository `AGENTS.md`), and now `congruence-missing-real-run` (the control raised it in every
+  attempt, against 0 of 1 in the pilot). By the keep rule in `benchmarks/review/AGENTS.md` these should be replaced or
+  marked; this run keeps them and says so. Both arms missed nothing in the rules and correctness fixtures; no case was
+  missed by both arms.
+- `bench-focus` on the synthetic cases: 30 of 33 points, with `focus-target-untraced-reported` 1 of 3 (the step answered
+  `does_not_hold` on a shape the case allows) and `focus-hostile-point` 2 of 3. Run once, three attempts, no
+  before; whether the contract text of #233 moved either is not known. `bench-replies` was not re-run: its call reads
+  only the breaking-change rule in `verifier.md`, which #233 did not change.
+- The mined cases, review-round cases, `links-declared-api-payload`, `lock-scope-*` positives, the six mined misses and
+  `vouchington-6282` and `vouchington-6254` were not run; the README marks them stale.
+
 ## 2026-11-27 (no run): review no longer reports what CI can verify
 
 Owner policy: skip reporting AST violations, rules, or anything verifiable via CI; review adds value only where CI
