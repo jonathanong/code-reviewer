@@ -89,6 +89,8 @@ describe('a fix elsewhere in the file, cited by a reply', () => {
     expect(await run({ ...api, files: [{ filename: 'src/b.ts' }] })).toBe('disputed')
     expect(await run({ commits: [{ sha: 'd'.repeat(40) }], files: api.files })).toBe('disputed')
     expect(await run({ commits: 'none' })).toBe('disputed')
+    expect(await run({ ...api, commits: [{}, { sha: FIX }] })).toBe('fixed')
+    expect(await run({ commits: [{ sha: FIX }] })).toBe('disputed')
   })
 
   it('falls back to the API when the clone cannot list the commits, and reports when nothing can', async () => {
