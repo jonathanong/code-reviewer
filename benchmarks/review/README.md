@@ -264,7 +264,7 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 
 `focus-target-sibling-fixed` (`sibling-keeps-old-shape`) is the false-alarm check, piloted on Claude Sonnet 2 of 2 attempts, and the mined case below 1 of 1 (see `HISTORY.md`); pilots, not rates.
 
-`focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 5, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates.
+`focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 5, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates. Both fixtures have since pinned `yaml` 2.8.3 on both sides and were not re-run after that edit (see the 2026-11-27 `HISTORY.md` entry).
 
 A case may set `focusRefs`, an object from pull request number to a full 40-character commit
 (`{ "3963": "236cad49..." }`). When a requester point names another pull request (`#123`, `PR 123`,

@@ -147,6 +147,7 @@ pnpm install
 pnpm run lint
 pnpm run typecheck
 pnpm run test:coverage   # 100% thresholds
+pnpm run actionlint      # needs actionlint (and shellcheck) on PATH, e.g. `mise use -g aqua:rhysd/actionlint`
 ```
 
 The plugin is installed as a plain checkout with no `node_modules`, so runtime code imports only
