@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { DEFAULT_PLAN_VALUES } from './plan-settings.mts'
 import { prepareReview } from './prepare.mts'
-import { OLD, fakeIo } from './prepare-fake-io.mts'
+import { BASE, OLD, fakeIo } from './prepare-fake-io.mts'
 
 let out: string
 let tree: string
@@ -65,10 +65,37 @@ describe('prepareReview with SQL in source', () => {
     )
   })
 
+  it('says so when ast-grep is missing for the new commits of a light follow-up', async () => {
+    const fake = io({ reviewed: OLD, lines: 200 })
+    fake.astGrep.mockRejectedValue(Object.assign(new Error('spawn'), { code: 'ENOENT' }))
+    const summary = await prepareReview(fake, { out, ...options() })
+    expect(summary.plan.reasons).toContain(
+      'SQL detection was skipped because ast-grep was not found.',
+    )
+  })
+
   it('does not run the check without a rules path', async () => {
     const fake = io()
     expect((await prepareReview(fake, { out })).mode).toBe('light')
     expect(fake.astGrep).not.toHaveBeenCalled()
+  })
+
+  it('reads the removed lines of a first review at the merge base, and of a follow-up at the reviewed sha', async () => {
+    const mergeBase = 'd'.repeat(40)
+    const first = io()
+    first.upgrades.mergeBase.mockResolvedValue(mergeBase)
+    await prepareReview(first, { out, ...options() })
+    expect(first.upgrades.fileAt).toHaveBeenCalledWith(tree, mergeBase, 'src/feed.mts')
+    const follow = io({ reviewed: OLD, lines: 200 })
+    await prepareReview(follow, { out, ...options() })
+    expect(follow.upgrades.fileAt).toHaveBeenCalledWith(tree, OLD, 'src/feed.mts')
+  })
+
+  it('falls back to the base tip when no merge base is found', async () => {
+    const fake = io()
+    fake.upgrades.mergeBase.mockRejectedValue(new Error('no merge base'))
+    await prepareReview(fake, { out, ...options() })
+    expect(fake.upgrades.fileAt).toHaveBeenCalledWith(tree, BASE, 'src/feed.mts')
   })
 
   it('escalates a follow-up whose new commits change SQL in source', async () => {

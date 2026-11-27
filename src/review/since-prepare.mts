@@ -6,6 +6,21 @@ import type { PrepareIo } from './prepare-io.mts'
 import { prepareSql, type SqlPrepare } from './sql-prepare.mts'
 import { writeDiff, type Write } from './write-diff.mts'
 
+/** The merge base of the base tip and the head in `tree`; the base tip itself when git cannot say. */
+async function mergeBaseOf(
+  io: PrepareIo,
+  tree: string | undefined,
+  baseSha: string,
+  headSha: string,
+): Promise<string> {
+  if (tree === undefined) return baseSha
+  try {
+    return await io.upgrades.mergeBase(tree, baseSha, headSha)
+  } catch {
+    return baseSha
+  }
+}
+
 /**
  * Compares the head with the last reviewed SHA, when there is one that is not the head. An ahead
  * since-diff is written under `since/`, and the SQL check runs on it (see `prepareSql`), so a small
@@ -22,10 +37,12 @@ export async function prepareSince(
   const values = options.values ?? DEFAULT_PLAN_VALUES
   const sqlInput = { values, rules: options.sqlRules, tree: options.tree }
   if (context.reviewedSha === null) {
+    // The pull request diff runs from the merge base, so its removed lines are read there.
+    const base = await mergeBaseOf(io, options.tree, context.baseSha, headSha)
     return {
       since: undefined,
       written: [],
-      sql: await prepareSql(io, { ...sqlInput, patch, base: context.baseSha }),
+      sql: await prepareSql(io, { ...sqlInput, patch, base }),
     }
   }
   if (context.reviewedSha === headSha) return { since: undefined, written: [], sql: {} }

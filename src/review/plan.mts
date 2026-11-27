@@ -134,10 +134,9 @@ export function planReview(input: PlanInput): ReviewPlan {
   const { context } = input
   const upToDate = context.reviewedSha !== null && context.reviewedSha === context.headSha
   const choice = chooseMode(input, reasons)
-  if (choice.mode === 'light' && (input.sqlSkipped ?? input.since?.sqlSkipped) !== undefined) {
-    reasons.push(
-      `SQL detection was skipped because ${input.sqlSkipped ?? input.since?.sqlSkipped}.`,
-    )
+  const sqlSkipped = input.sqlSkipped ?? input.since?.sqlSkipped
+  if (choice.mode === 'light' && sqlSkipped !== undefined) {
+    reasons.push(`SQL detection was skipped because ${sqlSkipped}.`)
   }
   const { mode, effort, sinceSha } = choice
   if (choice.skipReason !== undefined) {

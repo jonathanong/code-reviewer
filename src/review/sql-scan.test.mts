@@ -11,6 +11,7 @@ import {
   matchTouches,
   parseAstMatches,
   scanSqlPaths,
+  unquoteGitPath,
   type AstMatch,
 } from './sql-scan.mts'
 
@@ -45,11 +46,20 @@ describe('changedLines', () => {
     expect(lines).toEqual({ added: [21, 22, 60], removed: [11, 50] })
   })
 
+  it('counts an empty line in a hunk as context (diff.suppressBlankEmpty)', () => {
+    const lines = changedLines(diff('a.ts', '@@ -1,3 +1,3 @@', '', '-old', '+new', ' keep'))
+    expect(lines).toEqual({ added: [2], removed: [2] })
+  })
+
   it('ignores the file header and a no-newline marker', () => {
     const lines = changedLines(
       diff('a.ts', '@@ -1 +1 @@', '-a', '\\ No newline at end of file', '+b'),
     )
     expect(lines).toEqual({ added: [1], removed: [1] })
+    expect(changedLines(diff('a.ts', '@@ -1 +1 @@', '+b', 'stray'))).toEqual({
+      added: [1],
+      removed: [],
+    })
   })
 })
 
@@ -81,7 +91,16 @@ describe('matchTouches and filesWithChangedMatches', () => {
 
   it('reads ast-grep output, and an empty list', () => {
     expect(parseAstMatches('[]')).toEqual([])
+    expect(parseAstMatches('{}')).toEqual([])
     expect(parseAstMatches(JSON.stringify([match('a', 1, 2)]))).toEqual([match('a', 1, 2)])
+  })
+})
+
+describe('unquoteGitPath', () => {
+  it('decodes octal escapes as UTF-8 bytes and leaves an ordinary path alone', () => {
+    expect(unquoteGitPath(String.raw`src/caf\303\251.ts`)).toBe('src/café.ts')
+    expect(unquoteGitPath(String.raw`a\tb\"c\\d.ts`)).toBe('a\tb"c\\d.ts')
+    expect(unquoteGitPath('src/plain.ts')).toBe('src/plain.ts')
   })
 })
 
@@ -117,6 +136,16 @@ describe('scanSqlPaths with ast-grep output faked', () => {
     ])
   })
 
+  it('does not read the base for a file that only gains lines', async () => {
+    const astGrep = vi.fn(async () => JSON.stringify([match(join(tree, 'src/feed.mts'), 0, 0)]))
+    const fileAt = vi.fn(async () => undefined)
+    const addOnly = diff('src/feed.mts', '@@ -0,0 +1 @@', '+sql`select`')
+    expect(await scanSqlPaths({ astGrep, fileAt }, input(addOnly))).toEqual({
+      paths: ['src/feed.mts'],
+    })
+    expect(fileAt).not.toHaveBeenCalled()
+  })
+
   it('scans the base file for a removed line, and ignores a match elsewhere in the file', async () => {
     const astGrep = vi.fn(async (args: string[]) => {
       const file = args.at(-1) as string
@@ -130,6 +159,22 @@ describe('scanSqlPaths with ast-grep output faked', () => {
     expect(fileAt).toHaveBeenCalledWith(tree, 'b'.repeat(40), 'src/feed.mts')
     const far = vi.fn(async () => JSON.stringify([match(join(tree, 'src/feed.mts'), 40, 41)]))
     expect(await scanSqlPaths({ astGrep: far, fileAt }, input(added))).toEqual({ paths: [] })
+  })
+
+  it('finds a file whose path was printed with octal escapes', async () => {
+    writeFileSync(join(tree, 'src/café.ts'), 'y\n')
+    const astGrep = vi.fn(async () => JSON.stringify([match(join(tree, 'src/café.ts'), 0, 0)]))
+    const quoted = [
+      'diff --git "a/src/caf\\303\\251.ts" "b/src/caf\\303\\251.ts"',
+      '--- "a/src/caf\\303\\251.ts"',
+      '+++ "b/src/caf\\303\\251.ts"',
+      '@@ -1 +1 @@',
+      '-x',
+      '+y',
+      '',
+    ].join('\n')
+    const result = await scanSqlPaths({ astGrep, fileAt: vi.fn(async () => 'x\n') }, input(quoted))
+    expect(result).toEqual({ paths: ['src/café.ts'] })
   })
 
   it('reads the base file of a renamed file under its old path', async () => {

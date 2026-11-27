@@ -31,7 +31,8 @@ export function changedLines(fileDiff: string): ChangedLines {
     } else if (!inHunk || line.startsWith('\\')) continue
     else if (line.startsWith('+')) lines.added.push(right++)
     else if (line.startsWith('-')) lines.removed.push(left++)
-    else if (line.startsWith(' ')) {
+    // An empty line is context too: `diff.suppressBlankEmpty` drops its leading space.
+    else if (line.startsWith(' ') || line === '') {
       left += 1
       right += 1
     }
@@ -90,10 +91,35 @@ export type SqlScanIo = {
 
 export type SqlScan = { paths: string[]; skipped?: string }
 
+const ESCAPE = /\\(?:([0-7]{3})|(.))/gu
+const NAMED: Record<string, number> = { t: 9, n: 10, r: 13, a: 7, b: 8, f: 12, v: 11 }
+
+/**
+ * Git quotes a path holding a non-ASCII byte, tab, quote or backslash: `caf\303\251.ts`. This
+ * decodes the escapes back to the file name; an ordinary path has none and is returned as it is.
+ */
+export function unquoteGitPath(path: string): string {
+  if (!path.includes('\\')) return path
+  const bytes: number[] = []
+  let last = 0
+  for (const match of path.matchAll(ESCAPE)) {
+    bytes.push(...Buffer.from(path.slice(last, match.index)))
+    const [whole, octal, other] = match
+    bytes.push(
+      octal === undefined
+        ? (NAMED[other as string] ?? (other as string).charCodeAt(0))
+        : parseInt(octal, 8),
+    )
+    last = (match.index as number) + whole.length
+  }
+  bytes.push(...Buffer.from(path.slice(last)))
+  return Buffer.from(bytes).toString('utf8')
+}
+
 /** The path a file had at the base: the `rename from` of a renamed file, otherwise its own path. */
 function pathAtBase(fileDiff: string, path: string): string {
   const renamed = /^rename from (.+)$/mu.exec(fileDiff)
-  return renamed?.[1] ?? path
+  return renamed?.[1] === undefined ? path : unquoteGitPath(renamed[1].replace(/^"(.*)"$/u, '$1'))
 }
 
 const skippedBecause = (error: unknown): string =>
@@ -133,7 +159,7 @@ export async function scanSqlPaths(
   const head = new Map<string, Set<number>>()
   const removed = new Map<string, { lines: Set<number>; from: string }>()
   for (const file of splitDiff(input.patch)) {
-    const { path } = file
+    const path = unquoteGitPath(file.path)
     if (!SCANNED_RE.test(path) || SUPPORT_RE.test(path)) continue
     if (!isSourcePath(path, input.generatedPaths)) continue
     const lines = changedLines(file.text)
