@@ -67,13 +67,14 @@ describe('cloneOwnerChecks', () => {
       {
         name: 'clone-owner:Jongleberry',
         status: 'warn',
-        detail: 'Jongleberry (clones: new): no machine config for it',
+        detail:
+          'Jongleberry (clones: new): no owner config file for it, so its other repositories run on built-in defaults',
         fix: 'add /cfg/repos/Jongleberry.yaml (or .json) for Jongleberry',
       },
     ])
   })
 
-  it('counts a config for the owner in any case, or for one of its repositories', async () => {
+  it('counts an owner file in any case, but not per-repository files alone', async () => {
     const byOwner = setup({ io: { configs: () => configs(['jongleberry', 'jonathanong']) } })
     expect((await cloneOwnerChecks({ io: byOwner.io, flags }))[0]).toMatchObject({
       name: 'clone-owners',
@@ -83,7 +84,13 @@ describe('cloneOwnerChecks', () => {
     const byRepo = setup({
       io: { configs: () => configs(['jonathanong'], ['jongleberry/new']) },
     })
-    expect((await cloneOwnerChecks({ io: byRepo.io, flags }))[0]).toMatchObject({ status: 'ok' })
+    expect(await cloneOwnerChecks({ io: byRepo.io, flags })).toEqual([
+      expect.objectContaining({
+        name: 'clone-owner:Jongleberry',
+        detail:
+          'Jongleberry (clones: new): no owner config file for it, so its other repositories run on built-in defaults',
+      }),
+    ])
   })
 
   it('warns when the App is configured but not installed, one lookup per owner', async () => {
@@ -129,7 +136,7 @@ describe('cloneOwnerChecks', () => {
     expect(checks[0]).toMatchObject({
       name: 'clone-owner:jonathanong',
       detail:
-        'jonathanong (clones: old): no machine config for it; could not check the GitHub App installation: HTTP 502',
+        'jonathanong (clones: old): no owner config file for it, so its other repositories run on built-in defaults; could not check the GitHub App installation: HTTP 502',
     })
     expect(checks[1]?.fix).toBe(
       'add /cfg/repos/Jongleberry.yaml (or .json) for Jongleberry; install the App for Jongleberry',
@@ -154,9 +161,8 @@ describe('cloneOwnerChecks', () => {
     expect(checkInstallation).not.toHaveBeenCalled()
   })
 
-  it('skips the config comparison when the config cannot be read, and an origin it cannot read', async () => {
+  it('skips the config comparison when the config cannot be read', async () => {
     const { io } = setup({
-      exec: { [origin('new')]: notFound('git') },
       io: {
         configs: () => {
           throw new Error('EACCES')
@@ -167,7 +173,46 @@ describe('cloneOwnerChecks', () => {
       {
         name: 'clone-owners',
         status: 'ok',
-        detail: '1 clone under /clones, for 1 GitHub owner, all set up',
+        detail: '2 clones under /clones, for 2 GitHub owners, all set up',
+      },
+    ])
+  })
+
+  it('warns naming the path of a clone whose origin cannot be read, and never says all set up', async () => {
+    const { io } = setup({
+      exec: { [origin('new')]: notFound('git') },
+      io: { configs: () => configs(['jonathanong']) },
+    })
+    expect(await cloneOwnerChecks({ io, flags })).toEqual([
+      {
+        name: 'clone-remote:/clones/new',
+        status: 'warn',
+        detail: 'could not read the origin remote of /clones/new, so its owner is unchecked',
+        fix: 'git -C /clones/new remote get-url origin',
+      },
+    ])
+  })
+
+  it('says clone and owner in the singular for one', async () => {
+    const { io } = setup({
+      dirs: { '/clones': ['old'] },
+      io: { configs: () => configs(['jonathanong']) },
+    })
+    expect(await cloneOwnerChecks({ io, flags })).toEqual([
+      expect.objectContaining({ detail: '1 clone under /clones, for 1 GitHub owner, all set up' }),
+    ])
+  })
+
+  it('skips a clone on another host without a warning', async () => {
+    const { io } = setup({
+      dirs: { '/clones': ['other'] },
+      io: { configs: () => configs([]) },
+    })
+    expect(await cloneOwnerChecks({ io, flags })).toEqual([
+      {
+        name: 'clone-owners',
+        status: 'ok',
+        detail: '0 clones under /clones, for 0 GitHub owners, all set up',
       },
     ])
   })

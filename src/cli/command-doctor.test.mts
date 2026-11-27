@@ -86,7 +86,7 @@ describe('doctor command', () => {
     )
     expect(code).toBe(0)
     expect(err.join('')).toContain(
-      'warn clone-owner:zed: zed (clones: w): no machine config for it',
+      'warn clone-owner:zed: zed (clones: w): no owner config file for it, so its other repositories run on built-in defaults',
     )
   })
 

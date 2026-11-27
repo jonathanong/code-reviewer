@@ -17,43 +17,48 @@ export function githubOwner(url: string): string | undefined {
 const rootOf = ({ io, flags }: Context): string | undefined =>
   flags.clones ?? (io.env.CODE_REVIEWER_CLONE_ROOT || undefined)
 
-/** Whether the machine config holds settings for `owner`, in its own file or for any of its repositories. */
+/**
+ * Whether the machine config has an owner file for `owner`. Per-repository files do not count:
+ * without the owner file, the owner's other repositories run on the built-in defaults.
+ */
 function hasOwnerConfig(io: DoctorIo, owner: string): boolean | undefined {
   try {
-    const { byOwner, byRepo } = io.configs()
-    const key = owner.toLowerCase()
-    return byOwner.has(key) || [...byRepo.keys()].some((repo) => repo.startsWith(`${key}/`))
+    return io.configs().byOwner.has(owner.toLowerCase())
   } catch {
     // The `machine-config` check reports an unreadable directory; there is nothing to compare here.
     return undefined
   }
 }
 
-/** The owner of each git checkout directly under `root`, from its `origin` remote alone, grouped with the checkouts' names. */
-async function ownersOf(
-  io: DoctorIo,
-  root: string,
-  entries: string[],
-): Promise<Map<string, string[]>> {
+type Remotes = {
+  /** GitHub owner to the names of its checkouts. */
+  owners: Map<string, string[]>
+  /** Paths of checkouts whose `origin` could not be read. A remote on another host is not one. */
+  unreadable: string[]
+}
+
+/** The owner of each git checkout directly under `root`, from its `origin` remote alone. */
+async function remotesOf(io: DoctorIo, root: string, entries: string[]): Promise<Remotes> {
   const names = entries
     .filter((name) => io.fs.mtimeMs(join(root, name, '.git')) !== undefined)
     .sort()
-  const owners = await mapBounded(names, REMOTE_CONCURRENCY, async (name) => {
+  const found = await mapBounded(names, REMOTE_CONCURRENCY, async (name) => {
     try {
       const url = await io.exec('git', ['-C', join(root, name), 'remote', 'get-url', 'origin'], {
         timeoutMs: PROBE_TIMEOUT_MS,
       })
-      return githubOwner(url)
+      return { name, owner: githubOwner(url) }
     } catch {
-      return undefined
+      return { name, owner: null }
     }
   })
-  const byOwner = new Map<string, string[]>()
-  names.forEach((name, index) => {
-    const owner = owners[index]
-    if (owner !== undefined) byOwner.set(owner, [...(byOwner.get(owner) ?? []), name])
-  })
-  return byOwner
+  const owners = new Map<string, string[]>()
+  const unreadable: string[] = []
+  for (const { name, owner } of found) {
+    if (owner === null) unreadable.push(join(root, name))
+    else if (owner !== undefined) owners.set(owner, [...(owners.get(owner) ?? []), name])
+  }
+  return { owners, unreadable }
 }
 
 /** Whether an App is configured; a config that does not parse is the `github-app` check's to report. */
@@ -78,23 +83,26 @@ async function installProblem(io: DoctorIo, owner: string): Promise<string | und
 }
 
 /**
- * Warns about a clone whose GitHub owner this machine is not set up for: no machine config for the
+ * Warns about a clone whose GitHub owner this machine is not set up for: no owner config file for the
  * owner, or the configured App not installed there. It reads remotes only and asks GitHub once
- * per distinct owner, and not at all with `--offline` or without an App.
+ * per distinct owner, and not at all with `--offline` or without an App. A clone whose remote
+ * cannot be read is a warning naming its path; a remote on another host is skipped.
  */
 export async function cloneOwnerChecks(ctx: Context): Promise<Check[]> {
   const { io, flags } = ctx
   const root = rootOf(ctx)
   const entries = root === undefined ? undefined : io.fs.list(root)
   if (root === undefined || entries === undefined) return []
-  const owners = await ownersOf(io, root, entries)
+  const { owners, unreadable } = await remotesOf(io, root, entries)
   const askApp = !flags.offline && appConfigured(io)
   const checks: Check[] = []
   for (const [owner, clones] of [...owners].sort(([a], [b]) => a.localeCompare(b))) {
     const problems: string[] = []
     const fixes: string[] = []
     if (hasOwnerConfig(io, owner) === false) {
-      problems.push('no machine config for it')
+      problems.push(
+        'no owner config file for it, so its other repositories run on built-in defaults',
+      )
       fixes.push(`add ${join(io.configDir, `${owner}.yaml`)} (or .json) for ${owner}`)
     }
     const app = askApp ? await installProblem(io, owner) : undefined
@@ -110,6 +118,14 @@ export async function cloneOwnerChecks(ctx: Context): Promise<Check[]> {
         fix: fixes.join('; '),
       })
     }
+  }
+  for (const path of unreadable) {
+    checks.push({
+      name: `clone-remote:${path}`,
+      status: 'warn',
+      detail: `could not read the origin remote of ${path}, so its owner is unchecked`,
+      fix: `git -C ${path} remote get-url origin`,
+    })
   }
   if (checks.length > 0) return checks
   const count = [...owners.values()].reduce((sum, clones) => sum + clones.length, 0)
