@@ -44,4 +44,7 @@
 - A mined case snapshots a real pull request. Do not rewrite its expected claim to fit a skill.
 - A change to a case, fixture, grader, pillar prompt, or bench prompt updates `README.md` and adds
   a `HISTORY.md` entry in the same change, with or without a run.
+- A pillar or verifier prompt change that alters behaviour adds a case the earlier prompt fails
+  (positive or negative), or the `HISTORY.md` entry states why the case format cannot express it
+  and names the unit test that covers it instead.
 - Raw results stay out of the repository. Record the numbers in `HISTORY.md` before deleting them.
