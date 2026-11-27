@@ -2,6 +2,20 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (no run): `focus-target-undecided-*` fixtures no longer change the `yaml` version
+
+`focus-target-undecided-skipped` and `focus-target-undecided-reported` each pinned `yaml` at 2.8.1 on one side and
+2.8.3 on the other, so their base/head diff carried an unrelated dependency bump next to the workflow `NODE_ENV` change
+the cases test. 2.8.1 also has open Dependabot alerts. Both sides of both fixtures now pin `yaml` 2.8.3. No run.
+
+- **What changed.** `skipped/base/package.json` and `reported/head/package.json`: `yaml` 2.8.1 to 2.8.3. The
+  `package.json` of each fixture now has the same `yaml` line in base and head; `cases.json` and `synthetic.json` are
+  unchanged.
+- **Comparability.** Not measured. The change removes one incidental diff line from two cases, but a reviewer could
+  have reacted to that line (a dependency-bump finding, or more attention to the manifest), so rows for these two cases
+  from before this entry may not match rows after it. Earlier rows for every other case are unaffected. Treat a
+  difference of one catch on these two cases as noise until a run covers them.
+
 ## 2026-11-27 (no run): default rule plugins and skill ids move from `jong-skills` to four `ratchet-*` plugins
 
 The `jong-skills` plugin is split into `ratchet-workflows`, `ratchet-github`, `ratchet-backend` and `ratchet-code`
