@@ -26,15 +26,28 @@ export function readFocusFile(path: string): string[] {
         .trim(),
     }))
     .filter((entry) => entry.point !== '')
-  if (entries.length === 0) throw new Error(`--focus ${path}: the file has no focus points.`)
+  return checkFocusPoints(entries, `--focus ${path}`, 'the file has no focus points')
+}
+
+/**
+ * Applies the limits of a review to points read from `source` (each with the line it came from)
+ * and returns the points. Throws a message that starts with `source` when there is none, too many,
+ * or one is too long: the one rule for a `--focus` file and for a check list read from a request.
+ */
+export function checkFocusPoints(
+  entries: readonly { line: number; point: string }[],
+  source: string,
+  none: string,
+): string[] {
+  if (entries.length === 0) throw new Error(`${source}: ${none}.`)
   if (entries.length > MAX_FOCUS_POINTS) {
-    throw new Error(`--focus ${path}: ${entries.length} points; at most ${MAX_FOCUS_POINTS}.`)
+    throw new Error(`${source}: ${entries.length} points; at most ${MAX_FOCUS_POINTS}.`)
   }
   for (const entry of entries) {
     const length = charLength(entry.point)
     if (length > MAX_FOCUS_CHARS) {
       throw new Error(
-        `--focus ${path}: line ${entry.line} is ${length} characters; at most ${MAX_FOCUS_CHARS}.`,
+        `${source}: line ${entry.line} is ${length} characters; at most ${MAX_FOCUS_CHARS}.`,
       )
     }
   }

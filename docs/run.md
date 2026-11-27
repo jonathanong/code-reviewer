@@ -16,6 +16,9 @@ a session that dispatches it without watching. It:
    clone in `--clones` or `CODE_REVIEWER_CLONE_ROOT` after fetching the head. Without a local
    clone it makes a blobless clone there instead. The tree is removed on success, on failure and
    on `SIGINT` or `SIGTERM`.
+   With [`requestFocus`](configuration.md#requestfocus) enabled and no `--focus`, it first reads the
+   requester's check list from the request (see
+   [Points read from the request](review.md#points-read-from-the-request)).
 4. Runs `review` in-process. `review` makes the claim, so a lost claim is a no-op with a reason;
    `run` adds the request label first when neither it nor the in-progress label is present.
 5. Posts through `post` (which records the tracker row and moves the labels), or holds.

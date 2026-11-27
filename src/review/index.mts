@@ -31,6 +31,7 @@ export {
   resolveAnswers,
   resolveUpgrades,
   resolveApprovalCheck,
+  resolveRequestFocus,
   resolveRun,
   reviewSettings,
   settingLayers,
