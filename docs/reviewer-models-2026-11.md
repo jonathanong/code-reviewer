@@ -23,13 +23,13 @@ request, not a `bench` run. For measured results see
 
 ## Recommendations as of 2026-11-24 (engineering)
 
-| Step | Live candidate | Fallback | Shadow | Why |
-| --- | --- | --- | --- | --- |
-| Pillars, focus | agy `gemini-4-hydrogen-medium` | Claude Sonnet | Codex Sol medium | Found the planted bug with no false alarm on the bench |
-| Verifier, approval check | agy `gemini-4-neon-medium` | Claude Sonnet | Codex Sol medium | agy's strongest tier; the verifier decides the verdict |
-| History pillar, evidence | Claude Sonnet | none | none | Both need shell, which the agy, Codex, Grok and OpenCode adapters refuse |
-| Skill selection | Claude Haiku | none | none | Already cheap |
-| Per-PR hand check | Codex Sol medium | Codex `gpt-6.1-terra` for docs, CI or test-only | | Sol alone caught the exit 0 to 2 break on no-mistakes #4015 |
+| Step                     | Live candidate                 | Fallback                                        | Shadow           | Why                                                                      |
+| ------------------------ | ------------------------------ | ----------------------------------------------- | ---------------- | ------------------------------------------------------------------------ |
+| Pillars, focus           | agy `gemini-4-hydrogen-medium` | Claude Sonnet                                   | Codex Sol medium | Found the planted bug with no false alarm on the bench                   |
+| Verifier, approval check | agy `gemini-4-neon-medium`     | Claude Sonnet                                   | Codex Sol medium | agy's strongest tier; the verifier decides the verdict                   |
+| History pillar, evidence | Claude Sonnet                  | none                                            | none             | Both need shell, which the agy, Codex, Grok and OpenCode adapters refuse |
+| Skill selection          | Claude Haiku                   | none                                            | none             | Already cheap                                                            |
+| Per-PR hand check        | Codex Sol medium               | Codex `gpt-6.1-terra` for docs, CI or test-only |                  | Sol alone caught the exit 0 to 2 break on no-mistakes #4015              |
 
 - Don't use agy Hydrogen for the final verdict. On #4015 it saw the exit-code change and called
   it harmless.
@@ -38,29 +38,29 @@ request, not a `bench` run. For measured results see
 
 ## Model scorecard (engineering)
 
-| Model | Role tested | Verdict so far | Evidence |
-| --- | --- | --- | --- |
-| Codex `gpt-6.2-sol` medium | Whole-PR shadow | Strongest non-Claude reviewer | #4015 exit 0 to 2 break and broken description commands; #4047 unused entries that newly fail; about 6 lexer bugs on #4062; about 12 edge cases on pr-shepherd #832 (8 verified) |
-| Codex `gpt-6.1-terra` medium | Whole-PR shadow | Mixed | #4015: saw the break and dismissed it. Fine on refactors |
-| agy `gemini-4-hydrogen-medium` | Pillars | Good at finding bugs, lenient on judgement | Bench: planted bug found, clean case quiet. #4015 whole-PR: approved the break. Overrates pre-existing gaps (#4118) |
-| agy `gemini-4-neon-medium` | Verifier | Matches Sonnet on the one PR compared | #4015: same findings, severity and verdict as a Sonnet verifier. Once caught a wrong claim from the PR's own benchmark table (#4087) |
-| Claude Sonnet | Pillars and verifier | Baseline | #4015: approved and missed the exit 0 to 2 break |
-| Codex `gpt-6.2-terra` | — | Unavailable | Not offered on a ChatGPT account |
-| Grok, OpenCode | — | Not tried | Adapters refuse web and shell; Grok was out of quota |
+| Model                          | Role tested          | Verdict so far                             | Evidence                                                                                                                                                                         |
+| ------------------------------ | -------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Codex `gpt-6.2-sol` medium     | Whole-PR shadow      | Strongest non-Claude reviewer              | #4015 exit 0 to 2 break and broken description commands; #4047 unused entries that newly fail; about 6 lexer bugs on #4062; about 12 edge cases on pr-shepherd #832 (8 verified) |
+| Codex `gpt-6.1-terra` medium   | Whole-PR shadow      | Mixed                                      | #4015: saw the break and dismissed it. Fine on refactors                                                                                                                         |
+| agy `gemini-4-hydrogen-medium` | Pillars              | Good at finding bugs, lenient on judgement | Bench: planted bug found, clean case quiet. #4015 whole-PR: approved the break. Overrates pre-existing gaps (#4118)                                                              |
+| agy `gemini-4-neon-medium`     | Verifier             | Matches Sonnet on the one PR compared      | #4015: same findings, severity and verdict as a Sonnet verifier. Once caught a wrong claim from the PR's own benchmark table (#4087)                                             |
+| Claude Sonnet                  | Pillars and verifier | Baseline                                   | #4015: approved and missed the exit 0 to 2 break                                                                                                                                 |
+| Codex `gpt-6.2-terra`          | —                    | Unavailable                                | Not offered on a ChatGPT account                                                                                                                                                 |
+| Grok, OpenCode                 | —                    | Not tried                                  | Adapters refuse web and shell; Grok was out of quota                                                                                                                             |
 
 ## Model tracker by step, as of 2026-11-25 (engineering)
 
-| Step | Model | Usable? | Blocker | Use it for |
-| --- | --- | --- | --- | --- |
-| Skill selection | Claude Haiku | Yes, the default | — | Keep |
-| Skill selection | agy Hydrogen | Not tried | A `--model` override cannot mark `readsOutsideCheckout`, so agy refuses | Try once config allows it |
-| Rules, design, blast-radius, focus | agy Hydrogen medium | Yes | — | Default for these pillars |
-| Correctness, security | agy Hydrogen medium | Yes on jonathanong; was not on vouchington | vouchington grants a web host (AWS docs), which agy refused; #196 (2026-11-25) allows granted hosts. Not rechecked on vouchington | Default once rechecked |
-| History | Claude Sonnet | Yes | Pinned to Claude; agy not tried | Try agy |
-| Verifier, approval check | agy Neon medium | Same as correctness | Same web-host refusal | Default, with a Sol shadow on analysis or rule PRs |
-| Evidence | Claude Sonnet | Yes | Needs shell | Sonnet only |
-| Shadow | Codex Sol medium | By hand only | The Codex adapter refuses web access; quota on one account | Analysis or rule PRs before an Approve |
-| Judge (evals) | Claude Opus, Codex Sol | Evals only | Cost; owner rule: no large models in reviews | Judge only |
+| Step                               | Model                  | Usable?                                    | Blocker                                                                                                                           | Use it for                                         |
+| ---------------------------------- | ---------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Skill selection                    | Claude Haiku           | Yes, the default                           | —                                                                                                                                 | Keep                                               |
+| Skill selection                    | agy Hydrogen           | Not tried                                  | A `--model` override cannot mark `readsOutsideCheckout`, so agy refuses                                                           | Try once config allows it                          |
+| Rules, design, blast-radius, focus | agy Hydrogen medium    | Yes                                        | —                                                                                                                                 | Default for these pillars                          |
+| Correctness, security              | agy Hydrogen medium    | Yes on jonathanong; was not on vouchington | vouchington grants a web host (AWS docs), which agy refused; #196 (2026-11-25) allows granted hosts. Not rechecked on vouchington | Default once rechecked                             |
+| History                            | Claude Sonnet          | Yes                                        | Pinned to Claude; agy not tried                                                                                                   | Try agy                                            |
+| Verifier, approval check           | agy Neon medium        | Same as correctness                        | Same web-host refusal                                                                                                             | Default, with a Sol shadow on analysis or rule PRs |
+| Evidence                           | Claude Sonnet          | Yes                                        | Needs shell                                                                                                                       | Sonnet only                                        |
+| Shadow                             | Codex Sol medium       | By hand only                               | The Codex adapter refuses web access; quota on one account                                                                        | Analysis or rule PRs before an Approve             |
+| Judge (evals)                      | Claude Opus, Codex Sol | Evals only                                 | Cost; owner rule: no large models in reviews                                                                                      | Judge only                                         |
 
 ## Where the pipeline missed (engineering)
 
@@ -90,31 +90,31 @@ request, not a `bench` run. For measured results see
 
 ## What has shipped since (engineering)
 
-| Journal finding | Change |
-| --- | --- |
-| agy refused shell in headless mode | #181: agy steps say no shell and report denied actions |
-| A model id with an effort suffix plus `--effort` failed every pillar, and a step did not fall back | #182 |
-| Description commands with unresolvable paths | #184, an eval case (easier than the real miss) |
-| Undocumented behaviour changes rated high | #185: rated medium, four benchmark cases (ceiling cases: the no-rules control also catches them) |
-| Silent passes in new analyzers | #186: the `undecided-input-passes` target |
-| Verifier keeps highs that main already has, findings about documented limits, false convention claims | #195: verifier step 2 drops documented limits, rates against the base, checks convention claims |
-| agy ran with unrestricted network | #196: every agy step gets a host allowlist |
-| No light review of a merge from the base | Already present since #52 (2026-11-19), but only on top of the same machine's earlier review |
+| Journal finding                                                                                       | Change                                                                                           |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| agy refused shell in headless mode                                                                    | #181: agy steps say no shell and report denied actions                                           |
+| A model id with an effort suffix plus `--effort` failed every pillar, and a step did not fall back    | #182                                                                                             |
+| Description commands with unresolvable paths                                                          | #184, an eval case (easier than the real miss)                                                   |
+| Undocumented behaviour changes rated high                                                             | #185: rated medium, four benchmark cases (ceiling cases: the no-rules control also catches them) |
+| Silent passes in new analyzers                                                                        | #186: the `undecided-input-passes` target                                                        |
+| Verifier keeps highs that main already has, findings about documented limits, false convention claims | #195: verifier step 2 drops documented limits, rates against the base, checks convention claims  |
+| agy ran with unrestricted network                                                                     | #196: every agy step gets a host allowlist                                                       |
+| No light review of a merge from the base                                                              | Already present since #52 (2026-11-19), but only on top of the same machine's earlier review     |
 
 ## Owner decisions, 2026-11-27
 
 Recorded when this page was written. Follow-up work is tracked in pull requests, not here.
 
-| Question | Decision | Change |
-| --- | --- | --- |
+| Question                                      | Decision                                                                                                                                   | Change         |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
 | A stronger verifier for analysis and rule PRs | Sol or Opus is fine. This machine has no Sol quota, so the no-mistakes verifier and approval check run on Opus with Sonnet as the fallback | Machine config |
-| Explorer model | Cheap explorer-level models, such as Haiku | Machine config |
-| Many medium findings | High and medium never block; a design question gives Comment | None |
-| Undeclared breaking change | Request Changes until the PR declares it or the author acknowledges it, then medium | #216 |
-| A gap the base already has | Not blocking; the author fixes it or tracks it in an issue | #216 |
-| Requester check lists | Pass them to the focus step | #215 |
-| Sibling call sites | Search near a fix for the old shape | #217 |
-| `--model` and `readsOutsideCheckout` | Allow it from the flag | #212 |
+| Explorer model                                | Cheap explorer-level models, such as Haiku                                                                                                 | Machine config |
+| Many medium findings                          | High and medium never block; a design question gives Comment                                                                               | None           |
+| Undeclared breaking change                    | Request Changes until the PR declares it or the author acknowledges it, then medium                                                        | #216           |
+| A gap the base already has                    | Not blocking; the author fixes it or tracks it in an issue                                                                                 | #216           |
+| Requester check lists                         | Pass them to the focus step                                                                                                                | #215           |
+| Sibling call sites                            | Search near a fix for the old shape                                                                                                        | #217           |
+| `--model` and `readsOutsideCheckout`          | Allow it from the flag                                                                                                                     | #212           |
 
 ## Process notes for hand checks (on-call)
 
