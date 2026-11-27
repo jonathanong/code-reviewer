@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { heldFrom, parseTimelineRows } from './held-head.mts'
+import { heldFrom, lastLabeledBy, parseTimelineRows } from './held-head.mts'
 import { claimReview, createGhLabelIo } from './labels.mts'
 import { fakeIo } from './labels-fake-io.mts'
 import { DEFAULT_LABELS } from './settings.mts'
@@ -134,5 +134,21 @@ describe('claimReview with a hold', () => {
       })
       expect([...io.set]).toEqual([IN_PROGRESS_LABEL])
     }
+  })
+})
+
+describe('labeledBy', () => {
+  it('names the actor of the newest labeled row for the label', () => {
+    const rows = parseTimelineRows('a\tann\nb\tbob\na\tcat\nb\tdan')
+    expect(lastLabeledBy(rows, 'a')).toBe('cat')
+    expect(lastLabeledBy(rows, 'z')).toBeUndefined()
+    expect(lastLabeledBy(parseTimelineRows('a\t'), 'a')).toBeUndefined()
+  })
+
+  it('reads the timeline for who added the label', async () => {
+    const run = vi.fn(async (_args: readonly string[]) => 'final-review:requested\tpeer\n')
+    const io = createGhLabelIo({ repo: 'o/r', pr: 7 }, run)
+    expect(await io.labeledBy(REQUESTED_LABEL)).toBe('peer')
+    expect(run.mock.calls[0]?.[0]).toContain('repos/o/r/issues/7/timeline?per_page=100')
   })
 })

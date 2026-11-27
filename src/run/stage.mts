@@ -12,6 +12,7 @@ import { reviewFields } from './stage-fields.mts'
 import { release, postText, worthALook, writeExplain } from './finish.mts'
 import { holdRules, type Held } from './hold.mts'
 import { RUN_EXIT, runLine, type RunLine } from './output.mts'
+import { requestedPoints } from './request-focus.mts'
 import type { Preflight, RunFlags } from './preflight.mts'
 import type { Tree } from './tree.mts'
 
@@ -59,6 +60,7 @@ export async function finish(
   stage: Stage,
   out: string,
   summary: Record<string, unknown>,
+  requestProblems: readonly string[],
 ): Promise<RunLine> {
   const { deps, flags, pre, signal } = stage
   const { pull } = flags
@@ -74,7 +76,7 @@ export async function finish(
     const held = decide(stage, facts, change, preview.outcome.tooLong, settings)
     signal.throwIfAborted()
     const fields = reviewFields(stage.base, summary, facts)
-    const problems = [...facts.partial, ...facts.truncated]
+    const problems = [...requestProblems, ...facts.partial, ...facts.truncated]
     if (held.length > 0) {
       const why = held.map(({ rule, why }) => `${rule}: ${why}`)
       const leftover = await release(pull, deps, 'hold', {
@@ -142,8 +144,9 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
   const out = runDirFor(deps, pull.repo, pull.pr, pre.headSha)
   rmSync(out, { recursive: true, force: true })
   mkdirSync(out, { recursive: true })
-  const base = { ...stage.base, runDir: out }
   const { names, labels } = pre
+  const { focus, problems: requestProblems } = await requestedPoints(deps, pull, pre, flags.focus)
+  const base = { ...stage.base, runDir: out }
   // The label state machine stays the one source of truth: a request without a label gets one.
   if (!labels.includes(names.requested) && !labels.includes(names.processing)) {
     await deps.createLabelIo(pull).add([names.requested])
@@ -164,7 +167,7 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
       ...(stage.limits['max-cost'] === undefined ? {} : { 'max-cost': stage.limits['max-cost'] }),
       ...(stage.limits.quiet === undefined ? {} : { quiet: stage.limits.quiet }),
       ...(stage.effort === undefined ? {} : { effort: stage.effort }),
-      ...(flags.focus === undefined ? {} : { focusPoints: flags.focus }),
+      ...(focus === undefined ? {} : { focusPoints: focus }),
     },
     pull,
     abortable,
@@ -193,5 +196,5 @@ export async function reviewStage(stage: Stage): Promise<RunLine> {
       reason: 'the plan skipped this pull request',
     })
   }
-  return finish({ ...stage, base }, out, summary)
+  return finish({ ...stage, base }, out, summary, requestProblems)
 }

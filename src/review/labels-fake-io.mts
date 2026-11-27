@@ -23,5 +23,8 @@ export function fakeIo(initial: string[], held?: string | Error, placements = 1)
       if (held instanceof Error) throw held
       return { head: held, placements }
     },
+    async labeledBy() {
+      return undefined
+    },
   }
 }

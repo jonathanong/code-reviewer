@@ -1,7 +1,7 @@
 import type { RunTextCommand } from '../gh-cli/index.mts'
 import { assertPullTarget, type PullTarget } from './target.mts'
 import type { LabelNames } from './settings.mts'
-import { heldFrom, holdStatus, parseTimelineRows, type Held } from './held-head.mts'
+import { heldFrom, holdStatus, lastLabeledBy, parseTimelineRows, type Held } from './held-head.mts'
 import { claimLost, holdReplaced, swap, undoClaim } from './label-claim-steps.mts'
 
 /** Label reads and writes for one pull request, injectable for tests. */
@@ -11,6 +11,8 @@ export type LabelIo = {
   remove(name: string): Promise<void>
   /** Where the timeline puts the current hold: its head (undefined when unknown) and how often it was placed. */
   heldHead(heldLabel: string): Promise<Held>
+  /** Who added `label` last, from the timeline; undefined when it was never added or its actor is gone. */
+  labeledBy(label: string): Promise<string | undefined>
 }
 
 export function createGhLabelIo(target: PullTarget, run: RunTextCommand): LabelIo {
@@ -46,6 +48,16 @@ export function createGhLabelIo(target: PullTarget, run: RunTextCommand): LabelI
         '.[] | select(.event == "committed" or .event == "head_ref_force_pushed" or .event == "labeled" or .event == "unlabeled") | [.event, (if .event == "labeled" or .event == "unlabeled" then (.label.name // "") else (.sha // .commit_id // "") end)] | @tsv',
       ])
       return heldFrom(parseTimelineRows(out), heldLabel)
+    },
+    async labeledBy(label) {
+      const out = await run([
+        'api',
+        '--paginate',
+        `repos/${target.repo}/issues/${target.pr}/timeline?per_page=100`,
+        '-q',
+        '.[] | select(.event == "labeled") | [(.label.name // ""), (.actor.login // "")] | @tsv',
+      ])
+      return lastLabeledBy(parseTimelineRows(out), label)
     },
   }
 }

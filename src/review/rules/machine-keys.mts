@@ -1,5 +1,6 @@
 import { parseIssues } from '../../issues/config-parse.mts'
 import { parseAnswers } from './answers-parse.mts'
+import { parseRequestFocus } from './request-focus-parse.mts'
 import { parseAnalysis } from './analysis-parse.mts'
 import { parseEvidence } from './evidence-parse.mts'
 import { parseLimits } from './limits-parse.mts'
@@ -26,6 +27,7 @@ type MachineKeys = Pick<
   | 'limits'
   | 'issues'
   | 'answers'
+  | 'requestFocus'
 >
 
 /**
@@ -93,6 +95,10 @@ export function parseMachineKeys(
     what: 'answers is',
     parse: parseAnswers,
   })
+  const requestFocus = machineOnly(scope, raw.requestFocus, file, 'requestFocus', problems, {
+    what: 'requestFocus is',
+    parse: parseRequestFocus,
+  })
   return {
     ...(trustRepoConfig === undefined ? {} : { trustRepoConfig }),
     ...(evidence === undefined ? {} : { evidence }),
@@ -105,5 +111,6 @@ export function parseMachineKeys(
     ...(limits === undefined ? {} : { limits }),
     ...(issues === undefined ? {} : { issues }),
     ...(answers === undefined ? {} : { answers }),
+    ...(requestFocus === undefined ? {} : { requestFocus }),
   }
 }
