@@ -22,7 +22,7 @@ attempt is its own `bench` run, so a rate is over three runs of every case). Plu
 selection cost $54.82 (judge calls not counted). See [HISTORY.md](HISTORY.md) for every run.
 
 **Still stale** (not re-measured since the changes listed in [HISTORY.md](HISTORY.md)): the mined-case table and the
-notes under it (the pillar contract, the output schemas, the verifier prompt, the congruence pillar, the verifier's
+notes under it (the pillar contract, the output schemas, the verifier prompt (which also carries the review date in UTC, as every pillar prompt does), the congruence pillar, the verifier's
 step 2, the skip of CI-detectable defects and the mined snapshots changed since 2026-11-16); the review-round cases;
 `links-declared-api-payload` and the `lock-scope-*` positives; the verifier row on mined cases; the six mined
 misses of 2026-11-26 and 2026-11-27 (measured before #233); `vouchington-6282` and `vouchington-6254`; the negative

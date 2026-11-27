@@ -32,6 +32,9 @@ thread; the open questions the last review asked; and other reviewers' notes), `
    instead of reading them whole, so a large pull request fits in context. Keep a finding's
    `prevent` only when the finding is confirmed and the named check would stop the class of
    mistake, not just this instance; drop it otherwise, or add one by the contract's rule.
+   Check a dated record a finding calls future or stale against the run section's review date
+   (UTC), never against the date your environment reports; drop a "dated after today" finding for
+   a record dated that UTC day or earlier.
    Keep what the author must read in `body` and move exact steps, file lists, commands and
    reproduction into `fix`, which is posted collapsed. When the fix is an exact replacement of
    only the commented lines, keep or add it as `suggestion` by the contract's rule, and correct

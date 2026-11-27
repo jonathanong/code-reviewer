@@ -31,6 +31,7 @@ import { earlierLines, previousLines, type EarlierBlock } from './previous-promp
 import type { SplitSummary } from '../context/change-shape/split.mts'
 import { checkedSplitProposal, splitLines } from './split-prompt.mts'
 import { impactLines } from './impact-prompt.mts'
+import { reviewDateLine } from './review-date.mts'
 import { droppedReasons } from './verify-dropped.mts'
 import type { Impact } from '../impact.mts'
 
@@ -68,6 +69,8 @@ export type VerifierInput = {
   analysis?: StepAnalysis | undefined
   /** Outcomes of the requester-focus step; absent when no focus points were supplied. */
   focus?: readonly FocusAnswer[] | undefined
+  /** The clock; the review date line is built from it. */
+  now?: Date | undefined
 }
 
 export function buildVerifierRunPrompt(input: VerifierInput): string {
@@ -87,6 +90,7 @@ export function buildVerifierRunPrompt(input: VerifierInput): string {
     'are now fixed, so the caller can resolve them; leave it empty otherwise.',
     'The working directory is a checkout of the pull request head. The run directory files:',
     runFileLines(input.run).join('\n'),
+    reviewDateLine(input.now ?? new Date()),
     `The congruence pillar is \`${join(input.references, 'pillars', 'congruence.md')}\` and the pillar contract is \`${join(input.references, 'pillars', '_contract.md')}\`. \`plan.json\` is \`${join(input.run.out, 'plan.json')}\`.`,
     ...rulePluginLines(input.run.rulePlugins),
     NUMBERED_DIFF_LEGEND,

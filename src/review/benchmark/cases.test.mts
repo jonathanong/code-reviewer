@@ -224,6 +224,25 @@ describe('casesForPillar', () => {
     expect(casesForPillar(cases, 'design').map((item) => item.id)).toEqual(['n1'])
   })
 
+  it('reads an optional review time with a Z or an explicit offset', () => {
+    for (const time of [
+      '2030-01-01T07:46:00Z',
+      '2030-01-01T07:46:00.5+02:00',
+      '2030-01-01T07:46-08:00',
+    ]) {
+      expect(parseEvalCases([negative({ reviewedAt: time })])[0]?.reviewedAt).toBe(time)
+    }
+    expect(parseEvalCases([negative()])[0]?.reviewedAt).toBeUndefined()
+  })
+
+  it('rejects a review time that is not a time or has no zone, naming the case and field', () => {
+    for (const time of ['soon', 5, '2030-01-03T23:30:00', '2030-01-03', '2030-13-45T00:00:00Z']) {
+      expect(() => parseEvalCases([negative({ reviewedAt: time })])).toThrow(
+        'cases[0]: reviewedAt must be an ISO time ending in Z or an explicit offset',
+      )
+    }
+  })
+
   it('leaves a focus-only case out of every pillar', () => {
     const focus = [{ point: 'p', expectedStatus: 'holds', reason: 'r' }]
     const cases = parseEvalCases([negative(), negative({ id: 'f1', focusOnly: true, focus })])

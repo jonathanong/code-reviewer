@@ -10,6 +10,7 @@ import type { ExpectedSkill } from './skills-score.mts'
 import { parseAnswerable, type AnswerableCase } from './answerable-case.mts'
 import { parseFocusFields, type FocusFields } from './focus-case.mts'
 import { appliesToPillar } from './pillar-applies.mts'
+import { parseReviewedAt, type ReviewedAt } from './reviewed-at.mts'
 import { parseSelectionTargets } from './selection-targets.mts'
 
 export type ExpectedFinding = {
@@ -47,7 +48,7 @@ export type RepoCase = CaseBase & {
 /** A synthetic case: a directory holding `base/`, `head/`, `pr.md`, and optional `context.md`. */
 export type FixtureCase = CaseBase & { fixture: string; fixtureDir: string; repoId?: string }
 
-export type EvalCase = RepoCase | FixtureCase
+export type EvalCase = (RepoCase | FixtureCase) & ReviewedAt
 
 export const isFixtureCase = (item: EvalCase): item is FixtureCase => 'fixture' in item
 
@@ -169,6 +170,7 @@ function evalCase(
     ...parseSelectionTargets(raw.expectedTargets, raw.unwantedTargets, where, targetNames),
     ...parseAnswerable(raw.answerable, where),
     ...parseFocusFields(raw, where, targets),
+    ...parseReviewedAt(raw.reviewedAt, where),
     title: str(raw, 'title', where),
     kind: raw.kind,
     reason: typeof raw.reason === 'string' ? raw.reason : '',

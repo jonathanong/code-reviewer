@@ -1044,5 +1044,31 @@
       }
     ],
     "expectedTargets": ["sibling-keeps-old-shape"]
+  },
+  {
+    "id": "history-dated-utc-day",
+    "fixture": "fixtures/history-dated-utc-day",
+    "title": "fix: reject an inverted clamp range",
+    "kind": "negative",
+    "reviewedAt": "2030-01-03T07:46:00Z",
+    "reason": "The HISTORY entry is dated 2030-01-03, the UTC day of the review, which is still 2030-01-02 in Pacific time. The contract says to check a dated record against the review date in UTC, so the entry is not future. This guards against the date line over-firing; without the line the pillar raised no date finding either (see HISTORY.md), so it does not reproduce #237 on its own.",
+    "expected": []
+  },
+  {
+    "id": "history-dated-future",
+    "fixture": "fixtures/history-dated-future",
+    "title": "fix: reject an inverted clamp range",
+    "kind": "positive",
+    "reviewedAt": "2030-01-03T07:46:00Z",
+    "reason": "The HISTORY entry is dated 2030-01-09, six days after the review date of 2030-01-03 (UTC), so it is dated in the future. The paired negative is history-dated-utc-day.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "low",
+        "path": "HISTORY.md",
+        "lines": null,
+        "claim": "The new HISTORY entry is dated 2030-01-09, which is after the review date (2030-01-03 UTC), so it is a date in the future. The finding must say the entry's date is later than the review date."
+      }
+    ]
   }
 ]
