@@ -7,7 +7,7 @@ import { planAuthor } from './author-commits.mts'
 import type { Effort } from './finding.mts'
 import type { PillarSettings } from './pillars-settings.mts'
 import { DEFAULT_PLAN_VALUES, type PlanValues } from './plan-settings.mts'
-import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
+import { planReview, type ReviewPlan } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
@@ -28,6 +28,8 @@ import { prepareEarlier } from './earlier-prepare.mts'
 import type { EarlierFile } from './earlier-file.mts'
 import { clearPrepared } from './prepare-clear.mts'
 import { prepareStack } from './stack-prepare.mts'
+import { pathsChangingSql } from './sql-in-code.mts'
+import { prepareSince } from './since-prepare.mts'
 import { writeDiff, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
 
@@ -92,14 +94,9 @@ export async function prepareReview(
   write(join(options.out, 'context.md'), renderFollowUpContext(context, linkedIssues.issues))
   write(join(options.out, 'context.json'), `${JSON.stringify(context, null, 2)}\n`)
   written.push('context.md', 'context.json', ...linkedIssues.written)
-  let since: SinceDiff | undefined
-  if (context.reviewedSha !== null && context.reviewedSha !== headSha) {
-    since = await io.compare(context.reviewedSha, headSha, values.generatedPaths)
-    if (since.status === 'ahead') {
-      const sincePatch = await io.compareDiff(context.reviewedSha, headSha)
-      written.push(...writeDiff(options.out, 'since', sincePatch, write))
-    }
-  }
+  const sinceInput = { context, headSha, values }
+  const { since, written: sinceFiles } = await prepareSince(io, options.out, write, sinceInput)
+  written.push(...sinceFiles)
   const docs = await prepareDocs(io, options.out, write, options.tree, paths)
   written.push(...docs.written)
   const { push, earlier } = await prepareEarlier(io, options.out, write, {
@@ -143,9 +140,11 @@ export async function prepareReview(
   })
   written.push(...links.written, ...upgrades.written)
   const author = await planAuthor(io, conversation.author, values.authors, headSha)
+  const sqlInCode = values.sqlInCode ? pathsChangingSql(patch, values.generatedPaths) : []
   const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files, values.generatedPaths),
+    ...(sqlInCode.length === 0 ? {} : { sqlInCode }),
     context,
     ...author,
     ...(options.requested === undefined ? {} : { requested: options.requested }),

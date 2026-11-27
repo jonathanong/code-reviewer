@@ -22,12 +22,16 @@ export type SinceDiff = {
   sourceLines?: number
   /** The compare API hit its file cap, so the real change is larger than `paths` shows. */
   truncated?: boolean
+  /** Hand-written source files whose changed lines since then are SQL. */
+  sqlInCode?: string[]
 }
 
 export type PlanInput = {
   paths: string[]
   /** Changed lines outside generated files (lockfiles, build output, snapshots) in the whole pull request. */
   reviewableLines: number
+  /** Hand-written source files whose changed lines are SQL (`pathsChangingSql`); absent when none or not checked. */
+  sqlInCode?: string[]
   context: FollowUpContext
   requested?: Effort
   since?: SinceDiff

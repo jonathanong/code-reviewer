@@ -2,6 +2,16 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (plan change, no prompt or case changed): SQL in source files is `full`
+
+Plan logic only: `src/review/sql-in-code.mts` (new), `mode.mts`, `prepare.mts` and `plan-settings.mts` (`plan.sqlInCode`,
+default on). No prompt, schema, case or grader changed, so no score here moves. A pull request whose changed lines in a
+hand-written, non-test source file are SQL (a tagged `sql` template, a Kysely `selectFrom` call, an upper-case clause, a
+statement or `interval '1 second'` in a string) is now `full` at `high` however small (was `light` at `low` when small
+and without a security trigger path), and so is a follow-up whose new commits change such lines. Rows that name a plan
+are not comparable with earlier ones for pull requests of that shape; a `sqlPaths` or `.sql` change was already `full`.
+Plan logic is covered by unit tests (`src/review/sql-in-code.test.mts`, `plan-paths.test.mts`), not by a benchmark case.
+
 ## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
 
 Plan logic only: `src/review/mode.mts`, `triggers.mts` and `plan-settings.mts`. No prompt, schema, case or grader changed, so
