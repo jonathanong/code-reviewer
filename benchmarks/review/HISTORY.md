@@ -10,7 +10,7 @@ Trigger: jongleberry/code-reviewer#231, where the verifier confirmed a high find
 when CI had passed that step. No run.
 
 - **What changed.** `_contract.md` (Method) adds a bullet: a defect a formatter, linter, type checker, AST or static
-  rule, or other CI check can detect is not a finding, and a CI failure is never claimed without reading its result at
+  rule, or other check this repository runs in CI detects is not a finding, and a CI failure is never claimed without reading its result at
   the head. `rules.md` Blocking bar: a mandatory rule that CI or a linter enforces is no longer `high` at most but not
   reported. `verifier.md` step 2: rejects such findings (reason: CI reports it) and confirms a "CI fails" claim only
   from the actual result at the reviewed head. The `prevent` field is unchanged.
