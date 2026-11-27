@@ -6,7 +6,7 @@ Newest first. Every measured run and every change to what is measured gets an en
 
 Three mined cases in `cases.json`, all positive and `correctness`, from heads where the posted review had 0
 findings and CodeRabbit raised a real defect. Targeted run: Sonnet reviewer (`--model sonnet`), judge Opus,
-`correctness` pillar, **3 attempts per arm** (`--select` and `--no-rules`, same session). Not a rate: at 3 attempts a
+`correctness` pillar, reviewer at commit `d10789c`, **3 attempts per arm** (`--select` and `--no-rules`, same session). Not a rate: at 3 attempts a
 difference of one catch is noise. No prompt, schema or grader changed, so no earlier row changes.
 
 - **`code-reviewer-210-fe45b7e`** (#210, base `5c2ae56`, head `fe45b7e`; two expected claims, both `high` at
