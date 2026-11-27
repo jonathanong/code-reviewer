@@ -499,7 +499,7 @@ skills whose descriptions fail to trigger), and tokens by model. `--score-only` 
 attempts, `--case <id>` limits the run, and `--cache <dir>` reuses the clone cache of an earlier
 `bench` run.
 
-A case may also declare `"unwantedSkills": ["ratchet-workflows:agent-workflow"]`: full `plugin:skill`
+A case may also declare `"unwantedSkills": ["ratchet-workflows:implementing-changes"]`: full `plugin:skill`
 names the call should leave out because nothing in the changed files falls under what the skill
 governs. The loader rejects an empty array, a bare name, a repeat, and a name that is also in
 `expectedSkills` (an any-of member counts). The names are only scored here; `bench` ignores them.

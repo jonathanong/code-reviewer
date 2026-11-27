@@ -66,7 +66,7 @@
     "fixture": "fixtures/rules-test-only-global-call-count",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -113,7 +113,7 @@
     "fixture": "fixtures/rules-skills-sweep-until-empty",
     "expectedSkills": [["ratchet-backend:bounded-iteration", "no-mistakes-rules:queue-rules"]],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -156,7 +156,7 @@
     "fixture": "fixtures/rules-test-only-per-item",
     "expectedSkills": ["no-mistakes-rules:testing-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -204,7 +204,7 @@
     "fixture": "fixtures/rules-workflow-only-path-filtered-required-check",
     "expectedSkills": ["no-mistakes-rules:github-actions-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -249,7 +249,7 @@
     "fixture": "fixtures/rules-manifest-only-duplicate-utility",
     "expectedSkills": ["no-mistakes-rules:dependency-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -298,7 +298,7 @@
     "fixture": "fixtures/rules-content-only-renamed-log-field",
     "expectedSkills": ["no-mistakes-rules:observability-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -345,7 +345,7 @@
     "fixture": "fixtures/rules-content-only-metrics-on-tx-client",
     "expectedSkills": ["no-mistakes-rules:postgresql-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -387,7 +387,7 @@
     "fixture": "fixtures/rules-content-only-unordered-pick",
     "expectedSkills": ["no-mistakes-rules:queue-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -427,7 +427,7 @@
     "fixture": "fixtures/rules-content-only-argv-entry-check",
     "expectedSkills": ["no-mistakes-rules:typescript-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",
@@ -521,7 +521,7 @@
     "fixture": "fixtures/rules-near-miss-renamed-log-field-monitor-updated",
     "expectedSkills": ["no-mistakes-rules:observability-rules"],
     "unwantedSkills": [
-      "ratchet-workflows:agent-workflow",
+      "ratchet-workflows:implementing-changes",
       "ratchet-github:git-commit-checklist",
       "ratchet-workflows:planning",
       "ratchet-github:pr-description",

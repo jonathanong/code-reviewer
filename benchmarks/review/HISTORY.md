@@ -20,8 +20,13 @@ The `jong-skills` plugin is split into `ratchet-workflows`, `ratchet-github`, `r
   one bullet, which a model may read differently; no run has measured that, so treat a difference of one catch between
   a row before and a row after as noise, as at 3 attempts. `bench` always uses the default list, so it needs the four
   new plugins installed.
-- **Tags.** `agent-workflow`, used in `unwantedSkills` and in the prompts, is not on the split list; it is mapped to
-  `ratchet-workflows` with the other process skills and needs checking when the split lands.
+- **Tags.** `agent-workflow` was removed before the split (harness-plugins#134) and replaced by four `ratchet-workflows`
+  skills: `implementing-changes`, `deciding-or-asking`, `change-review` and `status-reports`. It appeared only as an
+  `unwantedSkills` label (the ten `rules-*` fixture cases in `synthetic.json`: the process skill the selection should
+  leave out of a fixture review) and in the `benchmarks/review/AGENTS.md` and `docs/benchmarks.md` examples. All now name
+  `ratchet-workflows:implementing-changes`: no `rules-*` case is about building or fixing a change, so it is the wrong load
+  there. `change-review` is not used as an unwanted label because reviewing a change is what these runs do. No case
+  expected `agent-workflow`, so no `expectedSkills` changed. Older rows still name `jong-skills:agent-workflow`.
 
 ## 2026-11-27 (cases added, targeted run): three misses CodeRabbit caught on heads this reviewer passed
 
