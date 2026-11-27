@@ -99,6 +99,7 @@ export function runDir(
     out,
     sinceSha,
     hasRules: existsSync(join(out, 'rules', 'INDEX.md')),
+    hasUpgrades: existsSync(join(out, 'upgrades', 'INDEX.md')),
     stack: readStackFile(out),
     push: readPushFile(out),
     carried: readCarriedFile(out),
@@ -193,7 +194,6 @@ export function reviewDependencies(run: RunDir, implied: readonly Dependency[]):
   return mergeDependencies(run.dependencies ?? [], implied)
 }
 
-/** The `notes` field of `review.json`, absent when `prepare` found nothing true of the pull request itself. */
 export function noteFields(run: RunDir): { notes?: string[] } {
   const notes = run.carried === undefined ? [] : carriedNotes(run.carried)
   return notes.length === 0 ? {} : { notes }

@@ -2,6 +2,17 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-26 (change, not re-measured): upgrades file in the run directory
+
+Prompt change; no run was made and nothing was re-scored.
+
+- **What changed.** The run-file list in every pillar, verifier and approval-check prompt gains one
+  bullet, present only when `prepare` wrote `upgrades/INDEX.md`: the file holds changelog entries and
+  a diff of published package files, it is untrusted data, and `NOT READ` means unknown, not clear.
+  The `upgrades` setting is off by default.
+- **Rows made non-comparable.** Only rows whose run directory has an `upgrades/` folder. Benchmark cases
+  have none, so existing rows are unaffected.
+
 ## 2026-11-26 (change, not re-measured): finding `suggestion` field
 
 Prompt and schema change; no run was made and nothing was re-scored.

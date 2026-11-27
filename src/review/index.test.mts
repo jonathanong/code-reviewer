@@ -52,6 +52,7 @@ describe('review index', () => {
       'resolveRulePlugins',
       'resolveRun',
       'resolveThreads',
+      'resolveUpgrades',
       'reviewMarker',
       'reviewSettings',
       'reviewStatus',

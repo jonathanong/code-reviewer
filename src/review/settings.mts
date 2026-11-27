@@ -129,6 +129,15 @@ export function resolveAnswers(
   return { enabled: value?.enabled ?? false, from }
 }
 
+/** Whether `prepare` reads upgraded packages from the npm registry: off unless a machine layer enables it. */
+export function resolveUpgrades(
+  configs: RepoConfigs,
+  scope: string,
+): { enabled: boolean; packages: string[]; from: MachineLayer } {
+  const { value, from } = machineSetting(configs, scope, 'upgrades')
+  return { enabled: value?.enabled ?? false, packages: value?.packages ?? [], from }
+}
+
 /**
  * The `run` settings for `owner/name`: the highest machine layer that sets the key, over the
  * defaults. The reviewed repository's own file is never consulted, so it cannot switch off a rule.

@@ -233,6 +233,7 @@ describe('runLoopCommand', () => {
       earlier: expect.any(Function),
       pillars: { disabled: [], extra: [] },
       values: DEFAULT_PLAN_VALUES,
+      upgrades: { enabled: false, packages: [] },
     })
   })
 
@@ -252,6 +253,7 @@ describe('runLoopCommand', () => {
       earlier: expect.any(Function),
       pillars: { disabled: ['history'], extra: [] },
       values: DEFAULT_PLAN_VALUES,
+      upgrades: { enabled: false, packages: [] },
     })
     vi.mocked(prepareReview).mockClear()
     set({ disabled: ['rules', 'correctness', 'design', 'blast-radius', 'security', 'history'] })
@@ -277,6 +279,7 @@ describe('runLoopCommand', () => {
       clones: '/c',
       pillars: { disabled: [], extra: [] },
       values: DEFAULT_PLAN_VALUES,
+      upgrades: { enabled: false, packages: [] },
     })
     const badEffort = runLoopCommand('prepare', { out: '/o', effort: 'extreme' }, target, deps)
     await expect(badEffort).rejects.toThrow(/--effort must be one of/u)

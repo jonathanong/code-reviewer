@@ -84,7 +84,7 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   const who = input.authorLogin ?? 'the author'
   if (input.authorSuspended !== undefined) reasons.push(input.authorSuspended)
   const lockfilesOnly = input.paths.length > 0 && input.paths.every(isLockfile)
-  if (rule === 'skip' || (rule === 'light' && lockfilesOnly)) {
+  if (rule === 'skip' || (rule === 'light' && lockfilesOnly && input.upgrades !== true)) {
     const skipReason =
       rule === 'skip'
         ? `Pull request by ${who}, whose plan.authors rule is skip: no review.`

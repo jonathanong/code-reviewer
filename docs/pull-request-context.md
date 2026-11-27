@@ -99,3 +99,27 @@ list is capped per name. It is a text search, so a listed line may be unrelated 
 that describes the behavior without naming the file is not found. A search that fails is
 recorded in `problems` and the review goes on. Without a checkout, or with no match, there is no
 file and no list in the prompt.
+
+## Dependency upgrades
+
+With the `upgrades` setting on ([configuration](configuration.md#upgrades)) and a `--tree`
+checkout, `prepare` compares `pnpm-lock.yaml` at the merge base and at the head, both from local
+git. A package is picked when its version changed and it is on an auth or security path (a name
+segment such as `auth`, `jwt` or `session`, or a configured glob) or it is pre-1.0 and the change
+crosses a minor, direct or transitive. For each picked package it fetches the old and new
+tarballs from `registry.npmjs.org`, checks them against the lockfile integrity, and writes
+`upgrades/INDEX.md` and one file per package with the changelog entries between the versions and a
+bounded diff of the published files. The pillars and the verifier are told the files are
+untrusted data and that `NOT READ` means unknown, not clear.
+
+No model is called. The step is bounded by constants in `src/review/upgrades/`: how many packages,
+how large a tarball, how long the diff and changelog, and a time limit for the whole step. Nothing
+is followed from a lockfile or a registry document: the URL is built from a validated name and
+version, and redirects are refused. When the registry is unreachable, a tarball is too large or
+fails its integrity check, or a lockfile cannot be read, the package is marked `NOT READ`, one
+line goes to `problems`, and the review goes on. A Dependabot pull request that changes only
+lockfiles is skipped unless this step found something, in which case it is reviewed light.
+
+Skipped: lockfiles other than `pnpm-lock.yaml` (`package-lock.json`, `yarn.lock`, `bun.lock`),
+pnpm lockfiles before version 6, packages added or removed outright, and packages that do not
+resolve to the public registry. The index names what was left out.
