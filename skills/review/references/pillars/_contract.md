@@ -171,6 +171,13 @@ Return only JSON:
   money-moving action that fails open can be blocking: it still has to meet all four conditions
   above, which it usually does, so it is not a shortcut around them. Code that looks correct but has no test is not
   blocking. A title or description problem is `medium` at most.
+- An undeclared breaking change is blocking. An incompatible change to a public API, CLI (exit codes
+  included), config shape or published package's contract that the description does not declare
+  and the author has not acknowledged needs a decision, which is the acknowledgement, so it meets
+  the fourth condition. Once the description declares it or the author acknowledged it (a reply on the
+  finding's thread, a comment, or the description), it is `medium`. The congruence pillar has the
+  definition and examples; the `medium` cap on a title or description problem does not apply to it,
+  because the defect is the code change, not the wording.
 - A stated purpose that fails is at least `high`. When a finding shows the pull request does not
   achieve its own stated purpose, rate it `high` or `blocking`, never lower. The purpose is what
   the title or description says the change adds: a guarantee, check, fix or protection. It fails
@@ -201,7 +208,8 @@ Return only JSON:
   never changes the verdict, is never inline, and the rating you give it is only for ordering. Do
   not go looking for it: report only what you came across in the files you read for this change.
   A defect the diff introduces, touches, or makes reachable is a normal finding, even in an old
-  file.
+  file. The posted review asks the author to decide on each: fix it here, or track it in an issue;
+  it is never blocking.
 - `suggestion` is optional. When the fix is an exact, minimal replacement of only the commented
   lines (`line`, or `startLine` through `line`), put the replacement text in `suggestion`: exactly
   the lines that should stand there, with the same indentation, and no code fence. The reviewer

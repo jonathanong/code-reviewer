@@ -2,6 +2,35 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (change, one pilot): breaking changes block until declared or acknowledged
+
+Prompt, schema and context change; the verifier alone was run once on the three affected cases.
+
+- **What changed.** Owner decision. `congruence.md` gains "Breaking changes": an incompatible change to a
+  public API, CLI (exit codes included), config shape or published package's contract is `blocking`
+  unless the description declares it or the pull request author acknowledged it (a reply on the earlier
+  review's thread, a comment, or the description), then `medium`; the old "a pre-1.0 package is expected to
+  break: never `high`" line and the "omits a breaking change is `medium` at most" bar are replaced. `_contract.md`
+  and `verifier.md` (Severity, Verdict, step 12) carry the same rule; pre-existing gaps stay non-blocking and
+  the posted FYI block now asks the author to fix each here or track it in an issue. The `undeclared-breaking`
+  flag is removed from the verifier prompt and the flags schema (it would hold the review for a person; the
+  author is now asked through Request Changes), so the flag enum shrinks from eleven to ten kinds. The
+  follow-up context now quotes replies on this reviewer's own unresolved threads, and names the pull request
+  author, so the verifier can see an acknowledgement.
+- **Rows made non-comparable.** Every verifier row and every end-to-end row (the verifier prompt, the flags
+  schema and the congruence pillar changed), and every pillar row (the contract changed). The row of
+  `congruence-undocumented-unused-allow-failure` also changes meaning: its expected severity went from
+  `medium` to `blocking`. `bench-context`, `bench-focus` and `bench-selection` rows are unaffected.
+  `synthetic.json` grows from 49 to 51 cases.
+- **Cases.** `congruence-undocumented-unused-allow-failure` now expects `blocking`;
+  `congruence-declared-breaking-vague` (`!` title, "This is a breaking change", effect not stated: `medium`) and
+  `congruence-acknowledged-breaking` (fixture `context.md` holds the earlier blocking finding and the author's
+  "pre-1.0, I will bump a minor" reply: `medium`) are new.
+- **Run.** `bench-verifier --model sonnet --checker sonnet --judge sonnet`, one attempt, the three cases above,
+  no pillar findings (a congruence case needs none): all three graded as expected (label recall 0% from pillars to
+  100% from the verifier, severity agreement 100%), $0.50 in total. One attempt is a pilot, not a score. The
+  documented negative twin was not run (the command skips a negative without pillar findings). No control arm.
+
 ## 2026-11-26 (pilot): a sixth targeted check, `sibling-keeps-old-shape`
 
 Pilot, not a measurement: one or two attempts per arm, Claude Sonnet 5.5 for the reviewer and Opus as judge, total
