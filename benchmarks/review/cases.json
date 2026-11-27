@@ -1120,5 +1120,79 @@
       }
     ],
     "expectedSkills": ["jong-skills:lint-rule-authoring"]
+  },
+  {
+    "id": "code-reviewer-210-fe45b7e",
+    "repo": "jonathanong/code-reviewer",
+    "pr": 210,
+    "title": "fix(labels): a held label blocks only the head it was placed on",
+    "baseSha": "5c2ae560a9bdd4bd36f21c27ea02aa44808bdff5",
+    "headSha": "fe45b7e6207568bfa4017616fb16d17fb335cace",
+    "body": "## Problem\nSince #206, an unforced claim and `run`'s preflight decline any pull request carrying `final-review:held`. That also blocks a new head pushed after the hold, whose held review is stale, so every re-review needed `--force` (three times on jonathanong/supervisor#64).\n\n## Change\n- The hold now blocks only the head it was placed on. When the current head arrived after the hold, `claim` and `run` proceed, and the claim swap removes the stale held label.\n- Same head, `--force`, `post`, `skip` and `abort` behave as before.\n- If the held head cannot be determined (API error, no commit event before the label, no head given), the hold stands and the reason is `held for a person (the held head could not be determined)`.\n\n## Held-head source\nThe PR timeline (`committed`, `head_ref_force_pushed`, `labeled`, `unlabeled` events), read with one `gh api --paginate`. GitHub records these in the order they happened, so only the order is used: the head is the newest commit or force-push before the last `held` label. Commit author and committer dates are not used because a pusher controls them. It needs no `checkRun` config and works across machines because it is read from GitHub rather than local state. It is compared case-insensitively with the current head.\n\n## Not verified\nThe timeline query and its `jq` filter are covered by fakes only; I did not run it against live GitHub. Whether `committed` rows can be ordered differently from the push order (for example around a rebase) is unconfirmed; a mis-ordered row could make a same-head hold look stale. `queue` still reports a label-held entry as `held`, so a loop skips a stale hold until `claim`/`run` is called directly.\n\n## Tests\n`pnpm run lint`, `typecheck` and `test:coverage` pass; coverage 100%. New tests cover same head declined, new head claimed with the label cleared, undeterminable (error, no event, no head) declined, force unchanged, and the timeline parsing.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_01KqBtRhUXSrRbzLssvV65yW",
+    "kind": "positive",
+    "reason": "CodeRabbit raised two defects on the first head, fe45b7e, where the posted review had no findings. Both are fixed in 00d49b0. The timeline jq filter takes `.sha // .commit_id // .label.name`, and GitHub types `commit_id` on `labeled` and `unlabeled` events as string or null, so a non-null value replaces the label name, `heldHeadFrom` never matches the held label, and the hold is reported undeterminable. And `claimReview` reads the hold on the head once (`holdStatus`), then `swap` re-reads the labels and removes whichever `held` label is present, so a hold a person placed on the current head in between is deleted and `claimLost` finds nothing to lose. `expectedSkills` is absent: no installed skill states the rule.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/review/labels.mts",
+        "lines": null,
+        "claim": "The timeline filter in `heldHead` prints `(.sha // .commit_id // .label.name // \"\")`. A `labeled` or `unlabeled` event can carry a non-null `commit_id`, which then replaces the label name, so `heldHeadFrom` never sees the held label (`value === heldLabel`) and the hold is reported as undeterminable, which blocks a claim on a newer head until someone uses `--force`. Select the label name for labeled and unlabeled events and the sha for commit events by event type."
+      },
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/review/labels.mts",
+        "lines": null,
+        "claim": "Stale-hold cleanup is a read then act race. `claimReview` decides from the timeline that the hold is on an older head (`staleHold`), then `swap` reads the labels again and removes whichever `held` label is present. If a person replaced the old hold with a hold on the current head between the lookup and that read, the claim deletes the new hold, `claimLost` then finds no `held` label, and the claim succeeds on a head a person has held. The cleanup must remove only the hold the lookup checked, or re-check it after the removal."
+      }
+    ],
+    "expectedReads": ["src/review/labels.mts", "src/review/held-head.mts"]
+  },
+  {
+    "id": "supervisor-65-417fd1b",
+    "repo": "jonathanong/supervisor",
+    "pr": 65,
+    "title": "Run repo/<name> classifiers with a narrow subagent",
+    "baseSha": "5d4689612be48873d7e94cda4dd3a4bcca3ab6c3",
+    "headSha": "417fd1b4c1424abf4e3cfba41273655a2e25f500",
+    "body": "Stacked on #64. Part of #48: mapping a final review to a `claude/code_review` result is not built here.\n\n## Problem\n\nA merge policy can read a judgment question about a diff as `repo/<name>`. `supervisor policy check` takes the answers through `--classifiers`, but nothing produced them: the docs described a manual step, and the supervisor did not read classifier definitions at all. The session that wants a merge was left to answer whether it may merge.\n\n## Change\n\nThe answer comes from a separate, narrow subagent, and everything that needs no judgment is code.\n\n- **`supervisor policy classify-prepare <owner>/<repo> <pr> --dir <policy dir> --out <dir>`** finds the `repo/<name>` classifiers the policy names, loads each definition (`.claude/classifiers/<name>/def.yml` and `prompt.md`), reads the head and its diff, and writes one input file per classifier plus a manifest.\n- **`agents/supervisor-classifier.md`** is the answering agent. Its only tool is reading a file. Its whole prompt is the path of one input file. It replies with one JSON object.\n- **`supervisor policy classify-collect --out <dir>`** checks each answer against the definition's allowed values and writes the file `policy check --classifiers` reads. It refuses when the head moved since prepare.\n- **`skills/supervisor-classify`** tells the supervisor session how to run the three steps.\n\nWhat keeps the answer unbiased:\n\n| Rule | Where it is enforced |\n|---|---|\n| One fresh subagent per classifier, per head | Skill |\n| The input holds the question and the diff only: no title, body, comments, author, commit messages, policy, or what an answer allows | `classifier-input.ts`, with a test |\n| Text in the diff is data | Input file and agent prompt |\n| The supervisor session never answers, edits an answer, or retries for a different one | Skill |\n| An answer outside the allowed values, or a missing one, is no result, so the rule's stricter verdict holds | `classify-collect` |\n\n## Not supported yet\n\nA definition with `inputs`, `tools` or `budget`, and a call with a version or inputs, is refused with a message. That classifier has no result.\n\n## Evidence\n\n- 255 tests pass at 100% coverage. Lint, typecheck, format, build and `pack:check` pass.\n- A test shows a result from `classify-collect` gives the same `policy check` outcome as the same result written by hand, and an answer outside the allowed values gives the same outcome as no `--classifiers` file.\n- Live, read-only: `classify-prepare` against #64 with the fixture `flake_fix` classifier wrote the manifest and input for head `d4a609d`.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_01KqBtRgs31gQkS1abAo8zBU\n\n<!-- This is an auto-generated description by cubic. -->\n<a href=\"https://cubic.dev/pr/jonathanong/supervisor/pull/65?utm_source=github\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"><img alt=\"View guided diff\" src=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"></picture></a> <a href=\"https://www.cubic.dev/action/auto-fix/pr/jonathanong/supervisor/65?returnTo=https%3A%2F%2Fgithub.com%2Fjonathanong%2Fsupervisor%2Fpull%2F65&source=description\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/turn-on-auto-fix-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/turn-on-auto-fix-light.svg\"><img alt=\"Turn on auto-fix\" src=\"https://www.cubic.dev/buttons/turn-on-auto-fix-light.svg\"></picture></a>\n<!-- End of auto-generated description by cubic. -->\n\n\n",
+    "kind": "positive",
+    "reason": "CodeRabbit flagged this on 69c2528 as an outside-the-diff comment on code the pull request makes reachable; the posted review of 417fd1b had no findings. The pull request adds the loader for `repo/<name>` classifier definitions (`classifier-def.ts`), including `ordinal` outputs, so a policy condition can now read one. `evalClassifier` in `conditions.ts` falls through to string comparison for it, and `validateClassifier` in `condition-validate.ts` (not `classifier-def.ts`) carries a TODO that it does not check `repo/<name>.<output>` operators against output types. The pull request changes neither file. `expectedSkills` is absent: no installed skill states the rule.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "src/policy/conditions.ts",
+        "lines": null,
+        "claim": "`evalClassifier` evaluates `<`, `>`, `<=` and `>=` on a `repo/<name>.<output>` ordinal output as `actualStr !== targetStr` (the last line of the function), so `high < medium` is true and a carve-out meant for lower values applies to a higher one. Validation does not stop it: `validateClassifier` rejects ordering operators only for bare `claude/code_review`, and its TODO says repo output operators are not checked against output types. Now that this pull request loads ordinal outputs, an ordering operator on one must compare the declared position of each value, or be rejected at load."
+      }
+    ],
+    "expectedReads": [
+      "src/policy/conditions.ts",
+      "src/policy/condition-validate.ts",
+      "src/policy/classifier-def.ts"
+    ]
+  },
+  {
+    "id": "no-mistakes-4604-9d3ea80",
+    "repo": "jongleberry/no-mistakes",
+    "pr": 4604,
+    "title": "Reject invalid PostgreSQL rule options at config load",
+    "baseSha": "ae9677888b519cd047bb6e001ac80ef4daf8ee60",
+    "headSha": "9d3ea80a8b336a27cb17c245e1392c34dd44129e",
+    "body": "Fixes #4576\nFixes #4390\nFixes #4391\nFixes #4393\nFixes #4395\nFixes #4396\nFixes #4397\nFixes #4399\nFixes #4559\nFixes #4560\nFixes #4561\nFixes #4562\nFixes #4563\nFixes #4564\n\nStacked on #4115 and uses its shared option validator. The comparison base is #4115's head at `ae9677888`. The topic branch also includes `main` commit `a9384878b` (#4591) to satisfy the pre-push ancestry check. That upstream commit appears in the comparison until the base branch incorporates it.\n\nMisspelled nested options could silently drop a selector, broaden a trust declaration, or produce a partial report. Configuration loading now rejects unknown nested fields, blank trusted-tag names or modules, invalid legacy uncertainty values, and malformed predicate SQL globs. Diagnostics identify the rule and option before analysis. The CLI exits 2 with empty stdout. The Node API uses the same configuration loader.\n\nRun from the repository root against these saved synthetic configurations.\n\n```sh\nfixture=\"$PWD/test-cases/rules/options-audit/fixture/postgres-validation\"\nno-mistakes --lock-timeout 0 --jobs 1 check --root \"$fixture\" --config \"$fixture/4390.json\" --format json\nno-mistakes --lock-timeout 0 --jobs 1 check --root \"$fixture\" --config \"$fixture/4559-2.json\" --format json\nno-mistakes --lock-timeout 0 --jobs 1 check --root \"$fixture\" --config \"$fixture/4561.json\" --format json\n```\n\n| Saved config | #4115 head | This branch |\n| --- | --- | --- |\n| `4390.json` | Exit 0, 0 findings | Exit 2, empty stdout |\n| `4559-2.json` | Exit 0, 0 findings | Exit 2, empty stdout |\n| `4561.json` | Exit 0, 0 findings | Exit 2, empty stdout |\n\nThe saved `4390.json` reproduction produced this output.\n\n**Before**\n\n```text\n{\"advisories\":[],\"codebase\":[],\"integration\":[],\"queues\":[],\"react\":[],\"rules\":[],\"warnings\":[]}\n```\n\n**After**\n\n```text\nerror: 4390.json:13: invalid options for rule `postgres-no-unbounded-sql-identifier` at options.identifierValidators[0].modul: unknown field `modul`, expected one of `module`, `name`, `argument`\n```\n\nThe CLI snapshot covers 18 invalid saved configurations and one valid control at one and two jobs. The affected rule references document the accepted inputs.\n",
+    "kind": "positive",
+    "reason": "The pull request exists to make a misspelled nested PostgreSQL option fail at config load (\"Configuration loading now rejects unknown nested fields\"). CodeRabbit found, on a later head (265b90d), that `PluralOptions` and `Abbreviations` in `postgres_object_naming.rs` still lack `deny_unknown_fields`, so `plural: { enbled: true }` loads and leaves the check off; the posted review of 9d3ea80 had no findings. The same file is in the diff (it adds the attribute to `DoubleUnderscore` beside them) and sibling rules use it, for example `github_actions_max_inline_script_lines.rs`. The author declined the suggestion in a later description edit, so the case rests on the stated goal at this head, not on that edit. `expectedSkills` is absent: no installed skill states the rule.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "high",
+        "path": "crates/no-mistakes/src/codebase/rules/postgres_object_naming.rs",
+        "lines": null,
+        "claim": "The pull request says configuration loading rejects unknown nested fields, but `PluralOptions` and `Abbreviations` derive `Deserialize` with `#[serde(default, rename_all = \"camelCase\")]` and no `deny_unknown_fields` (only `DoubleUnderscore` gets it), so `plural: { enbled: true }` or `abbreviations: { minLeters: 2 }` still loads: the plural check stays off and the default threshold applies, and the run exits 0. Add `deny_unknown_fields` to both, as sibling rules do (for example `github_actions_max_inline_script_lines.rs`)."
+      }
+    ],
+    "expectedReads": ["crates/no-mistakes/src/codebase/rules/postgres_object_naming.rs"]
   }
 ]

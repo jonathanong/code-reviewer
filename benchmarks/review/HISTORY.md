@@ -2,6 +2,46 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (cases added, targeted run): three misses CodeRabbit caught on heads this reviewer passed
+
+Three mined cases in `cases.json`, all positive and `correctness`, from heads where the posted review had 0
+findings and CodeRabbit raised a real defect. Targeted run: Sonnet reviewer (`--model sonnet`), judge Opus,
+`correctness` pillar, reviewer at commit `d10789c`, **3 attempts per arm** (`--select` and `--no-rules`, same session). Not a rate: at 3 attempts a
+difference of one catch is noise. No prompt, schema or grader changed, so no earlier row changes.
+
+- **`code-reviewer-210-fe45b7e`** (#210, base `5c2ae56`, head `fe45b7e`; two expected claims, both `high` at
+  `src/review/labels.mts`): the timeline filter `.sha // .commit_id // .label.name` can print a non-null
+  `commit_id` for a `labeled` event, so the held label is never recognized; and `claimReview` removes whichever `held`
+  label `swap` reads, so a hold placed after the stale-hold lookup is deleted. Fixed in `00d49b0`. `body` is the
+  description as edited at 21:11:47 (the first recorded edit; the original is not stored).
+- **`supervisor-65-417fd1b`** (jonathanong/supervisor#65, base `5d46896`, head `417fd1b`; `high`, `src/policy/conditions.ts`):
+  `evalClassifier` evaluates `<`, `>`, `<=` and `>=` on a `repo/<name>.<output>` ordinal output as string inequality.
+  The unvalidated-operator TODO is in `src/policy/condition-validate.ts`, not `classifier-def.ts` (the analysis that
+  named the case had it wrong); `classifier-def.ts` is the new loader that makes the path reachable. The pull request
+  changes neither `conditions.ts` nor `condition-validate.ts`, so the case checks that a review follows a changed
+  loader into the code that consumes it. CodeRabbit raised it as an outside-the-diff comment on `69c2528`.
+- **`no-mistakes-4604-9d3ea80`** (jongleberry/no-mistakes#4604, base `ae96778` (the stacked #4115 head), head `9d3ea80`;
+  `high`, `postgres_object_naming.rs`): `PluralOptions` and `Abbreviations` lack `deny_unknown_fields` in a pull
+  request whose goal is rejecting unknown nested fields; the same diff adds it to `DoubleUnderscore`. CodeRabbit raised
+  it on `265b90d`, after this head; the defect is present at `9d3ea80`. The author later declined it in a description
+  edit ("beyond #4576"), so a reviewer could reasonably rate it lower; the case keeps the claim as the miss. `body` is
+  the description from the 11:42:34 edit, before that decision. No `expectedSkills` on any of the three: no installed
+  skill states the rule.
+- **Result**, expected claims caught, with skills / without (`--no-rules` is the control), 3 attempts each:
+
+  | Case                        | With skills | Without |
+  | --------------------------- | ----------- | ------- |
+  | `code-reviewer-210-fe45b7e` | 0 of 3      | 0 of 3  |
+  | `supervisor-65-417fd1b`     | 0 of 3      | 0 of 3  |
+  | `no-mistakes-4604-9d3ea80`  | 0 of 3      | 0 of 3  |
+
+  Recall 0% in every run of both arms (two findings in all across the 18 case-runs, neither matching a claim). The control
+  misses all three, so all three are kept. The runs opened few files: on `supervisor-65` the first control run never
+  opened `conditions.ts` or `condition-validate.ts`, and on `no-mistakes-4604` it never opened
+  `postgres_object_naming.rs`, so these are misses of attention, not of judgment. Reviewer cost (judge not counted):
+  $0.12 to $0.13 a case-run without skills (three cases per run: $0.35 to $0.38), $0.15 to $0.18 with skills ($0.46 to
+  $0.53); about $2.6 for all six rounds, under the $15 cap.
+
 ## 2026-11-27 (change, no re-run): replies claim the pull request and approve through the approval check
 
 No prompt, schema or contract of any scored step changed, so no row is non-comparable.

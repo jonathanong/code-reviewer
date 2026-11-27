@@ -54,6 +54,13 @@ Mined cases (8 real pull requests from `cases.json`):
   `no-mistakes-4057-d2fd340` (a loader alias or namespace import escapes the narrowing proof). Run at 2 attempts
   per arm on Sonnet: 0 of 2 with skills and 0 of 2 without on each, so the control misses all three (the reviewer
   never loaded `lint-rule-authoring`); not a rate, see `HISTORY.md`.
+- Not in the table: three mined misses where CodeRabbit found a defect on a head our reviewer passed with no findings
+  (correctness, added 2026-11-27): `code-reviewer-210-fe45b7e` (two claims: a timeline filter that reads `commit_id`
+  for label events, and a stale-hold cleanup that removes a hold placed after the lookup), `supervisor-65-417fd1b`
+  (ordering operators on an ordinal classifier output evaluate as string inequality) and `no-mistakes-4604-9d3ea80`
+  (nested PostgreSQL option structs without `deny_unknown_fields` in a change that rejects unknown nested fields).
+  Run at 3 attempts per arm on Sonnet: 0 of 3 with skills and 0 of 3 without on each, so the control misses all
+  three; not a rate, see `HISTORY.md`.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
