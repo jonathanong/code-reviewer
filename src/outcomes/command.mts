@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import type { TrackerIo } from '../tracker/types.mts'
 import { collectOutcomes, DEFAULT_SINCE_DAYS, MAX_PULLS } from './collect.mts'
 import { writeDigest } from './digest.mts'
-import { saveOutcomes } from './store.mts'
+import { saveMisses, saveOutcomes } from './store.mts'
 import { OUTCOMES, type OutcomesIo } from './types.mts'
 
 export type OutcomesValues = {
@@ -36,7 +36,7 @@ export async function outcomesCommand(
   if (repos.length === 0 && values.owner === undefined) {
     throw new Error('outcomes needs --repo or --owner.')
   }
-  const { rows, pulls, notChecked, problems } = await collectOutcomes(
+  const { rows, misses, pulls, notChecked, problems } = await collectOutcomes(
     {
       repos,
       owner: values.owner,
@@ -47,6 +47,7 @@ export async function outcomesCommand(
     io,
   )
   const stored = saveOutcomes(tracker, rows)
+  saveMisses(tracker, misses)
   const byOutcome = Object.fromEntries(
     OUTCOMES.map((outcome) => [outcome, rows.filter((row) => row.outcome === outcome).length]),
   )
@@ -55,7 +56,14 @@ export async function outcomesCommand(
     messages.push(`${notChecked} more pull requests not checked (at most ${MAX_PULLS} per run).`)
   }
   return {
-    summary: { pulls, findings: rows.length, stored: stored.length, notChecked, byOutcome },
+    summary: {
+      pulls,
+      findings: rows.length,
+      stored: stored.length,
+      candidateMisses: misses.length,
+      notChecked,
+      byOutcome,
+    },
     messages,
   }
 }

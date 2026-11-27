@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import { proposals, renderDigest, writeDigest } from './digest.mts'
 import { memoryTracker } from './github-fake-io.mts'
-import { readOutcomes, saveOutcomes } from './store.mts'
+import { MISSES_FILE, readMisses, readOutcomes, saveMisses, saveOutcomes } from './store.mts'
 import { OUTCOMES_FILE } from './store.mts'
 import { noReactions } from './reactions.mts'
-import type { Outcome, OutcomeRow } from './types.mts'
+import type { MissRow, Outcome, OutcomeRow } from './types.mts'
 
 let counter = 0
 function row(outcome: Outcome, over: Partial<OutcomeRow> = {}): OutcomeRow {
@@ -109,6 +109,53 @@ describe('renderDigest', () => {
   it('says None for empty sections', () => {
     const empty = renderDigest([], '2026-06-10')
     expect(empty.match(/None\./gu)).toHaveLength(6)
+  })
+})
+
+const miss = (over: Partial<MissRow> = {}): MissRow => ({
+  repo: 'acme/widgets',
+  pr: 7,
+  key: 'acme/widgets#7/thread/9',
+  path: 'src/b.ts',
+  line: 30,
+  reviewer: 'coderabbitai[bot]',
+  url: 'https://example.test/comment/9',
+  summary: 'Use a [map] here',
+  checkedAt: '2026-06-10T12:00:00.000Z',
+  ...over,
+})
+
+describe('candidate misses in the digest', () => {
+  it('lists them as candidates with a count, reviewer, link and location', () => {
+    const text = renderDigest([], '2026-06-10', [
+      miss(),
+      miss({ url: null, path: null, line: null }),
+    ])
+    expect(text).toContain('## Caught by others, not by us (candidates)')
+    expect(text).toContain('2 candidates')
+    expect(text).toContain('not confirmed misses')
+    expect(text).toContain(
+      '- coderabbitai\\[bot\\]: [Use a \\[map\\] here](https://example.test/comment/9) in acme/widgets#7 (`src/b.ts:30`)',
+    )
+    expect(text).toContain('](https://github.com/acme/widgets/pull/7) in acme/widgets#7\n')
+  })
+
+  it('shows a path without a line, and says 0 candidates when there are none', () => {
+    expect(renderDigest([], '2026-06-10', [miss({ line: null })])).toContain('(`src/b.ts`)')
+    expect(renderDigest([], '2026-06-10')).toContain('0 candidates')
+  })
+
+  it('reads the stored file into the digest, skipping lines that are not rows', () => {
+    const tracker = memoryTracker()
+    saveMisses(tracker, [miss()])
+    saveMisses(tracker, [miss({ summary: 'newer' })])
+    tracker.write(
+      join(tracker.dir, MISSES_FILE),
+      `${JSON.stringify(miss({ summary: 'newer' }))}\nnope\n{}\n`,
+    )
+    expect(readMisses(tracker)).toHaveLength(1)
+    const path = writeDigest(tracker, '2026-06-10', undefined)
+    expect(readFileSync(path, 'utf8')).toContain('1 candidates')
   })
 })
 

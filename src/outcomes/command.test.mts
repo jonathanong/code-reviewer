@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { digestCommand, outcomesCommand } from './command.mts'
 import { MAX_PULLS } from './collect.mts'
 import { fakeGh, io, posted, review, seeded, thread } from './github-fake-io.mts'
-import { readOutcomes } from './store.mts'
+import { readMisses, readOutcomes } from './store.mts'
 
 const pull = {
   reviews: [review(100)],
@@ -21,6 +21,7 @@ describe('outcomesCommand', () => {
       pulls: 1,
       findings: 2,
       stored: 2,
+      candidateMisses: 0,
       notChecked: 0,
       byOutcome: {
         fixed: 1,
@@ -43,6 +44,19 @@ describe('outcomesCommand', () => {
         .map((row) => row.outcome)
         .sort(),
     ).toEqual(['fixed', 'ignored'])
+  })
+
+  it('stores candidate misses beside the rows, replacing them by key on a re-run', async () => {
+    const tracker = seeded()
+    const threads = [
+      thread({ id: 9, author: 'coderabbitai[bot]', outdated: true, path: 'src/b.ts' }),
+    ]
+    const gh = fakeGh({ 7: { reviews: [review(100)], threads } })
+    const first = await outcomesCommand({ repo: ['acme/widgets'] }, tracker, io({}, gh))
+    expect(first.summary).toMatchObject({ findings: 0, candidateMisses: 1 })
+    await outcomesCommand({ repo: ['acme/widgets'] }, tracker, io({}, gh))
+    expect(readMisses(tracker).map((miss) => miss.key)).toEqual(['acme/widgets#7/thread/9'])
+    expect(readOutcomes(tracker)).toEqual([])
   })
 
   it('takes --owner, --pr and --since', async () => {

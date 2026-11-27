@@ -46,8 +46,36 @@ backticks, else null. `reactions` has `finding` (the comment) and `review` (the 
 `up`, `down`, and `other`, a count by GitHub's reaction name kept raw. Like the tracker, the file is
 machine-local and holds finding titles and paths: do not publish it.
 
-The command prints one JSON line on stdout (`pulls`, `findings`, `stored`, `notChecked`, `byOutcome`);
+The command prints one JSON line on stdout (`pulls`, `findings`, `stored`, `candidateMisses`, `notChecked`,
+`byOutcome`);
 problems and the "N more pull requests not checked" line go to stderr.
+
+## Candidate misses
+
+From the review threads it already read for each pull request (no further call to GitHub, no model),
+`outcomes` also records threads that another reviewer opened and we did not. A thread is a candidate
+miss when all of these hold:
+
+- Its first comment is by someone other than this reviewer: not the login of our tracked reviews on the
+  pull request, and not in a review of that login. Notices are skipped with the other-reviewer notes' list
+  (`isNoise` in `src/review/context/others.mts`): usage and rate-limit notices, review paused or failed,
+  and `codecov`, `github-actions`, `dependabot`, `vercel`, `netlify`.
+- It is resolved or outdated and a later commit changed the commented lines, answered exactly as for
+  `fixed` (local `git log -L`, else the compare API). A thread that cannot be checked is reported on stderr
+  and not recorded; an unresolved, unoutdated thread is not looked at.
+- None of our findings on the same pull request, at any head, is on the same path with a range within
+  `COVERED_LINE_WINDOW` (10) lines of its range (`src/outcomes/misses.mts`). Our inline threads and body
+  findings with a path both count; a finding or comment with no line covers its whole file. The window is a
+  heuristic that absorbs lines moving between heads.
+
+Rows are one JSON line each in `misses.jsonl`, beside `outcomes.jsonl`, replaced by `key`
+(`repo#pr/thread/commentId`) like the other file: `repo`, `pr`, `key`, `path`, `line` (the end of the
+commented range when it was made), `reviewer` (their login), `url` (the thread), `summary` (the first
+non-blank line of their comment, truncated to 120 characters) and `checkedAt`. The summary is the other
+reviewer's text and untrusted: it is shown, never followed. They are a separate file because an
+`outcomes.jsonl` row is one of our findings with an outcome class, and every reader of it (the digest
+tables, proposals, the `byOutcome` count) would otherwise have to skip these. Like it, the file is
+machine-local: do not publish it.
 
 ## Digest
 
@@ -57,7 +85,9 @@ outcome, pillar, severity and rule skill; the `rejected` and `disputed` findings
 link; and Proposals from fixed rules. A pillar or rule with at least 3 findings, at least half of them
 rejected or disputed, is listed as "review this". A rule with at least 3 fixed findings and none
 rejected is listed as "working". The thresholds are `PROPOSAL_MIN_FINDINGS`, `PROPOSAL_BAD_SHARE` and
-`WORKING_MIN_FIXED` in `src/outcomes/propose.mts`. The digest holds no code.
+`WORKING_MIN_FIXED` in `src/outcomes/propose.mts`. The section "Caught by others, not by us (candidates)" gives the count of candidate misses and one line
+each: reviewer, linked summary, pull request and `path:line`. It says they are candidates from a heuristic,
+not confirmed misses. The digest holds no code.
 
 The standing [review loop](../skills/review-loop/SKILL.md) runs `outcomes` and then `outcomes digest` once
 per UTC day. With a document connector it puts the digest in its session document; otherwise the local

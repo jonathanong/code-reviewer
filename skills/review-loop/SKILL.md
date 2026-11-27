@@ -215,6 +215,10 @@ Step 1), then `code-reviewer outcomes digest`. It prints `{path}`, the day's `ou
 model runs. Skip both when the digest for today was already written this session. A failure of
 either is noted and does not stop the loop.
 
+Its "Caught by others, not by us (candidates)" section lists threads other reviewers raised that we did not.
+Triage each into a mined benchmark case (per `benchmarks/review/AGENTS.md`: only if the no-rules control
+misses it), a rule or prompt change, or "not a real miss", and propose; the human decides.
+
 With a document connector, put the digest's text in the same document as Step 4 as a section for
 that day (headed with the date), the way each pull request has one; without one, the local file
 is the record. Tell the human its path or link. The digest only proposes: change no rule, prompt
