@@ -96,8 +96,15 @@ async function runAll(cases: EvalCase[], options: Options, deps: VerifierBenchDe
       if (saved !== undefined && 'output' in saved && saved.inputs === inputs) return
       deps.log(`verify ${item.id}`)
       const done = await runVerifier(item, dir, input.findings, run, deps.exec, citable)
-      const { output, usage, answers } = done
-      raw = { input, inputs, output, usage, ...(answers === undefined ? {} : { answers }) }
+      const { output, usage, answers, followUp } = done
+      raw = {
+        input,
+        inputs,
+        output,
+        usage,
+        ...(answers === undefined ? {} : { answers }),
+        ...(followUp === undefined ? {} : { followUp }),
+      }
     } catch (error) {
       raw = { input, error: errorMessage(error) }
     }

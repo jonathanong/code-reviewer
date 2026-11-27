@@ -27,7 +27,12 @@ import { checkedRegressionPrevent, regressionLines } from './regression-prompt.m
 import type { Restatable } from '../context/restatable.mts'
 import type { LinkedCommit, PreviousReview } from '../context/types.mts'
 import type { HeldEvidence } from './evidence-reuse.mts'
-import { earlierLines, previousLines, type EarlierBlock } from './previous-prompt.mts'
+import {
+  earlierLines,
+  FIXED_THREADS_LINES,
+  previousLines,
+  type EarlierBlock,
+} from './previous-prompt.mts'
 import type { SplitSummary } from '../context/change-shape/split.mts'
 import { checkedSplitProposal, splitLines } from './split-prompt.mts'
 import { impactLines } from './impact-prompt.mts'
@@ -86,8 +91,7 @@ export function buildVerifierRunPrompt(input: VerifierInput): string {
     'rejected or merged away without a source in `dropped` with a one-line reason.',
     '`pullRequestSummary` is two to four sentences on what the pull request does; `summary` is the',
     'review summary described above.',
-    'On a re-review, `fixedThreadIds` lists the thread ids from `context.md` of earlier findings that',
-    'are now fixed, so the caller can resolve them; leave it empty otherwise.',
+    ...FIXED_THREADS_LINES,
     'The working directory is a checkout of the pull request head. The run directory files:',
     runFileLines(input.run).join('\n'),
     reviewDateLine(input.now ?? new Date()),

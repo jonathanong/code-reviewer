@@ -6,12 +6,8 @@ import type { Finding } from '../finding.mts'
 import type { EvalCase, ExpectedFinding } from './cases.mts'
 import { judgeInputs } from './judge-all.mts'
 import { collectVerifierInput } from './verifier-input.mts'
-import {
-  buildVerifierPrompt,
-  runVerifier,
-  validateVerifierOutput,
-  verifierRequest,
-} from './verifier-run.mts'
+import { buildVerifierPrompt } from './verifier-prompt.mts'
+import { runVerifier, validateVerifierOutput, verifierRequest } from './verifier-run.mts'
 
 const expected = (overrides: Partial<ExpectedFinding>): ExpectedFinding => ({
   pillar: 'design',

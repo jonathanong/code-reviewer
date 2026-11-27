@@ -2,6 +2,42 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (input change, cases added): follow-up reviews in `bench-verifier`
+
+First item of jongleberry/code-reviewer#234. Most live reviews are follow-ups, and no case supplied an earlier review or a
+since-diff.
+
+Run at the commit that adds it, `bench-verifier --cases benchmarks/review/followups.json --model sonnet --judge opus
+--no-rules`, Sonnet 5.5 verifier, Opus judge (called only on the output findings of `followup-fixed-new-defect`), 3
+attempts (each its own run). Cost: $1.19 for the verifier over the 12 case runs (judge calls not counted). Raw results were
+in `$TMPDIR` and are not kept. No `main` arm: `main` cannot take the follow-up input, so a run there would verify the same
+fixtures with no earlier review and no since-diff, which is a different measurement.
+
+| Case                        | Expected                                             | Result, 3 attempts |
+| --------------------------- | ---------------------------------------------------- | ------------------ |
+| `followup-fixed`            | the one thread reported fixed, nothing raised        | 3 of 3, 0 findings |
+| `followup-still-present`    | the one thread left open, nothing raised             | 3 of 3, 0 findings |
+| `followup-fixed-new-defect` | the thread fixed and the new cache-key defect raised | 3 of 3, 1 finding  |
+| `followup-mixed`            | thread A fixed, thread B left open, nothing raised   | 3 of 3, 0 findings |
+
+- **What changed.** A fixture case may carry `followUp`: this machine's earlier review, the findings still open as
+  threads (each labeled `fixed` or `open`) and held evidence. The fixture's `reviewed/` tree is diffed against `head/` to
+  write `.review/since/` and `.review/since.patch`, and `.review/context.md` is rendered by `renderFollowUpContext`. The
+  verifier prompt takes the earlier review and the evidence from `previousLines`, the file bullets from
+  `contextFileLine` and `sinceFileLine` (taken out of `runFileLines`, same text), and the `fixedThreadIds` instruction
+  from `FIXED_THREADS_LINES` (taken out of `buildVerifierRunPrompt`, same text); the bench schema gains `fixedThreadIds`.
+  The grade is by code: a thread passes when its presence in `fixedThreadIds` matches its label. A follow-up case needs no
+  pillar result, as an answers case does not. No prompt file changed.
+- **Not comparable.** Nothing earlier: the prompt of a case without `followUp` is byte-identical, and `verifier-run.mts`
+  moved `buildVerifierPrompt` to `verifier-prompt.mts` with no change to it.
+- **What it showed.** 15 of 15 thread verdicts as expected, the new defect raised 3 of 3, and no fixed finding was
+  raised again. These are ceiling cases for Sonnet: the unchanged prompt already handles them. They show the follow-up
+  input reaches the verifier and the grade works; they do not show margin, and no control arm exists.
+- **Not covered.** A still-present finding is graded only as "not reported fixed", not as kept in the output (the
+  prompt says both to keep a still-present finding and not to repeat one open in a thread); a finding with no thread
+  (posted in a review body); an unposted earlier review (`earlierLines`); held evidence (`held` is parsed and
+  rendered, no case sets it); the pillars' follow-up prompt; mined heads.
+
 ## 2026-11-27 (input change, cases added): replies at a head that moved since the review
 
 Run at the commit that adds it, `bench-replies --model sonnet --attempts 3`, Sonnet 5.5, no judge (deterministic

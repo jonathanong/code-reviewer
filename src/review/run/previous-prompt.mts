@@ -2,6 +2,12 @@ import type { PreviousReview } from '../context/types.mts'
 import type { Question } from '../question.mts'
 import type { HeldEvidence } from './evidence-reuse.mts'
 
+/** The verifier-run lines that ask for `fixedThreadIds`; the benchmark's follow-up cases use them too. */
+export const FIXED_THREADS_LINES: readonly string[] = [
+  'On a re-review, `fixedThreadIds` lists the thread ids from `context.md` of earlier findings that',
+  'are now fixed, so the caller can resolve them; leave it empty otherwise.',
+]
+
 /**
  * The block for a follow-up whose earlier review on this machine could be read. Empty without
  * one, so the verifier prompt of every other run does not change. It adds no output field.
