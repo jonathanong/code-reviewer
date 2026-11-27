@@ -41,8 +41,8 @@ allow.
 
 A rule this repository states as mandatory (must, never, always, required, or enforced by CI) is
 broken in code that runs and the pull request does not explain an exception. Name the rule's file
-and quote it briefly. A mandatory rule that a linter or CI check already enforces is `high` at
-most: the author will see the failure.
+and quote it briefly. Do not report a mandatory rule that a linter, AST rule or CI check this repository runs enforces:
+CI reports it. This pillar reports only rules no tool enforces.
 
 Other severities:
 
