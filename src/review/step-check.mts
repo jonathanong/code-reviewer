@@ -5,7 +5,7 @@ import { READ_ONLY, type Candidate } from '../harness/types.mts'
 import { HISTORY_COMMANDS } from './run/pillar-capabilities.mts'
 
 /** Steps whose model must be one the owner pays for: a free model never judges findings or approves. */
-const NO_FREE_STEPS: readonly string[] = ['verifier', 'verifier.light', 'approvalCheck']
+const NO_FREE_STEPS: readonly string[] = ['verifier', 'verifier.light', 'approvalCheck', 'replies']
 
 /**
  * Shell a step always asks for, known from its key alone. Web hosts are not here: the correctness

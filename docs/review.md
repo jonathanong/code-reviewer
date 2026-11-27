@@ -64,7 +64,7 @@ the adapter, so agy's output shape and the read access of plan mode are assumed.
 
 Config rejects what it can know from the step's key: the `pillar.history` and `evidence` steps need
 shell, so a list in which every candidate is Grok, OpenCode, Codex or agy is a problem, and no free model
-(`isFreeModel`, a naming heuristic) may run `verifier`, `verifier.light` or `approvalCheck`. The web
+(`isFreeModel`, a naming heuristic) may run `verifier`, `verifier.light`, `approvalCheck` or `replies`. The web
 hosts the correctness and security pillars and the verifier get depend on `references`, so those are
 checked at run time: when an adapter refuses a step, the runner moves to the next candidate, and
 the step fails only if none is left.

@@ -114,6 +114,22 @@ day, so the label is the truth: `claim` re-reads it and ignores a request that i
 `gap: true`, run `queue` to sweep what was missed, skipping `held` entries. Your own label changes also produce events;
 only `labeled` with a request label matters, so they are filtered out.
 
+### Replies to this reviewer's findings
+
+An author's reply on a finding thread does not carry the request label, so wait for it with a second
+filter, OR'd into the same wait (one wait, two filters):
+`--filter '{"event":"pull_request_review_comment","action":"created","ignoreSenders":["<reviewer login>"]}'`
+(MCP: the same object in `filters`). `<reviewer login>` is `login` from `code-reviewer auth`
+(`<app-slug>[bot]`, or the `gh` login); it keeps this reviewer's own replies from waking the loop.
+The relay's `pull_request_review_comment` events are not confirmed to be forwarded: if a wait never
+shows one, rely on the next review, which reads replies itself.
+
+For each such event: take `repo` and `pr`, skip a pull request that carries a request, in-progress or held
+label (a review will read the replies itself), and run `code-reviewer replies --repo <repo> --pr <n>
+--post auto` as a background command ([docs/replies.md](../../docs/replies.md)). It prints one JSON line;
+exit 11 means nothing to do (head moved, no new author reply), 10 held, 0 applied, 13 failed. It makes no
+call unless the author has a new reply on an open finding, so waking it on every comment is cheap.
+
 ## Step 3 - Review
 
 For each queued pull request (state `requested` or `in-progress`, never `held`), follow the [review](../review/SKILL.md) skill: check out the head,

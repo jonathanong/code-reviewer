@@ -85,6 +85,7 @@ describe('modelTable', () => {
       'verifier.light',
       'evidence',
       'approvalCheck',
+      'replies',
       'pillar.rules',
     ])
   })

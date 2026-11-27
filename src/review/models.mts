@@ -53,6 +53,7 @@ export const DEFAULT_STEPS: Record<string, Tier> = {
   'verifier.light': 'medium',
   evidence: 'medium',
   approvalCheck: 'large',
+  replies: 'medium',
 }
 
 export const DEFAULT_MODEL_PLAN: ModelPlan = {

@@ -48,6 +48,7 @@ const UNSET = {
       'verifier.light': [{ harness: 'claude', model: 'sonnet' }],
       evidence: [{ harness: 'claude', model: 'sonnet' }],
       approvalCheck: [{ harness: 'claude', model: 'opus' }],
+      replies: [{ harness: 'claude', model: 'sonnet' }],
     },
     tiers: {
       small: [{ harness: 'claude', model: 'haiku' }],

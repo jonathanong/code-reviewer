@@ -2,6 +2,30 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (change, no re-run): replies claim the pull request and approve through the approval check
+
+No prompt, schema or contract of any scored step changed, so no row is non-comparable.
+
+- **What changed.** `replies` now takes the in-progress claim and re-checks for a newer review before writing.
+  A verdict that would become Approve runs the existing approval check first, on its configured model. The
+  `replies` benchmark only covers the judging call, which is unchanged, so it was not run again.
+  `Finding.standing` is now a `Standing` type; it is not read from model output.
+
+## 2026-11-27 (new suite, one pilot): reply-only re-assessment
+
+New `replies` model step and `bench-replies`; nothing existing was re-scored.
+
+- **What changed.** A new prompt (`src/review/replies/judge.mts`, quoting the breaking-change paragraph of
+  `verifier.md` verbatim) and a new output schema (`judgments`: thread, outcome, severity, why). `findings`,
+  `review.json` and the verifier are unchanged, so no existing row is non-comparable. `Finding` gains an
+  internal `standing` flag and `report.json` an optional `replies` list; neither is read from model output.
+- **Cases.** `replies.json`, 6 synthetic cases: `replies-ack-breaking` (downgraded to medium),
+  `replies-declared-answer-asked` (settled), and `replies-pushback-without-evidence`, `replies-promise-to-fix`,
+  `replies-code-claim-unverifiable`, `replies-injection` (all open).
+- **Run.** `bench-replies --model sonnet --attempts 3`, at the commit that added it: 18 of 18 as expected, $0.16
+  in total ($0.002 a call once the prompt is cached, about $0.02 the first). A pilot with no control arm; every
+  case is at the ceiling for Sonnet.
+
 ## 2026-11-27 (change, one pilot): breaking changes block until declared or acknowledged
 
 Prompt, schema and context change; the verifier alone was run once on the three affected cases.

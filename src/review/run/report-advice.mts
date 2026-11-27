@@ -1,6 +1,7 @@
 import type { Answer } from '../answers.mts'
 import type { Flag } from '../flag.mts'
 import type { Impact } from '../impact.mts'
+import type { RepliesRecord } from '../replies/report.mts'
 import type { ReviewVerifierOutput } from './verify.mts'
 
 /** What the verifier added beside the findings; each part is absent when it gave none. */
@@ -15,6 +16,8 @@ export type ReportAdvice = {
   answers?: Answer[]
   /** Why an answer the verifier gave was dropped. */
   answerWarnings?: string[]
+  /** Reply-only re-assessments of this head, added by `code-reviewer replies`. */
+  replies?: RepliesRecord[]
 }
 
 export function reportAdvice(output: ReviewVerifierOutput | undefined): ReportAdvice {

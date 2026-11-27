@@ -44,14 +44,18 @@ function toComment(finding: Finding): ReviewComment | null {
   return { ...comment, start_line: finding.startLine, start_side: side }
 }
 
+/** A finding still open in its own thread (set by the replies step): counted, never posted again. */
+export type Standing = { standing?: true }
+
 /** Splits findings into placed inline comments and blocks for the review body. */
 export function placeFindings(
-  findings: readonly Finding[],
+  findings: readonly (Finding & Standing)[],
   index: CommentableIndex,
 ): { comments: ReviewComment[]; offDiff: Finding[] } {
   const comments: ReviewComment[] = []
   const offDiff: Finding[] = []
   for (const finding of sortFindings(findings)) {
+    if (finding.standing === true) continue
     const comment = toComment(finding)
     const placed = comment === null ? null : placeReviewComment(comment, index)
     if (placed === null) offDiff.push(finding)

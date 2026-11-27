@@ -6,6 +6,7 @@ import { contextCommand } from './command-context.mts'
 import { doctorCommand } from './command-doctor.mts'
 import { requireApp } from './command-auth.mts'
 import { carryCommand } from './command-carry.mts'
+import { runRepliesCommand } from './command-replies.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
 import { labelsFor } from './review-settings.mts'
@@ -22,7 +23,7 @@ import { REVIEW_USAGE } from './usage.mts'
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, or bench-focus'
+  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, bench-focus, bench-replies, or replies'
 
 /** Subcommands that call GitHub for a repository or owner; `run` checks the App in its own preflight. */
 const NEEDS_IDENTITY = new Set([
@@ -71,6 +72,9 @@ async function run(
   if (subcommand === 'bench-selection') return deps.runSelectionBench(args)
   if (subcommand === 'bench-context') return deps.runContextBench(args)
   if (subcommand === 'bench-focus') return deps.runFocusBench(args)
+  if (subcommand === 'bench-replies') {
+    return (await import('../review/benchmark/replies-cli.mts')).runRepliesBenchCli(args)
+  }
   const digest = subcommand === 'outcomes' && args[0] === 'digest'
   const values = parse(digest ? args.slice(1) : args)
   if (subcommand === undefined) throw new Error(`give a subcommand: ${SUBCOMMANDS}.`)
@@ -125,6 +129,7 @@ async function run(
     return 0
   }
   if (subcommand === 'run') return runCommand(values, deps)
+  if (subcommand === 'replies') return runRepliesCommand(values, deps)
   if (subcommand === 'context') return contextCommand(values, deps)
   if (subcommand === 'review') {
     const result = await reviewCommand(values, target(values), deps)
