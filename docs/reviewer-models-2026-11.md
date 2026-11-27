@@ -18,9 +18,8 @@ request, not a `bench` run. For measured results see
 - **Severity ran high.** Six of twelve pipeline findings in one batch were lowered or dropped,
   mostly because the verifier did not ask whether the base branch already behaved the same way.
   #195 has since addressed that.
-- **Open decision for the owner:** whether analysis and rule pull requests need a Sol-class
-  verifier, or a shadow, before an Approve. This machine posts Sonnet-only reviews unattended,
-  with no shadow. See [Open items](#open-items).
+- **Decided 2026-11-27:** analysis and rule pull requests on no-mistakes get an Opus verifier,
+  since this machine has no Sol quota. See [Owner decisions](#owner-decisions-2026-11-27).
 
 ## Recommendations as of 2026-11-24 (engineering)
 
@@ -102,21 +101,20 @@ request, not a `bench` run. For measured results see
 | agy ran with unrestricted network | #196: every agy step gets a host allowlist |
 | No light review of a merge from the base | Already present since #52 (2026-11-19), but only on top of the same machine's earlier review |
 
-## Open items
+## Owner decisions, 2026-11-27
 
-| # | Item | Kind | Source |
-| --- | --- | --- | --- |
-| 1 | Decide whether analysis and rule PRs need a Sol-class verifier or shadow before Approve | Owner decision | #4015, #4047, #4051, #4057, #4067 |
-| 2 | Pass the repository's stated design principles (such as `docs/why.md`) to the focus step automatically | Feature | Batch 4 |
-| 3 | For a fix PR, search the changed module and its neighbours for the old shape | Feature + eval (#6656) | vouchington #6656 |
-| 4 | Eval cases for the hand-only misses: CSP array fragments (#4102), single-pipe lexer (#4062), planner soundness (#4057) | Eval | 2026-11-25 batch |
-| 5 | Pass a requester's explicit check list as focus points; `run` takes `--focus`, but the loop never sets it | Loop | vouchington #6450 |
-| 6 | For a dependency bump on an auth or security path, or a pre-1.0 transitive minor, diff the published packages and read their changelogs | Feature | vouchington #6668 |
-| 7 | Consider Comment instead of Approve when more than two correctness mediums remain | Policy | #4062 |
-| 8 | Recheck agy correctness, security and verifier on vouchington now that #196 allows granted hosts | Check | Tracker |
-| 9 | Let a `--model` override mark `readsOutsideCheckout`, so skill selection can run on agy | Feature | Tracker |
-| 10 | Light merge review across machines: build on another machine's posted review of the earlier head | Feature | #3973 |
-| 11 | Re-run `bench`: every row in the benchmarks README is stale | Eval | benchmarks README |
+Recorded when this page was written. Follow-up work is tracked in pull requests, not here.
+
+| Question | Decision | Change |
+| --- | --- | --- |
+| A stronger verifier for analysis and rule PRs | Sol or Opus is fine. This machine has no Sol quota, so the no-mistakes verifier and approval check run on Opus with Sonnet as the fallback | Machine config |
+| Explorer model | Cheap explorer-level models, such as Haiku | Machine config |
+| Many medium findings | High and medium never block; a design question gives Comment | None |
+| Undeclared breaking change | Request Changes until the PR declares it or the author acknowledges it, then medium | #216 |
+| A gap the base already has | Not blocking; the author fixes it or tracks it in an issue | #216 |
+| Requester check lists | Pass them to the focus step | #215 |
+| Sibling call sites | Search near a fix for the old shape | #217 |
+| `--model` and `readsOutsideCheckout` | Allow it from the flag | #212 |
 
 ## Process notes for hand checks (on-call)
 
