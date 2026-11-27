@@ -134,6 +134,7 @@ describe('parseFocusCase', () => {
       'focus-target-untraced-reported',
       'focus-target-undecided-skipped',
       'focus-target-undecided-reported',
+      'focus-target-sibling-fixed',
     ])
     expect(focusCases[1]?.focus?.[0]?.expectNoFindings).toBe(true)
 

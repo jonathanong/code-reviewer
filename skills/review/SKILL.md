@@ -164,7 +164,7 @@ requests changes; otherwise a high finding or any open question comments; otherw
   as `APPROVE`, `REQUEST_CHANGES`, or `COMMENT` to match the verdict. GitHub refuses approve and
   request-changes on the reviewer's own pull request, so there (the author is the `gh` login or
   the App bot), when the reviewer's identity cannot be determined, or when GitHub rejects the event
-  with 422, it is posted once as `COMMENT`. `post` prints the `event` and, when it changed,
+  with 422, it is posted once as `COMMENT`. `post` prints one JSON line with the `event` and, when it changed,
   `downgraded` (`self-review`, `identity-unknown`, or `rejected`). The tag, marker, labels and
   check run stay the source of truth for `status`; GitHub's review state is never read for the
   verdict. An `APPROVE` clears an earlier request for changes by itself; after a `COMMENT` that no

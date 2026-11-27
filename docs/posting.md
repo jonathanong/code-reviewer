@@ -1,7 +1,8 @@
 # Posting a review
 
 `code-reviewer post` sends the review `review` or `run` produced. This page covers what it sends,
-how it survives GitHub failures, and how it confirms the result.
+how it survives GitHub failures, and how it confirms the result. It prints its result on stdout as
+one compact JSON line, as `run` does, so a caller can read it a line at a time.
 
 ## Verdict and questions
 

@@ -48,6 +48,12 @@ Mined cases (8 real pull requests from `cases.json`):
   for an indirect import its fixtures never use) and `no-mistakes-4006` (focus only, no expected pillar finding: a point
   about a rule that another open pull request also adds). `no-mistakes-4027` (negative, focus: three
   requester points that all hold) checks that asking several points together raises nothing.
+- Not in the table: three mined misses from no-mistakes pull requests that only a hand check or a Codex shadow
+  caught (correctness, added 2026-11-26): `no-mistakes-4102-5a0aca3` (CSP array fragments intersected as
+  separate policies), `no-mistakes-4062-ce406a2` (a single `|` loses piped loop input) and
+  `no-mistakes-4057-d2fd340` (a loader alias or namespace import escapes the narrowing proof). Run at 2 attempts
+  per arm on Sonnet: 0 of 2 with skills and 0 of 2 without on each, so the control misses all three (the reviewer
+  never loaded `lint-rule-authoring`); not a rate, see `HISTORY.md`.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
@@ -211,6 +217,9 @@ points, and grades each point deterministically against its `expectedStatus` (`h
 | `focus-target-untraced-reported`  | The `untraced-name-passes` target stays quiet when the check reports what it cannot trace (`holds`, no finding)                                    |
 | `focus-target-undecided-skipped`  | The `undecided-input-passes` target finds a new opt-in check that passes a parse failure, an expression value and a missing file (`does_not_hold`) |
 | `focus-target-undecided-reported` | The `undecided-input-passes` target stays quiet when the check reports each of them as could-not-analyse (`holds`, no finding)                     |
+| `focus-target-sibling-fixed`      | The `sibling-keeps-old-shape` target stays quiet when every query in the export is fixed (`holds`, no finding)                                     |
+
+`focus-target-sibling-fixed` (`sibling-keeps-old-shape`) is the false-alarm check, piloted on Claude Sonnet 2 of 2 attempts, and the mined case below 1 of 1 (see `HISTORY.md`); pilots, not rates.
 
 `focus-target-undecided-skipped` and `focus-target-undecided-reported` (`undecided-input-passes`) were piloted once each on Claude Sonnet (skipped 1 of 1; reported 1 of 5, passing only after fixture repairs, see `HISTORY.md`); they are pilots, not rates.
 
@@ -220,6 +229,8 @@ A case may set `focusRefs`, an object from pull request number to a full 40-char
 pins which commit it reads instead of the live `refs/pull/<n>/head`, and `bench-focus` fetches the pin
 into the case's cache. Mined case `no-mistakes-4006` uses it (a requester point names 3963, which
 changes 16 of the same files); piloted 3 of 3 (see `HISTORY.md`).
+
+Mined case `vouchington-6656-12fe22b` in `cases.json` (positive, correctness; the first commit of vouchington #6656, which fixed the optional cursor in `processTopicMergeAliasPage` and left `snapshotTopicMergeAliases` in the same flow unfixed) declares `target: "sibling-keeps-old-shape"` (expected `does_not_hold`; 1 of 1). Its `body` is the description as it read at that head (recovered from the pull request's edit history).
 
 Mined case `vouchington-6282` in `cases.json` also declares a target focus entry
 (`target: "unneeded-concurrency-guard"`, expected `does_not_hold`); piloted only (2 of 3). `no-mistakes-3963` and

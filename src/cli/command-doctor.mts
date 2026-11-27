@@ -7,6 +7,7 @@ type DoctorValues = {
   repo?: string[] | undefined
   owner?: string | undefined
   offline?: boolean | undefined
+  clones?: string | undefined
 }
 
 function flagsFrom(values: DoctorValues): DoctorFlags {
@@ -21,6 +22,7 @@ function flagsFrom(values: DoctorValues): DoctorFlags {
   return {
     ...(repo === undefined ? {} : { repo }),
     ...(values.owner === undefined ? {} : { owner: values.owner }),
+    ...(values.clones === undefined ? {} : { clones: values.clones }),
     offline: values.offline === true,
   }
 }

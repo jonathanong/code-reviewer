@@ -12,6 +12,7 @@ import { inspectPush, type PushShas } from './push-inspect.mts'
 import type { PushInspection } from './push-types.mts'
 import { fetchPullCommits, type PullCommits } from './pull-commits.mts'
 import { commitSubjects, docGrep } from './prepare-git.mts'
+import { createUpgradeIo, type UpgradeIo } from './upgrades/io.mts'
 import type { PullTarget } from './target.mts'
 import { reviewableLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
@@ -60,6 +61,8 @@ export type PrepareIo = {
   history(tree: string, base: string, paths: readonly string[]): Promise<string[] | undefined>
   /** Runs `git` with `args` in `tree`; resolves `''` when the search matched nothing (exit 1). */
   docGrep(tree: string, args: string[]): Promise<string>
+  /** Local git and the npm registry, for the upgraded packages' changelogs and diffs. */
+  upgrades: UpgradeIo
 }
 
 type CompareJson = {
@@ -189,5 +192,6 @@ export function createGhPrepareIo(
       }),
     history: (tree, base, paths) => commitSubjects(git, tree, base, paths),
     docGrep: (tree, args) => docGrep(git, tree, args),
+    upgrades: createUpgradeIo(git),
   }
 }

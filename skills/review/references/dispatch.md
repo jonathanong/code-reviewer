@@ -37,6 +37,9 @@ Light is `low`; full is `high`, or the requested `medium`. The first rule that m
   are not security triggers (`package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`,
   `requirements*.txt`, `Gemfile`, `*.csproj`, `Package.swift`); any other trigger path still adds
   the security pillar.
+- A Dependabot pull request that changes only lockfiles is skipped, unless `prepare` staged
+  `upgrades/INDEX.md` (the `upgrades` setting is on and a changed package is auth or security or a
+  pre-1.0 minor); it is then reviewed light.
 - A skip plan has no pillars and a `skipReason`; do not review. With `--effort` (any value) a skip
   case is reviewed instead.
 - Escalations of a follow-up to full: the last reviewed SHA

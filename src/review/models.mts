@@ -1,5 +1,4 @@
 import type { Exec } from './benchmark/exec.mts'
-import { HARNESS_NAMES } from '../harness/registry.mts'
 import { watchStep, type StepLimits, type StepWatch } from './step-watch.mts'
 import {
   DEFAULT_MAX_WAIT_SECONDS,
@@ -13,7 +12,6 @@ import {
 import type { Candidate } from '../harness/types.mts'
 import { explorerModelFor } from './explorer-model.mts'
 import { PILLARS } from './pillar-name.mts'
-import { stepProblems } from './step-check.mts'
 import type { Model } from './plan.mts'
 
 export type { Candidate } from '../harness/types.mts'
@@ -106,35 +104,6 @@ export function resolveModelPlan(
     steps: { ...config?.steps, ...overrides },
     retry: config?.retry ?? DEFAULT_MODEL_PLAN.retry,
   }
-}
-
-/**
- * `--model step=harness:model` flags. A step named twice gets its candidates in flag order, as
- * fallbacks. Throws a message fit for a usage error.
- */
-export function parseModelOverrides(values: readonly string[]): Record<string, Candidate[]> {
-  const found: Record<string, Candidate[]> = {}
-  for (const value of values) {
-    const match = /^([^=]+)=([^:=]+):(.+)$/u.exec(value)
-    if (match === null) throw new Error(`--model ${value}: expected step=harness:model.`)
-    const [, step, harness, model] = match as unknown as [string, string, string, string]
-    if (!isStepName(step)) {
-      throw new Error(
-        `--model ${value}: unknown step "${step}"; use ${STEP_NAMES.join(', ')}, or pillar.<name> for a configured pillar.`,
-      )
-    }
-    if (!HARNESS_NAMES.includes(harness)) {
-      throw new Error(
-        `--model ${value}: unknown harness "${harness}"; use ${HARNESS_NAMES.join(', ')}.`,
-      )
-    }
-    found[step] = [...(found[step] ?? []), { harness, model }]
-  }
-  for (const [step, list] of Object.entries(found)) {
-    const [problem] = stepProblems(step, list)
-    if (problem !== undefined) throw new Error(`--model ${step}: ${problem}.`)
-  }
-  return found
 }
 
 /** The keys a step looks up, most specific first: a pillar, and the requester-focus step, fall back to `pillars`. */

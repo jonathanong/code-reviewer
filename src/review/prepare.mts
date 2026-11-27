@@ -5,7 +5,6 @@ import { renderFollowUpContext } from './context-render.mts'
 import { buildFollowUpContext } from './context.mts'
 import { planAuthor } from './author-commits.mts'
 import type { Effort } from './finding.mts'
-import { numberDiff } from './numbered-diff.mts'
 import type { PillarSettings } from './pillars-settings.mts'
 import { DEFAULT_PLAN_VALUES, type PlanValues } from './plan-settings.mts'
 import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
@@ -13,6 +12,7 @@ import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
 import { prepareIssues } from './links-issues.mts'
+import { prepareUpgrades, type UpgradesConfig } from './upgrades/prepare.mts'
 import { prepareDocs } from './docs-prepare.mts'
 import { checkTreeHead } from './prepare-tree.mts'
 import { prepareLinks } from './links-prepare.mts'
@@ -28,7 +28,7 @@ import { prepareEarlier } from './earlier-prepare.mts'
 import type { EarlierFile } from './earlier-file.mts'
 import { clearPrepared } from './prepare-clear.mts'
 import { prepareStack } from './stack-prepare.mts'
-import { writeDiffDir, type Write } from './write-diff.mts'
+import { writeDiff, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
 
 export type PrepareOptions = {
@@ -44,6 +44,7 @@ export type PrepareOptions = {
   values?: PlanValues
   /** Finds this machine's whole, unposted review of an earlier head; used only when git proves the push light. */
   earlier?: (headSha: string) => EarlierFile | undefined
+  upgrades?: UpgradesConfig
 }
 
 export type PrepareSummary = {
@@ -62,13 +63,6 @@ export type PrepareSummary = {
   /** Commits already in the default branch or another pull request, and a dead base branch. */
   carried?: CarriedSummary
   rules: { related: string[]; consumers: string[]; missing: string[] }
-}
-
-function writeDiff(out: string, name: string, patch: string, write: Write): string[] {
-  const numbered = numberDiff(patch)
-  write(join(out, `${name}.patch`), `${numbered}`)
-  writeDiffDir(join(out, name), numbered, write)
-  return [`${name}.patch`, `${name}/INDEX.md`]
 }
 
 /**
@@ -140,7 +134,14 @@ export async function prepareReview(
     headlines: conversation.commits.nodes.map((node) => node.commit.messageHeadline),
     ...(stack === undefined ? {} : { stack }),
   })
-  written.push(...links.written)
+  const upgrades = await prepareUpgrades(io.upgrades, options.out, write, {
+    tree: options.tree,
+    baseSha: context.baseSha,
+    headSha,
+    paths,
+    config: options.upgrades,
+  })
+  written.push(...links.written, ...upgrades.written)
   const author = await planAuthor(io, conversation.author, values.authors, headSha)
   const planned = planReview({
     paths,
@@ -148,6 +149,7 @@ export async function prepareReview(
     context,
     ...author,
     ...(options.requested === undefined ? {} : { requested: options.requested }),
+    ...(upgrades.found ? { upgrades: true } : {}),
     ...(since === undefined ? {} : { since }),
     ...(push === undefined || push.kind === 'substantive'
       ? {}
@@ -163,10 +165,10 @@ export async function prepareReview(
     ...links.problems,
     ...linkedIssues.problems,
     ...docs.problems,
+    ...upgrades.problems,
   ]
   const plan = stack === undefined ? planned : { ...planned, stack: summarizeStack(stack) }
   write(join(options.out, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`)
-  written.push('plan.json')
   const sources = await io.ruleSources({
     ...(options.clones === undefined ? {} : { clones: options.clones }),
     ...(options.tree === undefined ? {} : { tree: options.tree }),
@@ -177,7 +179,7 @@ export async function prepareReview(
     diff: patch,
     ...sources,
   })
-  written.push('rules/INDEX.md')
+  written.push('plan.json', 'rules/INDEX.md')
   return {
     headSha,
     baseSha: context.baseSha,

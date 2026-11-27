@@ -1,7 +1,7 @@
 # Configuration
 
 No repository needs a config; every key has a default. Settings come from three layers, and for
-each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `trustRepoConfig`, `pillars`, `targets`, `plan`, `models`, `limits`, `issues`, `answers`, and `run`) the highest layer that sets it wins. `labels`
+each top-level key (`labels`, `checkRun`, `consumes`, `evidence`, `analysis`, `references`, `approvalCheck`, `rulePlugins`, `upgrades`, `trustRepoConfig`, `pillars`, `targets`, `plan`, `models`, `limits`, `issues`, `answers`, and `run`) the highest layer that sets it wins. `labels`
 merge by label name.
 
 1. Machine config: files in `$CODE_REVIEWER_CONFIG_DIR`, else
@@ -186,6 +186,21 @@ It is off until configured and machine-only: a repository's own file cannot turn
 is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
 the file and key. `code-reviewer settings` prints the resolved value and its layer.
 
+## `requestFocus`
+
+Lets `run` read the requester's explicit check list from the review request and check it as
+[requester focus](review.md#points-read-from-the-request) points.
+
+```yaml
+requestFocus:
+  enabled: true
+```
+
+It is off until configured and machine-only: a repository's own file cannot turn it on. A value that
+is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
+the file and key. `code-reviewer settings` prints the resolved value and its layer. It adds one model
+step only for a request that carries a list.
+
 ## `approvalCheck`
 
 A full review whose verdict would be Approve gets one more independent run first, on the verifier's
@@ -208,6 +223,26 @@ approvalCheck: false
 
 It is on by default and, like `evidence`, machine-only: a repository's own file cannot switch it
 off. `code-reviewer settings` prints the resolved value and its layer.
+
+## `upgrades`
+
+```yaml
+upgrades:
+  enabled: true
+  packages: ['@acme/*'] # optional: more packages to treat as auth or security
+```
+
+Off until `enabled: true`. When a pull request changes `pnpm-lock.yaml` and a changed package is
+on an auth or security path or is pre-1.0 and crosses a minor, `prepare` fetches that package's
+old and new tarballs from `https://registry.npmjs.org` and stages the changelog entries between
+the versions and a bounded diff of the published files. This is the only outbound host the step
+uses, and it is why the key is a setting: it downloads and unpacks third-party archives and sends
+the names of changed packages to a public registry.
+
+`packages` adds globs (`*` matches any run of characters) to the package names that count as auth
+or security; the built-in list is the segment match in `src/review/upgrades/select.mts`. The key is machine-only, like `evidence`: a reviewed repository's own
+file cannot set it, and says `upgrades is machine-only; ignored`. A key with a problem is ignored whole, which leaves the step off.
+`bench` never turns it on. See [pull request context](pull-request-context.md#dependency-upgrades).
 
 ## `trustRepoConfig`
 
@@ -407,7 +442,10 @@ the step moved past (`skipped agy gemini-4-neon: refused (...)`) with why: refus
 wait budget, or the kind of harness failure. `report.json` carries the same as `skipped`.
 
 `--model step=harness:model` on `review` and `run` sets one step for that run and beats the
-config. Repeat it for a step to give that step ordered fallbacks. A bad step, harness or value, or
+config. Repeat it for a step to give that step ordered fallbacks. A model ending in `+outside`
+(`--model select=agy:gemini-4-hydrogen+outside`) sets `readsOutsideCheckout: true` on that candidate,
+accepting what the config key accepts; it is never implied by the harness, so a Codex or agy
+candidate without it refuses every step. A bad step, harness or value, or
 a free verifier or shell-less history or evidence list, is a usage error.
 
 An unknown tier, step or harness, an empty list, a candidate a step cannot use as above, or a value of the wrong type is a problem naming

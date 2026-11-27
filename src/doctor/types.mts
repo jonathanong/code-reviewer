@@ -55,6 +55,8 @@ export type DoctorIo = {
 export type DoctorFlags = {
   repo?: string
   owner?: string
+  /** The directory of clones to check; else `CODE_REVIEWER_CLONE_ROOT`. */
+  clones?: string
   offline: boolean
 }
 

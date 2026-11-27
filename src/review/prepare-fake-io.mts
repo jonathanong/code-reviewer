@@ -125,5 +125,11 @@ export function fakeIo({
     })),
     commitMessages: vi.fn<PrepareIo['commitMessages']>().mockResolvedValue([]),
     docGrep: vi.fn<PrepareIo['docGrep']>().mockResolvedValue(''),
+    upgrades: {
+      mergeBase: vi.fn<PrepareIo['upgrades']['mergeBase']>().mockResolvedValue(BASE),
+      fileAt: vi.fn<PrepareIo['upgrades']['fileAt']>().mockResolvedValue(undefined),
+      diffDirs: vi.fn<PrepareIo['upgrades']['diffDirs']>().mockResolvedValue(''),
+      fetcher: vi.fn<PrepareIo['upgrades']['fetcher']>(),
+    },
   } satisfies PrepareIo
 }

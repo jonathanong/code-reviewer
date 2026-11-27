@@ -1,5 +1,5 @@
 import { resolveRun } from '../review/index.mts'
-import { parseModelOverrides } from '../review/models.mts'
+import { parseModelOverrides } from '../review/model-overrides.mts'
 import { resolveModels } from '../review/models-settings.mts'
 import { judgeReplies, breakingChangeRule, type Judgment } from '../review/replies/judge.mts'
 import { reassess } from '../review/replies/reassess.mts'

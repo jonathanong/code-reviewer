@@ -9,8 +9,11 @@ import {
   listConfigFiles,
   notObjectProblem,
   parseConfigText,
+  CONFIG_KEYS,
 } from './config-files.mts'
 import type { AnswersConfig } from './answers-parse.mts'
+import type { UpgradesKey } from './upgrades-parse.mts'
+import type { RequestFocusConfig } from './request-focus-parse.mts'
 import type { IssuesConfig } from '../../issues/config-parse.mts'
 import type { ModelConfig } from '../models.mts'
 import { defaultReferencesDir, targetNamesIn } from '../targets.mts'
@@ -81,6 +84,8 @@ export type RepoConfig = {
   issues?: IssuesConfig
   /** Machine config only: it replies in other reviewers' threads, so a reviewed repository cannot. */
   answers?: AnswersConfig
+  upgrades?: UpgradesKey
+  requestFocus?: RequestFocusConfig
   /** Built-in pillars to skip and extra pillars to run; a reviewed repository's own file may set it. */
   pillars?: PillarsConfig
   /** Built-in targeted checks to skip; a reviewed repository's own file may set it. */
@@ -95,26 +100,6 @@ export type RepoConfig = {
  * `references` and `rulePlugins` when it is `trusted`.
  */
 export type ConfigScope = 'repo' | 'owner' | 'target' | 'trusted'
-
-const KEYS = new Set([
-  'trustRepoConfig',
-  'consumes',
-  'labels',
-  'checkRun',
-  'evidence',
-  'analysis',
-  'references',
-  'approvalCheck',
-  'rulePlugins',
-  'run',
-  'models',
-  'limits',
-  'issues',
-  'answers',
-  'pillars',
-  'targets',
-  'plan',
-])
 
 type Json = Record<string, unknown>
 
@@ -142,7 +127,7 @@ export function parseRepoConfig(
     return { consumes: [], problems: [invalidProblem(file, error)] }
   }
   if (!isRecord(raw)) return { consumes: [], problems: [notObjectProblem(file)] }
-  const problems = unknownKeys(raw, KEYS, file)
+  const problems = unknownKeys(raw, CONFIG_KEYS, file)
   const labels = parseLabels(raw.labels, `${file} labels`, problems)
   const checkRun = parseCheckRun(raw.checkRun, `${file} checkRun`, problems)
   if (scope === 'owner' && raw.consumes !== undefined) {
