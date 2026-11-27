@@ -64,6 +64,7 @@ const fakeLabelIo = (): LabelIo => ({
   add: vi.fn(async () => undefined),
   remove: vi.fn(async () => undefined),
   heldHead: vi.fn(async () => ({ head: undefined, placements: 0 })),
+  labeledBy: vi.fn(async () => undefined),
 })
 
 type MemoryTracker = TrackerIo & { files: Map<string, string> }

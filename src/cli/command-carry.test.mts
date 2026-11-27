@@ -132,6 +132,7 @@ function makeDeps(options: {
     add: vi.fn(async () => undefined),
     remove: vi.fn(async () => undefined),
     heldHead: vi.fn(async () => ({ head: undefined, placements: 0 })),
+    labeledBy: vi.fn(async () => undefined),
   }
   const ghRun = vi.fn(async (args: readonly string[]) => {
     if (args[0] === 'pr' && args[1] === 'view') {

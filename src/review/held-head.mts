@@ -28,6 +28,12 @@ export function heldFrom(rows: readonly TimelineRow[], heldLabel: string): Held 
   return { head: held?.toLowerCase(), placements }
 }
 
+/** The actor of the newest `labeled` row for `label`, from rows of `label<TAB>actor`; undefined when there is none or its actor is gone. */
+export function lastLabeledBy(rows: readonly TimelineRow[], label: string): string | undefined {
+  const actor = rows.findLast((row) => row.event === label)?.value
+  return actor === '' ? undefined : actor
+}
+
 /** Parses `event<TAB>value` lines, the shape the timeline query prints. */
 export function parseTimelineRows(text: string): TimelineRow[] {
   return text

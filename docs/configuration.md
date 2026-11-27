@@ -186,6 +186,21 @@ It is off until configured and machine-only: a repository's own file cannot turn
 is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
 the file and key. `code-reviewer settings` prints the resolved value and its layer.
 
+## `requestFocus`
+
+Lets `run` read the requester's explicit check list from the review request and check it as
+[requester focus](review.md#points-read-from-the-request) points.
+
+```yaml
+requestFocus:
+  enabled: true
+```
+
+It is off until configured and machine-only: a repository's own file cannot turn it on. A value that
+is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
+the file and key. `code-reviewer settings` prints the resolved value and its layer. It adds one model
+step only for a request that carries a list.
+
 ## `approvalCheck`
 
 A full review whose verdict would be Approve gets one more independent run first, on the verifier's
