@@ -2,6 +2,40 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (verifier run): planted false CI claim shows the #233 verifier change
+
+Run at `0342008` plus the new `planted-findings/` directory, Sonnet 5.5 verifier (`--model sonnet`), Opus judge and
+checker, **3 attempts per arm**, each attempt its own `bench-verifier` run. Cost, verifier only (judge not counted,
+the checker never ran: nothing `high` or `blocking` reached it): about $1.7 (12 runs at $0.13 to $0.15). Raw results
+were in `$TMPDIR` and are not kept.
+
+What changed in the suite: `planted-findings/raw/rules/no-mistakes-4745-3ff11a1.json` holds one `high` rules finding
+written by hand: the containment condition at `references.rs:21` exceeds rustfmt's `max_width`, so `cargo fmt --all --
+--check` fails (the false claim of jongleberry/code-reviewer#231). `bench-verifier --findings-from` reads it as the
+pillar result of the existing negative `no-mistakes-4745-3ff11a1`, whose snapshot holds no CI result. No grader or code
+change: the case expects no finding, so the grade is the "Findings before → after" figure. The `reason` of that case
+now names the planted input. The guard is the existing `answers-floating-promise` (a real unawaited promise, which no
+CI check this fixture runs catches).
+
+Commands (`--model sonnet --judge opus --checker opus`, `--case` one id, `--findings-from` a scratch copy of
+`planted-findings/`, because the command clones the snapshot cache into that directory):
+
+- `bench-verifier --cases cases.json --case no-mistakes-4745-3ff11a1 --prompts skills/review/references ...` for #233.
+- The same with `--prompts <dir>/skills/review/references`, extracted with `git archive origin/main
+  skills/review/references | tar -x -C <dir>`; `verifier.md` and `_contract.md` resolve from there.
+- `bench-verifier --cases answers.json --case answers-floating-promise ...` with both prompts.
+
+| Prompts          | Planted `rustfmt` claim dropped | Output on the case                      | `answers-floating-promise` raised |
+| ---------------- | ------------------------------- | --------------------------------------- | --------------------------------- |
+| `origin/main`    | 0 of 3                          | 1 finding each, cited input 0, `medium` | 3 of 3                            |
+| #233 (`0342008`) | 3 of 3                          | no finding (findings 1.0 → 0.0)         | 3 of 3                            |
+
+What it showed: the verifier change does what #233 says. Without it Sonnet kept the claim in every attempt, only
+lowering it from `high` to `medium`, so a posted review would still carry a wrong "CI fails" finding. With it the
+claim is dropped, and the real unawaited-promise defect stays. The case is not tuned: it is the real false finding,
+and the old prompt fails it. Limits: one planted claim at one wording, three attempts, Sonnet only (the 2026-11-16
+mined verifier row used Opus). A drop has no pass or fail in the grader; read findings after on this case.
+
 ## 2026-11-27 (targeted run): fixture, selection, context and verifier rows re-measured after the plugin split, and #233 before and after
 
 Run at `7354b0b` (jongleberry/code-reviewer#233, the CI-detectable skip), Sonnet 5.5 reviewer (`--model sonnet`) and

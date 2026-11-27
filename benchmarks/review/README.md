@@ -76,11 +76,12 @@ Mined cases (8 real pull requests from `cases.json`):
   where that CI step ran and succeeded; no `high` or `blocking` finding is expected). Added 2026-11-27 with the skip
   of defects a CI check detects. Measured 2026-11-27, 3 attempts per arm: no `high` or `blocking` finding in 0 of 3
   runs with skills and 0 of 3 without, on the rules pillar and on the correctness pillar; the verifier (Sonnet,
-  fed those findings) raised none in 3 of 3. It is a ceiling case: with `origin/main`'s prompts, which have no
-  CI-skip rule, the rules pillar also made no `high` finding in 3 of 3 runs, so Sonnet does not reproduce the
-  wrong claim here and the case cannot show that #233 prevents it. Its counter-case, a lint-catchable defect in a
-  repository that runs no such check and so is still reported, is the existing `answers-floating-promise`
-  (`answers.json`, verifier only), measured below. See `HISTORY.md`.
+  fed those findings) raised none in 3 of 3. For the pillars it is a ceiling case: with `origin/main`'s prompts,
+  which have no CI-skip rule, the rules pillar also made no `high` finding in 3 of 3 runs, so Sonnet does not
+  reproduce the wrong claim here and the pillar cannot show that #233 prevents it. The verifier half is measured
+  with the false claim planted (`planted-findings/`, below), where `origin/main`'s prompt fails. The guard, a real
+  defect no CI check catches that must stay, is the existing `answers-floating-promise` (`answers.json`, verifier
+  only), measured below. See `HISTORY.md`.
 - Not in the table (piloted once each way, 0 of 1, see `HISTORY.md`; `vouchington-6254` not run): `vouchington-6282` (positive, correctness: unneeded
   compare-and-set guard for a concurrency-1 cleanup queue) and `vouchington-6254` (negative:
   removing redundant account cleanup prelocks on the same queue), added on 2026-11-24 alongside the
@@ -166,6 +167,15 @@ attempt of the fixture runs above):
 | ------------------------------------------ | ------------------ | ------------------------- | --------------- | --------------------------------- |
 | Fixtures (28), 2026-11-27, Sonnet verifier | 100% in 3 of 3     | 100% in 3 of 3            | 100% in 3 of 3  | 1.0 → 1.0, 0.9 → 0.9, 1.0 → 1.0   |
 | Mined (8), 2026-11-16, Opus verifier       | 100% in 3 of 3     | 100% in 3 of 3            | 86%, 100%, 100% | 2.1 → 2.2                         |
+
+Planted false finding (`no-mistakes-4745-3ff11a1` with the `high` rustfmt claim in `planted-findings/`, Sonnet
+verifier, 3 attempts per arm, 2026-11-27): the verifier output holds no finding for it in 3 of 3 attempts with #233's
+prompts (findings 1.0 → 0.0) and in 0 of 3 with `origin/main`'s (kept every time, downgraded from `high` to `medium`;
+1.0 → 1.0). The guard `answers-floating-promise` raised the floating promise in 3 of 3 with both. The planted
+finding has no CI result in the snapshot, so a pass is a drop; `bench-verifier` has no pass or fail for a drop, so
+read it as the findings-after figure on that case. Run it from a scratch copy of the directory (`cp -r
+benchmarks/review/planted-findings "$TMPDIR/planted"`, then `--findings-from "$TMPDIR/planted"`): the command
+clones the snapshot cache into that directory. Also run on 2026-11-27, see `HISTORY.md`.
 
 The fixture row is the 28 fixture cases that have pillar findings from the rules and correctness runs (labels
 judged by Opus, other high or blocking findings checked by Opus); the mined row is stale.
