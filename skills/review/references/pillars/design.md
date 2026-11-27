@@ -28,3 +28,6 @@ or `low`.
 
 Start the first finding (or, if there are none, your reasoning) with the one-sentence intent.
 Every alternative you propose must name real code in the repository.
+
+When the change makes config strict (rejects unknown fields, requires a key), check every nested
+options struct under the same rule, not only the top level.
