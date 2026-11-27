@@ -229,12 +229,12 @@ paths: share it nowhere else.
 
 What happens next depends on what the human has set up:
 
-| Setup                                                     | After the digest                                                                                                                                                                       |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Neither                                                   | Propose each triaged item; the human decides. Change no rule, prompt or config.                                                                                                        |
-| `issues` configured (`docs/issues.md`)                    | Also run `code-reviewer issues` to record improvements as issues.                                                                                                                      |
-| Plus a standing grant from the human to open obvious wins | Open a pull request for each obvious win: a mined case the control misses, a noise or skip-list entry, a doc fix, or a reviewer bug seen in a run. Merge it only as that grant allows. |
+| Setup                                                     | After the digest                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Neither                                                   | Propose each triaged item; the human decides. Change no rule, prompt or config.                                                                                                                                                                                                                                                           |
+| `issues` configured (`docs/issues.md`)                    | Also run `code-reviewer issues` to record improvements as issues.                                                                                                                                                                                                                                                                         |
+| Plus a standing grant from the human to open obvious wins | Open a pull request at once for every action item, from this triage or from any investigation of the reviewer's own misses; never ask first. An obvious win (a mined case the control misses, a noise or skip-list entry, a doc fix, a reviewer bug seen in a run, a dependency) merges once our reviewer approves, as that grant allows. |
 
-A prompt, schema or verdict change is never an obvious win. Open it with a benchmark before and
-after and its `HISTORY.md` row, and leave the merge to the human, since the reviewer would be
-approving its own prompt.
+A prompt, schema, verdict or plan-logic change is never an obvious win. Open it at once, without asking,
+with a benchmark before and after and its `HISTORY.md` row, and leave the merge to the human, since the
+reviewer would be approving its own prompt.
