@@ -186,6 +186,21 @@ It is off until configured and machine-only: a repository's own file cannot turn
 is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
 the file and key. `code-reviewer settings` prints the resolved value and its layer.
 
+## `requestFocus`
+
+Lets `run` read the requester's explicit check list from the review request and check it as
+[requester focus](review.md#points-read-from-the-request) points.
+
+```yaml
+requestFocus:
+  enabled: true
+```
+
+It is off until configured and machine-only: a repository's own file cannot turn it on. A value that
+is not an object with a boolean `enabled` is a configuration problem and stops the command, naming
+the file and key. `code-reviewer settings` prints the resolved value and its layer. It adds one model
+step only for a request that carries a list.
+
 ## `approvalCheck`
 
 A full review whose verdict would be Approve gets one more independent run first, on the verifier's
@@ -407,7 +422,10 @@ the step moved past (`skipped agy gemini-4-neon: refused (...)`) with why: refus
 wait budget, or the kind of harness failure. `report.json` carries the same as `skipped`.
 
 `--model step=harness:model` on `review` and `run` sets one step for that run and beats the
-config. Repeat it for a step to give that step ordered fallbacks. A bad step, harness or value, or
+config. Repeat it for a step to give that step ordered fallbacks. A model ending in `+outside`
+(`--model select=agy:gemini-4-hydrogen+outside`) sets `readsOutsideCheckout: true` on that candidate,
+accepting what the config key accepts; it is never implied by the harness, so a Codex or agy
+candidate without it refuses every step. A bad step, harness or value, or
 a free verifier or shell-less history or evidence list, is a usage error.
 
 An unknown tier, step or harness, an empty list, a candidate a step cannot use as above, or a value of the wrong type is a problem naming

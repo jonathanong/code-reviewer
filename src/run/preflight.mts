@@ -5,7 +5,7 @@ import {
   type LabelNames,
   type PullTarget,
 } from '../review/index.mts'
-import { parseModelOverrides } from '../review/models.mts'
+import { parseModelOverrides } from '../review/model-overrides.mts'
 import { parseMaxCost } from '../review/limits-settings.mts'
 import { CEILING_REACHED } from '../review/step-watch.mts'
 import { unloadableMessage, unloadableRulePlugins } from '../review/plugins.mts'

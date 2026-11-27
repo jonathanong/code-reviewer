@@ -748,14 +748,14 @@
     "fixture": "fixtures/congruence-undocumented-unused-allow-failure",
     "title": "fix(lint): skip generated files",
     "kind": "positive",
-    "reason": "The description says the change is not breaking and only removes false positives. lintFile now returns early for src/generated/, so the allow entry src/generated/schema.ts is never marked used, and audit() reports it as an unused allow entry, which turns the repository's exit code from 0 to 1. The congruence pillar (performed by the verifier) holds the description to the whole effect of the diff: The congruence reference states: \"A behavior change the description does not list is one `medium` finding that asks the author to document it with a before/after run. It never blocks or holds by itself.\" This is reviewer policy, not a shared rule skill.",
+    "reason": "The description says the change is not breaking and only removes false positives. lintFile now returns early for src/generated/, so the allow entry src/generated/schema.ts is never marked used, and audit() reports it as an unused allow entry, which turns the repository's exit code from 0 to 1. For a linter that is an incompatible change: a configuration that passed now fails. Neither the description nor the author declares or acknowledges it, so the congruence reference (\"Breaking changes\") rates it blocking; the four conditions hold, the fourth because the acknowledgement is the decision. This is reviewer policy, not a shared rule skill.",
     "expected": [
       {
         "pillar": "congruence",
-        "severity": "medium",
+        "severity": "blocking",
         "path": null,
         "lines": null,
-        "claim": "The description calls the change non-breaking, but skipping src/generated/ means the allow entry `src/generated/schema.ts` in lint.allow.json is never used, so the unused-entry audit in src/audit.mts now fails and the exit code goes from 0 to 1. The finding must name that newly unused entry, ask the author to document the behavior change with a before/after run, and be medium (not high, not blocking)."
+        "claim": "The description calls the change non-breaking, but skipping src/generated/ means the allow entry `src/generated/schema.ts` in lint.allow.json is never used, so the unused-entry audit in src/audit.mts now fails and the exit code goes from 0 to 1. The finding must name that newly unused entry, call it a breaking change that is neither declared nor acknowledged, ask the author to declare it in the description or acknowledge it, and be blocking."
       }
     ]
   },
@@ -766,6 +766,38 @@
     "kind": "negative",
     "reason": "The same change, but the description lists the effect (the audit now fails for an allow entry only generated files needed), shows a before/after run, and the diff removes the entry. Nothing should be flagged, so a reviewer that flags every exit-code change fails.",
     "expected": []
+  },
+  {
+    "id": "congruence-declared-breaking-vague",
+    "fixture": "fixtures/congruence-declared-breaking-vague",
+    "title": "fix(lint)!: skip generated files",
+    "kind": "positive",
+    "reason": "The same change as congruence-undocumented-unused-allow-failure, but the title carries `!` and the description says it is a breaking change without saying what stops working. A declared break is not blocking, so the finding is medium: it asks the author to name the effect (the allow entry for a generated path is now reported unused and the run exits 1 instead of 0). It must not be blocking.",
+    "expected": [
+      {
+        "pillar": "congruence",
+        "severity": "medium",
+        "path": null,
+        "lines": null,
+        "claim": "The description declares a breaking change but does not say what breaks: skipping src/generated/ makes the allow entry `src/generated/schema.ts` in lint.allow.json unused, so the audit fails and the exit code goes from 0 to 1. The finding must be medium (the break is declared, so it never blocks) and ask the author to say what callers must change, with a before/after run."
+      }
+    ]
+  },
+  {
+    "id": "congruence-acknowledged-breaking",
+    "fixture": "fixtures/congruence-acknowledged-breaking",
+    "title": "fix(lint): skip generated files",
+    "kind": "positive",
+    "reason": "A follow-up review. The earlier review raised the exit-code break as blocking and the pull request author replied on its thread: pre-1.0, they will bump a minor. An acknowledged break is medium, so the same finding stays but no longer requests changes. It must not be blocking, and must not be dropped (the description still does not mention the effect).",
+    "expected": [
+      {
+        "pillar": "congruence",
+        "severity": "medium",
+        "path": null,
+        "lines": null,
+        "claim": "The change makes the allow entry `src/generated/schema.ts` unused so the audit exits 1 where it exited 0; the author acknowledged it on the earlier thread (pre-1.0, a minor bump). The finding must be the same break, rated medium, and ask only that the description or changelog note it. It must not be blocking."
+      }
+    ]
   },
   {
     "id": "correctness-selection-alias-escapes",

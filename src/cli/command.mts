@@ -140,7 +140,8 @@ async function run(
   const io = deps.createIo(pull)
   switch (subcommand) {
     case 'post':
-      print((await postCommand(values, pull, deps)).printed)
+      // One compact line, like `run`, so a caller that reads a line per result can parse it.
+      process.stdout.write(`${JSON.stringify((await postCommand(values, pull, deps)).printed)}\n`)
       return 0
     case 'carry': {
       const result = await carryCommand(values, pull, deps)

@@ -12,8 +12,6 @@ export const FLAG_DEFINITIONS = {
     'tests skipped or deleted, checks or thresholds lowered, or permissions broadened to make the change pass',
   irreversible:
     'data deletion, a dropped table or column, a one-way migration or a destructive script',
-  'undeclared-breaking':
-    'a public API, CLI, config shape or published package changes incompatibly and the description does not say so',
   'new-service':
     'adds an external service, vendor, paid resource or infrastructure that was not discussed',
   'rule-workaround': 'the agent hacked around a rule, so the process needs updating',

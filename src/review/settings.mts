@@ -129,6 +129,15 @@ export function resolveAnswers(
   return { enabled: value?.enabled ?? false, from }
 }
 
+/** Whether `run` turns the requester's explicit check list into focus points: off unless a machine layer enables it. */
+export function resolveRequestFocus(
+  configs: RepoConfigs,
+  scope: string,
+): { enabled: boolean; from: MachineLayer } {
+  const { value, from } = machineSetting(configs, scope, 'requestFocus')
+  return { enabled: value?.enabled ?? false, from }
+}
+
 /**
  * The `run` settings for `owner/name`: the highest machine layer that sets the key, over the
  * defaults. The reviewed repository's own file is never consulted, so it cannot switch off a rule.

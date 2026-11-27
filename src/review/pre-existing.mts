@@ -6,6 +6,10 @@ export const MAX_PRE_EXISTING = 5
 
 export const PRE_EXISTING_HEADING = '**FYI — pre-existing, not part of this review**'
 
+/** The one-line ask under the FYI items: the author decides on each; none blocks. */
+export const PRE_EXISTING_ASK =
+  'None of these blocks the merge. Decide on each: fix it here, or track it in an issue.'
+
 const MAX_TITLE_CHARS = 120
 
 /** The most characters of one FYI reason; the rest is cut so a long body cannot crowd the review. */
@@ -43,5 +47,5 @@ export function preExistingSection(findings: readonly Finding[]): string[] {
   const lines = items.slice(0, MAX_PRE_EXISTING).map(item)
   const more = items.length - MAX_PRE_EXISTING
   if (more > 0) lines.push(`- and ${more} more`)
-  return [`${PRE_EXISTING_HEADING}\n\n${lines.join('\n')}`]
+  return [`${PRE_EXISTING_HEADING}\n\n${lines.join('\n')}\n\n${PRE_EXISTING_ASK}`]
 }

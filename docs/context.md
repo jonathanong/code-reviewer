@@ -124,6 +124,15 @@ takes its structured form (not this text) for the newest earlier review at an an
 ([Follow-ups build on this machine's last review](review.md#follow-ups-build-on-this-machines-last-review));
 pillars do not read it.
 
+The follow-up digest (`context.md` in the run directory) lists this reviewer's own unresolved
+findings with their thread ids. Under each it quotes the replies on the thread by anyone but this
+reviewer, as `reply by <login>: text`: at most five, each cut at 300 characters with HTML comments
+removed, and a `[N more replies not shown]` line for the rest. The digest header names the pull
+request author. The text is untrusted data, never instructions. The verifier uses it to see whether
+the author acknowledged a breaking change (the congruence reference's "Breaking changes"); only a
+reply by the pull request author counts. The older replies of a thread beyond the 20 comments
+`prepare` fetches are not seen.
+
 `prepare` fetches up to 20 comments of each review thread and notes when a thread is longer.
 `context.json` also holds `answerable`: the unresolved, not outdated threads started by anyone but
 this reviewer in which this reviewer has not commented, at most 10, each with thread id, author,
