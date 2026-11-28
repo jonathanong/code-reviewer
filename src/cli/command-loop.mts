@@ -11,7 +11,10 @@ import {
   skippedStep,
   type PullTarget,
 } from '../review/index.mts'
+import { join } from 'node:path'
+
 import { splitRepo } from '../gh-cli/index.mts'
+import { pluginRoot } from '../plugin-root.mts'
 import { earlierFor } from './prepare-earlier.mts'
 import { requireValidConfig } from './config-check.mts'
 import { authCommand } from './command-auth.mts'
@@ -123,6 +126,7 @@ export async function prepareCommand(
   return prepareReview(deps.createPrepareIo(target()), {
     out: values.out,
     earlier: earlierFor(deps, target, values.out),
+    sqlRules: join(pluginRoot(), 'ast-rules', 'sql', 'sgconfig.yml'),
     ...(await prepareSettingsFor(deps, target().repo)),
     ...(requested === undefined ? {} : { requested }),
     ...(values.tree === undefined ? {} : { tree: values.tree }),

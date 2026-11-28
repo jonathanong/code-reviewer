@@ -85,7 +85,7 @@ async function review(
   requireAnswer(results, out)
   const pillarSkips = [...plan.skipped, ...failedSkips(judged)]
   const at = { out, tree, headSha, exec: steps.exec }
-  const { findings, block } = await withEarlier({ ...at, findings: flattenFindings(judged) })
+  const { findings, blocks } = await withEarlier({ ...at, findings: flattenFindings(judged) })
   const output = await runReviewVerifier(
     {
       verifierPrompt: read(join(steps.references, 'verifier.md')),
@@ -95,7 +95,7 @@ async function review(
       skipped: pillarSkips,
       ...verifierContext(out, steps.answers === true),
       ...verifierContextFields(context),
-      ...(block === undefined ? {} : { earlier: block }),
+      ...blocks,
       ...(focus === undefined ? {} : { focus: focus.answers }),
       analysis,
       ...(web === undefined ? {} : { web }),

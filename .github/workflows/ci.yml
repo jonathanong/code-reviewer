@@ -56,6 +56,21 @@ jobs:
           tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP/actionlint" actionlint
           echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
       - run: pnpm run actionlint
+      # The SQL rules in ast-rules/sql are tested against the real binary, a pinned release (the
+      # test fails in CI when ast-grep is missing instead of skipping).
+      - name: Install ast-grep
+        env:
+          AST_GREP_VERSION: 0.43.0
+          AST_GREP_SHA256: a26253a9c821d935f7e383e40f0de7c2ca62a4121de1f73a6d81ec32eae631e0
+        run: |
+          archive="app-x86_64-unknown-linux-gnu.zip"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/ast-grep/ast-grep/releases/download/${AST_GREP_VERSION}/$archive"
+          echo "$AST_GREP_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir "$RUNNER_TEMP/ast-grep"
+          unzip -q "$RUNNER_TEMP/$archive" ast-grep -d "$RUNNER_TEMP/ast-grep"
+          echo "$RUNNER_TEMP/ast-grep" >> "$GITHUB_PATH"
       - run: pnpm run typecheck
       # Coverage thresholds are 100% and enforced by vitest.config.mts.
       - run: pnpm run test:coverage

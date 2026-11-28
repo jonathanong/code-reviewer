@@ -68,6 +68,17 @@ describe('parsePlan', () => {
     expect(parse('repo', { sqlPaths: 'db/**' }).problems[0]).toContain('f plan.sqlPaths: must be')
   })
 
+  it('sets sqlInCode to a boolean, from a trusted or machine file only', () => {
+    expect(parse('repo', { sqlInCode: false }).value).toEqual({ sqlInCode: false })
+    expect(parse('target', { sqlInCode: false })).toEqual({
+      value: {},
+      problems: ['f plan.sqlInCode: machine-only unless trustRepoConfig is on; ignored'],
+    })
+    expect(parse('repo', { sqlInCode: 'no' }).problems).toEqual([
+      'f plan.sqlInCode: must be true or false; ignored',
+    ])
+  })
+
   it.each([
     ['plan is not an object', ['x'], 'f plan: must be an object; ignored'],
     ['a list is not a list', { securityPaths: 'infra/**' }, 'f plan.securityPaths: must be a list'],

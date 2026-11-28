@@ -142,6 +142,36 @@ describe('planReview small and instruction-file changes', () => {
     expect(plan({ paths, reviewableLines: 5, values: generated }).mode).toBe('light')
   })
 
+  it('reviews a small pull request in full when its changed lines in source are SQL', () => {
+    const sqlInCode = ['src/feed.mts']
+    const result = plan({ paths: sqlInCode, reviewableLines: 8, sqlInCode })
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
+    expect(result.reasons).toEqual(['The pull request changes SQL in src/feed.mts: high effort.'])
+    expect(plan({ paths: sqlInCode, reviewableLines: 8 }).mode).toBe('light')
+    const off = values({ sqlInCode: false })
+    expect(plan({ paths: sqlInCode, reviewableLines: 8, sqlInCode, values: off }).mode).toBe(
+      'light',
+    )
+  })
+
+  it('escalates a follow-up whose new commits change SQL in source, however small', () => {
+    const since = {
+      status: 'ahead',
+      paths: ['src/feed.mts'],
+      lines: 2,
+      sqlInCode: ['src/feed.mts'],
+    }
+    const result = plan({ context: reviewed(), reviewableLines: 200, since })
+    expect(result).toMatchObject({ mode: 'full', effort: 'high' })
+    expect(result.reasons).toEqual(['The new commits change SQL in src/feed.mts: high effort.'])
+    const quiet = { ...since, sqlInCode: [] }
+    expect(plan({ context: reviewed(), reviewableLines: 200, since: quiet }).mode).toBe('light')
+    const off = values({ sqlInCode: false })
+    expect(plan({ context: reviewed(), reviewableLines: 200, since, values: off }).mode).toBe(
+      'light',
+    )
+  })
+
   it('reviews a pull request that edits only instruction files as code, not as docs', () => {
     const paths = ['skills/review/SKILL.md', 'AGENTS.md']
     const small = plan({ paths, reviewableLines: 10 })

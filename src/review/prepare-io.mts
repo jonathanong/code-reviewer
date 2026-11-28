@@ -1,4 +1,4 @@
-import type { RunTextCommand } from '../gh-cli/index.mts'
+import { createCommandRunner, type RunTextCommand } from '../gh-cli/index.mts'
 import { fetchConversation, type PrConversation } from './context-query.mts'
 import { apiFileReader, gitFileReader } from './rules/target-config.mts'
 import { productionSources, type Sources } from './rules/sources.mts'
@@ -59,6 +59,7 @@ export type PrepareIo = {
   ruleSources(args: { clones?: string; tree?: string; baseSha: string }): Promise<Sources>
   /** Commit subjects touching `paths` in the year before `base`, from a local checkout. */
   history(tree: string, base: string, paths: readonly string[]): Promise<string[] | undefined>
+  astGrep(args: string[]): Promise<string>
   /** Runs `git` with `args` in `tree`; resolves `''` when the search matched nothing (exit 1). */
   docGrep(tree: string, args: string[]): Promise<string>
   /** Local git and the npm registry, for the upgraded packages' changelogs and diffs. */
@@ -192,6 +193,7 @@ export function createGhPrepareIo(
             : gitFileReader(tree, git, apiFileReader(run, target.repo)),
       }),
     history: (tree, base, paths) => commitSubjects(git, tree, base, paths),
+    astGrep: createCommandRunner('ast-grep'),
     docGrep: (tree, args) => docGrep(git, tree, args),
     upgrades: createUpgradeIo(git),
   }

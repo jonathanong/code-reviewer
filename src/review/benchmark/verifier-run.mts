@@ -13,12 +13,10 @@ import type { VerifierRun } from './verifier-input.mts'
 import { withAnswers, type AnswerRules } from '../run/answers-prompt.mts'
 import type { Answerable } from '../context/answerable.mts'
 import { gradeAnswers, notesOf, type AnswerGrade } from './verifier-answers.mts'
-import {
-  gradeFollowUp,
-  withFixedThreads,
-  type FollowUpCase,
-  type FollowUpGrade,
-} from './followup-case.mts'
+import { gradeFollowUp, type FollowUpGrade } from './followup-grade.mts'
+import { droppedReasons } from '../run/verify-dropped.mts'
+import { withFixedThreads, type FollowUpCase } from './followup-case.mts'
+import { followUpBodyInputs } from './followup-prompt.mts'
 
 export const VERIFIER_OUTPUT_SCHEMA = {
   type: 'object',
@@ -160,7 +158,8 @@ export async function runVerifier(
     },
     exec,
   )
-  const output = validateVerifierOutput(structured, findings.length)
+  const input = [...findings, ...followUpBodyInputs(item.followUp)]
+  const output = validateVerifierOutput(structured, input.length)
   const followed =
     item.followUp === undefined
       ? {}
@@ -168,6 +167,11 @@ export async function runVerifier(
           followUp: gradeFollowUp(
             item.followUp,
             (structured as { fixedThreadIds?: unknown }).fixedThreadIds,
+            {
+              first: findings.length,
+              sources: output.sources,
+              dropped: droppedReasons((structured as { dropped?: unknown }).dropped, input.length),
+            },
           ),
         }
   if (item.answerable === undefined) return { output, usage, ...followed }

@@ -124,6 +124,7 @@ export function fakeIo({
       complete: true,
     })),
     commitMessages: vi.fn<PrepareIo['commitMessages']>().mockResolvedValue([]),
+    astGrep: vi.fn<PrepareIo['astGrep']>().mockResolvedValue('[]'),
     docGrep: vi.fn<PrepareIo['docGrep']>().mockResolvedValue(''),
     upgrades: {
       mergeBase: vi.fn<PrepareIo['upgrades']['mergeBase']>().mockResolvedValue(BASE),

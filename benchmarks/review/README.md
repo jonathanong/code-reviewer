@@ -255,7 +255,7 @@ graded by code and reported per thread. The pillar benches do not run this file.
   (`answerableThreads`), so a case file, which lists notes after that filter, cannot express it;
   a unit test covers it instead.
 
-Follow-up cases (`followups.json`, `bench-verifier` only), measured 2026-11-27, Sonnet as the verifier, three attempts, no control arm and no `main` arm (`main` cannot take the input): 15 of 15 earlier-finding verdicts as expected, and `followup-fixed-new-defect` raised its new defect 3 of 3 ([history](HISTORY.md)). Each case gives the verifier this machine's earlier review, the findings still open as threads, and the since-diff (the fixture's `reviewed/` tree against `head/`), through the builders `review` uses. The verdict on each earlier finding is graded by code from `fixedThreadIds`. The pillar benches do not run this file.
+Follow-up cases (`followups.json`, `bench-verifier` only), measured 2026-11-27, Sonnet as the verifier, three attempts, no control arm and no `main` arm (`main` cannot take the input): 15 of 15 earlier-finding verdicts as expected, and `followup-fixed-new-defect` raised its new defect 3 of 3 ([history](HISTORY.md)). Each case gives the verifier this machine's earlier review, the findings still open as threads, and the since-diff (the fixture's `reviewed/` tree against `head/`), through the builders `review` uses. The verdict on each earlier finding is graded by code from `fixedThreadIds`; a finding with no thread (`bodyFindings`) is graded from the output instead: kept when an output finding cites its input index in `sources`, fixed when it is in `dropped` with a reason and cited nowhere. The two body cases were added on 2026-11-27 and passed 3 of 3 each, three attempts, Sonnet ([history](HISTORY.md)). The pillar benches do not run this file.
 
 | Case                        | Earlier finding and since-diff                                                                            | Expected                                     |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
@@ -263,10 +263,11 @@ Follow-up cases (`followups.json`, `bench-verifier` only), measured 2026-11-27, 
 | `followup-still-present`    | the same finding; the since-diff clamps only in a new display helper and leaves `applyDiscount` as it was | the thread left open, nothing raised         |
 | `followup-fixed-new-defect` | the same finding; the since-diff adds the clamp and a cache keyed by the percentage alone                 | the thread fixed and the cache defect raised |
 | `followup-mixed`            | two findings (the bound, and an unawaited write); the since-diff fixes only the first                     | the first thread fixed, the second left open |
+| `followup-body-open`        | a high finding in a review body (no thread), in a file the since-diff does not touch                      | the finding kept, nothing dropped            |
+| `followup-body-fixed`       | the same body finding; the since-diff unwraps the callee chain it said was missed                         | the finding dropped with a reason            |
 
-- All four are ceiling cases for Sonnet. They check that the follow-up input is built and graded, not how much margin the
-  verifier has, and a still-present finding is graded only as "not reported fixed". Not covered: findings with no thread,
-  an unposted earlier review, held evidence, the pillars' follow-up prompt and mined heads.
+- The first four are ceiling cases for Sonnet. They check that the follow-up input is built and graded, not how much margin the
+  verifier has, and a still-present finding is graded only as "not reported fixed". Not covered: an unposted earlier review, held evidence, the pillars' follow-up prompt and mined heads.
 
 Focus cases (`synthetic.json`, `bench-focus`): **measured on the 10 synthetic cases on 2026-11-27 at `7354b0b` (the focus step prefixes `_contract.md`, which #233 changed): 30 of 33 points over three attempts (11, 9 and 10 of 11), Sonnet, $3.23, no control arm.** The misses: `focus-target-untraced-reported` held 1 of 3 (the step answered `does_not_hold` from a shape the case allows, 7 of 9 earlier), and `focus-hostile-point` 2 of 3 (one attempt answered `does_not_hold` instead of `not_checked`). The mined focus cases were not run and are stale. `bench-focus` runs the real
 requester-focus step (`runFocus` with computed `Change facts`) on every case declaring `focus`

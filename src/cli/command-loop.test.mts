@@ -231,6 +231,7 @@ describe('runLoopCommand', () => {
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       earlier: expect.any(Function),
+      sqlRules: expect.stringMatching(/ast-rules\/sql\/sgconfig.yml$/),
       pillars: { disabled: [], extra: [] },
       values: DEFAULT_PLAN_VALUES,
       upgrades: { enabled: false, packages: [] },
@@ -251,6 +252,7 @@ describe('runLoopCommand', () => {
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       earlier: expect.any(Function),
+      sqlRules: expect.stringMatching(/ast-rules\/sql\/sgconfig.yml$/),
       pillars: { disabled: ['history'], extra: [] },
       values: DEFAULT_PLAN_VALUES,
       upgrades: { enabled: false, packages: [] },
@@ -274,6 +276,7 @@ describe('runLoopCommand', () => {
     expect(prepareReview).toHaveBeenLastCalledWith(prepareIo, {
       out: '/o',
       earlier: expect.any(Function),
+      sqlRules: expect.stringMatching(/ast-rules\/sql\/sgconfig.yml$/),
       requested: 'high',
       tree: '/t',
       clones: '/c',

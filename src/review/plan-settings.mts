@@ -15,6 +15,8 @@ export type PlanValues = {
   smallChangeLines: number
   /** Globs of paths that also count as SQL: a small change to one is not light. */
   sqlPaths: readonly string[]
+  /** A change to SQL in a source file (not only a SQL path) is reviewed in full. */
+  sqlInCode: boolean
   /** A follow-up whose new commits change more than this many lines of source is reviewed in full. */
   followUpSourceLines: number
 }
@@ -35,6 +37,7 @@ export const DEFAULT_PLAN_VALUES: PlanValues = {
   authors: [],
   smallChangeLines: SMALL_PR_LINES,
   sqlPaths: [],
+  sqlInCode: true,
   followUpSourceLines: FOLLOW_UP_SOURCE_LINES,
 }
 
@@ -50,9 +53,9 @@ const unique = (lists: readonly (readonly string[] | undefined)[]): string[] => 
 
 /**
  * The plan values for `owner/name` (or `owner`). The path lists are the union of every layer that
- * sets them (`sqlPaths` too); `smallChangeLines` and `followUpSourceLines` come from the highest layer that sets it. The repository's own
+ * sets them (`sqlPaths` too); `smallChangeLines`, `followUpSourceLines` and `sqlInCode` come from the highest layer that sets it. The repository's own
  * file (`target`) always adds `securityPaths`, which only makes a review stricter, and counts for
- * `generatedPaths`, `smallChangeLines` and `followUpSourceLines` only when a machine layer sets `trustRepoConfig`.
+ * `generatedPaths`, `smallChangeLines`, `followUpSourceLines` and `sqlInCode` only when a machine layer sets `trustRepoConfig`.
  * `authors` comes from machine layers only; the highest layer's rule for a login wins.
  */
 export function resolvePlanValues(
@@ -74,6 +77,7 @@ export function resolvePlanValues(
       granted.find((plan) => plan?.smallChangeLines !== undefined)?.smallChangeLines ??
       SMALL_PR_LINES,
     sqlPaths: unique(all.map((plan) => plan?.sqlPaths)),
+    sqlInCode: granted.find((plan) => plan?.sqlInCode !== undefined)?.sqlInCode ?? true,
     followUpSourceLines:
       granted.find((plan) => plan?.followUpSourceLines !== undefined)?.followUpSourceLines ??
       FOLLOW_UP_SOURCE_LINES,

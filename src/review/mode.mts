@@ -64,7 +64,11 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
   if (since.lines * 2 > input.reviewableLines) {
     return escalate('New commits change more than half the pull request:')
   }
-  const { followUpSourceLines, generatedPaths } = input.values ?? DEFAULT_PLAN_VALUES
+  const { followUpSourceLines, generatedPaths, sqlInCode } = input.values ?? DEFAULT_PLAN_VALUES
+  const code = sqlInCode ? (since.sqlInCode ?? []) : []
+  if (code.length > 0) {
+    return escalate(`The new commits change SQL in ${code.slice(0, 3).join(', ')}:`)
+  }
   const sourceLines = since.sourceLines ?? since.lines
   const source = since.paths.filter((path) => isSourcePath(path, generatedPaths))
   if (source.length > 0 && sourceLines > followUpSourceLines) {
@@ -128,6 +132,11 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
   const sql = handWritten.filter((path) => !isTestPath(path) && isSqlPath(path, values.sqlPaths))
   if (sql.length > 0) {
     reasons.push(`The pull request changes SQL (${sql.slice(0, 3).join(', ')}): high effort.`)
+    return full('high')
+  }
+  const code = values.sqlInCode ? (input.sqlInCode ?? []) : []
+  if (code.length > 0) {
+    reasons.push(`The pull request changes SQL in ${code.slice(0, 3).join(', ')}: high effort.`)
     return full('high')
   }
   if (isTestOrDocsOnly(input.paths)) {

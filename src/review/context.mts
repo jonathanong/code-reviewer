@@ -18,6 +18,8 @@ export type PriorFinding = {
   path: string | null
   line: number | null
   outdated: boolean
+  /** The text a review body carried for a finding with no thread; absent for a thread. */
+  body?: string
   /** Later comments of the finding's thread by anyone but this reviewer, oldest first; absent when none. */
   replies?: ThreadReply[]
   /** How many further replies were not carried; absent when all were. */
