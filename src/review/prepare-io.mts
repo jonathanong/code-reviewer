@@ -14,7 +14,7 @@ import { fetchPullCommits, type PullCommits } from './pull-commits.mts'
 import { commitSubjects, docGrep } from './prepare-git.mts'
 import { createUpgradeIo, type UpgradeIo } from './upgrades/io.mts'
 import type { PullTarget } from './target.mts'
-import { reviewableLines, type ChangedFile } from './triggers.mts'
+import { reviewableLines, sourceLines, type ChangedFile } from './triggers.mts'
 import type { SinceDiff } from './plan.mts'
 import { fetchDefaultBranch, fetchOpenPulls } from './stack-gh.mts'
 import type { StackMember } from './stack.mts'
@@ -116,7 +116,7 @@ export function createGhPrepareIo(
         parsed = JSON.parse(await run(['api', compareUrl(base, head)])) as CompareJson
       } catch {
         // An unknown base (force-pushed away and garbage-collected) is a rewrite.
-        return { status: 'missing', paths: [], lines: 0 }
+        return { status: 'missing', paths: [], lines: 0, sourceLines: 0 }
       }
       const files = parsed.files ?? []
       return {
@@ -125,6 +125,7 @@ export function createGhPrepareIo(
         // The compare API lists at most 300 files; more means the since-diff is a rewrite.
         ...(files.length >= MAX_COMPARE_FILES ? { truncated: true } : {}),
         lines: reviewableLines(files.map(changedFile), generatedPaths),
+        sourceLines: sourceLines(files.map(changedFile), generatedPaths),
       }
     },
     async stackInput() {

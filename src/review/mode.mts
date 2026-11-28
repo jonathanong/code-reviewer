@@ -7,7 +7,10 @@ import {
   isDependencyFile,
   isGenerated,
   isLockfile,
+  isSqlPath,
   isTestOrDocsOnly,
+  isTestPath,
+  isSourcePath,
   securityTriggers,
 } from './triggers.mts'
 
@@ -61,6 +64,14 @@ function followUp(input: PlanInput, reviewedSha: string, reasons: string[]): Mod
   if (since.lines * 2 > input.reviewableLines) {
     return escalate('New commits change more than half the pull request:')
   }
+  const { followUpSourceLines, generatedPaths } = input.values ?? DEFAULT_PLAN_VALUES
+  const sourceLines = since.sourceLines ?? since.lines
+  const source = since.paths.filter((path) => isSourcePath(path, generatedPaths))
+  if (source.length > 0 && sourceLines > followUpSourceLines) {
+    return escalate(
+      `The new commits change ${sourceLines} lines of source (${source.slice(0, 3).join(', ')}), more than ${followUpSourceLines}:`,
+    )
+  }
   reasons.push('Follow-up after an earlier review: light review of the new commits.')
   return light(reviewedSha)
 }
@@ -111,12 +122,18 @@ export function chooseMode(input: PlanInput, reasons: string[]): ModeChoice {
     reasons.push('Dependabot pull request: light review.')
     return light(null)
   }
+  // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
+  const handWritten = input.paths.filter((path) => !isGenerated(path, values.generatedPaths))
+  // Before the docs-and-tests return: a configured SQL path may have a doc extension (`db/q.txt`).
+  const sql = handWritten.filter((path) => !isTestPath(path) && isSqlPath(path, values.sqlPaths))
+  if (sql.length > 0) {
+    reasons.push(`The pull request changes SQL (${sql.slice(0, 3).join(', ')}): high effort.`)
+    return full('high')
+  }
   if (isTestOrDocsOnly(input.paths)) {
     reasons.push('Only docs and tests changed: light review.')
     return light(null)
   }
-  // Generated files (a lockfile is also a trigger path) do not make a pull request big or risky.
-  const handWritten = input.paths.filter((path) => !isGenerated(path, values.generatedPaths))
   const small = input.reviewableLines <= values.smallChangeLines
   if (small && securityTriggers(handWritten, values.securityPaths).length === 0) {
     reasons.push(`Small pull request (${input.reviewableLines} reviewable lines): light review.`)

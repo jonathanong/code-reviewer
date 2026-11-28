@@ -4,6 +4,9 @@ import {
   historyHits,
   isDocPath,
   isDependencyFile,
+  isDocFile,
+  isInstructionFile,
+  isSqlPath,
   isDocsOnly,
   isGenerated,
   isLockfile,
@@ -27,6 +30,52 @@ describe('isDocPath', () => {
     'CMakeLists.txt',
     'lib/cmakelists.txt',
   ])('treats %s as code', (path) => expect(isDocPath(path)).toBe(false))
+})
+
+describe('instruction files', () => {
+  it.each([
+    'SKILL.md',
+    'skills/review/SKILL.md',
+    'AGENTS.md',
+    'benchmarks/review/AGENTS.md',
+    'CLAUDE.md',
+    'skills/review/references/dispatch.md',
+    'a/agents/planner.md',
+    'plugins/x/commands/go.md',
+    '.claude/rules/style.md',
+    'pkg/.claude/notes.md',
+  ])('treats %s as code, not a doc', (path) => {
+    expect(isInstructionFile(path)).toBe(true)
+    expect(isDocPath(path)).toBe(false)
+    expect(isDocFile(path)).toBe(true)
+    expect(isDocsOnly([path])).toBe(false)
+    expect(isTestOrDocsOnly([path, 'a.test.ts'])).toBe(false)
+  })
+
+  it.each([
+    'README.md',
+    'docs/skills.md',
+    'skillset/a.md',
+    'skills/a.ts',
+    'MYAGENTS.md',
+    'agents.md.txt',
+  ])('leaves %s a doc or code as before', (path) => expect(isInstructionFile(path)).toBe(false))
+
+  it('keeps an instruction file out of the security triggers', () => {
+    expect(securityTriggers(['skills/auth-review/SKILL.md', 'README.md'])).toEqual([])
+  })
+})
+
+describe('isSqlPath', () => {
+  it.each(['a.sql', 'db/migrations/001.ts', 'migration/x.js', 'a/Migrations/x.cs'])(
+    'treats %s as SQL',
+    (path) => expect(isSqlPath(path)).toBe(true),
+  )
+  it('takes configured globs and leaves other paths', () => {
+    expect(isSqlPath('src/queries/a.ts')).toBe(false)
+    expect(isSqlPath('src/queries/a.ts', ['src/queries/**'])).toBe(true)
+    expect(isSqlPath('src/a.ts', ['src/queries/**'])).toBe(false)
+  })
 })
 
 describe('isTestPath', () => {

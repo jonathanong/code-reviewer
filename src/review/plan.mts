@@ -18,6 +18,8 @@ export type SinceDiff = {
   paths: string[]
   /** Changed lines outside generated files. */
   lines: number
+  /** Changed lines of hand-written source: `lines` without tests and docs; absent means `lines` is used. */
+  sourceLines?: number
   /** The compare API hit its file cap, so the real change is larger than `paths` shows. */
   truncated?: boolean
 }

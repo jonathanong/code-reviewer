@@ -51,3 +51,73 @@ export async function changedSince(
   }
   return viaApi(io, repo, head, c)
 }
+
+const SHA_RE = /\b[0-9a-f]{7,40}\b/giu
+/** Commits a reply may cite before the rest are ignored, so one reply cannot cost unbounded calls. */
+export const MAX_CITED = 5
+
+/** The distinct commit-like hex words in `bodies`, lowercased: candidates only, checked against history. */
+export function citedShas(bodies: readonly string[]): string[] {
+  const found = bodies.flatMap((body) => body.match(SHA_RE) ?? []).map((sha) => sha.toLowerCase())
+  return [...new Set(found)].slice(0, MAX_CITED)
+}
+
+async function citedViaGit(
+  io: OutcomesIo,
+  clone: string,
+  head: string,
+  c: CommentData,
+  shas: string[],
+) {
+  const args = ['-C', clone, 'log', '--format=%H', `${c.oid}..${head}`, '--', c.path]
+  const touched = (await io.git(args as string[])).split('\n').map((line) => line.trim())
+  return shas.some((sha) => touched.some((hash) => hash !== '' && hash.startsWith(sha)))
+}
+
+async function citedViaApi(
+  io: OutcomesIo,
+  repo: string,
+  head: string,
+  c: CommentData,
+  shas: string[],
+) {
+  const [owner = '', name = ''] = repo.split('/')
+  const run = io.run(owner, name)
+  const text = await run(['api', `repos/${repo}/compare/${c.oid}...${head}`])
+  const compared = asRecord(JSON.parse(text))
+  const commits = (Array.isArray(compared.commits) ? compared.commits : [])
+    .map((commit) => asString(asRecord(commit).sha) ?? '')
+    .filter((sha) => shas.some((cited) => sha.startsWith(cited)))
+  for (const sha of commits) {
+    const files = asRecord(JSON.parse(await run(['api', `repos/${repo}/commits/${sha}`]))).files
+    const list = Array.isArray(files) ? files : []
+    if (list.some((file) => asRecord(file).filename === c.path)) return true
+  }
+  return false
+}
+
+/**
+ * Whether one of `bodies` (the replies on a thread) cites a commit that came after the comment's own
+ * and changed the commented file. The citation is only a candidate: the commit must exist after the
+ * comment and touch the file, which a reply cannot make true. Rejects when neither the clone nor the
+ * compare API can say.
+ */
+export async function citedFixSince(
+  io: OutcomesIo,
+  repo: string,
+  head: string,
+  c: CommentData,
+  bodies: readonly string[],
+): Promise<boolean> {
+  const shas = citedShas(bodies)
+  if (shas.length === 0 || c.oid === null || c.path === null || head === '') return false
+  const clone = await io.findClone(repo)
+  if (clone !== undefined) {
+    try {
+      return await citedViaGit(io, clone, head, c, shas)
+    } catch {
+      // The clone lacks one of the commits; the API still knows.
+    }
+  }
+  return citedViaApi(io, repo, head, c, shas)
+}
