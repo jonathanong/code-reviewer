@@ -108,6 +108,11 @@ export function planReplies(
   const context = buildFollowUpContext(pull, trusted)
   const own = pull.reviews.nodes.filter((review) => isTrustedAuthor(review.author?.login, trusted))
   const newest = own.map((review) => MARKER_RE.exec(review.body)).findLast((m) => m !== null)
+  if (newest === undefined && pull.reviews.pageInfo?.hasPreviousPage === true) {
+    return {
+      noop: 'this reviewer has no review among the newest reviews read; older ones were not',
+    }
+  }
   if (newest === undefined || newest[2] === 'Skipped' || context.reviewedSha === null) {
     return { noop: 'this reviewer has no review of this pull request to re-assess' }
   }

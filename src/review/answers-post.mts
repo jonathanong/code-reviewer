@@ -6,7 +6,8 @@ import { isTrustedAuthor, type TrustedAuthors } from './trust.mts'
 
 /** The GitHub reads and writes a reply needs, run under the identity that posted the review. */
 export type AnswerIo = {
-  conversation(): Promise<PrConversation>
+  /** `trusted` is this reviewer's identity: older reviews are read until one of its own turns up. */
+  conversation(trusted: ReadonlySet<string>): Promise<PrConversation>
   reply(thread: string, body: string): Promise<void>
 }
 
@@ -20,7 +21,7 @@ const MUTATION = `mutation($id: ID!, $body: String!) {
 export function createGhAnswerIo(target: PullTarget, run: RunTextCommand): AnswerIo {
   assertPullTarget(target)
   return {
-    conversation: () => fetchConversation(target, run),
+    conversation: (trusted) => fetchConversation(target, run, { trusted }),
     async reply(thread, body) {
       await run([
         'api',
@@ -86,7 +87,7 @@ export async function postAnswers(
   }
   let conversation: PrConversation
   try {
-    conversation = await io.conversation()
+    conversation = await io.conversation(own)
   } catch (error) {
     for (const answer of answers) fail(answer, error)
     return outcome

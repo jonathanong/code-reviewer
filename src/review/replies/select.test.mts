@@ -119,6 +119,13 @@ describe('planReplies', () => {
     expect(headMoved(planned(pull()))).toBe(false)
   })
 
+  it('says older reviews were not read when none of the newest is its own', () => {
+    const cut = pull({ reviews: { nodes: [], pageInfo: { hasPreviousPage: true } } })
+    expect(planReplies(cut, TRUSTED)).toEqual({
+      noop: expect.stringContaining('older ones were not'),
+    })
+  })
+
   it('does nothing without a review by this reviewer, or after a skip', () => {
     expect(planReplies(pull({ reviews: { nodes: [] } }), TRUSTED)).toEqual({
       noop: expect.stringContaining('no review'),

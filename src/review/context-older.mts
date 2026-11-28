@@ -39,14 +39,14 @@ function isOwnReview(review: PrReview, trusted: ReadonlySet<string>): boolean {
  * Adds to `pull` what lies beyond its newest pages, each walk bounded.
  *
  * Threads: older pages up to `MAX_OLDER_THREAD_PAGES` are walked and only their open threads kept.
- * Reviews: with `trusted`, older pages are read until a real review of that identity is found, up to
- * `MAX_OLDER_REVIEW_PAGES`; without it only the newest page is read. A page needs the one before it
+ * Reviews: older pages are read until a real review of that identity is found, up to
+ * `MAX_OLDER_REVIEW_PAGES`. A page needs the one before it
  * for its cursor, so the walks are sequential.
  */
 export async function walkOlder(
   pull: PrConversation,
   older: ReadOlder,
-  trusted: ReadonlySet<string> | undefined,
+  trusted: ReadonlySet<string>,
 ): Promise<void> {
   const { reviews, reviewThreads } = pull
   pull.olderSkipped =
@@ -68,7 +68,6 @@ export async function walkOlder(
   const notReached = threadsLeft ? Math.max(1, (reviewThreads.totalCount ?? 0) - scanned) : 0
   reviewThreads.unread = notReached
 
-  if (trusted === undefined) return
   let reviewsPage = reviews.pageInfo
   let found = reviews.nodes.some((review) => isOwnReview(review, trusted))
   for (let pages = 0; pages < MAX_OLDER_REVIEW_PAGES && !found; pages += 1) {

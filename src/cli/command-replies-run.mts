@@ -37,7 +37,7 @@ async function moved(run: Assessment): Promise<string | undefined> {
   if ((await deps.createIo(pull).headSha()) !== plan.headSha) {
     return 'the head moved while the replies were judged; a follow-up review reads them'
   }
-  const now = await deps.createAnswerIo(pull).conversation()
+  const now = await deps.createAnswerIo(pull).conversation(trusted)
   return newestOwnReview(now, trusted) === plan.reviewId
     ? undefined
     : 'a newer review by this reviewer landed while the replies were judged; run replies again'
