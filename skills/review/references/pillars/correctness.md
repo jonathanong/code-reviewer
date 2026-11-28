@@ -70,4 +70,24 @@ Hunt for defects first, then judge tests. For each changed function, ask:
 - **Data shape**: does a new query's filter and order match an index? Does a loop read unbounded
   rows?
 
+Before you conclude, check the unchanged code the diff depends on. A defect often sits in a file
+the patches do not show, and no patch reveals it. Do this with the tools, not from memory, and do
+not conclude with no findings until you have done it.
+
+1. Name each definition the change adds or alters: a function signature or return value, a struct or
+   schema, a config key or option, an attribute or guard, a rule's contract, an exported constant.
+   Add what the description promises about them ("rejects unknown fields", "every caller passes
+   the head").
+2. For each, `Grep` the repository for its name, and for the token the change adds or removes
+   (for example `deny_unknown_fields`, a new parameter, a new check), with `git grep` or
+   `ast-grep` where you have a shell. Compare the sites that have it with the sites of the same
+   kind that do not: a sibling the change left out, a caller that still assumes the old shape, a
+   reader that does not check the new value.
+3. Open, whole, each site where the comparison shows a gap or where behaviour depends on the
+   change, including the changed files that hold the definitions, and check it against what the
+   change now promises.
+
+A defect found this way is a finding on that file, even though the diff does not touch it. The run
+records what you searched and opened.
+
 For each finding, write the failure scenario: inputs or state, then the wrong outcome.
