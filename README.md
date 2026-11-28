@@ -130,6 +130,7 @@ code-reviewer help
   whose reviews count.
 - [Benchmarks](docs/benchmarks.md): the eval cases, how each `bench` command runs, and the metrics
   and per-model token figures it reports.
+- [Roadmap](ROADMAP.md): planned work that is not yet an issue or a PR.
 
 ## Layout
 

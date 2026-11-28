@@ -77,6 +77,11 @@ Mined cases (8 real pull requests from `cases.json`):
   on `no-mistakes-4604-9d3ea80` with the claim read by the `design` pillar; the lines do not change these three. Three
   fixture negatives were added with them (`correctness-read-then-act-rechecked`, `correctness-gate-operators-complete`,
   `correctness-strict-config-nested-complete`), no `high` finding in any run. See `HISTORY.md`.
+  Re-measured 2026-11-27 with the correctness step that searches code the diff depends on (Sonnet, `--no-rules`, 3
+  attempts, claims counted): `code-reviewer-210` 0 of 6 (was 1 of 6; one of its two claims needs GitHub API knowledge, so
+  it is not a prompt miss), `supervisor-65` 0 of 6 against both claims (was 0 of 6), `no-mistakes-4604` 0 of 3 (was 0 of 3).
+  No effect, with or without a read-only shell (`--shell "git grep"`, Sonnet normal effort: 1 of 15 claims, bug file opened in 2 of 9 runs, no extra false alarms on two fixture negatives). Opus at medium effort: `supervisor-65` 3 of 6 (the head-binding claim 3 of 3), the other two 0. Pillar cost
+  $0.12 to $0.15 per run on Sonnet, $0.41 to $0.91 on Opus. See `HISTORY.md`.
 - Not in the table: `no-mistakes-4745-3ff11a1` (negative, rules and correctness pillars and the verifier: a wrong
   `high` finding that a line exceeds rustfmt's `max_width` so CI's `cargo fmt --all -- --check` fails, on a head
   where that CI step ran and succeeded; no `high` or `blocking` finding is expected). Added 2026-11-27 with the skip

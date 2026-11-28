@@ -2,6 +2,67 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (prompt change, measured): correctness pillar searches code the diff depends on
+
+Prompt change in `skills/review/references/pillars/correctness.md`: before the pillar concludes it names each definition
+the change adds or alters, searches the repository for its name and for the token the change adds (`Grep`; `git grep` or
+`ast-grep` only where the run has a shell, which a default pillar run does not), and opens the sites that show a gap. The
+three mined misses of #246 (`no-mistakes-4604-9d3ea80`, `supervisor-65-417fd1b`, `code-reviewer-210-fe45b7e`) share one cause:
+the defect is in a file the diff does not show. Nothing is precomputed into `.review/`.
+
+Run: `bench --pillar correctness --model sonnet --judge opus --no-rules`, 3 attempts each (3 separate `bench` runs, so
+scores are over 3 runs), prompts from `skills/review/references/pillars`. Raw results were in `$TMPDIR` and are not kept.
+Cost is the pillar run only (judge not counted). Recall counts expected claims: 210 and 65 have two, 4604 has one.
+
+| Case                | Expected claims | Before (main) | After v1    | After v2    | After v3 (shipped) | Opus medium, v3 |
+| ------------------- | --------------- | ------------- | ----------- | ----------- | ------------------ | --------------- |
+| code-reviewer-210   | 2 (1 external)  | 1 of 6        | 0 of 6      | 0 of 6      | 0 of 6             | 0 of 6          |
+| supervisor-65       | 2               | 0 of 6        | 1 of 6      | 0 of 6      | 0 of 6             | 3 of 6          |
+| no-mistakes-4604    | 1               | 0 of 3        | 0 of 3      | 0 of 3      | 0 of 3             | 0 of 3          |
+| Cost per run (mean) | n/a             | $0.12-$0.14   | $0.11-$0.13 | $0.12-$0.13 | $0.12-$0.15        | $0.41-$0.91     |
+| Turns per run       | n/a             | 8.7-11.0      | 9.3-12.7    | 9.7-13.7    | 10.0-14.3          | 13-41           |
+
+- **Result: no measurable effect on Sonnet at normal effort.** Three wordings (v1 one paragraph; v2 a three-step list that
+  says to open each changed file whole; v3 grep for the token the change adds and compare sites with and without it) moved
+  recall from 1 of 15 claims to 1 of 15, 0 of 15 and 0 of 15. The 3 attempts are noise at this size. Turns rose by about
+  one to three per run and cost by about $0.01; the agent still ended at 10 to 14 turns and made 0 to 2 searches. On
+  `no-mistakes-4604` it never opened `postgres_object_naming.rs` (0 of 9 runs on v1 to v3), though that file is in the diff
+  as patch 0006 of 59.
+- **Opus at medium effort** (`--model opus --effort medium --judge sonnet`, v3 prompt, rows not comparable with Sonnet
+  rows): found the `supervisor-65` head-binding claim in 3 of 3 runs (the ordinal claim 0 of 3), `code-reviewer-210` 0 of 3
+  and `no-mistakes-4604` 0 of 3 even at 41 turns, 27 reads and 12 searches per run ($0.91 per run). So Opus helps on one case
+  of three; it is an option, not a fix, and is not made the default.
+- **`supervisor-65-417fd1b`** is re-scored against both claims (the head-binding claim added in #247 and the ordinal
+  claim); every row above is out of two. The earlier 0 of 3 rows scored one claim and are superseded by the "Before"
+  column.
+- **`code-reviewer-210-fe45b7e`**: its first claim (the jq filter reads `commit_id` on `labeled` events) needs GitHub API
+  knowledge a checkout does not hold. The `reason` now says so; read the case as one derivable claim (the stale-hold race)
+  and one external claim, and do not count a miss on the external one as a prompt miss. The bench has no field for this;
+  the grader still counts both claims in recall.
+- **With a read-only shell** (`bench --shell "git grep" --shell "ast-grep run"`, Sonnet at normal effort, no Opus, no
+  high effort; rows labeled and not comparable with normal rows; step 2 reworded to name `git grep` as the way to find
+  consumers and siblings when the run has a shell, `Grep` otherwise): recall 1 of 15 claims again (`supervisor-65` 1 of 6,
+  `code-reviewer-210` 0 of 6, `no-mistakes-4604` 0 of 3), against 1 of 15 on main without a shell. Cost per run
+  $0.11 to $0.13, turns per run 6.0 (`no-mistakes-4604`), 5.3 (`supervisor-65`) and 8.7 (`code-reviewer-210`), fewer than
+  without the shell. Bug file opened with `Read` in 2 of 9 runs (both `code-reviewer-210`, `labels.mts`;
+  against 1 of 9 on main); `no-mistakes-4604` read only `pr.md` and `files.md` in the run inspected. The raw result records
+  `Read`, `Grep` and `Glob`, not Bash commands, so how often `git grep` ran is not recorded. The shell removes a tool
+  limit, not the stop-early habit: the agent still ends in under 10 turns.
+- **False alarms** (fixture negatives `correctness-preexisting-sibling-gap` and `options-forwarded-to-helper`, Sonnet, 3
+  attempts, main's prompt without a shell vs this prompt with the shell): no `high` or `blocking` finding in 0 of 6 runs in
+  both arms; `correctness-preexisting-sibling-gap` raised one lower-severity finding in each of its 3 runs in both arms,
+  `options-forwarded-to-helper` none. The step adds no false alarms on these two cases.
+- **Not shipped as a setting.** A real review already grants shell prefixes to the pillars through the machine-only
+  `analysis` key (`docs/analysis.md`), off by default and refused by harnesses that reject shell. No code change was
+  needed, and no example was added to that doc: `git grep -O<command>` runs a command, `git log --output=<file>` writes a
+  file and `ast-grep run -U` rewrites files, and a `Bash(<prefix>:*)` grant allows every flag. A reviewer that grants
+  these prefixes accepts that, and the measurement shows no gain to justify recommending it.
+- **Not comparable.** Every earlier correctness row on a real pull request (the prompt gained a step); fixture and negative
+  correctness cases were not re-run, so false alarms from the new step are unmeasured.
+- **Cause not fixed.** A default pillar run has `Read`, `Grep` and `Glob` only, and a Sonnet run stops after about 10
+  turns; wording alone did not change that. What remains to try, each its own experiment: `bench --shell "git grep"`,
+  a higher `--effort`, Opus for the correctness pillar, or splitting the search into its own call.
+
 ## 2026-11-27 (prompt and input change, cases added, not measured): a follow-up keeps an open finding that has no thread
 
 Evidence: jongleberry/no-mistakes#4683. The review at `9b64478` was a Comment with one high finding in its body (its line
