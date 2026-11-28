@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import { line } from '../cli/command-replies-line.mts'
 import { DEFAULT_LABELS } from '../review/index.mts'
 import { APP, HEAD, fakeDeps, marker } from '../run/fake-deps.mts'
-import type { HarnessCall, HarnessEvent, HarnessResult } from './harness.mts'
+import type { HarnessBatch, HarnessCall, HarnessEvent } from './harness.mts'
 import type { WaitOptions, WaitRun } from './wait.mts'
 
 export { APP, HEAD, marker }
@@ -37,50 +37,53 @@ export const commentEvent = (
   ...extra,
 })
 
+/** One poll that found `events`. */
 export const result = (
   events: HarnessEvent[],
-  extra: Partial<HarnessResult> = {},
-): HarnessResult => ({
+  extra: { gap?: boolean; cursor?: string } = {},
+): HarnessBatch => ({
+  owner: 'acme',
   events,
   gap: false,
   cursor: `c${events.length}`,
   ...extra,
 })
 
+/** One poll that failed in a way hook-harness retries. */
+export const failedPoll = (message = 'relay unavailable', owner = 'acme'): HarnessBatch => ({
+  owner,
+  error: new Error(message),
+})
+
 export type Setup = {
   labels?: string[]
   reviews?: string[]
-  /** What each harness call returns, or throws, in order. */
-  calls: Array<HarnessResult | Error>
+  /** What hook-harness yields, or throws, in order; the poll ends after the last, as at the timeout. */
+  calls: Array<HarnessBatch | Error>
   open?: boolean
   /** The author of each root comment id. */
   authors?: Record<number, string>
   stateDir: string
 }
 
-/** Fake dependencies and a fake `WaitRun`; `calls` is what hook-harness answers, one entry per wait. */
+/** Fake dependencies and a fake `WaitRun`; `calls` is what one hook-harness poll yields. */
 export function setup(options: Setup) {
   const fake = fakeDeps({
     stateDir: options.stateDir,
     labels: options.labels ?? [],
     reviews: options.reviews ?? [],
   })
-  let time = 0
   const queue = [...options.calls]
-  const harness = vi.fn(async (_call: HarnessCall) => {
-    time += 10_000
-    const next = queue.shift()
-    if (next === undefined) throw new Error('hook-harness was called more often than expected')
-    if (next instanceof Error) throw next
-    return next
+  const harness = vi.fn(async function* (_call: HarnessCall) {
+    for (const next of queue) {
+      if (next instanceof Error) throw next
+      yield next
+    }
   })
   const replies = vi.fn(async () => line({ exitCode: 11 }))
-  const sleep = vi.fn(async (ms: number) => void (time += ms))
   const commentAuthor = vi.fn(async (_repo: string, id: number) => options.authors?.[id] ?? APP)
   const run: WaitRun = {
     harness,
-    now: () => time,
-    sleep,
     isOpen: vi.fn(async () => options.open ?? true),
     commentAuthor,
     replies,
@@ -93,5 +96,5 @@ export function setup(options: Setup) {
     cursorName: 'test',
     own: new Set([APP]),
   }
-  return { ...fake, run, harness, replies, sleep, commentAuthor, waitOptions }
+  return { ...fake, run, harness, replies, commentAuthor, waitOptions }
 }

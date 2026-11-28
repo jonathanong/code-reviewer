@@ -54,9 +54,7 @@ export const emptyBatch = (): Batch => ({
 const key = (pull: PullTarget) => `${pull.repo.toLowerCase()}#${pull.pr}`
 
 const pullsOf = (event: HarnessEvent): PullTarget[] =>
-  event.repo === undefined
-    ? []
-    : (event.prs ?? []).map((pr) => ({ repo: event.repo as string, pr }))
+  event.repo == null ? [] : (event.prs ?? []).map((pr) => ({ repo: event.repo as string, pr }))
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
@@ -65,7 +63,7 @@ function drop(batch: Batch, why: string, count = 1): void {
 }
 
 export const isRequestEvent = (event: HarnessEvent, labels: ReadonlySet<string>): boolean =>
-  event.label !== undefined && labels.has(event.label.toLowerCase())
+  event.label != null && labels.has(event.label.toLowerCase())
 
 /**
  * One entry per pull request at its newest head, for the request label events that survive: not

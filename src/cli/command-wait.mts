@@ -1,6 +1,5 @@
 import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import { assertOwner, reviewSettings } from '../review/index.mts'
-import { defaultExec } from '../review/benchmark/exec.mts'
 import { resolveTrustedAuthors } from '../review/trust.mts'
 import type { RunExit } from '../run/output.mts'
 import { Precondition } from '../run/preflight.mts'
@@ -31,16 +30,14 @@ export function parseTimeout(text: string | undefined): number {
   return seconds
 }
 
-/** The real GitHub reads, the reply run in this process, and hook-harness through `npx`. */
+/** The real GitHub reads, the reply run in this process, and hook-harness's in-process client. */
 export function createWaitRun(deps: ReviewDeps): WaitRun {
   const run = (repo: string) => {
     const { owner, name } = splitRepo(repo)
     return deps.runner(owner, name)
   }
   return {
-    harness: createHarness(defaultExec),
-    now: () => Date.now(),
-    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    harness: createHarness(),
     isOpen: async ({ repo, pr }) =>
       (await run(repo)(['api', `repos/${repo}/pulls/${pr}`, '--jq', '.state'])).trim() === 'open',
     commentAuthor: async (repo, id) => {
@@ -54,9 +51,9 @@ export function createWaitRun(deps: ReviewDeps): WaitRun {
 }
 
 /**
- * `code-reviewer wait`: hook-harness waits for request labels and review-comment replies, filtered
+ * `code-reviewer wait`: hook-harness is polled for request labels and review-comment replies, filtered
  * in code (docs/wait.md). Prints one JSON line when something needs the session and exits 0, or
- * 11 at the timeout, 12 for a configuration problem and 13 for a hook-harness failure.
+ * 11 at the timeout, 12 for a configuration problem and 13 for a hook-harness outage.
  */
 export async function runWaitCommand(
   values: WaitValues,

@@ -4,8 +4,8 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { APP } from '../run/fake-deps.mts'
-import { HOOK_HARNESS, createHarness, harnessArgs, parseHarnessResult } from '../wait/harness.mts'
-import { REQUESTED, setup } from '../wait/wait-fake-io.mts'
+import { REQUESTED, result, setup } from '../wait/wait-fake-io.mts'
+import { Precondition } from '../run/preflight.mts'
 import { AppNotInstalledError } from '../gh-cli/index.mts'
 import { line } from './command-replies-line.mts'
 import { repliesLine } from './command-replies.mts'
@@ -46,74 +46,8 @@ describe('parseTimeout', () => {
   )
 })
 
-describe('hook-harness call', () => {
-  it('runs npx with the pinned arguments and reads its line', async () => {
-    const exec = vi.fn(async () => '{"events":[],"gap":false,"cursor":"c"}')
-    const call = {
-      owners: ['a'],
-      labels: [],
-      ignoreSenders: [],
-      timeoutSeconds: 5,
-      after: undefined,
-    }
-    expect(await createHarness(exec)(call)).toEqual({ events: [], gap: false, cursor: 'c' })
-    expect(exec).toHaveBeenCalledWith('npx', harnessArgs(call), { timeoutMs: 125_000 })
-  })
-
-  it('pins one version and filters review comments in the same wait as the request labels', () => {
-    const args = harnessArgs({
-      owners: ['a', 'b'],
-      labels: ['x', 'y'],
-      ignoreSenders: ['bot[bot]'],
-      timeoutSeconds: 90,
-      after: 'cur',
-    })
-    expect(args).toEqual([
-      '-y',
-      HOOK_HARNESS,
-      'wait',
-      '--owner',
-      'a,b',
-      '--on',
-      'label:x',
-      '--on',
-      'label:y',
-      '--filter',
-      '{"event":"pull_request_review_comment","action":"created","ignoreSenders":["bot[bot]"]}',
-      '--timeout',
-      '90s',
-      '--after',
-      'cur',
-    ])
-    expect(HOOK_HARNESS).toBe('hook-harness@0.4.0')
-  })
-
-  it('starts from now without a cursor', () => {
-    expect(
-      harnessArgs({
-        owners: ['a'],
-        labels: [],
-        ignoreSenders: [],
-        timeoutSeconds: 5,
-        after: undefined,
-      }),
-    ).not.toContain('--after')
-  })
-
-  it('reads its one JSON line and refuses anything else', () => {
-    expect(parseHarnessResult('{"events":[],"gap":false,"cursor":"c","timedOut":true}')).toEqual({
-      events: [],
-      gap: false,
-      cursor: 'c',
-      timedOut: true,
-    })
-    expect(() => parseHarnessResult('{"events":"no"}')).toThrow('no events and cursor')
-    expect(() => parseHarnessResult('not json')).toThrow()
-  })
-})
-
 describe('the real GitHub reads', () => {
-  it('runs replies as `replies --post auto` and sleeps on a real timer', async () => {
+  it('runs replies as `replies --post auto`', async () => {
     const fake = setup({ calls: [], stateDir: dir })
     const run = createWaitRun(fake.deps)
     vi.mocked(repliesLine).mockResolvedValueOnce(line({ exitCode: 11 }))
@@ -122,12 +56,6 @@ describe('the real GitHub reads', () => {
       { repo: ['acme/widgets'], pr: '4', post: 'auto' },
       fake.deps,
     )
-    vi.useFakeTimers()
-    const slept = run.sleep(1000)
-    await vi.advanceTimersByTimeAsync(1000)
-    await slept
-    vi.useRealTimers()
-    expect(run.now()).toBeGreaterThan(0)
   })
 
   it('asks for the pull request state and the comment author as the owner', async () => {
@@ -156,7 +84,7 @@ describe('the real GitHub reads', () => {
 describe('code-reviewer wait', () => {
   function command(options: { identity?: boolean } = {}) {
     const fake = setup({
-      calls: [{ events: [], gap: false, cursor: 'z', timedOut: true }],
+      calls: [result([], { cursor: 'z' })],
       stateDir: dir,
     })
     fake.deps.runner.mockReturnValue(vi.fn(async () => ''))
@@ -172,12 +100,23 @@ describe('code-reviewer wait', () => {
       owners: ['acme', 'other'],
       labels: [REQUESTED],
       ignoreSenders: [APP.toLowerCase(), 'coderabbitai[bot]'],
-      timeoutSeconds: 60,
+      signal: expect.any(AbortSignal),
       after: undefined,
     })
     expect(out).toHaveLength(1)
     expect(printed()).toMatchObject({ outcome: 'timeout', timedOut: true, cursor: 'z' })
     expect(fake.deps.checkInstallation).toHaveBeenCalledWith('acme')
+  })
+
+  it('stops with exit 12 and a message when hook-harness is not logged in', async () => {
+    const fake = command()
+    fake.harness.mockImplementation(async function* () {
+      yield* []
+      throw new Precondition('hook-harness is not logged in: run `hook-harness login`')
+    })
+    expect(await runWaitCommand({ owner: 'acme' }, fake.deps, fake.run)).toBe(12)
+    expect(printed()).toMatchObject({ outcome: 'error', exitCode: 12 })
+    expect(String(printed().error)).toContain('hook-harness login')
   })
 
   it('lets flags set the ignore list, extra labels and the cursor name', async () => {

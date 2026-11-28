@@ -22,7 +22,7 @@ Resolve these first and ask when one is missing:
 - **Clone root**: where local clones of those repositories live, for review worktrees, rule
   sources, and dependencies. Set `CODE_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
   from each clone's `origin/HEAD`, so run `git fetch` in those clones at start.
-- **Event source**: `code-reviewer wait` (which runs the hook-harness CLI), the hook-harness MCP server, or none.
+- **Event source**: `code-reviewer wait` (which polls hook-harness in process and needs its login), the hook-harness MCP server, or none.
 - **GitHub App** (optional): `app.yaml` (or `.yml`, `.json`, `.jsonc`) and its key in the config home; `docs/authentication.md`'s
   "Creating the GitHub App" section has the steps and permissions. Without it, the local `gh`
   login is used. Check with `code-reviewer auth`. Never search for or print keys.
@@ -103,7 +103,8 @@ and leaves it free for messages meanwhile:
 code-reviewer wait --owner <owner>[,<owner>...] [--timeout 2h]
 ```
 
-`wait` runs the hook-harness wait itself, keeps its cursor in the state directory, and exits only with
+`wait` polls hook-harness itself (one call for every owner, under `hook-harness login` or `HOOK_HARNESS_URL`
+and `HOOK_HARNESS_TOKEN`), keeps its cursor in the state directory, and exits only with
 work for the session ([docs/wait.md](../../docs/wait.md)). It prints one JSON line
 `{outcome, exitCode, requests, attention, handled, dropped, problems, gap, timedOut, cursor, error}`.
 It reads each owner's request label from the machine config; pass `--label NAME` for a repository
@@ -116,8 +117,9 @@ that overrides it. Start it again after each exit, with no cursor to pass.
   and do not apply a held result yourself. Applied and no-op runs are only counted in `handled`:
   `wait` already ran `replies --post auto` for them, so do not run it again.
 - `gap: true`: run `queue` to sweep what was missed, skipping `held` entries.
-- `outcome: "error"`: exit 12 is a configuration problem (tell the human `error`); exit 13 is a
-  hook-harness failure that outlasted its retries: use a fallback below until it is healthy again.
+- `outcome: "error"`: exit 12 is a configuration problem, such as no hook-harness login or a refused token (tell
+  the human `error`); exit 13 is a hook-harness outage, five failed polls in a row for one owner: use a
+  fallback below until it is healthy again.
 - `timedOut`: nothing to do; start it again.
 
 `problems` lists reads that failed; a request listed with one is still returned, and `run` checks it
@@ -125,7 +127,7 @@ again. Your own label changes and CodeRabbit replies never reach you.
 
 **Fallbacks**, when `wait` itself cannot run:
 
-- **hook-harness CLI by hand**: a background `npx -y hook-harness@0.4.0 wait --owner <owner> --on
+- **hook-harness CLI by hand**: a background `npx -y hook-harness@0.5.0 wait --owner <owner> --on
   label:final-review:requested --no-payload --timeout 2h [--after <cursor>]` (it prints `{events,
   gap, cursor, timedOut?}`). For each event, ignore it when `issue` is set; the label is the truth, since
   `claim` re-reads it. For replies, add `--filter '{"event":"pull_request_review_comment","action":"created","ignoreSenders":["<reviewer login>","coderabbitai[bot]"]}'`

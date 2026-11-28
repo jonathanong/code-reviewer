@@ -8,6 +8,7 @@ import {
   HEAD,
   REQUESTED,
   commentEvent,
+  failedPoll,
   labelEvent,
   marker,
   repo,
@@ -15,8 +16,9 @@ import {
   setup,
   type Setup,
 } from './wait-fake-io.mts'
-import type { HarnessEvent } from './harness.mts'
-import { wait } from './wait.mts'
+import { Precondition } from '../run/preflight.mts'
+import { CursorRejected, type HarnessEvent } from './harness.mts'
+import { MAX_TRANSIENT_ERRORS, wait, waitFailure } from './wait.mts'
 
 let dir: string
 
@@ -27,8 +29,6 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true })
 })
-
-const timedOut = (cursor = 'end') => result([], { timedOut: true, cursor })
 
 function start(options: Omit<Setup, 'stateDir'>) {
   const fake = setup({ ...options, stateDir: dir })
@@ -55,17 +55,36 @@ describe('wait: request label events', () => {
     expect(fake.replies).not.toHaveBeenCalled()
   })
 
-  it('asks hook-harness for the stored cursor and the time left', async () => {
+  it('resumes hook-harness from the stored cursor, for every owner in one call', async () => {
     writeFileSync(join(dir, 'wait-test.cursor'), 'saved\n')
-    const fake = start({ calls: [timedOut()] })
-    await fake.go()
+    const fake = start({ calls: [] })
+    const out = await wait({ ...fake.waitOptions, owners: ['acme', 'beta'] }, fake.deps, fake.run)
+    expect(fake.harness).toHaveBeenCalledTimes(1)
     expect(fake.harness).toHaveBeenCalledWith({
-      owners: ['acme'],
+      owners: ['acme', 'beta'],
       labels: [REQUESTED],
       ignoreSenders: ['coderabbitai[bot]'],
-      timeoutSeconds: 100,
+      signal: expect.any(AbortSignal),
       after: 'saved',
     })
+    expect(out).toMatchObject({ outcome: 'timeout', cursor: 'saved' })
+  })
+
+  it('times out with no cursor when nothing was polled', async () => {
+    const fake = start({ calls: [] })
+    expect(await fake.go()).toMatchObject({ outcome: 'timeout', timedOut: true, cursor: null })
+  })
+
+  it('saves each handled batch and ends with the last cursor at the timeout', async () => {
+    const fake = start({
+      calls: [
+        result([labelEvent(4, { issue: {} })], { cursor: 'one' }),
+        result([], { cursor: 'two' }),
+      ],
+    })
+    const out = await fake.go()
+    expect(out).toMatchObject({ outcome: 'timeout', timedOut: true, cursor: 'two' })
+    expect(readFileSync(join(dir, 'wait-test.cursor'), 'utf8')).toBe('two\n')
   })
 
   const labelCases: Array<{
@@ -95,12 +114,11 @@ describe('wait: request label events', () => {
       const fake = start({
         labels: [REQUESTED],
         ...rest,
-        calls: [result([labelEvent(4, event)]), timedOut()],
+        calls: [result([labelEvent(4, event)])],
       })
       const out = await fake.go()
       expect(out).toMatchObject({ outcome: 'timeout', exitCode: 11, timedOut: true, requests: [] })
       expect(Object.values(out.dropped)).toEqual([1])
-      expect(fake.harness).toHaveBeenCalledTimes(2)
     },
   )
 
@@ -121,7 +139,7 @@ describe('wait: review comment events', () => {
   it('counts applied and no-op replies runs and keeps waiting', async () => {
     const fake = start({
       ...mine,
-      calls: [result([commentEvent(4), commentEvent(5)]), timedOut()],
+      calls: [result([commentEvent(4), commentEvent(5)])],
     })
     fake.replies.mockResolvedValueOnce(line({ exitCode: 0, outcome: 'applied' }))
     const out = await fake.go()
@@ -232,7 +250,7 @@ describe('wait: review comment events', () => {
   ]
 
   it.each(commentCases)('drops $name without running replies', async ({ event, rest, why }) => {
-    const fake = start({ ...rest, calls: [result([event]), timedOut()] })
+    const fake = start({ ...rest, calls: [result([event])] })
     const out = await fake.go()
     expect(out).toMatchObject({ outcome: 'timeout', attention: [] })
     expect(out.dropped[why]).toBe(1)
@@ -242,7 +260,7 @@ describe('wait: review comment events', () => {
   it('reads each thread root once per pull request and runs replies once', async () => {
     const fake = start({
       ...mine,
-      calls: [result([commentEvent(4), commentEvent(4), commentEvent(4)]), timedOut()],
+      calls: [result([commentEvent(4), commentEvent(4), commentEvent(4)])],
     })
     await fake.go()
     expect(fake.commentAuthor).toHaveBeenCalledTimes(1)
@@ -253,7 +271,7 @@ describe('wait: review comment events', () => {
     const fake = start({
       ...mine,
       authors: { 100: 'coderabbitai[bot]' },
-      calls: [result([commentEvent(4, 100), commentEvent(4, 200)]), timedOut()],
+      calls: [result([commentEvent(4, 100), commentEvent(4, 200)])],
     })
     await fake.go()
     expect(fake.replies).toHaveBeenCalledTimes(1)
@@ -277,33 +295,47 @@ describe('wait: gaps, errors and the timeout', () => {
     expect(readFileSync(join(dir, 'wait-test.cursor'), 'utf8')).toBe('g\n')
   })
 
-  it('returns a hook-harness failure at once', async () => {
-    const fake = start({ calls: [new Error('npx exited with 1')] })
+  it('returns an outage after a bounded run of transient errors from one owner', async () => {
+    const fake = start({
+      calls: Array.from({ length: MAX_TRANSIENT_ERRORS }, () => failedPoll('HTTP 503')),
+    })
     expect(await fake.go()).toMatchObject({
       outcome: 'error',
       exitCode: 13,
-      error: 'npx exited with 1',
+      cursor: null,
+      error: `hook-harness failed ${MAX_TRANSIENT_ERRORS} polls in a row for acme: HTTP 503`,
     })
   })
 
-  it('reads a failed login as a configuration problem', async () => {
-    const fake = start({ calls: [new Error('hook-harness: 401 run hook-harness login')] })
-    expect(await fake.go()).toMatchObject({ outcome: 'error', exitCode: 12 })
+  it('goes on after fewer transient errors than the bound, and a good poll resets the count', async () => {
+    const few = Array.from({ length: MAX_TRANSIENT_ERRORS - 1 }, () => failedPoll())
+    const fake = start({ calls: [...few, result([]), ...few] })
+    expect(await fake.go()).toMatchObject({ outcome: 'timeout', exitCode: 11 })
   })
 
-  it('retries a rate limit with a pause, then goes on', async () => {
-    const fake = start({
-      calls: [new Error('HTTP 429 too many requests'), new Error('rate limit'), timedOut()],
-    })
-    const out = await fake.go()
-    expect(out).toMatchObject({ outcome: 'timeout', timedOut: true })
-    expect(fake.sleep).toHaveBeenCalledTimes(2)
-  })
-
-  it('gives up on a rate limit that does not clear', async () => {
-    const fake = start({ calls: Array.from({ length: 3 }, () => new Error('rate limit')) })
+  it('counts transient errors per owner, so a healthy owner does not hide a dead one', async () => {
+    const dead = Array.from({ length: MAX_TRANSIENT_ERRORS }, () => failedPoll('down', 'beta'))
+    const healthy = dead.map(() => result([]))
+    const interleaved = dead.flatMap((poll, index) => [poll, healthy[index]!])
+    const fake = start({ calls: interleaved })
     expect(await fake.go()).toMatchObject({ outcome: 'error', exitCode: 13 })
-    expect(fake.harness).toHaveBeenCalledTimes(3)
+  })
+
+  it('stops on a Precondition from hook-harness as a configuration problem', async () => {
+    const error = new Precondition('hook-harness is not logged in')
+    const fake = start({ calls: [error] })
+    await expect(fake.go()).rejects.toBe(error)
+    expect(waitFailure(error)).toEqual({ error: error.message, exitCode: 12 })
+  })
+
+  it('names the cursor file when hook-harness rejects it', async () => {
+    const fake = start({ calls: [new CursorRejected('invalid cursor: pass the `cursor`')] })
+    await expect(fake.go()).rejects.toThrow(`the cursor in ${join(dir, 'wait-test.cursor')}`)
+    await expect(fake.go()).rejects.toBeInstanceOf(Precondition)
+  })
+
+  it('reports an error that is not an Error as a failure', () => {
+    expect(waitFailure('plain text')).toEqual({ error: 'plain text', exitCode: 13 })
   })
 
   it('times out on its own when events keep coming that need nothing', async () => {
@@ -312,19 +344,6 @@ describe('wait: gaps, errors and the timeout', () => {
     const out = await fake.go()
     expect(out).toMatchObject({ outcome: 'timeout', exitCode: 11, timedOut: true })
     expect(out.dropped.issue).toBe(10)
-  })
-
-  it('times out before any call when no time is left, with no cursor yet', async () => {
-    const fake = start({ calls: [] })
-    const out = await wait({ ...fake.waitOptions, timeoutSeconds: 0 }, fake.deps, fake.run)
-    expect(out).toMatchObject({ outcome: 'timeout', timedOut: true, cursor: null })
-    expect(fake.harness).not.toHaveBeenCalled()
-  })
-
-  it('reads an error that is not an Error', async () => {
-    const fake = start({ calls: [] })
-    fake.harness.mockRejectedValueOnce('plain text')
-    expect(await fake.go()).toMatchObject({ outcome: 'error', exitCode: 13, error: 'plain text' })
   })
 
   it('returns a request that lacks a head when its check fails with a string', async () => {
@@ -344,7 +363,7 @@ describe('wait: gaps, errors and the timeout', () => {
     delete lost.repo
     const noPrs: HarnessEvent = { ...commentEvent(4) }
     delete noPrs.prs
-    const fake = start({ calls: [result([lost, noPrs]), timedOut()] })
+    const fake = start({ calls: [result([lost, noPrs])] })
     const out = await fake.go()
     expect(out.dropped['no pull request']).toBe(2)
   })
