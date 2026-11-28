@@ -13,6 +13,8 @@ export type PlanConfig = {
   smallChangeLines?: number
   /** Globs of repository paths that count as SQL: a small change to one is reviewed in full. */
   sqlPaths?: string[]
+  /** False turns off the full review of a pull request whose changed lines in source files are SQL. */
+  sqlInCode?: boolean
   /** A follow-up whose new commits change more than this many lines of source is reviewed in full. */
   followUpSourceLines?: number
 }
@@ -25,6 +27,7 @@ type PlanKey =
   | 'authors'
   | 'smallChangeLines'
   | 'sqlPaths'
+  | 'sqlInCode'
   | 'followUpSourceLines'
 
 const KEYS: readonly PlanKey[] = [
@@ -33,6 +36,7 @@ const KEYS: readonly PlanKey[] = [
   'authors',
   'smallChangeLines',
   'sqlPaths',
+  'sqlInCode',
   'followUpSourceLines',
 ]
 
@@ -86,7 +90,7 @@ function refusal(fileScope: PlanFileScope, key: PlanKey): string | undefined {
 
 /**
  * The `plan` key: values the dispatcher otherwise fixes. A repository's own file (`target`) may
- * add `securityPaths` and `sqlPaths`, which only makes a review stricter. `generatedPaths`, `smallChangeLines` and `followUpSourceLines`
+ * add `securityPaths` and `sqlPaths`, which only makes a review stricter. `generatedPaths`, `smallChangeLines`, `followUpSourceLines` and `sqlInCode`
  * reduce review, so a repository file sets them only when `trusted`; `authors` is machine-only.
  * A value that is refused or invalid is ignored with a problem naming the file and key.
  */
@@ -133,6 +137,11 @@ export function parsePlan(
     if (raw !== undefined) problems.push(`${where}.${key}: must be a non-negative integer; ignored`)
     return undefined
   }
+  const sqlInCodeRaw = value('sqlInCode')
+  const sqlInCode = typeof sqlInCodeRaw === 'boolean' ? sqlInCodeRaw : undefined
+  if (sqlInCodeRaw !== undefined && sqlInCode === undefined) {
+    problems.push(`${where}.sqlInCode: must be true or false; ignored`)
+  }
   const lines = count('smallChangeLines')
   const followUpLines = count('followUpSourceLines')
   return {
@@ -140,6 +149,7 @@ export function parsePlan(
     ...(generatedPaths === undefined ? {} : { generatedPaths }),
     ...(authors === undefined ? {} : { authors }),
     ...(sqlPaths === undefined ? {} : { sqlPaths }),
+    ...(sqlInCode === undefined ? {} : { sqlInCode }),
     ...(lines === undefined ? {} : { smallChangeLines: lines }),
     ...(followUpLines === undefined ? {} : { followUpSourceLines: followUpLines }),
   }

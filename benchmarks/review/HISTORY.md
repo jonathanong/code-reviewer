@@ -39,6 +39,19 @@ no thread was neither kept, nor dropped, nor reported fixed.
   that sits in the display helper, and one on `NaN`); those are not graded here. The backstop covers a verifier that says
   nothing; it does not cover one that drops a finding with a wrong reason.
 
+## 2026-11-27 (plan change, no prompt or case changed): SQL in source files is `full`
+
+Plan logic only: `src/review/sql-scan.mts` (new), `ast-rules/sql/` (ast-grep rules, data), `mode.mts`, `prepare.mts`,
+`since-prepare.mts` and `plan-settings.mts` (`plan.sqlInCode`, default on). No prompt, schema, case or grader changed, so
+no score here moves. `prepare` runs `ast-grep scan` with the rules on the changed JavaScript and TypeScript files and
+intersects the match lines with the diff's changed lines. A pull request that changes SQL by construction (a tagged `sql`
+template, the first argument of `.query(` or `.execute(`, a Kysely builder call, an upper-case statement literal) is now
+`full` at `high` however small (was `light` at `low` when small and without a security trigger path), and so is a follow-up
+whose new commits change such lines. When ast-grep is missing the check is skipped and the plan says so. Rows that name a
+plan are not comparable with earlier ones for pull requests of that shape. Plan logic is covered by unit tests
+(`src/review/sql-scan.test.mts` runs the real ast-grep when it is installed, `prepare-sql.test.mts`,
+`plan-paths.test.mts`), not by a benchmark case.
+
 ## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
 
 Plan logic only: `src/review/mode.mts`, `triggers.mts` and `plan-settings.mts`. No prompt, schema, case or grader changed, so

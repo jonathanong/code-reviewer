@@ -7,7 +7,7 @@ import { planAuthor } from './author-commits.mts'
 import type { Effort } from './finding.mts'
 import type { PillarSettings } from './pillars-settings.mts'
 import { DEFAULT_PLAN_VALUES, type PlanValues } from './plan-settings.mts'
-import { planReview, type ReviewPlan, type SinceDiff } from './plan.mts'
+import { planReview, type ReviewPlan } from './plan.mts'
 import type { PrepareIo } from './prepare-io.mts'
 import { stageRuleSources } from './rules/stage.mts'
 import { summarizeStack } from './stack.mts'
@@ -28,6 +28,7 @@ import { prepareEarlier } from './earlier-prepare.mts'
 import type { EarlierFile } from './earlier-file.mts'
 import { clearPrepared } from './prepare-clear.mts'
 import { prepareStack } from './stack-prepare.mts'
+import { prepareSince } from './since-prepare.mts'
 import { writeDiff, type Write } from './write-diff.mts'
 import { historyHits, reviewableLines } from './triggers.mts'
 
@@ -45,6 +46,8 @@ export type PrepareOptions = {
   /** Finds this machine's whole, unposted review of an earlier head; used only when git proves the push light. */
   earlier?: (headSha: string) => EarlierFile | undefined
   upgrades?: UpgradesConfig
+  /** The ast-grep project (`sgconfig.yml`) of the SQL-in-code rules; absent means the check is not run. */
+  sqlRules?: string
 }
 
 export type PrepareSummary = {
@@ -92,14 +95,9 @@ export async function prepareReview(
   write(join(options.out, 'context.md'), renderFollowUpContext(context, linkedIssues.issues))
   write(join(options.out, 'context.json'), `${JSON.stringify(context, null, 2)}\n`)
   written.push('context.md', 'context.json', ...linkedIssues.written)
-  let since: SinceDiff | undefined
-  if (context.reviewedSha !== null && context.reviewedSha !== headSha) {
-    since = await io.compare(context.reviewedSha, headSha, values.generatedPaths)
-    if (since.status === 'ahead') {
-      const sincePatch = await io.compareDiff(context.reviewedSha, headSha)
-      written.push(...writeDiff(options.out, 'since', sincePatch, write))
-    }
-  }
+  const compared = await prepareSince(io, options, write, { context, headSha, patch })
+  const { since, sql } = compared
+  written.push(...compared.written)
   const docs = await prepareDocs(io, options.out, write, options.tree, paths)
   written.push(...docs.written)
   const { push, earlier } = await prepareEarlier(io, options.out, write, {
@@ -146,6 +144,7 @@ export async function prepareReview(
   const planned = planReview({
     paths,
     reviewableLines: reviewableLines(files, values.generatedPaths),
+    ...sql,
     context,
     ...author,
     ...(options.requested === undefined ? {} : { requested: options.requested }),

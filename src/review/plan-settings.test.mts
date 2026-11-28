@@ -71,6 +71,7 @@ describe('resolvePlanValues', () => {
       ],
       smallChangeLines: 20,
       sqlPaths: ['db/**'],
+      sqlInCode: true,
       followUpSourceLines: SMALL_FOLLOW_UP,
     })
     expect(resolvePlanValues(configs, 'acme/plain')).toMatchObject({
@@ -92,6 +93,7 @@ describe('resolvePlanValues', () => {
       authors: [{ login: 'owner-bot', review: 'skip' }],
       smallChangeLines: SMALL_PR_LINES,
       sqlPaths: ['own-sql/**'],
+      sqlInCode: true,
       followUpSourceLines: SMALL_FOLLOW_UP,
     })
   })
@@ -103,6 +105,7 @@ describe('resolvePlanValues', () => {
       authors: [{ login: 'owner-bot', review: 'skip' }],
       smallChangeLines: 60,
       sqlPaths: ['own-sql/**'],
+      sqlInCode: true,
       followUpSourceLines: 10,
     })
     const bare: RepoConfigs = {
@@ -110,5 +113,15 @@ describe('resolvePlanValues', () => {
       byRepo: new Map([['acme/t', config(undefined, { trustRepoConfig: true })]]),
     }
     expect(resolvePlanValues(bare, 'acme/t', own).smallChangeLines).toBe(500)
+  })
+
+  it('turns sql-in-code off only from a machine layer or a trusted repository file', () => {
+    const off = config({ sqlInCode: false })
+    const trusting: RepoConfigs = {
+      ...NO_CONFIGS,
+      byRepo: new Map([['acme/t', config(undefined, { trustRepoConfig: true })]]),
+    }
+    expect(resolvePlanValues(trusting, 'acme/t', off).sqlInCode).toBe(false)
+    expect(resolvePlanValues(configs, 'acme/plain', off).sqlInCode).toBe(true)
   })
 })
