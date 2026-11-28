@@ -71,6 +71,9 @@ Mined cases (8 real pull requests from `cases.json`):
   classifier output evaluate as string inequality; the second claim was added 2026-11-27, so the 0 of 3 below scored
   only the ordinal claim) and `no-mistakes-4604-9d3ea80`
   (nested PostgreSQL option structs without `deny_unknown_fields` in a change that rejects unknown nested fields).
+  `hook-harness-49-d8c85c9` was added on 2026-11-28 (jongleberry/code-reviewer#257): a skill that tells an agent to find the run
+  it just dispatched with `gh run list --limit 1`, which can return the previous run. One pilot attempt on Sonnet with skills
+  caught 0 of 1 and never opened `SKILL.md`; not a rate, see `HISTORY.md`.
   Run at 3 attempts per arm on Sonnet: 0 of 3 with skills and 0 of 3 without on each, so the control misses all
   three; not a rate, see `HISTORY.md`. Run again on 2026-11-27 with the
   #225 classes 1 to 3 prompt lines (correctness, security, design, congruence): still 0 of 3 in both arms on each, and 0 of 3
