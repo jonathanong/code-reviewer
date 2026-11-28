@@ -7,7 +7,7 @@ import { doctorCommand } from './command-doctor.mts'
 import { requireApp } from './command-auth.mts'
 import { carryCommand } from './command-carry.mts'
 import { runRepliesCommand } from './command-replies.mts'
-import { runWaitCommand } from './command-wait.mts'
+import { runWaitCommand, waitUsageFailure } from './command-wait.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
 import { labelsFor } from './review-settings.mts'
@@ -185,8 +185,8 @@ export async function runReviewCommand(
     return await run(args[0], args.slice(1), deps)
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    // A caller of `run` reads one JSON line and the exit code, even for a bad flag.
-    if (args[0] === 'run') return usageFailure(reason)
+    if (args[0] === 'run' || args[0] === 'wait')
+      return (args[0] === 'run' ? usageFailure : waitUsageFailure)(reason)
     process.stderr.write(`code-reviewer: ${reason}\n`)
     return 2
   } finally {

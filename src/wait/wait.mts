@@ -4,14 +4,8 @@ import type { ReviewDeps } from '../cli/deps.mts'
 import { RUN_EXIT, type RunExit } from '../run/output.mts'
 import { Precondition } from '../run/preflight.mts'
 import type { TrustedAuthors } from '../review/trust.mts'
-import {
-  emptyBatch,
-  handleComments,
-  handleRequests,
-  isRequestEvent,
-  type Batch,
-  type WaitIo,
-} from './handle.mts'
+import { emptyBatch, handleRequests, isRequestEvent, type Batch, type WaitIo } from './handle.mts'
+import { handleComments } from './handle-comments.mts'
 import { CursorRejected, type Harness } from './harness.mts'
 
 export type WaitOptions = {
@@ -84,7 +78,23 @@ export async function wait(
   const store = deps.tracker()
   const path = cursorPath(deps, options.cursorName)
   const labels = new Set(options.labels.map((label) => label.toLowerCase()))
-  const context = { deps, io: run, labels, own: options.own, ignoreSenders: options.ignoreSenders }
+  const context = {
+    deps,
+    io: run,
+    labels,
+    own: options.own,
+    ignoreSenders: options.ignoreSenders,
+    pending: new Map(),
+  }
+  /** The line to return; replies still waiting on an in-progress pull request are listed, not lost. */
+  const finish = (patch: Partial<WaitLine>) => {
+    for (const waiting of context.pending.values()) {
+      batch.problems.push(
+        `${waiting.pull.repo}#${waiting.pull.pr}: ${waiting.events} reply event(s) were still waiting for its in-progress label to clear`,
+      )
+    }
+    return line(batch, patch)
+  }
   const signal = AbortSignal.timeout(options.timeoutSeconds * 1000)
   let cursor = store.read(path)?.trim() || undefined
   const errors = new Map<string, number>()
@@ -100,7 +110,7 @@ export async function wait(
         const count = (errors.get(polled.owner) ?? 0) + 1
         errors.set(polled.owner, count)
         if (count >= MAX_TRANSIENT_ERRORS) {
-          return line(batch, {
+          return finish({
             outcome: 'error',
             exitCode: RUN_EXIT.failed,
             cursor: cursor ?? null,
@@ -112,7 +122,7 @@ export async function wait(
       errors.delete(polled.owner)
       if (polled.gap) {
         store.write(path, `${polled.cursor}\n`)
-        return line(batch, {
+        return finish({
           outcome: 'gap',
           exitCode: RUN_EXIT.posted,
           gap: true,
@@ -137,7 +147,7 @@ export async function wait(
       cursor = polled.cursor
       store.write(path, `${cursor}\n`)
       if (batch.requests.length > 0 || batch.attention.length > 0) {
-        return line(batch, { outcome: 'work', exitCode: RUN_EXIT.posted, cursor })
+        return finish({ outcome: 'work', exitCode: RUN_EXIT.posted, cursor })
       }
     }
   } catch (error) {
@@ -149,5 +159,5 @@ export async function wait(
     }
     throw error
   }
-  return line(batch, { cursor: cursor ?? null, timedOut: true })
+  return finish({ cursor: cursor ?? null, timedOut: true })
 }

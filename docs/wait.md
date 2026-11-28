@@ -15,13 +15,13 @@ replying in a CodeRabbit thread under the login authors use, and need nothing fr
 
 It prints one JSON line and exits:
 
-| Exit | `outcome` | Meaning                                                                                                                |
-| ---- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
-| 0    | `work`    | `requests` to review, or `attention` from a replies run                                                                |
-| 0    | `gap`     | hook-harness lost history: run `queue` to sweep, skipping `held` entries                                               |
-| 11   | `timeout` | `--timeout` passed with nothing to do (default `2h`)                                                                   |
-| 12   | `error`   | a configuration problem (a bad flag, an unknown identity, the App, the hook-harness login or token, a rejected cursor) |
-| 13   | `error`   | hook-harness outage: five failed polls in a row for one owner                                                          |
+| Exit | `outcome` | Meaning                                                                                                                                                |
+| ---- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0    | `work`    | `requests` to review, or `attention` from a replies run                                                                                                |
+| 0    | `gap`     | hook-harness lost history: run `queue` to sweep, skipping `held` entries except one whose head moved (one unforced `run`, as in the review-loop skill) |
+| 11   | `timeout` | `--timeout` passed with nothing to do (default `2h`)                                                                                                   |
+| 12   | `error`   | a configuration problem (a bad flag or an unknown one, an unknown identity, the App, the hook-harness login or token, a rejected cursor)               |
+| 13   | `error`   | hook-harness outage: five failed polls in a row for one owner                                                                                          |
 
 The line is `{outcome, exitCode, requests, attention, handled, dropped, problems, gap, timedOut,
 cursor, error}`.
@@ -45,11 +45,16 @@ A `pull_request_review_comment` `created` event is dropped, in this order, when:
    is not this reviewer's (one read per thread: `GET pulls/comments/<in_reply_to_id>`);
 3. the pull request is closed;
 4. this reviewer has no review of it;
-5. it carries a request, in-progress or held label (a review reads the replies itself).
+5. it carries a request or held label (a review reads the replies itself, and a held one is for a person).
+
+A reply on a pull request that carries the in-progress label is not dropped: it waits and is tried
+again on every poll, up to 60 polls (about five minutes), then dropped as `in progress too long`. A
+wait that returns while one still waits lists it in `problems`; a crash loses it.
 
 Otherwise `wait` runs [`replies --post auto`](replies.md) in this process. A held (10) or failed
-(12, 13) result goes to `attention` with its `reason`, `attention` lines and `applyCommand`; an
-applied or no-op result is only counted in `handled` and does not wake the session.
+(12, 13) result, or any result that carries `attention` lines (a write that failed, a claim that
+was not released), goes to `attention` with its `reason`, `attention` lines and `applyCommand`; an
+applied or no-op result without them is only counted in `handled` and does not wake the session.
 
 ## State and failures
 

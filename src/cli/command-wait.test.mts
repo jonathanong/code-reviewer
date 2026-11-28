@@ -9,6 +9,7 @@ import { Precondition } from '../run/preflight.mts'
 import { AppNotInstalledError } from '../gh-cli/index.mts'
 import { line } from './command-replies-line.mts'
 import { repliesLine } from './command-replies.mts'
+import { runReviewCommand } from './command.mts'
 import { createWaitRun, parseTimeout, runWaitCommand } from './command-wait.mts'
 
 vi.mock('./command-replies.mts', () => ({ repliesLine: vi.fn() }))
@@ -174,5 +175,15 @@ describe('code-reviewer wait', () => {
     const fake = command({ identity: false })
     expect(await runWaitCommand({ owner: 'acme' }, fake.deps, fake.run)).toBe(12)
     expect(String(printed().error)).toContain('identity is unknown')
+  })
+})
+
+describe('code-reviewer wait with a bad flag', () => {
+  it("prints wait's JSON error line and exits with the configuration code", async () => {
+    const fake = setup({ calls: [], stateDir: dir })
+    expect(await runReviewCommand(['wait', '--owner', 'acme', '--unknown'], fake.deps)).toBe(12)
+    expect(out).toHaveLength(1)
+    expect(printed()).toMatchObject({ outcome: 'error', exitCode: 12 })
+    expect(String(printed().error)).toContain('unknown')
   })
 })

@@ -1,7 +1,7 @@
 import { isAppConfigFailure, splitRepo } from '../gh-cli/index.mts'
 import { assertOwner, reviewSettings } from '../review/index.mts'
 import { resolveTrustedAuthors } from '../review/trust.mts'
-import type { RunExit } from '../run/output.mts'
+import { RUN_EXIT, type RunExit } from '../run/output.mts'
 import { Precondition } from '../run/preflight.mts'
 import { createHarness } from '../wait/harness.mts'
 import { wait, waitFailure, type WaitRun } from '../wait/wait.mts'
@@ -111,4 +111,12 @@ export async function runWaitCommand(
   }
   process.stdout.write(`${JSON.stringify(result)}\n`)
   return result.exitCode
+}
+
+/** A bad flag or subcommand argument: wait's own JSON error line and the configuration exit code. */
+export function waitUsageFailure(reason: string): RunExit {
+  process.stdout.write(
+    `${JSON.stringify({ outcome: 'error', exitCode: RUN_EXIT.precondition, error: reason })}\n`,
+  )
+  return RUN_EXIT.precondition
 }

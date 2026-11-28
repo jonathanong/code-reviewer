@@ -116,7 +116,7 @@ that overrides it. Start it again after each exit, with no cursor to pass.
   (10) or failed (12, 13), with its `reason`, `attention` and `applyCommand`. Flag it to the human,
   and do not apply a held result yourself. Applied and no-op runs are only counted in `handled`:
   `wait` already ran `replies --post auto` for them, so do not run it again.
-- `gap: true`: run `queue` to sweep what was missed, skipping `held` entries.
+- `gap: true`: run `queue` to sweep what was missed, skipping `held` entries, except a `held` entry whose head moved since the hold: run `run` directly (unforced) once, as in Step 1.
 - `outcome: "error"`: exit 12 is a configuration problem, such as no hook-harness login or a refused token (tell
   the human `error`); exit 13 is a hook-harness outage, five failed polls in a row for one owner: use a
   fallback below until it is healthy again.

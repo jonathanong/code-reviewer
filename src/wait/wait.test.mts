@@ -18,6 +18,7 @@ import {
 } from './wait-fake-io.mts'
 import { Precondition } from '../run/preflight.mts'
 import { CursorRejected, type HarnessEvent } from './harness.mts'
+import { MAX_BUSY_POLLS } from './handle-comments.mts'
 import { MAX_TRANSIENT_ERRORS, wait, waitFailure } from './wait.mts'
 
 let dir: string
@@ -193,7 +194,7 @@ describe('wait: review comment events', () => {
     name: `a pull request carrying ${label}`,
     event: commentEvent(4),
     rest: { labels: [label], reviews: [marker('Request-Changes')] },
-    why: 'request, in-progress or held label',
+    why: 'request or held label',
   })
   const commentCases: Array<{
     name: string
@@ -245,7 +246,6 @@ describe('wait: review comment events', () => {
       why: 'no review by this reviewer',
     },
     busy('final-review:requested'),
-    busy('final-review:in-progress'),
     busy('final-review:held'),
   ]
 
@@ -284,6 +284,73 @@ describe('wait: review comment events', () => {
     }
     const out = await fake.go()
     expect(out.attention).toMatchObject([{ pr: 4, exitCode: 13, reason: '404' }])
+  })
+})
+
+describe('wait: custom labels, attention lines and busy pull requests', () => {
+  it('returns a request that carries a configured label other than the default one', async () => {
+    const fake = start({
+      labels: ['Urgent'],
+      calls: [result([labelEvent(4, { label: 'urgent' })])],
+    })
+    const out = await wait({ ...fake.waitOptions, labels: ['urgent'] }, fake.deps, fake.run)
+    expect(out.requests).toEqual([{ repo, pr: 4, headSha: HEAD }])
+  })
+
+  it('drops a request whose pull request carries none of the configured labels', async () => {
+    const fake = start({
+      labels: [REQUESTED],
+      calls: [result([labelEvent(4, { label: 'urgent' })])],
+    })
+    const out = await wait({ ...fake.waitOptions, labels: ['urgent'] }, fake.deps, fake.run)
+    expect(out.dropped['no request label']).toBe(1)
+  })
+
+  const mine = { labels: [], reviews: [marker('Request-Changes')] }
+
+  it.each([
+    ['applied', 0],
+    ['no-op', 11],
+  ] as const)('returns a %s replies run that carries attention lines', async (_name, exitCode) => {
+    const fake = start({ ...mine, calls: [result([commentEvent(4)])] })
+    fake.replies.mockResolvedValueOnce(
+      line({ exitCode, attention: ['could not release the claim'] }),
+    )
+    const out = await fake.go()
+    expect(out).toMatchObject({
+      outcome: 'work',
+      attention: [{ pr: 4, exitCode, attention: ['could not release the claim'] }],
+      handled: { applied: 0, noop: 0 },
+    })
+  })
+
+  it('keeps a reply that arrives while the pull request is in progress and runs it once the label clears', async () => {
+    const fake = start({ ...mine, calls: [result([commentEvent(4)]), result([]), result([])] })
+    fake.labelIo.labels.mockResolvedValueOnce(['final-review:in-progress'])
+    const out = await fake.go()
+    expect(fake.replies).toHaveBeenCalledTimes(1)
+    expect(out).toMatchObject({ outcome: 'timeout', handled: { applied: 0, noop: 1 }, dropped: {} })
+  })
+
+  it('stops waiting for an in-progress pull request after a bounded number of polls', async () => {
+    const polls = Array.from({ length: MAX_BUSY_POLLS }, (_, index) =>
+      result(index === 0 ? [commentEvent(4)] : []),
+    )
+    const fake = start({ ...mine, calls: polls })
+    fake.labelIo.labels.mockResolvedValue(['final-review:in-progress'])
+    const out = await fake.go()
+    expect(fake.replies).not.toHaveBeenCalled()
+    expect(out.dropped['in progress too long']).toBe(1)
+    expect(out.problems).toEqual([])
+  })
+
+  it('lists replies still waiting when the wait returns', async () => {
+    const fake = start({ ...mine, calls: [result([commentEvent(4)])] })
+    fake.labelIo.labels.mockResolvedValue(['final-review:in-progress'])
+    const out = await fake.go()
+    expect(out.problems).toEqual([
+      `${repo}#4: 1 reply event(s) were still waiting for its in-progress label to clear`,
+    ])
   })
 })
 
