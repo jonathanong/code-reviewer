@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createGhAnswerIo, postAnswers, type AnswerIo } from './answers-post.mts'
+import { reviewMarker } from './render.mts'
 import type { Answer } from './answers.mts'
 import type { PrConversation, ReviewThread, ThreadComment } from './context-query.mts'
 
@@ -139,8 +140,41 @@ describe('createGhAnswerIo', () => {
         },
       }),
     )
-    const pull = await createGhAnswerIo({ repo: 'acme/widgets', pr: 4 }, run).conversation()
+    const pull = await createGhAnswerIo({ repo: 'acme/widgets', pr: 4 }, run).conversation(
+      new Set(),
+    )
     expect(pull.reviewThreads.nodes).toEqual([])
     expect(run.mock.calls[0]?.[0]).toContain('pr=4')
+  })
+
+  it('finds its own review under more than one page of reviews by others', async () => {
+    const node = (id: string, login: string, body = '') => ({
+      id,
+      author: { login },
+      state: 'COMMENTED',
+      body,
+      submittedAt: null,
+      commit: null,
+    })
+    const others = (from: number) =>
+      Array.from({ length: 60 }, (_unused, index) => node(`O${from + index}`, 'someone'))
+    const run = vi.fn(async (args: readonly string[]) => {
+      const older = args.some((arg) => arg.startsWith('before='))
+      const reviews = older
+        ? {
+            nodes: [node('MINE', 'reviewer-app', reviewMarker('a'.repeat(40), 'Approve', 'low'))],
+            pageInfo: { hasPreviousPage: false },
+          }
+        : { nodes: others(0), pageInfo: { hasPreviousPage: true, startCursor: 'c0' } }
+      const pullRequest = older
+        ? { reviews }
+        : {
+            reviews,
+            reviewThreads: { nodes: [], pageInfo: { hasPreviousPage: false } },
+          }
+      return JSON.stringify({ data: { repository: { pullRequest } } })
+    })
+    const pull = await createGhAnswerIo({ repo: 'acme/widgets', pr: 4 }, run).conversation(OWN)
+    expect(pull.reviews.nodes.map((review) => review.id)).toContain('MINE')
   })
 })

@@ -30,6 +30,13 @@ check, or changes the approval or final-review labels (the in-progress claim is 
 completion label is restored only if the pull request carried it). A follow-up review is the only path to a
 verdict on the new head.
 
+Its own newest review is looked up as `run` does: older pages of reviews are read, up to `MAX_OLDER_REVIEW_PAGES`,
+until one of this reviewer's turns up, so reviews by other people do not hide it. When the cap is reached
+without finding one, the command says older reviews were not read.
+The walk stops at that review, so an open thread from an older review, or one past the thread pages read, may
+be missing from the findings that still stand. When any open thread was not read, the run still answers the threads it judged
+but keeps the verdict and asks for no approval: a follow-up review reads the rest.
+
 Only the pull request author's replies count. Review text from anyone else is not read, a hidden marker
 counts only from the reviewer's identity, and every reply is untrusted data.
 

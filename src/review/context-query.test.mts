@@ -72,7 +72,9 @@ describe('fetchConversation', () => {
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: pull } } }),
     )
-    expect(await fetchConversation(target, run)).toMatchObject({ title: 'T' })
+    expect(await fetchConversation(target, run, { trusted: new Set() })).toMatchObject({
+      title: 'T',
+    })
     const args = run.mock.calls[0]?.[0] as string[]
     expect(args.slice(0, 3)).toEqual(['api', 'graphql', '-f'])
     expect(args.slice(4)).toEqual(['-f', 'owner=o', '-f', 'name=r', '-F', 'pr=9'])
@@ -82,7 +84,7 @@ describe('fetchConversation', () => {
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: pullOf({}) } } }),
     )
-    await fetchConversation(target, run)
+    await fetchConversation(target, run, { trusted: new Set() })
     const query = (run.mock.calls[0]![0] as string[])[3] as string
     expect(query.match(/pageInfo \{ hasPreviousPage startCursor \}/gu)).toHaveLength(2)
   })
@@ -91,7 +93,7 @@ describe('fetchConversation', () => {
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: pullOf({}) } } }),
     )
-    await fetchConversation(target, run)
+    await fetchConversation(target, run, { trusted: new Set() })
     const query = (run.mock.calls[0]![0] as string[])[3] as string
     expect(query).toContain('title body headRefOid')
     expect(query).toContain('closingIssuesReferences(first: 20) { nodes { number title body } }')
@@ -101,12 +103,16 @@ describe('fetchConversation', () => {
     const run = vi.fn(async (_args: readonly string[]) =>
       JSON.stringify({ data: { repository: { pullRequest: null } } }),
     )
-    await expect(fetchConversation(target, run)).rejects.toThrow('not found')
+    await expect(fetchConversation(target, run, { trusted: new Set() })).rejects.toThrow(
+      'not found',
+    )
   })
 
   it('rejects an invalid target', async () => {
     const run = vi.fn()
-    await expect(fetchConversation({ repo: 'x', pr: 1 }, run)).rejects.toThrow('--repo')
+    await expect(
+      fetchConversation({ repo: 'x', pr: 1 }, run, { trusted: new Set() }),
+    ).rejects.toThrow('--repo')
     expect(run).not.toHaveBeenCalled()
   })
 
@@ -189,7 +195,7 @@ describe('fetchConversation', () => {
           },
         },
       )
-      const pull = await fetchConversation(target, run)
+      const pull = await fetchConversation(target, run, { trusted: new Set() })
       expect(pull.reviewThreads.nodes.map((node) => node.id)).toEqual(['T0', 'T3'])
       expect(pull.reviewThreads.pageInfo?.hasPreviousPage).toBe(false)
       expect(pull.reviewThreads.unread).toBe(0)
@@ -209,7 +215,7 @@ describe('fetchConversation', () => {
         { nodes: [thread('N')], hasPrevious: true, totalCount: 100 },
         pages,
       )
-      const pull = await fetchConversation(target, run)
+      const pull = await fetchConversation(target, run, { trusted: new Set() })
       expect(run).toHaveBeenCalledTimes(1 + MAX_OLDER_THREAD_PAGES)
       expect(pull.reviewThreads.pageInfo?.hasPreviousPage).toBe(true)
       expect(pull.reviewThreads.unread).toBe(100 - 1 - 2 * MAX_OLDER_THREAD_PAGES)
@@ -233,15 +239,12 @@ describe('fetchConversation', () => {
       expect(pull.reviews.pageInfo?.hasPreviousPage).toBe(true)
     })
 
-    it('does not page back for reviews without an identity, or past the cap', async () => {
+    it('does not page back for reviews past the cap', async () => {
       const pages: Record<string, { nodes: PrReview[]; hasPrevious: boolean }> = {}
       for (let index = 0; index < MAX_OLDER_REVIEW_PAGES + 2; index += 1) {
         pages[`c${index}`] = { nodes: [review(`R${index}`)], hasPrevious: true }
       }
       const newest = { nodes: [review('N')], hasPrevious: true }
-      const without = fake('reviews', newest, pages)
-      await fetchConversation(target, without.run)
-      expect(without.run).toHaveBeenCalledTimes(1)
       const capped = fake('reviews', newest, pages)
       const pull = await fetchConversation(target, capped.run, { trusted: own })
       expect(capped.run).toHaveBeenCalledTimes(1 + MAX_OLDER_REVIEW_PAGES)

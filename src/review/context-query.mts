@@ -146,7 +146,7 @@ function olderQuery(connection: 'reviews' | 'reviewThreads'): string {
 export async function fetchConversation(
   target: PullTarget,
   run: RunTextCommand,
-  options: { trusted?: ReadonlySet<string> } = {},
+  options: { trusted: ReadonlySet<string> },
 ): Promise<PrConversation> {
   assertPullTarget(target)
   const [owner, name] = target.repo.split('/') as [string, string]
