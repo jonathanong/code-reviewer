@@ -1,6 +1,7 @@
 import {
   AuthError,
   BadRequestError,
+  InvalidCursorError,
   NotLoggedInError,
   pollEvents,
   resolveClient,
@@ -56,8 +57,8 @@ export class CursorRejected extends Precondition {}
 const LOGIN_HINT = 'run `hook-harness login`, or set HOOK_HARNESS_URL and HOOK_HARNESS_TOKEN'
 
 /**
- * A failure that retrying cannot fix, as a `Precondition`: no login, a refused token, a request the
- * relay calls bad, or a relay URL that would send the token in cleartext. Anything else is returned
+ * A failure that retrying cannot fix, as a `Precondition`: no login, a refused token, a rejected cursor,
+ * a request the relay calls bad, or a relay URL that would send the token in cleartext. Anything else is returned
  * unchanged.
  */
 export function configurationFailure(error: unknown): unknown {
@@ -69,6 +70,9 @@ export function configurationFailure(error: unknown): unknown {
       cause: error,
     })
   }
+  if (error instanceof InvalidCursorError) {
+    return new CursorRejected(error.message, { cause: error })
+  }
   if (error instanceof BadRequestError) {
     return new Precondition(`the hook-harness relay rejected the request: ${error.message}`, {
       cause: error,
@@ -79,9 +83,6 @@ export function configurationFailure(error: unknown): unknown {
       `hook-harness cannot be used with this relay URL or preset: ${error.message}. The URL must be https, or http on localhost (${LOGIN_HINT}).`,
       { cause: error },
     )
-  }
-  if (error instanceof Error && error.message.startsWith('invalid cursor')) {
-    return new CursorRejected(error.message, { cause: error })
   }
   return error
 }

@@ -127,7 +127,7 @@ again. Your own label changes and CodeRabbit replies never reach you.
 
 **Fallbacks**, when `wait` itself cannot run:
 
-- **hook-harness CLI by hand**: a background `npx -y hook-harness@0.5.0 wait --owner <owner> --on
+- **hook-harness CLI by hand**: a background `npx -y hook-harness@0.6.0 wait --owner <owner> --on
   label:final-review:requested --no-payload --timeout 2h [--after <cursor>]` (it prints `{events,
   gap, cursor, timedOut?}`). For each event, ignore it when `issue` is set; the label is the truth, since
   `claim` re-reads it. For replies, add `--filter '{"event":"pull_request_review_comment","action":"created","ignoreSenders":["<reviewer login>","coderabbitai[bot]"]}'`

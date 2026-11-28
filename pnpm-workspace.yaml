@@ -1,5 +1,5 @@
 minimumReleaseAgeExclude:
   - eslint-plugin-no-mistakes@0.109.38
-  - hook-harness@0.5.0
+  - hook-harness@0.6.0
 allowBuilds:
   esbuild: false

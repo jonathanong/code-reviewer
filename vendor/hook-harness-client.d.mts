@@ -74,5 +74,7 @@ export class RelayError extends Error {
 }
 /** HTTP 400: a bad `after` or `filters`; the poller throws it. */
 export class BadRequestError extends RelayError {}
+/** `pollEvents` threw it: the `after` cursor is not one the relay accepts. */
+export class InvalidCursorError extends Error {}
 /** No relay URL and token in the environment or the saved login. */
 export class NotLoggedInError extends Error {}

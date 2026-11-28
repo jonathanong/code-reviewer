@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   BadRequestError,
+  InvalidCursorError,
   NotLoggedInError,
   OutOfScopeError,
   RelayError,
@@ -207,7 +208,9 @@ describe('the hook-harness client harness', () => {
     )
     expect(configurationFailure(new BadRequestError(400))).toBeInstanceOf(Precondition)
     expect(configurationFailure(new TypeError('unknown preset "x"'))).toBeInstanceOf(Precondition)
-    expect(configurationFailure(new Error('invalid cursor: pass'))).toBeInstanceOf(CursorRejected)
+    expect(configurationFailure(new InvalidCursorError('invalid cursor: pass'))).toBeInstanceOf(
+      CursorRejected,
+    )
     const transient = new RelayError(503)
     expect(configurationFailure(transient)).toBe(transient)
     expect(configurationFailure('plain text')).toBe('plain text')

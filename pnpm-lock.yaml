@@ -24,8 +24,8 @@ importers:
         specifier: ^0.109.97
         version: 0.109.97(eslint@10.15.0)(typescript@7.0.2)
       hook-harness:
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.6.0
+        version: 0.6.0
       oxfmt:
         specifier: ^0.79.0
         version: 0.79.0
@@ -1020,8 +1020,8 @@ packages:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
     engines: {node: '>=20'}
 
-  hook-harness@0.5.0:
-    resolution: {integrity: sha512-GeRPZGeRtvnn/YhpsS/Mas4cqbbLDgWGPdmSXecsNR0IPwT+RoN8my0eDS5QjP8UHa/AOnwoX6UFTHWygGJuVA==}
+  hook-harness@0.6.0:
+    resolution: {integrity: sha512-KEGpFC8XyvUXGfaqXWHZpJbqAF1NWushm1DwVT9UMbZ77ubvwhfyL4EaFaRPAPYQOz/CJ7tyfgHCMTHysMOOng==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -2064,7 +2064,7 @@ snapshots:
     dependencies:
       hookified: 1.15.1
 
-  hook-harness@0.5.0: {}
+  hook-harness@0.6.0: {}
 
   hookified@1.15.1: {}
 
