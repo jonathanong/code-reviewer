@@ -2,6 +2,23 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (prompt change, no run): review fixes on #246
+
+Three CodeRabbit threads on the entry below, no run made.
+
+- `correctness.md` Read, then act: the second party of the overlap test may be an outside actor or state change (a push, a
+  renewal by another worker), named by what it is without an entry point or file and line. The "Lock scope" race rule still
+  requires two entry points for a race between code paths; applied as written, it would have made the read-then-act check
+  unusable for the pinned-head case (class 1).
+- `security.md`: a mishandled operator pairing is a bypass only when it permits an action the policy denies; one that only
+  denies or misreports is a correctness finding.
+- `correctness-strict-config-nested-complete` `pr.md`: "fails the load with the key's path" became "fails the load and names the
+  unknown key", because `deny_unknown_fields` names the key, not a path, and the tests check only rejection.
+- **Not comparable.** The same rows as the entry below (correctness and security pillar rows), plus the new fixture's
+  description. No case expects anything different: both new fixtures are negatives with `expected: []`, and no case covers a
+  fail-open versus fail-closed operator or an outside-actor race, so none was added; the changes narrow or widen a bullet only.
+  Not re-measured.
+
 ## 2026-11-27 (prompt change, targeted run): read-then-act, gate operators and nested strictness (#225 classes 1 to 3)
 
 Refs jongleberry/code-reviewer#225 (classes 4 and 5 remain). Prompt lines added to the pillars, run before and after on Sonnet 5.5

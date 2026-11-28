@@ -6,7 +6,7 @@ A misspelled key in the lint config (`maxLenght`) is ignored, so the rule runs w
 
 ## Change
 
-Every struct in the lint config now has `deny_unknown_fields`: the top-level `Config`, the per-rule `RuleConfig`, and the nested `NamingOptions` and `LengthOptions` it holds. An unknown key at any level fails the load with the key's path.
+Every struct in the lint config now has `deny_unknown_fields`: the top-level `Config`, the per-rule `RuleConfig`, and the nested `NamingOptions` and `LengthOptions` it holds. An unknown key at any level fails the load and names the unknown key.
 
 ## Testing
 

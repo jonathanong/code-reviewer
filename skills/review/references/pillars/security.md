@@ -12,8 +12,10 @@ deserialization, GitHub Actions trust boundaries (`pull_request_target`, untrust
 dependencies, install scripts, typosquats).
 
 A policy or gate evaluator decides who may do what: check every operator against every operand type
-the grammar allows, and treat a pairing it mishandles (an ordering operator that falls through to
-string comparison) as a bypass.
+the grammar allows. Call a mishandled pairing (an ordering operator that falls through to string
+comparison) a bypass only when you can show it permits an action the policy denies; a wrong result
+that only denies or misreports (refusing score 10 while granting nothing below 9) is a correctness
+finding, not a security one.
 
 ## Not in scope
 
