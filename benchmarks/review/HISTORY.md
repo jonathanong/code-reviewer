@@ -2,6 +2,33 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-28 (case added, one attempt): `hook-harness-49-d8c85c9`, a dispatch-then-list race in skill text
+
+Refs jongleberry/code-reviewer#257 (part of #225, class 1, read-then-act). Mined from jongleberry/hook-harness#49 at `d8c85c9c`:
+`plugins/hook-harness/skills/hook-harness/SKILL.md:49` tells an agent to find the run it just dispatched with `gh run list ...
+--limit 1`, which can return the previous run when GitHub lists the new one late. Our reviewer approved `d8c85c9c`, `d5b5a333` and
+`15461f66` without flagging it; CodeRabbit flagged the lookup on `d8c85c9c`; the fix (jongleberry/hook-harness#52) takes the run ID
+from the URL `gh workflow run` prints. One expected claim, `correctness`, `medium`. No prompt changed.
+
+Run: `bench --pillar correctness --case hook-harness-49-d8c85c9 --model sonnet --judge opus --select`, prompts from
+`skills/review/references/pillars` at `8161521`, **1 attempt** (a pilot, as `benchmarks/review/AGENTS.md` asks for a new case).
+Raw results were in `$TMPDIR` and are not kept.
+
+| Case                      | Expected claims | Caught | Findings | Expected reads opened | Cost (pillar only) | Turns |
+| ------------------------- | --------------- | ------ | -------- | --------------------- | ------------------ | ----- |
+| `hook-harness-49-d8c85c9` | 1               | 0 of 1 | 0        | 0 of 1                | $0.14              | 7.0   |
+
+- **Result: a miss on the current prompts.** The run reported no finding and never opened `SKILL.md`, the file the claim is about
+  (it is the one file in the diff that holds the lookup). This matches the three mined misses of #246: the reviewer does not open
+  the file. The `--no-rules` arm and further attempts were not run, so this is not a rate and does not separate a selection
+  failure from a reviewer miss.
+- **Case notes.** `body` is the description as it read at 2026-11-28T09:21Z, before the reviews, without the CodeRabbit summary
+  block. Severity `medium` is a judgment (the window is seconds and the wrong ID is caught only if the agent compares `runId`s);
+  CodeRabbit rated it Minor. `expectedSkills` is absent because no installed skill states the rule. The defect is in prose an agent
+  runs, not in code, so the case also asks whether the read-then-act line of `correctness.md` applies to instructions in a skill or
+  doc; one miss does not answer that.
+- **Not comparable.** Nothing: no prompt, schema or contract changed, and no earlier row covers this case.
+
 ## 2026-11-27 (prompt change, measured): correctness pillar searches code the diff depends on
 
 Prompt change in `skills/review/references/pillars/correctness.md`: before the pillar concludes it names each definition

@@ -1215,5 +1215,26 @@
     "kind": "negative",
     "reason": "Mined from a wrong high finding the reviewer posted on this head (jongleberry/code-reviewer#231). The rules pillar claimed that the containment condition at crates/no-mistakes/src/codebase/rules/config_path_references/references.rs:21 exceeds rustfmt's max_width, so CI's `cargo fmt --all -- --check` fails. The repository runs that check on every pull request (the `Check Rust formatting` step of the `Rust quality (all-feature Clippy)` job, .github/workflows/ci.yml:439-442) and it succeeded on this head. A defect a formatter this repository runs in CI detects is not a finding, and a CI failure is not claimed without the check's result. No high or blocking finding is expected. The verifier is measured on it with the planted finding in planted-findings/ (bench-verifier --findings-from): the output should hold no finding for it (see HISTORY.md).",
     "expected": []
+  },
+  {
+    "id": "hook-harness-49-d8c85c9",
+    "repo": "jongleberry/hook-harness",
+    "pr": 49,
+    "title": "feat: workflow:<name>[@<branch>] preset for waiting on a workflow run",
+    "baseSha": "ba9183fc7e6487b6a4f56ca8c5203f27a30972ae",
+    "headSha": "d8c85c9c8f64adc4837874b6a1d82af3fddf4f2f",
+    "body": "## Summary\n\nAgents that dispatch a workflow (a Publish or deploy off main) and need to wait for it had no hook-harness preset or guidance for it, so they polled `gh run view` or slept. This PR adds a preset for that case and names it everywhere agents look. Checks and reviews on a PR stay with pr-shepherd.\n\n- **Preset `workflow:<name>[@<branch>]`** (protocol) matches `workflow_run` `completed` for that workflow, whatever the conclusion, and optionally only on one branch. The branch goes inside the preset because a separate `--branch` would be OR'd with it. The string is split at the last `@`, so workflow names that contain `@` still work.\n- **Discovery:** the preset is listed in the CLI `--on` help, the unknown-preset error, the MCP `on` schema, `filter_help`, the README preset table, and the `wait_for_events` description. That description now also points PR checks to pr-shepherd.\n- **Skill:** the description names this case. A new section, \"Waiting for a workflow run to finish\", says to start from before the dispatch, to match on `runId`, and, when an agent can't block, to call `get_events` once at each check-in with its saved cursor.\n\n## Testing\n\n`pnpm check` passes: lint, format, typecheck, and 336 tests at 100% coverage. A new preset test covers each conclusion, the branch suffix, a name containing `@`, and empty names or branches.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_01KqBtRkJr7sWMoN31C4M4mv",
+    "kind": "positive",
+    "reason": "Mined from a miss: our posted reviews of this pull request approved d8c85c9c, d5b5a333 and 15461f66 without flagging the run lookup (jongleberry/code-reviewer#257, part of #225 class 1, read-then-act). At d8c85c9c `plugins/hook-harness/skills/hook-harness/SKILL.md:49` tells an agent to find the run it just dispatched with `gh run list --workflow <file> --branch <branch> --event workflow_dispatch --limit 1 --json databaseId`, then to accept only the event whose `runId` matches. GitHub can list the new run a few seconds after `gh workflow run` returns, so `--limit 1` can return the previous run and the agent waits on the wrong `runId`; the author hit this publishing 0.7.0. CodeRabbit flagged the same lookup on d8c85c9c (https://github.com/jongleberry/hook-harness/pull/49#pullrequestreview-6096948295, its comment at line 49: the lookup returns the newest matching run, so an overlapping dispatch of the same workflow is picked, and the run ID should come from the dispatch response); the author declined it on this pull request. The fix is jongleberry/hook-harness#52: take the run ID from the URL `gh workflow run` prints (`.../actions/runs/<runId>`). The defect is in prose a skill tells an agent to run, not in code, so the case also shows whether the read-then-act line of the correctness pillar applies to instructions in a skill or doc. `expectedSkills` is absent: no installed skill states the rule. The severity is a judgment: the window is seconds and the wrong ID is caught only if the agent compares `runId`s, so `medium` (worth fixing), not `high`.",
+    "expected": [
+      {
+        "pillar": "correctness",
+        "severity": "medium",
+        "path": "plugins/hook-harness/skills/hook-harness/SKILL.md",
+        "lines": null,
+        "claim": "The skill tells an agent to find the run it just dispatched with `gh run list --workflow <file> --branch <branch> --event workflow_dispatch --limit 1 --json databaseId`, run right after `gh workflow run`. That is a read then act race: GitHub can list the new run a few seconds after the dispatch returns, so `--limit 1` can return the previous run (or another overlapping dispatch), and the agent then accepts only that `runId` and waits on, or reports the conclusion of, the wrong run. Take the run ID from the output of `gh workflow run` (the run URL it prints, `.../actions/runs/<runId>`) instead of listing runs after the fact."
+      }
+    ],
+    "expectedReads": ["plugins/hook-harness/skills/hook-harness/SKILL.md"]
   }
 ]
