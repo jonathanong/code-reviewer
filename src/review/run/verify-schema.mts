@@ -1,5 +1,6 @@
 import { VERIFIER_OUTPUT_SCHEMA } from '../benchmark/verifier-run.mts'
 import { IMPLIED_KINDS } from '../dependency.mts'
+import { DROPPED_SCHEMA } from './verify-dropped.mts'
 
 /** The dependencies the verifier reports that `prepare` could not read. */
 export const IMPLIED_DEPENDENCIES_SCHEMA = {
@@ -25,14 +26,6 @@ export const REVIEW_VERIFIER_SCHEMA = {
     pullRequestSummary: { type: 'string' },
     fixedThreadIds: { type: 'array', items: { type: 'string' } },
     dependencies: IMPLIED_DEPENDENCIES_SCHEMA,
-    dropped: {
-      type: 'array',
-      items: {
-        type: 'object',
-        required: ['index', 'reason'],
-        additionalProperties: false,
-        properties: { index: { type: 'integer', minimum: 0 }, reason: { type: 'string' } },
-      },
-    },
+    dropped: DROPPED_SCHEMA,
   },
 } as const

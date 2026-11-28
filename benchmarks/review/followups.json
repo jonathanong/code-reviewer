@@ -170,5 +170,81 @@
         }
       ]
     }
+  },
+  {
+    "id": "followup-body-open",
+    "fixture": "fixtures/followup-body-open",
+    "title": "feat: report state a mock factory shares between tests",
+    "kind": "negative",
+    "reason": "Guards the verdict on a finding posted in a review body, which has no thread. The earlier review's high finding sits in mock-capture.mts, and the since-diff touches only report.mts, so the code at the finding's line is unchanged. The verifier should keep it (cite the input finding in sources) and not drop it: dropping a finding whose file the since-diff never touched is the miss seen on no-mistakes#4683.",
+    "expected": [],
+    "followUp": {
+      "previous": {
+        "sha": "5555555555555555555555555555555555555555",
+        "date": "2026-11-27",
+        "mode": "full",
+        "verdict": "Comment",
+        "posted": true,
+        "findings": [
+          {
+            "severity": "high",
+            "title": "mock capture reads the raw callee, so a wrapped mock gives a false clean report",
+            "pillar": "correctness",
+            "path": "src/rules/mock-capture.mts",
+            "line": 8
+          }
+        ]
+      },
+      "unresolved": [],
+      "bodyFindings": [
+        {
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "mock capture reads the raw callee, so a wrapped mock gives a false clean report",
+          "path": "src/rules/mock-capture.mts",
+          "line": 8,
+          "body": "`isMockFactoryCall` compares the raw callee name with `mock`, so `hoisted(mock)(...)` has a `CallExpression` callee and is read as not a mock factory. The rule then reports no shared state for the wrapped form the description says callers use.",
+          "expect": "open"
+        }
+      ]
+    }
+  },
+  {
+    "id": "followup-body-fixed",
+    "fixture": "fixtures/followup-body-fixed",
+    "title": "feat: report state a mock factory shares between tests",
+    "kind": "negative",
+    "reason": "Controls followup-body-open. The same body finding, and the since-diff unwraps the callee chain in isMockFactoryCall. The verifier should drop it with a reason and keep nothing of it; a verifier that keeps every body finding fails here.",
+    "expected": [],
+    "followUp": {
+      "previous": {
+        "sha": "5555555555555555555555555555555555555555",
+        "date": "2026-11-27",
+        "mode": "full",
+        "verdict": "Comment",
+        "posted": true,
+        "findings": [
+          {
+            "severity": "high",
+            "title": "mock capture reads the raw callee, so a wrapped mock gives a false clean report",
+            "pillar": "correctness",
+            "path": "src/rules/mock-capture.mts",
+            "line": 8
+          }
+        ]
+      },
+      "unresolved": [],
+      "bodyFindings": [
+        {
+          "severity": "high",
+          "pillar": "correctness",
+          "title": "mock capture reads the raw callee, so a wrapped mock gives a false clean report",
+          "path": "src/rules/mock-capture.mts",
+          "line": 8,
+          "body": "`isMockFactoryCall` compares the raw callee name with `mock`, so `hoisted(mock)(...)` has a `CallExpression` callee and is read as not a mock factory. The rule then reports no shared state for the wrapped form the description says callers use.",
+          "expect": "fixed"
+        }
+      ]
+    }
   }
 ]

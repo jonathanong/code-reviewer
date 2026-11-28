@@ -5,7 +5,7 @@ import type { FixtureCase } from './cases.mts'
 import { ExecError, type Exec } from './exec.mts'
 import { onlyPathDiff } from './only-path.mts'
 import { writeDiff } from '../write-diff.mts'
-import { followUpContextText } from './followup-case.mts'
+import { followUpContextText } from './followup-prompt.mts'
 import { CONTEXT_DIR, writeContext, writeRelatedDocs, type Snapshot } from './snapshot-context.mts'
 
 /**

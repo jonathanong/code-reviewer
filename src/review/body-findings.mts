@@ -1,5 +1,5 @@
 import type { PriorFinding } from './context.mts'
-import { parseBodyHeads } from './finding-head.mts'
+import { parseBodyBlocks } from './finding-head.mts'
 
 /** The location suffix must look like a path, so a title such as `Foo (bar)` is kept whole. */
 const LOCATION_RE = /^(.+) \(([^\s()]*[./][^\s()]*?)(?::(?:\d+-)?(\d+))?\)$/u
@@ -10,7 +10,7 @@ const LOCATION_RE = /^(.+) \(([^\s()]*[./][^\s()]*?)(?::(?:\d+-)?(\d+))?\)$/u
  * a null thread id.
  */
 export function parseBodyFindings(body: string): PriorFinding[] {
-  return parseBodyHeads(body).map((head) => {
+  return parseBodyBlocks(body).map((head) => {
     const summary = head.title
     const located = LOCATION_RE.exec(summary)
     return {
@@ -21,6 +21,7 @@ export function parseBodyFindings(body: string): PriorFinding[] {
       path: located?.[2] ?? null,
       line: located?.[3] === undefined ? null : Number(located[3]),
       outdated: false,
+      ...(head.text === '' ? {} : { body: head.text }),
     }
   })
 }

@@ -11,7 +11,7 @@ import type { Usage } from './usage.mts'
 import { checkFindings, type Check } from './verifier-check.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { AnswerGrade } from './verifier-answers.mts'
-import type { FollowUpGrade } from './followup-case.mts'
+import type { FollowUpGrade } from './followup-grade.mts'
 import type { VerifierOutput } from './verifier-run.mts'
 import { prepareVerifierSnapshot, type VerifierBenchDeps } from './verifier-snapshot.mts'
 
