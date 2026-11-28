@@ -139,6 +139,88 @@ the reviewer.
   recall against one claim; it is now out of two, and a run that found the head-binding bug would have scored a miss then
   and a hit now. The case is a mined miss no more: re-measure it before quoting a number. No run in this entry.
 
+## 2026-11-27 (prompt change, no run): review fixes on #246
+
+Three CodeRabbit threads on the entry below, no run made.
+
+- `correctness.md` Read, then act: the second party of the overlap test may be an outside actor or state change (a push, a
+  renewal by another worker), named by what it is without an entry point or file and line. The "Lock scope" race rule still
+  requires two entry points for a race between code paths; applied as written, it would have made the read-then-act check
+  unusable for the pinned-head case (class 1).
+- `security.md`: a mishandled operator pairing is a bypass only when it permits an action the policy denies; one that only
+  denies or misreports is a correctness finding.
+- `correctness-strict-config-nested-complete` `pr.md`: "fails the load with the key's path" became "fails the load and names the
+  unknown key", because `deny_unknown_fields` names the key, not a path, and the tests check only rejection.
+- **Not comparable.** The same rows as the entry below (correctness and security pillar rows), plus the new fixture's
+  description. No case expects anything different: both new fixtures are negatives with `expected: []`, and no case covers a
+  fail-open versus fail-closed operator or an outside-actor race, so none was added; the changes narrow or widen a bullet only.
+  Not re-measured.
+
+## 2026-11-27 (prompt change, targeted run): read-then-act, gate operators and nested strictness (#225 classes 1 to 3)
+
+Refs jongleberry/code-reviewer#225 (classes 4 and 5 remain). Prompt lines added to the pillars, run before and after on Sonnet 5.5
+(`--model sonnet --judge opus`), `--select` and `--no-rules` arms, **3 attempts per arm**, each attempt its own `bench` run, same
+session. "Before" is `origin/main` at `e605cc2` (pillars copied aside); "after" is the branch. Reviewer cost (judge not counted):
+$19.85 over six sets of runs (before $6.53 + $1.71 + $1.76, after $6.36 + $1.70 + $1.79), under the $40 cap. Raw results were in
+`$TMPDIR` and are not kept. All 180 case-runs completed with no error. Not a rate: at 3 attempts a difference of one is noise.
+
+- **Lines.** `correctness.md` Method gains two bullets: **Read, then act** (what can change between the read and the act of
+  labels, holds, claims or a results file; is a value pinned at the read checked against the live one; apply the overlap test in
+  "Lock scope" before raising it) and **Gate operators** (every operator against every operand type the grammar allows; an
+  unhandled pairing is rejected, not fallen through). `security.md` gains one paragraph on the same gate-evaluator check, framed
+  as a bypass. `design.md` gains one sentence on strict config and nested option structs. `congruence.md`'s first bullet is
+  tightened, not added to: "every stated behavior exists everywhere it is said to apply (every nested level of a config, every
+  caller)".
+- **Result on the three mined misses (expected claims caught, 3 attempts, with skills / without):**
+
+  | Case                                                                                    | Before          | After           |
+  | --------------------------------------------------------------------------------------- | --------------- | --------------- |
+  | `code-reviewer-210-fe45b7e` (2 claims, `correctness`)                                   | 0 of 6 / 0 of 6 | 0 of 6 / 0 of 6 |
+  | `supervisor-65-417fd1b` (`correctness`)                                                 | 0 of 3 / 0 of 3 | 0 of 3 / 0 of 3 |
+  | `no-mistakes-4604-9d3ea80`, `correctness` pillar (the committed claim)                  | 0 of 3 / 0 of 3 | 0 of 3 / 0 of 3 |
+  | `no-mistakes-4604-9d3ea80`, `design` pillar (claim retagged `design` in a scratch copy) | 0 of 3 / 0 of 3 | 0 of 3 / 0 of 3 |
+
+  The lines move none of the three. The runs report almost nothing on these cases (at most 2 findings per case and arm over 3
+  runs, none matching a claim): the reviewer does not open the code the claim is about (`supervisor-65` opened 1 of 3 expected
+  reads, not `conditions.ts` or `condition-validate.ts`), so a line about what to check once it is looking cannot fire. A prompt
+  line is not the lever for these three; getting the reviewer to open the unchanged consumer of a changed loader or schema is.
+  Reviewer cost per case-run stayed $0.11 to $0.20.
+
+- **False alarms (negatives; runs out of 3 with a `high` or `blocking` finding, with skills / without):**
+
+  | Case                                                                                   | Before          | After           |
+  | -------------------------------------------------------------------------------------- | --------------- | --------------- |
+  | `correctness-preexisting-sibling-gap`                                                  | 0 / 0           | 0 / 0           |
+  | `correctness-eslint-destructure-guarded`                                               | 1 / 1           | 1 / 0           |
+  | `focus-target-sibling-fixed`                                                           | 0 / 0           | 0 / 0           |
+  | `lock-scope-written-row-only`                                                          | 0 / 0           | 0 / 0           |
+  | `select-target-concurrency-guard`                                                      | 0 / 0           | 0 / 0           |
+  | `correctness-unanalyzable-conditional-skip`                                            | 0 / 0           | 0 / 0           |
+  | `focus-target-guard-needed` (a claim by conditional update)                            | 1 / 1           | 3 / 1           |
+  | `correctness-read-then-act-rechecked` (new, class 1)                                   | 0 / 0           | 0 / 0           |
+  | `correctness-gate-operators-complete` (new, class 2)                                   | 0 / 0           | 0 / 0           |
+  | `correctness-strict-config-nested-complete` (new, class 3; `correctness` and `design`) | 0 / 0 and 0 / 0 | 0 / 0 and 0 / 0 |
+
+  `focus-target-guard-needed` is the one to read. Every run, before and after, reports the same real defect (a failed send leaves
+  the export `running`, so a retry skips it), never that the guard is missing or racy; only the severity moves: `high` in 3 of 3
+  runs with skills after against 1 of 3 before, and 1 of 3 without in both. The finding is defensible, so this is not shown to
+  come from the new lines, but they are the only prompt change on those runs and three attempts cannot rule it out.
+  `correctness-eslint-destructure-guarded` gave one `high` in one run of one arm before and after; it is a noisy negative.
+
+- **Cases added.** Three fixture negatives in `synthetic.json`, one per class, each the safe version of the change its line is
+  about: `correctness-read-then-act-rechecked` (a stale-claim release that deletes with a conditional on the token it read),
+  `correctness-gate-operators-complete` (ordering operators on numbers and ordinals, every other pairing throws) and
+  `correctness-strict-config-nested-complete` (`deny_unknown_fields` on every nested struct, a test per level). None draws a
+  `high` finding on the earlier prompts or the new ones, so they are ceiling cases: they guard the lines against false alarms
+  and do not show that the lines help. The three mined cases are the cases the earlier prompt fails; the new lines do not yet
+  pass them.
+- **Not covered.** Congruence runs inside the verifier, so the pillar bench does not measure the tightened bullet; no verifier or
+  congruence run was made, and the new fixtures were not run through `bench-verifier`.
+- **Not comparable.** Rows measured with the earlier `correctness.md`, `design.md`, `security.md` or `congruence.md`: every
+  correctness-pillar row (the mined correctness table, the correctness fixture positives and negatives, `lock-scope-*`,
+  `links-declared-api-payload`, the review-round cases), the design mined row, any security-pillar row, and the verifier and
+  congruence rows. Skill selection, context, focus, replies and follow-up rows are unaffected.
+
 ## 2026-11-27 (input change, cases added): follow-up reviews in `bench-verifier`
 
 First item of jongleberry/code-reviewer#234. Most live reviews are follow-ups, and no case supplied an earlier review or a

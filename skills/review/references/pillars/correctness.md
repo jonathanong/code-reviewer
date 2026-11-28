@@ -67,6 +67,14 @@ Hunt for defects first, then judge tests. For each changed function, ask:
   to every caller configured differently.
 - **Lifecycle**: does cleanup remove something still in use (files, checkouts, handles) by later
   steps or post-job hooks? Do failure paths skip cleanup or restore?
+- **Read, then act**: when the change reads state and then acts on it (labels, holds, claims, a
+  results file), what can change between the read and the act? If a value is pinned at the read
+  (a head, a version, an id), is it checked against the live one before the act? Apply the overlap
+  test in "Lock scope" before raising it. The second party may be an outside actor or state change
+  (a push, a renewal by another worker); name it by what it is, with no entry point or file and line.
+- **Gate operators**: for a policy or gate evaluator, check every operator against every operand
+  type the grammar allows. An operator the evaluator does not handle for a type must be rejected,
+  not fall through to another comparison.
 - **Data shape**: does a new query's filter and order match an index? Does a loop read unbounded
   rows?
 
