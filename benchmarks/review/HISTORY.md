@@ -24,13 +24,20 @@ no thread was neither kept, nor dropped, nor reported fixed.
 - **Not comparable.** A live follow-up whose earlier review had body findings: its prompt, findings, verdict and cost
   differ, so earlier rows of such reviews are not comparable. No benchmark row changes: the prompt of every earlier case
   (the four `followups.json` cases, and every case with no follow-up) is byte-identical, and a thread is graded as before.
-- **Measured.** Deterministic only. Replaying the saved #4683 run (`verifier.json`, `context.json`) through the new code
-  gives 3 input findings (one pillar finding, two body findings), and the verdict goes from Approve to Comment with the
-  high and the medium body finding kept. The two new cases were **not run**: the session had no model login, so there is
-  no Sonnet number for how often the verifier keeps or drops correctly. Run `bench-verifier --cases
-  benchmarks/review/followups.json --case followup-body-open --case followup-body-fixed ... --model sonnet --judge opus
-  --no-rules` with 3 attempts before quoting one. The backstop covers a verifier that says nothing; it does not cover one
-  that drops a finding with a wrong reason.
+- **Measured.** Replaying the saved #4683 run (`verifier.json`, `context.json`) through the new code gives 3 input
+  findings (one pillar finding, two body findings), and the verdict goes from Approve to Comment with the high and the
+  medium body finding kept. Then `bench-verifier --cases benchmarks/review/followups.json --model sonnet --judge opus
+  --no-rules` ran three times (the branch's own `./bin/code-reviewer`, Sonnet 5.5 verifier, Opus checker and judge):
+  **21 of 21 earlier-finding verdicts as expected**, and 3 of 3 for each case, including `followup-body-open` (kept) and
+  `followup-body-fixed` (dropped with a reason). Cost about $1.9 for the three runs ($0.56 to $0.59 for the verifier, $0.05
+  to $0.06 for the checker, each). No control arm and no `main` arm (`main` cannot load the new cases).
+  The first `followup-body-fixed` head did not fix the finding (it followed `callee.callee`, which never reaches the
+  `mock` in `hoisted(mock)(...)`), and the verifier rightly kept it in a single attempt; the head now also reads the
+  wrapper call's arguments. That attempt is not counted above.
+  The old thread cases are unchanged (15 of 15 verdicts as before), but the verifier raised one finding in three of the 6 runs of
+  `followup-still-present` and `followup-mixed` where the 2026-11-27 runs raised none (a low and a medium one on the clamp
+  that sits in the display helper, and one on `NaN`); those are not graded here. The backstop covers a verifier that says
+  nothing; it does not cover one that drops a finding with a wrong reason.
 
 ## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
 
