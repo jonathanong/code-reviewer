@@ -78,9 +78,10 @@ not conclude with no findings until you have done it.
    schema, a config key or option, an attribute or guard, a rule's contract, an exported constant.
    Add what the description promises about them ("rejects unknown fields", "every caller passes
    the head").
-2. For each, `Grep` the repository for its name, and for the token the change adds or removes
-   (for example `deny_unknown_fields`, a new parameter, a new check), with `git grep` or
-   `ast-grep` where you have a shell. Compare the sites that have it with the sites of the same
+2. For each, search the repository for its name, and for the token the change adds or removes
+   (for example `deny_unknown_fields`, a new parameter, a new check). Use `git grep` to find the
+   consumers and siblings when you have a shell (`ast-grep` too, when the run lists it); otherwise
+   use `Grep`. Compare the sites that have it with the sites of the same
    kind that do not: a sibling the change left out, a caller that still assumes the old shape, a
    reader that does not check the new value.
 3. Open, whole, each site where the comparison shows a gap or where behaviour depends on the

@@ -39,6 +39,24 @@ Cost is the pillar run only (judge not counted). Recall counts expected claims: 
   knowledge a checkout does not hold. The `reason` now says so; read the case as one derivable claim (the stale-hold race)
   and one external claim, and do not count a miss on the external one as a prompt miss. The bench has no field for this;
   the grader still counts both claims in recall.
+- **With a read-only shell** (`bench --shell "git grep" --shell "ast-grep run"`, Sonnet at normal effort, no Opus, no
+  high effort; rows labeled and not comparable with normal rows; step 2 reworded to name `git grep` as the way to find
+  consumers and siblings when the run has a shell, `Grep` otherwise): recall 1 of 15 claims again (`supervisor-65` 1 of 6,
+  `code-reviewer-210` 0 of 6, `no-mistakes-4604` 0 of 3), against 1 of 15 on main without a shell. Cost per run
+  $0.11 to $0.13, turns per run 6.0 (`no-mistakes-4604`), 5.3 (`supervisor-65`) and 8.7 (`code-reviewer-210`), fewer than
+  without the shell. Bug file opened with `Read` in 2 of 9 runs (both `code-reviewer-210`, `labels.mts`;
+  against 1 of 9 on main); `no-mistakes-4604` read only `pr.md` and `files.md` in the run inspected. The raw result records
+  `Read`, `Grep` and `Glob`, not Bash commands, so how often `git grep` ran is not recorded. The shell removes a tool
+  limit, not the stop-early habit: the agent still ends in under 10 turns.
+- **False alarms** (fixture negatives `correctness-preexisting-sibling-gap` and `options-forwarded-to-helper`, Sonnet, 3
+  attempts, main's prompt without a shell vs this prompt with the shell): no `high` or `blocking` finding in 0 of 6 runs in
+  both arms; `correctness-preexisting-sibling-gap` raised one lower-severity finding in each of its 3 runs in both arms,
+  `options-forwarded-to-helper` none. The step adds no false alarms on these two cases.
+- **Not shipped as a setting.** A real review already grants shell prefixes to the pillars through the machine-only
+  `analysis` key (`docs/analysis.md`), off by default and refused by harnesses that reject shell. No code change was
+  needed, and no example was added to that doc: `git grep -O<command>` runs a command, `git log --output=<file>` writes a
+  file and `ast-grep run -U` rewrites files, and a `Bash(<prefix>:*)` grant allows every flag. A reviewer that grants
+  these prefixes accepts that, and the measurement shows no gain to justify recommending it.
 - **Not comparable.** Every earlier correctness row on a real pull request (the prompt gained a step); fixture and negative
   correctness cases were not re-run, so false alarms from the new step are unmeasured.
 - **Cause not fixed.** A default pillar run has `Read`, `Grep` and `Glob` only, and a Sonnet run stops after about 10
