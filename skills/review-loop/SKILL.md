@@ -22,7 +22,7 @@ Resolve these first and ask when one is missing:
 - **Clone root**: where local clones of those repositories live, for review worktrees, rule
   sources, and dependencies. Set `CODE_REVIEWER_CLONE_ROOT` or pass `prepare --clones`. Rules are read
   from each clone's `origin/HEAD`, so run `git fetch` in those clones at start.
-- **Event source**: the hook-harness CLI (`npx -y hook-harness`), its MCP server, or none.
+- **Event source**: `code-reviewer wait` (which runs the hook-harness CLI), the hook-harness MCP server, or none.
 - **GitHub App** (optional): `app.yaml` (or `.yml`, `.json`, `.jsonc`) and its key in the config home; `docs/authentication.md`'s
   "Creating the GitHub App" section has the steps and permissions. Without it, the local `gh`
   login is used. Check with `code-reviewer auth`. Never search for or print keys.
@@ -96,12 +96,43 @@ Label names are configurable per organization and repository. Read the request l
 repository whose config (machine or `.code-reviewer.yaml`/`.yml`/`.json`/`.jsonc`) overrides it; wait on every distinct request label. The examples below show
 the default, `final-review:requested`.
 
-Keep exactly one wait running, and pass its cursor back each time:
+Keep exactly one wait running. It is a background command, which wakes the session when it exits
+and leaves it free for messages meanwhile:
 
-- **hook-harness CLI (preferred)**: a background command, which wakes the session when it exits
-  and leaves it free for messages meanwhile:
-  `npx -y hook-harness wait --owner <owner> --on label:final-review:requested --no-payload --timeout 2h [--after <cursor>]`.
-  It prints `{events, gap, cursor, timedOut?}`.
+```bash
+code-reviewer wait --owner <owner>[,<owner>...] [--timeout 2h]
+```
+
+`wait` runs the hook-harness wait itself, keeps its cursor in the state directory, and exits only with
+work for the session ([docs/wait.md](../../docs/wait.md)). It prints one JSON line
+`{outcome, exitCode, requests, attention, handled, dropped, problems, gap, timedOut, cursor, error}`.
+It reads each owner's request label from the machine config; pass `--label NAME` for a repository
+that overrides it. Start it again after each exit, with no cursor to pass.
+
+- `requests: [{repo, pr, headSha}]`: one per pull request at its current head, already checked: open,
+  request label present, head not reviewed, held or in progress. Review each as in Step 3.
+- `attention`: a `replies` run (an author's reply in a thread this reviewer started) that was held
+  (10) or failed (12, 13), with its `reason`, `attention` and `applyCommand`. Flag it to the human,
+  and do not apply a held result yourself. Applied and no-op runs are only counted in `handled`:
+  `wait` already ran `replies --post auto` for them, so do not run it again.
+- `gap: true`: run `queue` to sweep what was missed, skipping `held` entries.
+- `outcome: "error"`: exit 12 is a configuration problem (tell the human `error`); exit 13 is a
+  hook-harness failure that outlasted its retries: use a fallback below until it is healthy again.
+- `timedOut`: nothing to do; start it again.
+
+`problems` lists reads that failed; a request listed with one is still returned, and `run` checks it
+again. Your own label changes and CodeRabbit replies never reach you.
+
+**Fallbacks**, when `wait` itself cannot run:
+
+- **hook-harness CLI by hand**: a background `npx -y hook-harness@0.4.0 wait --owner <owner> --on
+  label:final-review:requested --no-payload --timeout 2h [--after <cursor>]` (it prints `{events,
+  gap, cursor, timedOut?}`). For each event, ignore it when `issue` is set; the label is the truth, since
+  `claim` re-reads it. For replies, add `--filter '{"event":"pull_request_review_comment","action":"created","ignoreSenders":["<reviewer login>","coderabbitai[bot]"]}'`
+  (`<reviewer login>` is `login` from `code-reviewer auth`), and for each such event on a pull request that
+  carries no request, in-progress or held label, run `code-reviewer replies --repo <repo> --pr <n> --post auto`
+  as a background command ([docs/replies.md](../../docs/replies.md)): exit 11 nothing to do, 10 held,
+  0 applied, 13 failed.
 - **hook-harness MCP**: `wait_for_events` with `owner`, `on: ["label:final-review:requested"]`,
   `include_payload: false`, `timeout_seconds` at most 240 (under the MCP tool timeout), and
   `after: <cursor>`.
@@ -109,29 +140,8 @@ Keep exactly one wait running, and pass its cursor back each time:
   the host's wakeup tool (for example `ScheduleWakeup`, inside `/loop`): about every 5 minutes
   while reviews are queued, every 20 to 30 minutes otherwise. Stop once a wait is healthy again.
 
-For each event: ignore it when `issue` is set (an issue, not a pull request). Events replay for a
-day, so the label is the truth: `claim` re-reads it and ignores a request that is gone. On
-`gap: true`, run `queue` to sweep what was missed, skipping `held` entries. Your own label changes also produce events;
-only `labeled` with a request label matters, so they are filtered out.
-
-### Replies to this reviewer's findings
-
-An author's reply on a finding thread does not carry the request label, so wait for it with a second
-filter, OR'd into the same wait (one wait, two filters):
-`--filter '{"event":"pull_request_review_comment","action":"created","ignoreSenders":["<reviewer login>"]}'`
-(MCP: the same object in `filters`). `<reviewer login>` is `login` from `code-reviewer auth`
-(`<app-slug>[bot]`, or the `gh` login); it keeps this reviewer's own replies from waking the loop.
-The relay's `pull_request_review_comment` events are not confirmed to be forwarded: if a wait never
-shows one, rely on the next review, which reads replies itself.
-
-For each such event: take `repo` and `pr`, skip a pull request that carries a request, in-progress or held
-label (a review will read the replies itself), and run `code-reviewer replies --repo <repo> --pr <n>
---post auto` as a background command ([docs/replies.md](../../docs/replies.md)). It prints one JSON line;
-exit 11 means nothing to do (no new author reply, or at a moved head no reply's diff since the reviewed commit could be read), 10 held, 0 applied, 13 failed. It makes no
-call unless the author has a new reply on an open finding, so waking it on every comment is cheap. Run
-it also when the head has moved since the review: it then judges the reply against the diff since the reviewed
-commit and only replies in or resolves threads; it never posts a verdict, so a follow-up review stays the way
-to get one on the new head.
+A `replies` run never posts a verdict at a moved head, so a follow-up review stays the way to get one on
+the new head ([docs/replies.md](../../docs/replies.md)).
 
 ## Step 3 - Review
 

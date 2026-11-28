@@ -107,15 +107,19 @@ export async function repliesCommand(
   return problem === undefined ? result : { ...result, attention: [...result.attention, problem] }
 }
 
-/** Runs `repliesCommand`, prints its line, and turns a failure into an error line with an exit code. */
-export async function runRepliesCommand(values: RepliesValues, deps: ReviewDeps): Promise<RunExit> {
-  let result: RepliesLine
+/** Runs `repliesCommand`, turning a failure into an error line with an exit code. */
+export async function repliesLine(values: RepliesValues, deps: ReviewDeps): Promise<RepliesLine> {
   try {
-    result = await repliesCommand(values, deps)
+    return await repliesCommand(values, deps)
   } catch (error) {
     const code = error instanceof Precondition ? RUN_EXIT.precondition : RUN_EXIT.failed
-    result = line({ outcome: 'error', exitCode: code, reason: message(error) })
+    return line({ outcome: 'error', exitCode: code, reason: message(error) })
   }
+}
+
+/** Runs `repliesLine` and prints it. */
+export async function runRepliesCommand(values: RepliesValues, deps: ReviewDeps): Promise<RunExit> {
+  const result = await repliesLine(values, deps)
   process.stdout.write(`${JSON.stringify(result)}\n`)
   return result.exitCode
 }

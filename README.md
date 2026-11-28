@@ -107,6 +107,8 @@ code-reviewer help
   from another agent session.
 - [Replies to findings](docs/replies.md): `replies`, which reads the author's answers on this
   reviewer's open threads, settles or lowers findings, and re-derives the verdict in one small call.
+- [Waiting for work](docs/wait.md): `wait`, the review loop's event wait, which drops the events that
+  need nothing and exits with requests to review or a replies run that needs a person.
 - [Health check](docs/doctor.md): `doctor`, what it checks and how to read its output.
 - [Posting a review](docs/posting.md): the verdict and review event, dismissals, retries,
   read-back, and text length.

@@ -369,7 +369,7 @@ describe('runReviewCommand', () => {
     await expect(runReviewCommand(['status', '--bogus'], d)).resolves.toBe(2)
     expect(err.join('')).toContain('code-reviewer: --repo and --pr are required.')
     expect(err.join('')).toContain(
-      'code-reviewer: give a subcommand: post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, bench-focus, bench-replies, or replies.',
+      'code-reviewer: give a subcommand: post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, bench-focus, bench-replies, replies, or wait.',
     )
   })
 

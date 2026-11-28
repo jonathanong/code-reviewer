@@ -7,6 +7,7 @@ import { doctorCommand } from './command-doctor.mts'
 import { requireApp } from './command-auth.mts'
 import { carryCommand } from './command-carry.mts'
 import { runRepliesCommand } from './command-replies.mts'
+import { runWaitCommand } from './command-wait.mts'
 import { runLoopCommand } from './command-loop.mts'
 import { postCommand } from './command-post.mts'
 import { labelsFor } from './review-settings.mts'
@@ -23,7 +24,7 @@ import { REVIEW_USAGE } from './usage.mts'
 export type { ReviewDeps } from './deps.mts'
 
 const SUBCOMMANDS =
-  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, bench-focus, bench-replies, or replies'
+  'post, carry, diff, revoke, status, auth, settings, queue, claim, abort, skip, prepare, review, run, context, report, resolve, plugins, tracker, explain, outcomes, issues, doctor, models, bench, bench-verifier, bench-selection, bench-context, bench-focus, bench-replies, replies, or wait'
 
 /** Subcommands that call GitHub for a repository or owner; `run` checks the App in its own preflight. */
 const NEEDS_IDENTITY = new Set([
@@ -130,6 +131,7 @@ async function run(
   }
   if (subcommand === 'run') return runCommand(values, deps)
   if (subcommand === 'replies') return runRepliesCommand(values, deps)
+  if (subcommand === 'wait') return runWaitCommand(values, deps)
   if (subcommand === 'context') return contextCommand(values, deps)
   if (subcommand === 'review') {
     const result = await reviewCommand(values, target(values), deps)
@@ -145,7 +147,6 @@ async function run(
   const io = deps.createIo(pull)
   switch (subcommand) {
     case 'post':
-      // One compact line, like `run`, so a caller that reads a line per result can parse it.
       process.stdout.write(`${JSON.stringify((await postCommand(values, pull, deps)).printed)}\n`)
       return 0
     case 'carry': {
