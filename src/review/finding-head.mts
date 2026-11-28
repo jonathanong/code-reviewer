@@ -28,7 +28,7 @@ export function parseInlineHead(text: string): FindingHead | undefined {
     : head(found[1] as string, found[2], found[3] as string, found[4])
 }
 
-const DETAILS_TAG_RE = /<(\/?)details>/gu
+const DETAILS_TAG_RE = /<(\/?)details\b[^>]*>/gu
 
 /** What follows a body finding's summary, up to the `</details>` that closes it; its own collapsed sections nest inside. */
 function blockText(body: string, from: number): string {

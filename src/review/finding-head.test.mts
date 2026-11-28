@@ -38,6 +38,15 @@ describe('parseBodyBlocks', () => {
     ])
   })
 
+  it('counts a nested opening tag that has attributes', () => {
+    const body =
+      '<details><summary>[high · rules] A</summary>\n\nfirst\n\n<details open><summary>More</summary>\n\nnested\n\n</details>\n\nafter the nested section\n\n</details>\n\n<details><summary>[low · rules] B</summary>\n\nx\n\n</details>'
+    expect(parseBodyBlocks(body).map((block) => block.text)).toEqual([
+      'first\n\n<details open><summary>More</summary>\n\nnested\n\n</details>\n\nafter the nested section',
+      'x',
+    ])
+  })
+
   it('keeps a nested collapsed section in the text and reads an unclosed block to the end', () => {
     const body = [
       '<details><summary>[high · rules] A</summary>\n\nfirst\n\n<details><summary>For the fix</summary>\n\nsteps\n\n</details>\n\n</details>',
