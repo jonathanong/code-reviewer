@@ -1,10 +1,9 @@
 import { ReviewError } from '../finding.mts'
-import type { FollowUpContext, PriorFinding } from '../context.mts'
-import { renderFollowUpContext } from '../context-render.mts'
+import type { PriorFinding } from '../context.mts'
 import type { PreviousReview } from '../context/types.mts'
-import { contextFileLine, sinceFileLine } from '../run/pillar-prompt.mts'
 import type { HeldEvidence } from '../run/evidence-reuse.mts'
-import { FIXED_THREADS_LINES, previousLines } from '../run/previous-prompt.mts'
+import { asFinding } from '../run/body-carry.mts'
+import { DROPPED_SCHEMA } from '../run/verify-dropped.mts'
 
 /** An earlier finding still open as a thread, labeled with what the since-diff does to it. */
 export type FollowUpThread = PriorFinding & { threadId: string; expect: 'fixed' | 'open' }
@@ -18,8 +17,13 @@ export type FollowUpThread = PriorFinding & { threadId: string; expect: 'fixed' 
 export type FollowUpCase = {
   previous: PreviousReview
   unresolved: FollowUpThread[]
+  /** Earlier findings posted in a review body, with no thread; the verifier gets them as input findings. */
+  bodyFindings?: FollowUpBody[]
   held?: HeldEvidence[]
 }
+
+/** An earlier finding with no thread, labeled with whether the since-diff fixes it. */
+export type FollowUpBody = PriorFinding & { threadId: null; body: string; expect: 'fixed' | 'open' }
 
 type Json = Record<string, unknown>
 const isRecord = (value: unknown): value is Json =>
@@ -88,6 +92,24 @@ function threadOf(raw: unknown, where: string): FollowUpThread {
   }
 }
 
+function bodyOf(raw: unknown, where: string): FollowUpBody {
+  if (!isRecord(raw)) return fail(where, 'must be an object')
+  if (raw.expect !== 'fixed' && raw.expect !== 'open') fail(where, 'expect must be fixed or open')
+  const entry: FollowUpBody = {
+    threadId: null,
+    severity: text(raw, 'severity', where),
+    pillar: text(raw, 'pillar', where),
+    title: text(raw, 'title', where),
+    path: textOrNull(raw, 'path', where),
+    line: lineOrNull(raw, where),
+    outdated: false,
+    body: text(raw, 'body', where),
+    expect: raw.expect,
+  }
+  if (asFinding(entry) === undefined) fail(where, 'severity or pillar is not one the reviewer has')
+  return entry
+}
+
 function heldOf(raw: unknown, where: string): HeldEvidence[] {
   if (!Array.isArray(raw)) return fail(where, 'held must be an array')
   return raw.map((entry: unknown, at) => {
@@ -107,63 +129,28 @@ export function parseFollowUp(raw: unknown, where: string): { followUp?: FollowU
   if (raw === undefined) return {}
   if (!isRecord(raw)) return fail(where, 'followUp must be an object')
   const here = `${where}.followUp`
-  if (!Array.isArray(raw.unresolved) || raw.unresolved.length === 0)
-    fail(here, 'unresolved must list at least one earlier finding')
-  const unresolved = raw.unresolved.map((entry: unknown, at) =>
+  const threads = raw.unresolved === undefined ? [] : raw.unresolved
+  const bodies = raw.bodyFindings === undefined ? [] : raw.bodyFindings
+  if (!Array.isArray(threads) || !Array.isArray(bodies))
+    fail(here, 'unresolved and bodyFindings must be arrays')
+  if (threads.length + bodies.length === 0)
+    fail(here, 'unresolved or bodyFindings must list at least one earlier finding')
+  const unresolved = threads.map((entry: unknown, at) =>
     threadOf(entry, `${here}.unresolved[${at}]`),
   )
   const ids = unresolved.map((entry) => entry.threadId)
   if (new Set(ids).size !== ids.length) fail(here, 'unresolved threadIds must be unique')
+  const bodyFindings = bodies.map((entry: unknown, at) =>
+    bodyOf(entry, `${here}.bodyFindings[${at}]`),
+  )
   return {
     followUp: {
       previous: previousOf(raw.previous, here),
       unresolved,
+      ...(bodyFindings.length === 0 ? {} : { bodyFindings }),
       ...(raw.held === undefined ? {} : { held: heldOf(raw.held, here) }),
     },
   }
-}
-
-/**
- * The follow-up blocks of the verifier prompt, from the builders a live follow-up uses: the earlier
- * review and its held evidence, the files it reads, and the `fixedThreadIds` instruction.
- */
-export function followUpLines(followUp: FollowUpCase, out: string): string[] {
-  return [
-    ...previousLines(followUp.previous, followUp.held ?? []),
-    contextFileLine(out),
-    sinceFileLine(out, followUp.previous.sha),
-    ...FIXED_THREADS_LINES,
-  ]
-}
-
-/** `context.md` as a live follow-up renders it, so the verifier sees the unresolved threads with their ids. */
-export function followUpContextText(
-  followUp: FollowUpCase,
-  title: string,
-  description: string,
-): string {
-  const { previous } = followUp
-  const context: FollowUpContext = {
-    title,
-    author: 'author',
-    intent: { body: description, issues: [] },
-    headSha: 'head',
-    baseSha: 'base',
-    lines: 0,
-    reviewedSha: previous.sha,
-    verdict: previous.verdict,
-    effort: previous.mode,
-    commitsSince: ['Address review comments'],
-    unread: { threads: 0, ownReview: false },
-    olderSkipped: false,
-    unresolved: followUp.unresolved,
-    priorQuestions: [],
-    others: [],
-    othersDropped: 0,
-    restatable: [],
-    answerable: [],
-  }
-  return renderFollowUpContext(context)
 }
 
 type WithProperties = { properties: object }
@@ -175,21 +162,6 @@ export function withFixedThreads<S extends WithProperties>(
 ): S {
   if (followUp === undefined) return schema
   const fixedThreadIds = { type: 'array', items: { type: 'string' } }
-  return { ...schema, properties: { ...schema.properties, fixedThreadIds } }
-}
-
-/** The verdict on each earlier finding; decided by code, never by a model. */
-export type FollowUpGrade = {
-  threads: Array<{ thread: string; expect: 'fixed' | 'open'; fixed: boolean; passed: boolean }>
-}
-
-/** Grades the verifier's `fixedThreadIds` against the labels; an id the context did not list is ignored. */
-export function gradeFollowUp(followUp: FollowUpCase, raw: unknown): FollowUpGrade {
-  const reported = new Set(Array.isArray(raw) ? raw.filter((id) => typeof id === 'string') : [])
-  return {
-    threads: followUp.unresolved.map(({ threadId, expect }) => {
-      const fixed = reported.has(threadId)
-      return { thread: threadId, expect, fixed, passed: fixed === (expect === 'fixed') }
-    }),
-  }
+  const dropped = followUp.bodyFindings === undefined ? {} : { dropped: DROPPED_SCHEMA }
+  return { ...schema, properties: { ...schema.properties, fixedThreadIds, ...dropped } }
 }

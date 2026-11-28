@@ -3,6 +3,7 @@ import { describeStepFailure, type StepRan } from '../../harness/runner.mts'
 import type { Exec } from '../benchmark/exec.mts'
 import { DEFAULT_STEP_MODELS, runModelStep, tierOfPlanned, type StepModels } from '../models.mts'
 import type { Model } from '../plan.mts'
+import { keepUnanswered } from './body-carry.mts'
 import { saveFailedSteps } from './failed-steps.mts'
 import { withExtraPillars } from './extra-pillar-schema.mts'
 import { SKILL_READER } from './pillar-capabilities.mts'
@@ -79,7 +80,7 @@ export async function runReviewVerifier(
     saveFailedSteps(input.run.out, [{ step: 'verifier', ran: describeStepFailure(error).ran }])
     throw error
   })
-  return {
+  const output = {
     ...parseReviewVerifier(
       run,
       input.findings.length,
@@ -92,6 +93,8 @@ export async function runReviewVerifier(
     ...answersOf(run, input, options.answerRules),
     ran: run.ran,
   }
+  // A body finding the verifier said nothing about stays as it was posted.
+  return keepUnanswered(output, input.bodyFindings, input.findings)
 }
 
 /** The checked answers of a run that listed notes to answer; nothing for any other run. */

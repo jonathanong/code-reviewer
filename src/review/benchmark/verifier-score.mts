@@ -4,7 +4,7 @@ import { creditedOutputs, referencing, type Graded } from './verifier-grade.mts'
 import type { VerifierInput } from './verifier-input.mts'
 import type { VerifierOutput } from './verifier-run.mts'
 import type { AnswerGrade, ThreadGrade } from './verifier-answers.mts'
-import type { FollowUpGrade } from './followup-case.mts'
+import type { FollowUpGrade } from './followup-grade.mts'
 
 export type VerifierCaseScore = {
   id: string

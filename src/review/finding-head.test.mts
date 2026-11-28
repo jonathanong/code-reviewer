@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseBodyHeads, parseInlineHead } from './finding-head.mts'
+import { parseBodyBlocks, parseInlineHead } from './finding-head.mts'
 
 describe('parseInlineHead', () => {
   it('reads the pillar from the severity tag', () => {
@@ -25,16 +25,27 @@ describe('parseInlineHead', () => {
   })
 })
 
-describe('parseBodyHeads', () => {
+describe('parseBodyBlocks', () => {
   it('reads both forms, in order, and skips a summary that names no pillar', () => {
     const body = [
       '<details><summary>[low · rules] New (`a.ts:1`)</summary>\n\nx\n\n</details>',
       '<details><summary>[blocking] Old</summary>\n\n<sub>security</sub>\n\nx\n\n</details>',
       '<details><summary>[low] No pillar</summary>\n\nx\n\n</details>',
     ].join('\n\n')
-    expect(parseBodyHeads(body)).toEqual([
-      { severity: 'low', pillar: 'rules', title: 'New (`a.ts:1`)' },
-      { severity: 'blocking', pillar: 'security', title: 'Old' },
+    expect(parseBodyBlocks(body)).toEqual([
+      { severity: 'low', pillar: 'rules', title: 'New (`a.ts:1`)', text: 'x' },
+      { severity: 'blocking', pillar: 'security', title: 'Old', text: 'x' },
+    ])
+  })
+
+  it('keeps a nested collapsed section in the text and reads an unclosed block to the end', () => {
+    const body = [
+      '<details><summary>[high · rules] A</summary>\n\nfirst\n\n<details><summary>For the fix</summary>\n\nsteps\n\n</details>\n\n</details>',
+      '<details><summary>[low · rules] B</summary>\n\nopen end',
+    ].join('\n\n')
+    expect(parseBodyBlocks(body).map((block) => block.text)).toEqual([
+      'first\n\n<details><summary>For the fix</summary>\n\nsteps\n\n</details>',
+      'open end',
     ])
   })
 })

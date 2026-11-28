@@ -4,6 +4,7 @@ import type { Exec } from '../benchmark/exec.mts'
 import { readEarlierFile } from '../earlier-file.mts'
 import type { Finding } from '../finding.mts'
 import { heldEvidence } from './evidence-reuse.mts'
+import { withBodyFindings, type BodyBlock } from './body-carry.mts'
 import type { EarlierBlock } from './previous-prompt.mts'
 
 /**
@@ -12,7 +13,7 @@ import type { EarlierBlock } from './previous-prompt.mts'
  * the block names where they start; otherwise the pillars' findings alone, so every other run is
  * unchanged.
  */
-export async function withEarlier(input: {
+async function carryEarlier(input: {
   out: string
   tree: string
   headSha: string
@@ -38,6 +39,33 @@ export async function withEarlier(input: {
       count: file.findings.length,
       questions: file.questions,
       held,
+    },
+  }
+}
+
+/**
+ * Every input finding beyond the pillars' own, with the blocks that say what they are: the
+ * unposted review's findings when `prepare` carried one, then the findings the posted review put
+ * in its body, which have no thread. Without either, the pillars' findings alone.
+ */
+export async function withEarlier(input: {
+  out: string
+  tree: string
+  headSha: string
+  findings: Finding[]
+  exec: Exec
+}): Promise<{
+  findings: Finding[]
+  /** The verifier input fields that name those findings; each is absent when there are none of its kind. */
+  blocks: { earlier?: EarlierBlock; bodyFindings?: BodyBlock }
+}> {
+  const carried = await carryEarlier(input)
+  const body = withBodyFindings({ out: input.out, findings: carried.findings })
+  return {
+    findings: body.findings,
+    blocks: {
+      ...(carried.block === undefined ? {} : { earlier: carried.block }),
+      ...(body.block === undefined ? {} : { bodyFindings: body.block }),
     },
   }
 }

@@ -29,6 +29,7 @@ describe('parseBodyFindings', () => {
         path: 'src/a.ts',
         line: 7,
         outdated: false,
+        body: 'B',
       },
       {
         threadId: null,
@@ -38,6 +39,7 @@ describe('parseBodyFindings', () => {
         path: 'src/b.ts',
         line: null,
         outdated: false,
+        body: 'B',
       },
       {
         threadId: null,
@@ -47,6 +49,7 @@ describe('parseBodyFindings', () => {
         path: null,
         line: null,
         outdated: false,
+        body: 'B',
       },
     ])
   })
@@ -63,7 +66,19 @@ describe('parseBodyFindings', () => {
         path: 'src/b.ts',
         line: 3,
         outdated: false,
+        body: 'x',
       },
     ])
+  })
+
+  it('carries the posted text with its fix section, and none for an empty block', () => {
+    const body = [
+      renderBodyFinding(f({ title: 'Fixable', body: 'The claim.', fix: 'Do this.' })),
+      '<details><summary>[low · rules] Empty</summary></details>',
+    ].join('\n\n')
+    const [fixable, empty] = parseBodyFindings(body)
+    expect(fixable?.body).toContain('The claim.')
+    expect(fixable?.body).toContain('Do this.')
+    expect(empty).not.toHaveProperty('body')
   })
 })

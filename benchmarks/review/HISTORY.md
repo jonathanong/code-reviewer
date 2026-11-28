@@ -2,6 +2,36 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (prompt and input change, cases added, not measured): a follow-up keeps an open finding that has no thread
+
+Evidence: jongleberry/no-mistakes#4683. The review at `9b64478` was a Comment with one high finding in its body (its line
+was not in the diff, so it had no thread). The light follow-up at `5d83d15` did not touch that file, got a verifier output
+with `dropped: []` and `fixedThreadIds: []`, and approved. The verdict is derived from this run's output findings only,
+and the follow-up block in `previousLines` says not to repeat what an unresolved thread already covers, so a finding with
+no thread was neither kept, nor dropped, nor reported fixed.
+
+- **What changed.** The body findings of the last review (`threadId: null` in `context.json`) are now input findings of the
+  verifier, after the pillars' and an unposted review's, with a new block (`bodyLines` in `src/review/run/body-carry.mts`),
+  present only when there are any. It tells the verifier to check each against the code at the head and not the since-diff
+  alone, to keep one that holds (cite it in `sources`) or drop it with a reason in `dropped` that names what the head does
+  now. A body finding the verifier neither keeps nor drops is kept as posted (`keepUnanswered`, code, not a prompt), so an
+  open high or blocking finding cannot become an Approve without a reason. `PriorFinding` gains the posted text (`body`) of
+  a body finding. No change to `verifier.md`, `FIXED_THREADS_LINES` or any thread behavior.
+- **Bench.** A follow-up case may list `bodyFindings` beside (or instead of) `unresolved`; they are appended to the input
+  findings, and the bench schema gains `dropped` for those cases. Two cases: `followup-body-open` (the file is not in the
+  since-diff; expected kept) and `followup-body-fixed` (the since-diff fixes it; expected dropped with a reason). The
+  fixtures are synthetic.
+- **Not comparable.** A live follow-up whose earlier review had body findings: its prompt, findings, verdict and cost
+  differ, so earlier rows of such reviews are not comparable. No benchmark row changes: the prompt of every earlier case
+  (the four `followups.json` cases, and every case with no follow-up) is byte-identical, and a thread is graded as before.
+- **Measured.** Deterministic only. Replaying the saved #4683 run (`verifier.json`, `context.json`) through the new code
+  gives 3 input findings (one pillar finding, two body findings), and the verdict goes from Approve to Comment with the
+  high and the medium body finding kept. The two new cases were **not run**: the session had no model login, so there is
+  no Sonnet number for how often the verifier keeps or drops correctly. Run `bench-verifier --cases
+  benchmarks/review/followups.json --case followup-body-open --case followup-body-fixed ... --model sonnet --judge opus
+  --no-rules` with 3 attempts before quoting one. The backstop covers a verifier that says nothing; it does not cover one
+  that drops a finding with a wrong reason.
+
 ## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
 
 Plan logic only: `src/review/mode.mts`, `triggers.mts` and `plan-settings.mts`. No prompt, schema, case or grader changed, so
