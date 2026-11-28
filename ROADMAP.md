@@ -5,7 +5,7 @@ Planned work that is not yet an issue or a PR.
 ## Correctness: search around the diff
 
 - #251 makes the correctness pillar search the code the diff depends on, and names `git grep` when the run has a shell.
-- Measured on Sonnet at normal effort, it did not yet raise recall: 1 of 15 expected issues, the same as main. The bug file was opened in 2 of 9 runs, against 1 of 9 on main. Turns per run fell from 9-11 to 5-9, with no false alarms.
+- Measured on Sonnet at normal effort, it did not yet raise recall: 1 of 15 expected issues, the same as main. The bug file was opened in 2 of 9 runs, against 1 of 9 on main. With a read-only shell, turns per run fell from 9–11 to 5–9; without one they rose by one to three. No false alarms.
 - Next: iterate until the search measurably finds the bugs. Ideas:
   - Benchmark cases whose bug lives in a caller or callee outside the diff.
   - Prompt wording that makes the agent follow the consumers of each changed symbol.

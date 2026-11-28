@@ -2,56 +2,6 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
-## 2026-11-27 (prompt and input change, cases added, not measured): a follow-up keeps an open finding that has no thread
-
-Evidence: jongleberry/no-mistakes#4683. The review at `9b64478` was a Comment with one high finding in its body (its line
-was not in the diff, so it had no thread). The light follow-up at `5d83d15` did not touch that file, got a verifier output
-with `dropped: []` and `fixedThreadIds: []`, and approved. The verdict is derived from this run's output findings only,
-and the follow-up block in `previousLines` says not to repeat what an unresolved thread already covers, so a finding with
-no thread was neither kept, nor dropped, nor reported fixed.
-
-- **What changed.** The body findings of the last review (`threadId: null` in `context.json`) are now input findings of the
-  verifier, after the pillars' and an unposted review's, with a new block (`bodyLines` in `src/review/run/body-carry.mts`),
-  present only when there are any. It tells the verifier to check each against the code at the head and not the since-diff
-  alone, to keep one that holds (cite it in `sources`) or drop it with a reason in `dropped` that names what the head does
-  now. A body finding the verifier neither keeps nor drops is kept as posted (`keepUnanswered`, code, not a prompt), so an
-  open high or blocking finding cannot become an Approve without a reason. `PriorFinding` gains the posted text (`body`) of
-  a body finding. No change to `verifier.md`, `FIXED_THREADS_LINES` or any thread behavior.
-- **Bench.** A follow-up case may list `bodyFindings` beside (or instead of) `unresolved`; they are appended to the input
-  findings, and the bench schema gains `dropped` for those cases. Two cases: `followup-body-open` (the file is not in the
-  since-diff; expected kept) and `followup-body-fixed` (the since-diff fixes it; expected dropped with a reason). The
-  fixtures are synthetic.
-- **Not comparable.** A live follow-up whose earlier review had body findings: its prompt, findings, verdict and cost
-  differ, so earlier rows of such reviews are not comparable. No benchmark row changes: the prompt of every earlier case
-  (the four `followups.json` cases, and every case with no follow-up) is byte-identical, and a thread is graded as before.
-- **Measured.** Replaying the saved #4683 run (`verifier.json`, `context.json`) through the new code gives 3 input
-  findings (one pillar finding, two body findings), and the verdict goes from Approve to Comment with the high and the
-  medium body finding kept. Then `bench-verifier --cases benchmarks/review/followups.json --model sonnet --judge opus
-  --no-rules` ran three times (the branch's own `./bin/code-reviewer`, Sonnet 5.5 verifier, Opus checker and judge):
-  **21 of 21 earlier-finding verdicts as expected**, and 3 of 3 for each case, including `followup-body-open` (kept) and
-  `followup-body-fixed` (dropped with a reason). Cost about $1.9 for the three runs ($0.56 to $0.59 for the verifier, $0.05
-  to $0.06 for the checker, each). No control arm and no `main` arm (`main` cannot load the new cases).
-  The first `followup-body-fixed` head did not fix the finding (it followed `callee.callee`, which never reaches the
-  `mock` in `hoisted(mock)(...)`), and the verifier rightly kept it in a single attempt; the head now also reads the
-  wrapper call's arguments. That attempt is not counted above.
-  The old thread cases are unchanged (15 of 15 verdicts as before), but the verifier raised one finding in three of the 6 runs of
-  `followup-still-present` and `followup-mixed` where the 2026-11-27 runs raised none (a low and a medium one on the clamp
-  that sits in the display helper, and one on `NaN`); those are not graded here. The backstop covers a verifier that says
-  nothing; it does not cover one that drops a finding with a wrong reason.
-
-## 2026-11-27 (plan change, no prompt or case changed): SQL in source files is `full`
-
-Plan logic only: `src/review/sql-scan.mts` (new), `ast-rules/sql/` (ast-grep rules, data), `mode.mts`, `prepare.mts`,
-`since-prepare.mts` and `plan-settings.mts` (`plan.sqlInCode`, default on). No prompt, schema, case or grader changed, so
-no score here moves. `prepare` runs `ast-grep scan` with the rules on the changed JavaScript and TypeScript files and
-intersects the match lines with the diff's changed lines. A pull request that changes SQL by construction (a tagged `sql`
-template, the first argument of `.query(` or `.execute(`, a Kysely builder call, an upper-case statement literal) is now
-`full` at `high` however small (was `light` at `low` when small and without a security trigger path), and so is a follow-up
-whose new commits change such lines. When ast-grep is missing the check is skipped and the plan says so. Rows that name a
-plan are not comparable with earlier ones for pull requests of that shape. Plan logic is covered by unit tests
-(`src/review/sql-scan.test.mts` runs the real ast-grep when it is installed, `prepare-sql.test.mts`,
-`plan-paths.test.mts`), not by a benchmark case.
-
 ## 2026-11-27 (prompt change, measured): correctness pillar searches code the diff depends on
 
 Prompt change in `skills/review/references/pillars/correctness.md`: before the pillar concludes it names each definition
@@ -112,6 +62,56 @@ Cost is the pillar run only (judge not counted). Recall counts expected claims: 
 - **Cause not fixed.** A default pillar run has `Read`, `Grep` and `Glob` only, and a Sonnet run stops after about 10
   turns; wording alone did not change that. What remains to try, each its own experiment: `bench --shell "git grep"`,
   a higher `--effort`, Opus for the correctness pillar, or splitting the search into its own call.
+
+## 2026-11-27 (prompt and input change, cases added, not measured): a follow-up keeps an open finding that has no thread
+
+Evidence: jongleberry/no-mistakes#4683. The review at `9b64478` was a Comment with one high finding in its body (its line
+was not in the diff, so it had no thread). The light follow-up at `5d83d15` did not touch that file, got a verifier output
+with `dropped: []` and `fixedThreadIds: []`, and approved. The verdict is derived from this run's output findings only,
+and the follow-up block in `previousLines` says not to repeat what an unresolved thread already covers, so a finding with
+no thread was neither kept, nor dropped, nor reported fixed.
+
+- **What changed.** The body findings of the last review (`threadId: null` in `context.json`) are now input findings of the
+  verifier, after the pillars' and an unposted review's, with a new block (`bodyLines` in `src/review/run/body-carry.mts`),
+  present only when there are any. It tells the verifier to check each against the code at the head and not the since-diff
+  alone, to keep one that holds (cite it in `sources`) or drop it with a reason in `dropped` that names what the head does
+  now. A body finding the verifier neither keeps nor drops is kept as posted (`keepUnanswered`, code, not a prompt), so an
+  open high or blocking finding cannot become an Approve without a reason. `PriorFinding` gains the posted text (`body`) of
+  a body finding. No change to `verifier.md`, `FIXED_THREADS_LINES` or any thread behavior.
+- **Bench.** A follow-up case may list `bodyFindings` beside (or instead of) `unresolved`; they are appended to the input
+  findings, and the bench schema gains `dropped` for those cases. Two cases: `followup-body-open` (the file is not in the
+  since-diff; expected kept) and `followup-body-fixed` (the since-diff fixes it; expected dropped with a reason). The
+  fixtures are synthetic.
+- **Not comparable.** A live follow-up whose earlier review had body findings: its prompt, findings, verdict and cost
+  differ, so earlier rows of such reviews are not comparable. No benchmark row changes: the prompt of every earlier case
+  (the four `followups.json` cases, and every case with no follow-up) is byte-identical, and a thread is graded as before.
+- **Measured.** Replaying the saved #4683 run (`verifier.json`, `context.json`) through the new code gives 3 input
+  findings (one pillar finding, two body findings), and the verdict goes from Approve to Comment with the high and the
+  medium body finding kept. Then `bench-verifier --cases benchmarks/review/followups.json --model sonnet --judge opus
+  --no-rules` ran three times (the branch's own `./bin/code-reviewer`, Sonnet 5.5 verifier, Opus checker and judge):
+  **21 of 21 earlier-finding verdicts as expected**, and 3 of 3 for each case, including `followup-body-open` (kept) and
+  `followup-body-fixed` (dropped with a reason). Cost about $1.9 for the three runs ($0.56 to $0.59 for the verifier, $0.05
+  to $0.06 for the checker, each). No control arm and no `main` arm (`main` cannot load the new cases).
+  The first `followup-body-fixed` head did not fix the finding (it followed `callee.callee`, which never reaches the
+  `mock` in `hoisted(mock)(...)`), and the verifier rightly kept it in a single attempt; the head now also reads the
+  wrapper call's arguments. That attempt is not counted above.
+  The old thread cases are unchanged (15 of 15 verdicts as before), but the verifier raised one finding in three of the 6 runs of
+  `followup-still-present` and `followup-mixed` where the 2026-11-27 runs raised none (a low and a medium one on the clamp
+  that sits in the display helper, and one on `NaN`); those are not graded here. The backstop covers a verifier that says
+  nothing; it does not cover one that drops a finding with a wrong reason.
+
+## 2026-11-27 (plan change, no prompt or case changed): SQL in source files is `full`
+
+Plan logic only: `src/review/sql-scan.mts` (new), `ast-rules/sql/` (ast-grep rules, data), `mode.mts`, `prepare.mts`,
+`since-prepare.mts` and `plan-settings.mts` (`plan.sqlInCode`, default on). No prompt, schema, case or grader changed, so
+no score here moves. `prepare` runs `ast-grep scan` with the rules on the changed JavaScript and TypeScript files and
+intersects the match lines with the diff's changed lines. A pull request that changes SQL by construction (a tagged `sql`
+template, the first argument of `.query(` or `.execute(`, a Kysely builder call, an upper-case statement literal) is now
+`full` at `high` however small (was `light` at `low` when small and without a security trigger path), and so is a follow-up
+whose new commits change such lines. When ast-grep is missing the check is skipped and the plan says so. Rows that name a
+plan are not comparable with earlier ones for pull requests of that shape. Plan logic is covered by unit tests
+(`src/review/sql-scan.test.mts` runs the real ast-grep when it is installed, `prepare-sql.test.mts`,
+`plan-paths.test.mts`), not by a benchmark case.
 
 ## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
 
