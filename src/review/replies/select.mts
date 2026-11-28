@@ -67,6 +67,11 @@ export type ReplyPlan = {
   candidates: ReplyCandidate[]
   /** Threads with new replies that were not judged, each with why. */
   unjudged: { thread: string; why: string }[]
+  /**
+   * Open review threads that were not read, or whose review was not read. One may hold a finding of
+   * this reviewer missing from `standing`, so a plan with any never changes the verdict.
+   */
+  unreadThreads: number
 }
 
 export type NoPlan = { noop: string }
@@ -110,7 +115,7 @@ export function planReplies(
   const newest = own.map((review) => MARKER_RE.exec(review.body)).findLast((m) => m !== null)
   if (newest === undefined && pull.reviews.pageInfo?.hasPreviousPage === true) {
     return {
-      noop: 'this reviewer has no review among the newest reviews read; older ones were not',
+      noop: 'this reviewer has no review among the newest reviews read; older ones were not read',
     }
   }
   if (newest === undefined || newest[2] === 'Skipped' || context.reviewedSha === null) {
@@ -172,6 +177,7 @@ export function planReplies(
     standing,
     candidates,
     unjudged,
+    unreadThreads: pull.reviewThreads.unread ?? 0,
   }
 }
 

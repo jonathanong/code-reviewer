@@ -93,6 +93,12 @@ describe('planReplies', () => {
     expect(plan.standing).toEqual([expect.objectContaining({ thread: 'T1', severity: 'high' })])
   })
 
+  it('carries how many older review threads were not read', () => {
+    expect(planned(pull()).unreadThreads).toBe(0)
+    const threads = pull().reviewThreads
+    expect(planned(pull({ reviewThreads: { ...threads, unread: 3 } })).unreadThreads).toBe(3)
+  })
+
   it('keeps a thread with a new reply as a candidate when the head moved, marking the plan moved', () => {
     const plan = planned(pull({ headRefOid: OLD }))
     expect(plan).toMatchObject({ headSha: OLD, reviewedSha: HEAD, posted: 'Request Changes' })
@@ -122,7 +128,7 @@ describe('planReplies', () => {
   it('says older reviews were not read when none of the newest is its own', () => {
     const cut = pull({ reviews: { nodes: [], pageInfo: { hasPreviousPage: true } } })
     expect(planReplies(cut, TRUSTED)).toEqual({
-      noop: expect.stringContaining('older ones were not'),
+      noop: 'this reviewer has no review among the newest reviews read; older ones were not read',
     })
   })
 

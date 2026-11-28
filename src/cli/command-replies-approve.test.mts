@@ -46,6 +46,7 @@ const plan: ReplyPlan = {
   standing: [standing, { ...standing, thread: 'T2', severity: 'medium', title: 'Naming' }],
   candidates: [],
   unjudged: [],
+  unreadThreads: 0,
 }
 const judgments: Judgment[] = [
   { thread: 'T1', outcome: 'settled', severity: 'blocking', why: 'Declared.' },
