@@ -47,6 +47,23 @@ describe('parseBodyBlocks', () => {
     ])
   })
 
+  it('skips tags inside a fenced code block, so the next finding still parses', () => {
+    const example = (fence: string, inner: string) =>
+      `<details><summary>[high · rules] A</summary>\n\nUse it like:\n\n${fence}html\n<details open>\n${inner}\n${fence}\n\nthen close it\n\n</details>`
+    const next = '<details><summary>[low · rules] B</summary>\n\nx\n\n</details>'
+    for (const [fence, inner] of [
+      ['```', '~~~'],
+      ['````', '```'],
+      ['~~~', '```'],
+    ] as const) {
+      const blocks = parseBodyBlocks(`${example(fence, inner)}\n\n${next}`)
+      expect(blocks.map((block) => block.title)).toEqual(['A', 'B'])
+      expect(blocks[0]?.text).toBe(
+        `Use it like:\n\n${fence}html\n<details open>\n${inner}\n${fence}\n\nthen close it`,
+      )
+    }
+  })
+
   it('keeps a nested collapsed section in the text and reads an unclosed block to the end', () => {
     const body = [
       '<details><summary>[high · rules] A</summary>\n\nfirst\n\n<details><summary>For the fix</summary>\n\nsteps\n\n</details>\n\n</details>',
