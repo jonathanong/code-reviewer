@@ -42,6 +42,10 @@ export function parse(args: string[]) {
       probes: { type: 'string' },
       skill: { type: 'string', multiple: true },
       focus: { type: 'string' },
+      timeout: { type: 'string' },
+      'cursor-name': { type: 'string' },
+      'ignore-sender': { type: 'string', multiple: true },
+      label: { type: 'string', multiple: true },
     },
   }).values
 }
