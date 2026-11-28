@@ -5,17 +5,13 @@ import { fileURLToPath } from 'node:url'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import type { Finding } from '../finding.mts'
 import { buildVerifierRunPrompt } from '../run/verify.mts'
 import { parseEvalCases, type EvalCase } from './cases.mts'
 import { defaultExec } from './exec.mts'
-import {
-  followUpContextText,
-  followUpLines,
-  gradeFollowUp,
-  parseFollowUp,
-  withFixedThreads,
-  type FollowUpCase,
-} from './followup-case.mts'
+import { parseFollowUp, withFixedThreads, type FollowUpCase } from './followup-case.mts'
+import { gradeFollowUp } from './followup-grade.mts'
+import { followUpBodyInputs, followUpContextText, followUpLines } from './followup-prompt.mts'
 import { CONTEXT_DIR, prepareSnapshot } from './snapshot.mts'
 import { collectVerifierInput, verifierRunInputs } from './verifier-input.mts'
 import { buildVerifierPrompt } from './verifier-prompt.mts'
@@ -50,6 +46,14 @@ const valid = {
   ],
 }
 
+const BODY = {
+  severity: 'high',
+  pillar: 'correctness',
+  title: 'T',
+  body: 'Why',
+  expect: 'open',
+}
+
 function bad(patch: Record<string, unknown>, message: string): void {
   expect(() => parseFollowUp({ ...valid, ...patch }, 'c')).toThrow(message)
 }
@@ -67,7 +71,13 @@ describe('parseFollowUp', () => {
 
   it('rejects a malformed field with the case path', () => {
     expect(() => parseFollowUp('x', 'c')).toThrow('c: followUp must be an object')
-    bad({ unresolved: [] }, 'unresolved must list at least one earlier finding')
+    bad({ unresolved: [] }, 'unresolved or bodyFindings must list at least one earlier finding')
+    bad({ unresolved: 'x' }, 'unresolved and bodyFindings must be arrays')
+    bad({ bodyFindings: 'x' }, 'unresolved and bodyFindings must be arrays')
+    bad({ bodyFindings: [5] }, 'bodyFindings[0]: must be an object')
+    bad({ bodyFindings: [{ ...BODY, expect: 'gone' }] }, 'expect must be fixed or open')
+    bad({ bodyFindings: [{ ...BODY, body: '' }] }, 'body must be a non-empty string')
+    bad({ bodyFindings: [{ ...BODY, severity: 'urgent' }] }, 'is not one the reviewer has')
     bad({ unresolved: [valid.unresolved[0], valid.unresolved[0]] }, 'threadIds must be unique')
     bad({ unresolved: [5] }, 'unresolved[0]: must be an object')
     bad(
@@ -109,14 +119,28 @@ describe('the follow-up cases', () => {
       'followup-still-present',
       'followup-fixed-new-defect',
       'followup-mixed',
+      'followup-body-open',
+      'followup-body-fixed',
     ])
     expect(cases.map((item) => item.followUp?.unresolved.map((entry) => entry.expect))).toEqual([
       ['fixed'],
       ['open'],
       ['fixed'],
       ['fixed', 'open'],
+      [],
+      [],
     ])
-    expect(cases.map((item) => item.kind)).toEqual(['negative', 'negative', 'positive', 'negative'])
+    expect(
+      cases.flatMap((item) => item.followUp?.bodyFindings?.map((e) => e.expect) ?? []),
+    ).toEqual(['open', 'fixed'])
+    expect(cases.map((item) => item.kind)).toEqual([
+      'negative',
+      'negative',
+      'positive',
+      'negative',
+      'negative',
+      'negative',
+    ])
   })
 })
 
@@ -278,5 +302,78 @@ describe('verifier input and results for a follow-up case', () => {
       exec,
     )
     expect(result).not.toHaveProperty('followUp')
+  })
+})
+
+describe('a follow-up case with a finding that has no thread', () => {
+  const open = byId('followup-body-open')
+  const fixed = byId('followup-body-fixed')
+  const followUp = open.followUp as FollowUpCase
+
+  it('needs no thread, and lists the finding as an input after the pillars', () => {
+    expect(
+      parseFollowUp({ ...valid, unresolved: undefined, bodyFindings: [BODY] }, 'c'),
+    ).toMatchObject({
+      followUp: { unresolved: [], bodyFindings: [{ threadId: null, line: null, body: 'Why' }] },
+    })
+    expect(followUpBodyInputs(followUp)).toMatchObject([
+      { severity: 'high', path: 'src/rules/mock-capture.mts', line: 8 },
+    ])
+    expect(followUpBodyInputs(undefined)).toEqual([])
+  })
+
+  it('puts the finding in the prompt at the index after the pillar findings, and in context.md', () => {
+    const own: Finding[] = [{ pillar: 'rules', severity: 'low', title: 'Own', body: 'b' }]
+    const prompt = buildVerifierPrompt('V', open, own, false, undefined, undefined, followUp)
+    expect(prompt).toContain('the 1 input findings from index 1 on')
+    expect(prompt).toContain('"index": 1')
+    expect(followUpContextText(followUp, 'T', 'D')).toContain('no thread (review body)')
+    expect(buildVerifierPrompt('V', open, own)).not.toContain('no thread')
+  })
+
+  it('uses the lines a live follow-up verifier run is given for those findings', () => {
+    const own: Finding[] = [{ pillar: 'rules', severity: 'low', title: 'Own', body: 'b' }]
+    const input = {
+      verifierPrompt: 'V',
+      references: '/refs',
+      run: { out: CONTEXT_DIR, sinceSha: followUp.previous.sha, hasRules: false },
+      findings: [...own, ...followUpBodyInputs(followUp)],
+      skipped: [],
+      threads: [],
+      previous: followUp.previous,
+      now: new Date('2026-11-27T00:00:00Z'),
+    }
+    const live = buildVerifierRunPrompt({
+      ...input,
+      bodyFindings: { sha: followUp.previous.sha, first: 1, count: 1 },
+    })
+    for (const line of followUpLines(followUp, CONTEXT_DIR, 1)) expect(live).toContain(line)
+    expect(live).toContain('## Your earlier findings that have no thread')
+    expect(buildVerifierRunPrompt(input)).not.toContain('no thread')
+  })
+
+  it('asks for a reason in `dropped` only when the case has such a finding', () => {
+    const withBody = withFixedThreads({ properties: {} }, followUp).properties
+    expect(withBody).toHaveProperty('dropped')
+    expect(
+      withFixedThreads({ properties: {} }, byId('followup-fixed').followUp).properties,
+    ).not.toHaveProperty('dropped')
+  })
+
+  it('grades a finding kept as open, and one dropped with a reason as fixed', () => {
+    const kept = { first: 0, sources: [[0]], dropped: new Map<number, string>() }
+    const dropped = { first: 0, sources: [], dropped: new Map([[0, 'The head unwraps it.']]) }
+    const none = { first: 0, sources: [], dropped: new Map<number, string>() }
+    const passed = (item: EvalCase, answers: Parameters<typeof gradeFollowUp>[2]) =>
+      gradeFollowUp(item.followUp as FollowUpCase, [], answers).threads.map((entry) => entry.passed)
+    expect(passed(open, kept)).toEqual([true])
+    expect(passed(open, dropped)).toEqual([false])
+    // A finding the verifier says nothing about is kept by `review`, so it is open here too.
+    expect(passed(open, none)).toEqual([true])
+    expect(passed(fixed, dropped)).toEqual([true])
+    expect(passed(fixed, kept)).toEqual([false])
+    expect(passed(fixed, none)).toEqual([false])
+    expect(passed(open, undefined)).toEqual([true])
+    expect(gradeFollowUp(followUp, [], dropped).threads[0]?.thread).toBe('body:0')
   })
 })
