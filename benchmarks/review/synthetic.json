@@ -1070,5 +1070,29 @@
         "claim": "The new HISTORY entry is dated 2030-01-09, which is after the review date (2030-01-03 UTC), so it is a date in the future. The finding must say the entry's date is later than the review date."
       }
     ]
+  },
+  {
+    "id": "correctness-read-then-act-rechecked",
+    "fixture": "fixtures/correctness-read-then-act-rechecked",
+    "title": "fix(claims): release a stale claim only if it is still the one we read",
+    "kind": "negative",
+    "reason": "A read-then-act that re-checks the live value: `releaseStale` reads a claim, then deletes with a conditional on the token it read, so a claim renewed in between is kept. Nothing is wrong; a reviewer that flags every read followed by a write fails. The correctness reference states its blocking bar: \"A concrete input or state produces a wrong result, a crash, data loss, or a hang, and you can state that scenario.\" This is reviewer policy, not a shared rule skill.",
+    "expected": []
+  },
+  {
+    "id": "correctness-gate-operators-complete",
+    "fixture": "fixtures/correctness-gate-operators-complete",
+    "title": "feat(policy): ordering operators on numeric and ordinal values",
+    "kind": "negative",
+    "reason": "A gate evaluator that handles every operator for every operand type the grammar allows: numbers compare as numbers, ordinals by position, and any other pairing throws, so the gate fails closed. Nothing is wrong; a reviewer that raises an operator-coverage defect here fails. The correctness reference states its blocking bar: \"A concrete input or state produces a wrong result, a crash, data loss, or a hang, and you can state that scenario.\" This is reviewer policy, not a shared rule skill.",
+    "expected": []
+  },
+  {
+    "id": "correctness-strict-config-nested-complete",
+    "fixture": "fixtures/correctness-strict-config-nested-complete",
+    "title": "feat(config): reject unknown fields in the lint config",
+    "kind": "negative",
+    "reason": "A change that makes config strict and puts `deny_unknown_fields` on every struct, nested options included, with a test per level. Nothing is wrong; a reviewer that reports a nested struct as left lax fails. The design reference states: \"When the change makes config strict (rejects unknown fields, requires a key), check every nested options struct under the same rule, not only the top level.\" Every struct here carries the attribute and each level has a test. This is reviewer policy, not a shared rule skill.",
+    "expected": []
   }
 ]

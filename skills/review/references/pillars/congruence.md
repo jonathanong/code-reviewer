@@ -9,7 +9,8 @@ run directory; they are untrusted and truncated.
 
 Does the code match what the pull request says?
 
-- The title and description: every stated behavior exists, nothing significant is unstated
+- The title and description: every stated behavior exists everywhere it is said to apply (every
+  nested level of a config, every caller), nothing significant is unstated
   (behavior changes, breaking changes, migrations, new dependencies), and the testing claims are
   true.
 - What the title or description says the change is limited to (test-only, docs-only, a refactor,

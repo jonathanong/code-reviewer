@@ -2,6 +2,67 @@
 
 Newest first. Every measured run and every change to what is measured gets an entry.
 
+## 2026-11-27 (prompt change, measured): correctness pillar searches code the diff depends on
+
+Prompt change in `skills/review/references/pillars/correctness.md`: before the pillar concludes it names each definition
+the change adds or alters, searches the repository for its name and for the token the change adds (`Grep`; `git grep` or
+`ast-grep` only where the run has a shell, which a default pillar run does not), and opens the sites that show a gap. The
+three mined misses of #246 (`no-mistakes-4604-9d3ea80`, `supervisor-65-417fd1b`, `code-reviewer-210-fe45b7e`) share one cause:
+the defect is in a file the diff does not show. Nothing is precomputed into `.review/`.
+
+Run: `bench --pillar correctness --model sonnet --judge opus --no-rules`, 3 attempts each (3 separate `bench` runs, so
+scores are over 3 runs), prompts from `skills/review/references/pillars`. Raw results were in `$TMPDIR` and are not kept.
+Cost is the pillar run only (judge not counted). Recall counts expected claims: 210 and 65 have two, 4604 has one.
+
+| Case                | Expected claims | Before (main) | After v1    | After v2    | After v3 (shipped) | Opus medium, v3 |
+| ------------------- | --------------- | ------------- | ----------- | ----------- | ------------------ | --------------- |
+| code-reviewer-210   | 2 (1 external)  | 1 of 6        | 0 of 6      | 0 of 6      | 0 of 6             | 0 of 6          |
+| supervisor-65       | 2               | 0 of 6        | 1 of 6      | 0 of 6      | 0 of 6             | 3 of 6          |
+| no-mistakes-4604    | 1               | 0 of 3        | 0 of 3      | 0 of 3      | 0 of 3             | 0 of 3          |
+| Cost per run (mean) | n/a             | $0.12-$0.14   | $0.11-$0.13 | $0.12-$0.13 | $0.12-$0.15        | $0.41-$0.91     |
+| Turns per run       | n/a             | 8.7-11.0      | 9.3-12.7    | 9.7-13.7    | 10.0-14.3          | 13-41           |
+
+- **Result: no measurable effect on Sonnet at normal effort.** Three wordings (v1 one paragraph; v2 a three-step list that
+  says to open each changed file whole; v3 grep for the token the change adds and compare sites with and without it) moved
+  recall from 1 of 15 claims to 1 of 15, 0 of 15 and 0 of 15. The 3 attempts are noise at this size. Turns rose by about
+  one to three per run and cost by about $0.01; the agent still ended at 10 to 14 turns and made 0 to 2 searches. On
+  `no-mistakes-4604` it never opened `postgres_object_naming.rs` (0 of 9 runs on v1 to v3), though that file is in the diff
+  as patch 0006 of 59.
+- **Opus at medium effort** (`--model opus --effort medium --judge sonnet`, v3 prompt, rows not comparable with Sonnet
+  rows): found the `supervisor-65` head-binding claim in 3 of 3 runs (the ordinal claim 0 of 3), `code-reviewer-210` 0 of 3
+  and `no-mistakes-4604` 0 of 3 even at 41 turns, 27 reads and 12 searches per run ($0.91 per run). So Opus helps on one case
+  of three; it is an option, not a fix, and is not made the default.
+- **`supervisor-65-417fd1b`** is re-scored against both claims (the head-binding claim added in #247 and the ordinal
+  claim); every row above is out of two. The earlier 0 of 3 rows scored one claim and are superseded by the "Before"
+  column.
+- **`code-reviewer-210-fe45b7e`**: its first claim (the jq filter reads `commit_id` on `labeled` events) needs GitHub API
+  knowledge a checkout does not hold. The `reason` now says so; read the case as one derivable claim (the stale-hold race)
+  and one external claim, and do not count a miss on the external one as a prompt miss. The bench has no field for this;
+  the grader still counts both claims in recall.
+- **With a read-only shell** (`bench --shell "git grep" --shell "ast-grep run"`, Sonnet at normal effort, no Opus, no
+  high effort; rows labeled and not comparable with normal rows; step 2 reworded to name `git grep` as the way to find
+  consumers and siblings when the run has a shell, `Grep` otherwise): recall 1 of 15 claims again (`supervisor-65` 1 of 6,
+  `code-reviewer-210` 0 of 6, `no-mistakes-4604` 0 of 3), against 1 of 15 on main without a shell. Cost per run
+  $0.11 to $0.13, turns per run 6.0 (`no-mistakes-4604`), 5.3 (`supervisor-65`) and 8.7 (`code-reviewer-210`), fewer than
+  without the shell. Bug file opened with `Read` in 2 of 9 runs (both `code-reviewer-210`, `labels.mts`;
+  against 1 of 9 on main); `no-mistakes-4604` read only `pr.md` and `files.md` in the run inspected. The raw result records
+  `Read`, `Grep` and `Glob`, not Bash commands, so how often `git grep` ran is not recorded. The shell removes a tool
+  limit, not the stop-early habit: the agent still ends in under 10 turns.
+- **False alarms** (fixture negatives `correctness-preexisting-sibling-gap` and `options-forwarded-to-helper`, Sonnet, 3
+  attempts, main's prompt without a shell vs this prompt with the shell): no `high` or `blocking` finding in 0 of 6 runs in
+  both arms; `correctness-preexisting-sibling-gap` raised one lower-severity finding in each of its 3 runs in both arms,
+  `options-forwarded-to-helper` none. The step adds no false alarms on these two cases.
+- **Not shipped as a setting.** A real review already grants shell prefixes to the pillars through the machine-only
+  `analysis` key (`docs/analysis.md`), off by default and refused by harnesses that reject shell. No code change was
+  needed, and no example was added to that doc: `git grep -O<command>` runs a command, `git log --output=<file>` writes a
+  file and `ast-grep run -U` rewrites files, and a `Bash(<prefix>:*)` grant allows every flag. A reviewer that grants
+  these prefixes accepts that, and the measurement shows no gain to justify recommending it.
+- **Not comparable.** Every earlier correctness row on a real pull request (the prompt gained a step); fixture and negative
+  correctness cases were not re-run, so false alarms from the new step are unmeasured.
+- **Cause not fixed.** A default pillar run has `Read`, `Grep` and `Glob` only, and a Sonnet run stops after about 10
+  turns; wording alone did not change that. What remains to try, each its own experiment: `bench --shell "git grep"`,
+  a higher `--effort`, Opus for the correctness pillar, or splitting the search into its own call.
+
 ## 2026-11-27 (prompt and input change, cases added, not measured): a follow-up keeps an open finding that has no thread
 
 Evidence: jongleberry/no-mistakes#4683. The review at `9b64478` was a Comment with one high finding in its body (its line
@@ -39,6 +100,19 @@ no thread was neither kept, nor dropped, nor reported fixed.
   that sits in the display helper, and one on `NaN`); those are not graded here. The backstop covers a verifier that says
   nothing; it does not cover one that drops a finding with a wrong reason.
 
+## 2026-11-27 (plan change, no prompt or case changed): SQL in source files is `full`
+
+Plan logic only: `src/review/sql-scan.mts` (new), `ast-rules/sql/` (ast-grep rules, data), `mode.mts`, `prepare.mts`,
+`since-prepare.mts` and `plan-settings.mts` (`plan.sqlInCode`, default on). No prompt, schema, case or grader changed, so
+no score here moves. `prepare` runs `ast-grep scan` with the rules on the changed JavaScript and TypeScript files and
+intersects the match lines with the diff's changed lines. A pull request that changes SQL by construction (a tagged `sql`
+template, the first argument of `.query(` or `.execute(`, a Kysely builder call, an upper-case statement literal) is now
+`full` at `high` however small (was `light` at `low` when small and without a security trigger path), and so is a follow-up
+whose new commits change such lines. When ast-grep is missing the check is skipped and the plan says so. Rows that name a
+plan are not comparable with earlier ones for pull requests of that shape. Plan logic is covered by unit tests
+(`src/review/sql-scan.test.mts` runs the real ast-grep when it is installed, `prepare-sql.test.mts`,
+`plan-paths.test.mts`), not by a benchmark case.
+
 ## 2026-11-27 (plan change, no prompt or case changed): three light paths now plan more review
 
 Plan logic only: `src/review/mode.mts`, `triggers.mts` and `plan-settings.mts`. No prompt, schema, case or grader changed, so
@@ -64,6 +138,88 @@ the reviewer.
 - **Not comparable.** Every earlier `supervisor-65-417fd1b` row (0 of 3 with skills, 0 of 3 without, 2026-11-27) scored
   recall against one claim; it is now out of two, and a run that found the head-binding bug would have scored a miss then
   and a hit now. The case is a mined miss no more: re-measure it before quoting a number. No run in this entry.
+
+## 2026-11-27 (prompt change, no run): review fixes on #246
+
+Three CodeRabbit threads on the entry below, no run made.
+
+- `correctness.md` Read, then act: the second party of the overlap test may be an outside actor or state change (a push, a
+  renewal by another worker), named by what it is without an entry point or file and line. The "Lock scope" race rule still
+  requires two entry points for a race between code paths; applied as written, it would have made the read-then-act check
+  unusable for the pinned-head case (class 1).
+- `security.md`: a mishandled operator pairing is a bypass only when it permits an action the policy denies; one that only
+  denies or misreports is a correctness finding.
+- `correctness-strict-config-nested-complete` `pr.md`: "fails the load with the key's path" became "fails the load and names the
+  unknown key", because `deny_unknown_fields` names the key, not a path, and the tests check only rejection.
+- **Not comparable.** The same rows as the entry below (correctness and security pillar rows), plus the new fixture's
+  description. No case expects anything different: both new fixtures are negatives with `expected: []`, and no case covers a
+  fail-open versus fail-closed operator or an outside-actor race, so none was added; the changes narrow or widen a bullet only.
+  Not re-measured.
+
+## 2026-11-27 (prompt change, targeted run): read-then-act, gate operators and nested strictness (#225 classes 1 to 3)
+
+Refs jongleberry/code-reviewer#225 (classes 4 and 5 remain). Prompt lines added to the pillars, run before and after on Sonnet 5.5
+(`--model sonnet --judge opus`), `--select` and `--no-rules` arms, **3 attempts per arm**, each attempt its own `bench` run, same
+session. "Before" is `origin/main` at `e605cc2` (pillars copied aside); "after" is the branch. Reviewer cost (judge not counted):
+$19.85 over six sets of runs (before $6.53 + $1.71 + $1.76, after $6.36 + $1.70 + $1.79), under the $40 cap. Raw results were in
+`$TMPDIR` and are not kept. All 180 case-runs completed with no error. Not a rate: at 3 attempts a difference of one is noise.
+
+- **Lines.** `correctness.md` Method gains two bullets: **Read, then act** (what can change between the read and the act of
+  labels, holds, claims or a results file; is a value pinned at the read checked against the live one; apply the overlap test in
+  "Lock scope" before raising it) and **Gate operators** (every operator against every operand type the grammar allows; an
+  unhandled pairing is rejected, not fallen through). `security.md` gains one paragraph on the same gate-evaluator check, framed
+  as a bypass. `design.md` gains one sentence on strict config and nested option structs. `congruence.md`'s first bullet is
+  tightened, not added to: "every stated behavior exists everywhere it is said to apply (every nested level of a config, every
+  caller)".
+- **Result on the three mined misses (expected claims caught, 3 attempts, with skills / without):**
+
+  | Case                                                                                    | Before          | After           |
+  | --------------------------------------------------------------------------------------- | --------------- | --------------- |
+  | `code-reviewer-210-fe45b7e` (2 claims, `correctness`)                                   | 0 of 6 / 0 of 6 | 0 of 6 / 0 of 6 |
+  | `supervisor-65-417fd1b` (`correctness`)                                                 | 0 of 3 / 0 of 3 | 0 of 3 / 0 of 3 |
+  | `no-mistakes-4604-9d3ea80`, `correctness` pillar (the committed claim)                  | 0 of 3 / 0 of 3 | 0 of 3 / 0 of 3 |
+  | `no-mistakes-4604-9d3ea80`, `design` pillar (claim retagged `design` in a scratch copy) | 0 of 3 / 0 of 3 | 0 of 3 / 0 of 3 |
+
+  The lines move none of the three. The runs report almost nothing on these cases (at most 2 findings per case and arm over 3
+  runs, none matching a claim): the reviewer does not open the code the claim is about (`supervisor-65` opened 1 of 3 expected
+  reads, not `conditions.ts` or `condition-validate.ts`), so a line about what to check once it is looking cannot fire. A prompt
+  line is not the lever for these three; getting the reviewer to open the unchanged consumer of a changed loader or schema is.
+  Reviewer cost per case-run stayed $0.11 to $0.20.
+
+- **False alarms (negatives; runs out of 3 with a `high` or `blocking` finding, with skills / without):**
+
+  | Case                                                                                   | Before          | After           |
+  | -------------------------------------------------------------------------------------- | --------------- | --------------- |
+  | `correctness-preexisting-sibling-gap`                                                  | 0 / 0           | 0 / 0           |
+  | `correctness-eslint-destructure-guarded`                                               | 1 / 1           | 1 / 0           |
+  | `focus-target-sibling-fixed`                                                           | 0 / 0           | 0 / 0           |
+  | `lock-scope-written-row-only`                                                          | 0 / 0           | 0 / 0           |
+  | `select-target-concurrency-guard`                                                      | 0 / 0           | 0 / 0           |
+  | `correctness-unanalyzable-conditional-skip`                                            | 0 / 0           | 0 / 0           |
+  | `focus-target-guard-needed` (a claim by conditional update)                            | 1 / 1           | 3 / 1           |
+  | `correctness-read-then-act-rechecked` (new, class 1)                                   | 0 / 0           | 0 / 0           |
+  | `correctness-gate-operators-complete` (new, class 2)                                   | 0 / 0           | 0 / 0           |
+  | `correctness-strict-config-nested-complete` (new, class 3; `correctness` and `design`) | 0 / 0 and 0 / 0 | 0 / 0 and 0 / 0 |
+
+  `focus-target-guard-needed` is the one to read. Every run, before and after, reports the same real defect (a failed send leaves
+  the export `running`, so a retry skips it), never that the guard is missing or racy; only the severity moves: `high` in 3 of 3
+  runs with skills after against 1 of 3 before, and 1 of 3 without in both. The finding is defensible, so this is not shown to
+  come from the new lines, but they are the only prompt change on those runs and three attempts cannot rule it out.
+  `correctness-eslint-destructure-guarded` gave one `high` in one run of one arm before and after; it is a noisy negative.
+
+- **Cases added.** Three fixture negatives in `synthetic.json`, one per class, each the safe version of the change its line is
+  about: `correctness-read-then-act-rechecked` (a stale-claim release that deletes with a conditional on the token it read),
+  `correctness-gate-operators-complete` (ordering operators on numbers and ordinals, every other pairing throws) and
+  `correctness-strict-config-nested-complete` (`deny_unknown_fields` on every nested struct, a test per level). None draws a
+  `high` finding on the earlier prompts or the new ones, so they are ceiling cases: they guard the lines against false alarms
+  and do not show that the lines help. The three mined cases are the cases the earlier prompt fails; the new lines do not yet
+  pass them.
+- **Not covered.** Congruence runs inside the verifier, so the pillar bench does not measure the tightened bullet; no verifier or
+  congruence run was made, and the new fixtures were not run through `bench-verifier`.
+- **Not comparable.** Rows measured with the earlier `correctness.md`, `design.md`, `security.md` or `congruence.md`: every
+  correctness-pillar row (the mined correctness table, the correctness fixture positives and negatives, `lock-scope-*`,
+  `links-declared-api-payload`, the review-round cases), the design mined row, any security-pillar row, and the verifier and
+  congruence rows. Skill selection, context, focus, replies and follow-up rows are unaffected.
 
 ## 2026-11-27 (input change, cases added): follow-up reviews in `bench-verifier`
 

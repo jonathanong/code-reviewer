@@ -22,7 +22,7 @@ attempt is its own `bench` run, so a rate is over three runs of every case). Plu
 selection cost $54.82 (judge calls not counted). See [HISTORY.md](HISTORY.md) for every run.
 
 **Still stale** (not re-measured since the changes listed in [HISTORY.md](HISTORY.md)): the mined-case table and the
-notes under it (the pillar contract, the output schemas, the verifier prompt (which also carries the review date in UTC, as every pillar prompt does), the congruence pillar, the verifier's
+notes under it (the pillar contract, the correctness, design, security and congruence prompt lines of #225 classes 1 to 3, the output schemas, the verifier prompt (which also carries the review date in UTC, as every pillar prompt does), the congruence pillar, the verifier's
 step 2, the skip of CI-detectable defects and the mined snapshots changed since 2026-11-16); the review-round cases;
 `links-declared-api-payload` and the `lock-scope-*` positives; the verifier row on mined cases; the six mined
 misses of 2026-11-26 and 2026-11-27 (measured before #233); `vouchington-6282` and `vouchington-6254`; the negative
@@ -72,7 +72,16 @@ Mined cases (8 real pull requests from `cases.json`):
   only the ordinal claim) and `no-mistakes-4604-9d3ea80`
   (nested PostgreSQL option structs without `deny_unknown_fields` in a change that rejects unknown nested fields).
   Run at 3 attempts per arm on Sonnet: 0 of 3 with skills and 0 of 3 without on each, so the control misses all
-  three; not a rate, see `HISTORY.md`.
+  three; not a rate, see `HISTORY.md`. Run again on 2026-11-27 with the
+  #225 classes 1 to 3 prompt lines (correctness, security, design, congruence): still 0 of 3 in both arms on each, and 0 of 3
+  on `no-mistakes-4604-9d3ea80` with the claim read by the `design` pillar; the lines do not change these three. Three
+  fixture negatives were added with them (`correctness-read-then-act-rechecked`, `correctness-gate-operators-complete`,
+  `correctness-strict-config-nested-complete`), no `high` finding in any run. See `HISTORY.md`.
+  Re-measured 2026-11-27 with the correctness step that searches code the diff depends on (Sonnet, `--no-rules`, 3
+  attempts, claims counted): `code-reviewer-210` 0 of 6 (was 1 of 6; one of its two claims needs GitHub API knowledge, so
+  it is not a prompt miss), `supervisor-65` 0 of 6 against both claims (was 0 of 6), `no-mistakes-4604` 0 of 3 (was 0 of 3).
+  No effect, with or without a read-only shell (`--shell "git grep"`, Sonnet normal effort: 1 of 15 claims, bug file opened in 2 of 9 runs, no extra false alarms on two fixture negatives). Opus at medium effort: `supervisor-65` 3 of 6 (the head-binding claim 3 of 3), the other two 0. Pillar cost
+  $0.12 to $0.15 per run on Sonnet, $0.41 to $0.91 on Opus. See `HISTORY.md`.
 - Not in the table: `no-mistakes-4745-3ff11a1` (negative, rules and correctness pillars and the verifier: a wrong
   `high` finding that a line exceeds rustfmt's `max_width` so CI's `cargo fmt --all -- --check` fails, on a head
   where that CI step ran and succeeded; no `high` or `blocking` finding is expected). Added 2026-11-27 with the skip
@@ -125,7 +134,9 @@ The two bottom rows are stale (not re-run on 2026-11-27); every other row is the
   are ceiling cases: the control caught each 3 of 3, so none shows that a skill helps. They check that the
   correctness prompt still fires after #233, and they fail the keep rule in [AGENTS.md](AGENTS.md) (a fixture stays
   only while the control misses it).
-- The 11 correctness negatives are the 7 original ones plus `correctness-preexisting-sibling-gap`,
+- The 14 correctness negatives (the three added on 2026-11-27, `correctness-read-then-act-rechecked`,
+  `correctness-gate-operators-complete` and `correctness-strict-config-nested-complete`, were run only then, not in the table above)
+  are the 11 below plus those three; the 11 are the 7 original ones plus `correctness-preexisting-sibling-gap`,
   `correctness-eslint-destructure-guarded`, `correctness-unanalyzable-conditional-skip` and
   `correctness-selection-alias-invalidates`; the 8 rules negatives are the 7 original ones plus
   `rules-rule-effect-absent`. The control's one false alarm was on `correctness-selection-alias-invalidates`, in
