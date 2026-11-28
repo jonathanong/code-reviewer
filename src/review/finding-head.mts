@@ -37,7 +37,7 @@ const FENCE_RE = /^ {0,3}((`|~)\2{2,})[^\n]*\n[\s\S]*?(?:^ {0,3}\1\2*[ \t]*$|$(?
 function blockText(body: string, from: number): string {
   let depth = 1
   const rest = body.slice(from)
-  const visible = rest.replace(FENCE_RE, (fenced) => fenced.replace(/[^\n]/gu, ' '))
+  const visible = rest.replace(FENCE_RE, (fenced) => fenced.replace(/[^\n]/g, ' '))
   for (const tag of visible.matchAll(DETAILS_TAG_RE)) {
     depth += tag[1] === '/' ? -1 : 1
     if (depth === 0) return body.slice(from, from + tag.index).trim()

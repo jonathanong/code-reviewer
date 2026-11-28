@@ -64,6 +64,12 @@ describe('parseBodyBlocks', () => {
     }
   })
 
+  it('keeps offsets exact when a fenced block holds astral characters', () => {
+    const body =
+      '<details><summary>[high · rules] A</summary>\n\n```\n😀😀😀😀\n```\n\nTail\n\n</details>'
+    expect(parseBodyBlocks(body)[0]?.text).toBe('```\n😀😀😀😀\n```\n\nTail')
+  })
+
   it('keeps a nested collapsed section in the text and reads an unclosed block to the end', () => {
     const body = [
       '<details><summary>[high · rules] A</summary>\n\nfirst\n\n<details><summary>For the fix</summary>\n\nsteps\n\n</details>\n\n</details>',
