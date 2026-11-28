@@ -53,7 +53,7 @@ export async function repliesCommand(
     })
   }
   const answers = deps.createAnswerIo(pull)
-  const conversation = await answers.conversation()
+  const conversation = await answers.conversation(trusted)
   const planned = planReplies(conversation, trusted)
   if ('noop' in planned) return line({ ...base, reason: planned.noop })
   const plan = headMoved(planned) ? await withSinceDiffs(deps, pull.repo, planned, env) : planned
@@ -88,7 +88,7 @@ export async function repliesCommand(
   const claim = await claimReplies(labelIo, names, {
     restoreCompleted,
     reviewedSince: async () =>
-      newestOwnReview(await answers.conversation(), trusted) !== plan.reviewId,
+      newestOwnReview(await answers.conversation(trusted), trusted) !== plan.reviewId,
   })
   if (!claim.claimed) {
     return line({ ...base, headSha: plan.headSha, reason: `not claimed: ${claim.reason}` })

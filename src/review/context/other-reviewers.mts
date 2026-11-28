@@ -116,7 +116,9 @@ export const otherReviewers: SectionBuilder = {
     if (own.size === 0) {
       throw new Error('own identity is unknown, so its threads cannot be told from others')
     }
-    const pull = await fetchConversation({ repo: input.repo, pr: input.pr }, deps.gh)
+    const pull = await fetchConversation({ repo: input.repo, pr: input.pr }, deps.gh, {
+      trusted: own,
+    })
     return describeOthers(pull, own)
   },
 }

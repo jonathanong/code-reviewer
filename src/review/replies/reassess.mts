@@ -101,6 +101,19 @@ export function reassess(
       refused: `the head moved since the review (${plan.reviewedSha.slice(0, 12)}), so only a follow-up review gives a verdict on the new head`,
     }
   }
+  if (plan.unreadThreads > 0) {
+    // An unread thread may hold an open finding of this reviewer that `standing` lacks, so the
+    // verdict derived from `standing` could be too lenient; the threads alone are answered.
+    return {
+      before: plan.posted,
+      after: plan.posted,
+      needsApproval: false,
+      skipped: skippedOf(plan),
+      remaining,
+      changes: false,
+      refused: `${plan.unreadThreads} older review threads were not read, so the verdict is kept; a follow-up review reads them`,
+    }
+  }
   const before = deriveVerdict(plan.standing.map(asFinding), plan.questions, skippedOf(plan))
   const findings = remaining.map(asFinding)
   const unchecked = deriveVerdict(findings, plan.questions, [])

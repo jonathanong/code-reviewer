@@ -25,6 +25,7 @@ const plan = (overrides: Partial<ReplyPlan> = {}): ReplyPlan => ({
   standing: [standing('T1', 'blocking')],
   candidates: [],
   unjudged: [],
+  unreadThreads: 0,
   ...overrides,
 })
 
@@ -46,6 +47,19 @@ describe('reply markers', () => {
 })
 
 describe('reassess', () => {
+  it('keeps the verdict when an older review thread was not read', () => {
+    const unread = plan({ unreadThreads: 2 })
+    const result = reassess(unread, [judged('T1', 'settled')], PASSED)
+    expect(result).toMatchObject({
+      before: 'Request Changes',
+      after: 'Request Changes',
+      changes: false,
+      needsApproval: false,
+      refused: expect.stringContaining('2 older review threads were not read'),
+    })
+    expect(result.remaining).toEqual([])
+  })
+
   it('never changes the verdict or asks for an approval when the head moved', () => {
     const moved = plan({ headSha: 'c'.repeat(40) })
     const result = reassess(moved, [judged('T1', 'settled')], PASSED)
